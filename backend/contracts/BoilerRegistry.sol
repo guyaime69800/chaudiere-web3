@@ -20,13 +20,29 @@ contract BoilerRegistry {
 
     mapping(string => Boiler) public boilers;
     mapping(string => Maintenance[]) public maintenances;
+    // L'adresse du proprietaire (admin) du contrat.
+    // address = identifiant unique d'un compte/wallet sur la blockchain.
+    address public owner;
 
+    // Le constructor s'execute UNE SEULE FOIS, au deploiement du contrat.
+    // msg.sender = celui qui appelle (ici, celui qui deploie) -> il devient l'admin.
+    constructor() {
+        owner = msg.sender;
+    }
+
+    // "modifier" = une regle reutilisable a accrocher sur une fonction.
+    // onlyOwner verifie que l'appelant est bien l'admin, sinon il bloque tout.
+    // Le "_;" = "ici s'execute le reste de la fonction" (uniquement si le require passe).
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Reserve a l'administrateur");
+        _;
+    }
     function registerBoiler(
         string memory _boilerId,
         string memory _qrCode,
         string memory _owner,
         string memory _location
-    ) public {
+    ) public onlyOwner {
         boilers[_boilerId] = Boiler(
             _boilerId,
             _qrCode,

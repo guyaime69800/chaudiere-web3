@@ -75,6 +75,27 @@ async function main() {
         // Si on arrive ICI, c'est que le require a bien bloque (bon signe !)
         console.log("✅ PARFAIT : le contrat a bien REFUSE l'ajout.");
         console.log("   Raison renvoyee par le contrat :", error.message.includes("Cette chaudiere n'existe pas") ? "Cette chaudiere n'existe pas" : "(bloque)", "\n");
+    }// ÉTAPE 7 : on TESTE LE CONTROLE D'ACCES (onlyOwner)
+    // On recupere un DEUXIEME compte (l'autre = un non-admin).
+    // getSigners() = la liste des comptes de test. [0] = admin, [1] = quelqu'un d'autre.
+    const [admin, autrePersonne] = await hre.ethers.getSigners();
+
+    console.log("--- TEST DU CONTROLE D'ACCES (non-admin) ---");
+    try {
+        // "connect(autrePersonne)" = on appelle la fonction EN TANT QUE l'autre personne.
+        // Elle tente d'enregistrer une chaudiere... alors qu'elle n'est PAS l'admin.
+        const tx4 = await registry.connect(autrePersonne).registerBoiler(
+            "CHAUD-002",
+            "QR-INTERDIT",
+            "Pirate",
+            "Nulle part"
+        );
+        await tx4.wait();
+        // Si on arrive ici, le garde-fou n'a PAS marche (mauvais signe)
+        console.log("❌ PROBLEME : un non-admin a pu enregistrer une chaudiere !\n");
+    } catch (error) {
+        // Si on arrive ICI, c'est que onlyOwner a bien bloque (bon signe !)
+        console.log("✅ PARFAIT : le contrat a bien REFUSE (seul l'admin peut enregistrer).\n");
     }
     console.log("--- FIN DU TEST : TOUT FONCTIONNE ! 🎉 ---");
 }
