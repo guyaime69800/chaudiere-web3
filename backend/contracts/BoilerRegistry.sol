@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 contract BoilerRegistry {
-
     struct Boiler {
         string boilerId;
         string qrCode;
@@ -28,7 +27,6 @@ contract BoilerRegistry {
         string memory _owner,
         string memory _location
     ) public {
-
         boilers[_boilerId] = Boiler(
             _boilerId,
             _qrCode,
@@ -45,7 +43,9 @@ contract BoilerRegistry {
         string memory _technician,
         string memory _partChanged
     ) public {
-
+        // On vérifie que la chaudière existe AVANT d'ajouter une maintenance.
+        // Si elle n'existe pas (exists == false), on bloque et on renvoie un message d'erreur.
+        require(boilers[_boilerId].exists, "Cette chaudiere n'existe pas");
         maintenances[_boilerId].push(
             Maintenance(
                 block.timestamp,
@@ -56,5 +56,4 @@ contract BoilerRegistry {
             )
         );
     }
-
 }
