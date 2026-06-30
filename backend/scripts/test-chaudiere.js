@@ -25,7 +25,22 @@ async function main() {
     );
     await tx1.wait(); // on attend que la transaction soit validee
     console.log("✅ Chaudiere CHAUD-001 enregistree !\n");
-
+    // ON ECOUTE L'EVENEMENT : on relit la transaction pour retrouver l'annonce emise.
+    // tx1.wait() nous donne le "recu" (receipt) qui contient les events declenches.
+    const recu = await tx1.wait();
+    console.log("--- ANNONCE (event) CAPTUREE ---");
+    // On parcourt les "logs" (les annonces) trouves dans la transaction
+    for (const log of recu.logs) {
+        try {
+            // On essaie de "traduire" chaque log avec le langage de notre contrat
+            const annonce = registry.interface.parseLog(log);
+            console.log("📣 Event :", annonce.name);          // le nom de l'annonce (BoilerRegistered)
+            console.log("   boilerId :", annonce.args.boilerId);
+        } catch (e) {
+            // certains logs ne nous concernent pas, on les ignore
+        }
+    }
+    console.log("");
     // ÉTAPE 3 : on ajoute une intervention au carnet d'entretien
     const tx2 = await registry.addMaintenance(
         "CHAUD-001",                       // _boilerId

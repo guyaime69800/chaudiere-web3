@@ -2,6 +2,10 @@
 pragma solidity ^0.8.20;
 
 contract BoilerRegistry {
+
+    // ───────────── MODELES DE FICHES (structs) ─────────────
+
+    // Carte d'identite d'une chaudiere.
     struct Boiler {
         string boilerId;
         string qrCode;
@@ -10,6 +14,7 @@ contract BoilerRegistry {
         bool exists;
     }
 
+    // Une page du carnet d'entretien (une intervention).
     struct Maintenance {
         uint256 date;
         string interventionType;
@@ -18,31 +23,52 @@ contract BoilerRegistry {
         string partChanged;
     }
 
+    // ───────────── RANGEMENTS (mappings) ─────────────
+
+    // Annuaire des chaudieres : un identifiant -> une fiche Boiler.
     mapping(string => Boiler) public boilers;
+
+    // Carnet d'entretien : un identifiant -> une LISTE de maintenances.
     mapping(string => Maintenance[]) public maintenances;
+
+    // ───────────── EVENEMENTS (events) ─────────────
+    // Des "annonces" que le contrat diffuse quand une action a lieu.
+    // "indexed" rend un champ filtrable/recherchable (pratique pour l'interface).
+
+    // Annonce : une nouvelle chaudiere a ete enregistree.
+    event BoilerRegistered(string indexed boilerId, string owner, string location);
+
+    // Annonce : une maintenance a ete ajoutee a une chaudiere.
+    event MaintenanceAdded(string indexed boilerId, string interventionType, string technician);
+
+    // ───────────── ADMIN (controle d'acces) ─────────────
+
     // L'adresse du proprietaire (admin) du contrat.
-    // address = identifiant unique d'un compte/wallet sur la blockchain.
     address public owner;
 
-    // Le constructor s'execute UNE SEULE FOIS, au deploiement du contrat.
-    // msg.sender = celui qui appelle (ici, celui qui deploie) -> il devient l'admin.
+    // Le constructor s'execute UNE SEULE FOIS, au deploiement -> celui qui deploie devient l'admin.
     constructor() {
         owner = msg.sender;
     }
 
-    // "modifier" = une regle reutilisable a accrocher sur une fonction.
+    // modifier = regle reutilisable accrochee a une fonction.
     // onlyOwner verifie que l'appelant est bien l'admin, sinon il bloque tout.
-    // Le "_;" = "ici s'execute le reste de la fonction" (uniquement si le require passe).
     modifier onlyOwner() {
         require(msg.sender == owner, "Reserve a l'administrateur");
         _;
     }
+
+    // ───────────── ACTIONS (functions) ─────────────
+
+    // Enregistrer une nouvelle chaudiere. Reserve a l'admin (onlyOwner).
     function registerBoiler(
         string memory _boilerId,
         string memory _qrCode,
         string memory _owner,
         string memory _location
     ) public onlyOwner {
+
+        // On cree la fiche et on la range dans l'annuaire.
         boilers[_boilerId] = Boiler(
             _boilerId,
             _qrCode,
@@ -50,8 +76,12 @@ contract BoilerRegistry {
             _location,
             true
         );
+
+        // On diffuse l'annonce : chaudiere enregistree.
+        emit BoilerRegistered(_boilerId, _owner, _location);
     }
 
+    // Ajouter une intervention au carnet d'entretien. Ouvert a tous (Option A).
     function addMaintenance(
         string memory _boilerId,
         string memory _interventionType,
@@ -59,17 +89,23 @@ contract BoilerRegistry {
         string memory _technician,
         string memory _partChanged
     ) public {
-        // On vérifie que la chaudière existe AVANT d'ajouter une maintenance.
-        // Si elle n'existe pas (exists == false), on bloque et on renvoie un message d'erreur.
+
+        // On verifie que la chaudiere existe AVANT d'ajouter une maintenance.
         require(boilers[_boilerId].exists, "Cette chaudiere n'existe pas");
+
+        // On ajoute une nouvelle "page" au carnet (.push = ajouter a la liste).
         maintenances[_boilerId].push(
             Maintenance(
-                block.timestamp,
+                block.timestamp,  // la blockchain inscrit la date automatiquement
                 _interventionType,
                 _description,
                 _technician,
                 _partChanged
             )
         );
+
+        // On diffuse l'annonce : maintenance ajoutee.
+        emit MaintenanceAdded(_boilerId, _interventionType, _technician);
     }
+
 }
