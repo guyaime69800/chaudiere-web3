@@ -17,6 +17,10 @@ function App() {
   // Case memoire n2 : elle contiendra les infos de la chaudiere CHAUD-001.
   // Au depart "null" = rien de charge encore (le contrat n'a pas encore repondu).
   const [boiler, setBoiler] = useState(null);
+  // Case memoire : le texte tape dans le champ de recherche (ex: "CHAUD-001")
+  const [searchId, setSearchId] = useState("");
+  // Message affiche si la chaudiere cherchee n'existe pas
+  const [message, setMessage] = useState("");
   // On cree le "fil branche" (provider) vers notre blockchain locale (porte 8545)
   const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
   // On fabrique la "telecommande" du contrat : adresse + mode d'emploi (ABI) + fil (provider)
@@ -32,15 +36,19 @@ function App() {
     }
     // On lance la fonction qu'on vient de definir
     lireOwner();
-    // On definit une 2e fonction async pour lire les infos de la chaudiere
-    async function lireBoiler() {
-      // On appuie sur le bouton "boilers" du contrat avec l'identifiant de la chaudiere
-      const data = await contract.boilers("CHAUD-001");
-      // On range le paquet d'infos recu dans la case memoire "boiler"
-      setBoiler(data);
-    }
-    lireBoiler(); // on lance la lecture de la chaudiere
+    
   }, []); // Le [] vide veut dire : "ne fais ceci qu'UNE SEULE fois, au chargement"
+  // Fonction lancee quand on clique sur "Chercher"
+  async function chercherChaudiere() {
+    setMessage("");                               // on vide l'ancien message
+    const data = await contract.boilers(searchId); // on lit l'ID tape
+    if (data.exists) {
+      setBoiler(data);                            // trouvee -> on affiche
+    } else {
+      setBoiler(null);                            // rien a afficher
+      setMessage("Aucune chaudiere trouvee avec cet identifiant.");
+    }
+  }
   return (
     <div style={{ textAlign: "center", padding: "40px", fontFamily: "sans-serif" }}>
 
@@ -49,11 +57,31 @@ function App() {
 
       {/* Un sous-titre qui explique ton projet */}
 
+
       <p>Registre blockchain pour l'entretien des chaudieres</p>
 {/* On affiche l'adresse de l'administrateur (owner) lue depuis le contrat */}
         <p>
           <strong>Administrateur (owner) :</strong> {owner}
         </p>
+        {/* Zone de recherche d'une chaudiere par son identifiant */}
+        <div style={{ marginTop: "30px" }}>
+          <input
+            type="text"
+            placeholder="Entrez un ID (ex: CHAUD-001)"
+            value={searchId}
+            onChange={(e) => setSearchId(e.target.value)}
+            style={{ padding: "10px", fontSize: "16px", width: "250px" }}
+          />
+          <button
+            onClick={chercherChaudiere}
+            style={{ padding: "10px 20px", fontSize: "16px", marginLeft: "10px", cursor: "pointer" }}
+          >
+            Chercher
+          </button>
+        </div>
+
+        {/* Message affiche si aucune chaudiere n'est trouvee */}
+        {message && <p style={{ color: "red", marginTop: "15px" }}>{message}</p>}
         {/* On affiche les infos de la chaudiere CHAUD-001, mais SEULEMENT si elle est chargee */}
         {boiler && (
           <div style={{ marginTop: "30px", padding: "20px", border: "1px solid #ccc", borderRadius: "8px", display: "inline-block", textAlign: "left" }}>
