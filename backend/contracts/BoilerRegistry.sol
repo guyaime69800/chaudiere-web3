@@ -107,5 +107,14 @@ contract BoilerRegistry {
         // On diffuse l'annonce : maintenance ajoutee.
         emit MaintenanceAdded(_boilerId, _interventionType, _technician);
     }
-
+// ----------- LECTURE DU CARNET (view) -----------
+    // Renvoie TOUTES les interventions d'une chaudiere en une seule fois.
+    // "view" = lecture pure : gratuit a appeler depuis le frontend (aucun gas).
+    function getMaintenances(string memory _boilerId)
+        public
+        view
+        returns (Maintenance[] memory)
+    {
+        return maintenances[_boilerId];
+    }
 }
