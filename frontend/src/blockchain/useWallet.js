@@ -87,7 +87,13 @@ export function useWallet() {
 
   // Petit indicateur pratique : est-on sur le bon reseau ?
   const isCorrectNetwork = chainId === HARDHAT_CHAIN_ID;
+  // Fabrique une instance du contrat capable d'ECRIRE (branchee sur le signer).
+  // On la cree a la demande, seulement quand on en a besoin.
+  function getWriteContract(contractAddress, contractAbi) {
+    if (!signer) return null; // pas connecte -> pas d'ecriture possible
+    return new ethers.Contract(contractAddress, contractAbi, signer);
+  }
 
   // Le hook renvoie tout ce dont les ecrans auront besoin
-  return { account, signer, chainId, isConnecting, error, isCorrectNetwork, connectWallet };
+  return { account, signer, chainId, isConnecting, error, isCorrectNetwork, connectWallet, getWriteContract };
 }
