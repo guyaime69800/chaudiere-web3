@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import { CONTRACT_ADDRESS } from "./blockchain/contract-address";
+import { RPC_URL, CONTRACT_ADDRESS } from "./blockchain/config";
 import BoilerRegistryABI from "./blockchain/BoilerRegistry.json";
 import { useWallet } from "./blockchain/useWallet";
 
@@ -10,7 +10,7 @@ function App() {
   const [searchId, setSearchId] = useState("");
   const [message, setMessage] = useState("");
 
-  const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+  const provider = new ethers.JsonRpcProvider(RPC_URL);
   const contract = new ethers.Contract(CONTRACT_ADDRESS, BoilerRegistryABI.abi, provider);
 
   const {

@@ -22,3 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Reglages locaux (jamais pousses sur GitHub)
+.env

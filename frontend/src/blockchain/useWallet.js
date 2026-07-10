@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
+import { RPC_URL } from "./config";
 
 const HARDHAT_CHAIN_ID = 31337n;
 
@@ -74,7 +75,7 @@ export function useWallet() {
 
   // Lit TOUT le carnet d'une chaudiere (LECTURE, gratuit)
   async function getMaintenances(contractAddress, contractAbi, boilerId) {
-    const readProvider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+    const readProvider = new ethers.JsonRpcProvider(RPC_URL);
     const readContract = new ethers.Contract(contractAddress, contractAbi, readProvider);
     return await readContract.getMaintenances(boilerId);
   }
