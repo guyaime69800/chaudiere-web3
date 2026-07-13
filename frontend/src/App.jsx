@@ -29,6 +29,7 @@ function App() {
   // NOUVEAU : carnet d'entretien
   const [maintenances, setMaintenances] = useState([]); // liste des interventions
   const [isLoadingCarnet, setIsLoadingCarnet] = useState(false);
+  const [carnetError, setCarnetError] = useState(""); // NOUVEAU : erreur visible a l'ecran
   // NOUVEAU : formulaire intervention
   const [mType, setMType] = useState("");
   const [mDesc, setMDesc] = useState("");
@@ -51,16 +52,22 @@ function App() {
     return new Date(ms).toLocaleString("fr-FR");
   }
 
-  // Charge le carnet d'une chaudiere
+// Charge le carnet d'une chaudiere
   async function chargerCarnet(boilerId) {
     setIsLoadingCarnet(true);
+    setCarnetError("");
+    console.log("[carnet] 1. Debut du chargement pour :", boilerId);
     try {
       const liste = await getMaintenances(CONTRACT_ADDRESS, BoilerRegistryABI.abi, boilerId);
+      console.log("[carnet] 2. Reponse de la blockchain :", liste);
       setMaintenances(liste);
     } catch (err) {
-      console.error(err);
+      // On n'avale plus l'erreur en silence : elle part dans la console ET a l'ecran
+      console.error("[carnet] ECHEC :", err);
       setMaintenances([]);
+      setCarnetError("Impossible de lire le carnet. La blockchain n'a pas repondu correctement.");
     } finally {
+      console.log("[carnet] 3. Fin du chargement");
       setIsLoadingCarnet(false);
     }
   }
@@ -187,8 +194,10 @@ function App() {
       {boiler && (
         <div style={{ marginTop: "30px" }}>
           <h2>📖 Carnet d'entretien</h2>
-          {isLoadingCarnet ? (
+         {isLoadingCarnet ? (
             <p>Chargement du carnet...</p>
+          ) : carnetError ? (
+            <p style={{ color: "red" }}>❌ {carnetError}</p>
           ) : maintenances.length === 0 ? (
             <p style={{ color: "#888" }}>Aucune intervention enregistree pour cette chaudiere.</p>
           ) : (

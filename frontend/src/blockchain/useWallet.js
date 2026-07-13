@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
-import { RPC_URL } from "./config";
-
-const HARDHAT_CHAIN_ID = 31337n;
+// On lit les reglages depuis le panneau central (qui les lit lui-meme dans le .env)
+import { RPC_URL, CHAIN_ID } from "./config";
 
 export function useWallet() {
   const [account, setAccount] = useState(null);
@@ -56,7 +55,10 @@ export function useWallet() {
     };
   }, [connectWallet]);
 
-  const isCorrectNetwork = chainId === HARDHAT_CHAIN_ID;
+  // Bon reseau ? On compare le reseau du wallet au reglage du .env (31337 en local, 80002 sur Amoy).
+  // Le 1er test (CHAIN_ID !== null) evite un faux "OK" si le reglage manque : sans lui,
+  // null === null serait "vrai" et l'appli croirait etre sur le bon reseau.
+  const isCorrectNetwork = CHAIN_ID !== null && chainId === CHAIN_ID;
 
   // Contrat capable d'ECRIRE (branche sur le signer)
   function getWriteContract(contractAddress, contractAbi) {
