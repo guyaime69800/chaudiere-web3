@@ -56,10 +56,10 @@ function App() {
   async function chargerCarnet(boilerId) {
     setIsLoadingCarnet(true);
     setCarnetError("");
-    console.log("[carnet] 1. Debut du chargement pour :", boilerId);
+
     try {
       const liste = await getMaintenances(CONTRACT_ADDRESS, BoilerRegistryABI.abi, boilerId);
-      console.log("[carnet] 2. Reponse de la blockchain :", liste);
+
       setMaintenances(liste);
     } catch (err) {
       // On n'avale plus l'erreur en silence : elle part dans la console ET a l'ecran
@@ -67,7 +67,7 @@ function App() {
       setMaintenances([]);
       setCarnetError("Impossible de lire le carnet. La blockchain n'a pas repondu correctement.");
     } finally {
-      console.log("[carnet] 3. Fin du chargement");
+
       setIsLoadingCarnet(false);
     }
   }
@@ -93,7 +93,7 @@ function App() {
   async function enregistrerChaudiere() {
     setWriteMsg("");
     if (!account) { setWriteMsg("⚠️ Connecte d'abord ton wallet."); return; }
-    if (!isCorrectNetwork) { setWriteMsg("⚠️ Mauvais reseau. Passe sur Hardhat 31337."); return; }
+    if (!isCorrectNetwork) { setWriteMsg("⚠ Mauvais reseau. Passe sur Polygon (chainId 137)."); return; }
     if (!formId || !formQr || !formOwner || !formLocation) { setWriteMsg("⚠️ Remplis les 4 champs."); return; }
     try {
       setIsWriting(true);
@@ -118,7 +118,7 @@ function App() {
   async function ajouterIntervention() {
     setMMsg("");
     if (!account) { setMMsg("⚠️ Connecte d'abord ton wallet."); return; }
-    if (!isCorrectNetwork) { setMMsg("⚠️ Mauvais reseau. Passe sur Hardhat 31337."); return; }
+    if (!isCorrectNetwork) { setMMsg("⚠ Mauvais reseau. Passe sur Polygon (chainId 137)."); return; }
     if (!boiler) { setMMsg("⚠️ Cherche d'abord une chaudiere."); return; }
     if (!mType || !mDesc || !mTech) { setMMsg("⚠️ Type, description et technicien sont requis."); return; }
     try {
@@ -154,7 +154,7 @@ function App() {
             {isConnecting ? "Connexion..." : "🦊 Connecter mon wallet"}
           </button>
         )}
-        {account && !isCorrectNetwork && <p style={{ color: "orange" }}>⚠️ Mauvais reseau. Passe sur Hardhat 31337.</p>}
+        {account && !isCorrectNetwork && <p style={{ color: "orange" }}>⚠️ Passe sur Polygon (chainId 137).</p>}
         {error && <p style={{ color: "red" }}>{error}</p>}
       </div>
 
