@@ -52,7 +52,7 @@ function App() {
     return new Date(ms).toLocaleString("fr-FR");
   }
 
-// Charge le carnet d'une chaudiere
+  // Charge le carnet d'une chaudiere
   async function chargerCarnet(boilerId) {
     setIsLoadingCarnet(true);
     setCarnetError("");
@@ -79,13 +79,17 @@ function App() {
     const data = await contract.boilers(searchId);
     if (data.exists) {
       setBoiler(data);
-      chargerCarnet(searchId); // on affiche aussi son historique
     } else {
       setBoiler(null);
       setMessage("Aucune chaudiere trouvee avec cet identifiant.");
     }
   }
-
+  // Charge le carnet automatiquement dès qu'une chaudiere est affichee
+  useEffect(() => {
+    if (boiler && boiler.boilerId) {
+      chargerCarnet(boiler.boilerId);
+    }
+  }, [boiler]);
   async function enregistrerChaudiere() {
     setWriteMsg("");
     if (!account) { setWriteMsg("⚠️ Connecte d'abord ton wallet."); return; }
@@ -194,7 +198,7 @@ function App() {
       {boiler && (
         <div style={{ marginTop: "30px" }}>
           <h2>📖 Carnet d'entretien</h2>
-         {isLoadingCarnet ? (
+          {isLoadingCarnet ? (
             <p>Chargement du carnet...</p>
           ) : carnetError ? (
             <p style={{ color: "red" }}>❌ {carnetError}</p>
