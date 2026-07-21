@@ -1,184 +1,161 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
+/* ============================================================
+   CHAUDIERE-WEB3 — Feuille de style (relooking cuivre)
+   Pour changer la couleur d'accent : modifie --copper ci-dessous.
+   ============================================================ */
 
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
+:root {
+  color-scheme: light;          /* on force le theme clair (pas de mode sombre auto) */
+
+  --copper: #C2410C;            /* couleur d'accent (cuivre) — LE reglage principal */
+  --copper-dark: #9A3412;       /* cuivre plus fonce (survol des boutons) */
+
+  --bg: #FBF9F6;                /* fond de page (blanc chaud) */
+  --surface: #FFFFFF;           /* fond des cartes */
+  --surface-alt: #F5F2EC;       /* fond des zones secondaires */
+
+  --text: #1C1917;             /* texte principal */
+  --text-soft: #57534E;         /* texte secondaire */
+  --text-faint: #A8A29E;        /* petits textes / indices */
+  --border: #E7E2DA;            /* traits fins */
+
+  --green-bg: #EAF3DE;          /* badge "verifiee" */
+  --green-text: #3B6D11;
+
+  --radius: 10px;               /* coins des boutons/champs */
+  --radius-card: 14px;          /* coins des cartes */
 }
 
-.hero {
-  position: relative;
+/* --- Remise a zero du gabarit par defaut de Vite --- */
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+}
+#root { max-width: none; margin: 0; padding: 0; text-align: left; }
 
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
+/* --- Conteneur principal centre --- */
+.app { max-width: 720px; margin: 0 auto; padding: 24px 20px 80px; }
 
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
+/* --- Barre du haut --- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 18px; border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-mark {
+  width: 30px; height: 30px; border-radius: 8px; background: var(--copper);
+  display: flex; align-items: center; justify-content: center;
+}
+.brand-name { font-weight: 600; font-size: 17px; letter-spacing: 0.02em; }
 
-  .framework,
-  .vite {
-    position: absolute;
-  }
+/* --- Boutons --- */
+.btn {
+  font-size: 15px; border-radius: var(--radius); cursor: pointer;
+  border: 1px solid transparent; padding: 9px 16px;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.btn-primary { background: var(--copper); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--copper-dark); }
+.btn-primary:disabled { opacity: 0.6; cursor: default; }
+.btn-ghost { background: transparent; color: var(--text-soft); border-color: var(--border); }
+.btn-ghost:hover { background: var(--surface-alt); }
 
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
+/* --- Hero + recherche --- */
+.hero { text-align: center; padding: 40px 0 8px; }
+.hero h1 { font-size: 26px; font-weight: 600; margin: 0 0 10px; }
+.hero p { color: var(--text-soft); max-width: 460px; margin: 0 auto; }
+.search { display: flex; gap: 8px; max-width: 520px; margin: 24px auto 12px; }
+.field {
+  padding: 11px 14px; font-size: 15px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface); color: var(--text);
+  width: 100%; box-sizing: border-box;
+}
+.field:focus {
+  outline: none; border-color: var(--copper);
+  box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.12);
+}
+.search .field { flex: 1; }
+.search .btn { white-space: nowrap; }
+.hero-foot { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+.linklike { background: none; border: none; cursor: pointer; color: var(--copper); font-size: 14px; padding: 0; }
+.linklike:hover { text-decoration: underline; }
+.trust { font-size: 12px; color: var(--text-faint); }
 
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
+/* --- Espace pro --- */
+.pro-zone { margin-top: 24px; }
+.pro-bar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
+  padding: 14px; background: var(--surface-alt); border-radius: var(--radius-card);
+}
+.status-ok { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; }
+.status-ok .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green-text); }
+.warn { color: #B45309; font-size: 14px; }
+.err { color: #B91C1C; font-size: 14px; }
+.admin-line { text-align: center; font-size: 13px; color: var(--text-faint); margin: 12px 0 0; }
+.admin-line code { font-size: 12px; }
+
+/* --- Cartes de formulaire --- */
+.form-card {
+  max-width: 380px; margin: 20px auto 0; padding: 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-card); text-align: center;
+}
+.form-card h3 { margin: 0 0 14px; font-size: 17px; font-weight: 600; }
+.form-card .field { margin-bottom: 10px; }
+.form-card .btn { width: 100%; }
+.form-msg { margin: 12px 0 0; font-size: 14px; }
+
+/* --- Message "non trouve" --- */
+.notfound {
+  text-align: center; color: #B91C1C; background: #FEF2F2; border: 1px solid #FECACA;
+  border-radius: var(--radius); padding: 12px; max-width: 420px; margin: 20px auto 0;
 }
 
-#center {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
-
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
+/* --- Resultat : fiche appareil --- */
+.result { margin-top: 28px; }
+.appareil {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-card); padding: 20px;
 }
-
-#next-steps {
-  display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
-
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
+.appareil-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
 }
-
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
+.appareil-type {
+  display: inline-block; font-size: 11px; letter-spacing: 0.04em; color: var(--text-soft);
+  background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px;
+  padding: 2px 8px; margin-bottom: 8px;
 }
-
-#next-steps ul {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
+.appareil-name { margin: 0; font-size: 20px; font-weight: 600; }
+.appareil-loc { margin: 4px 0 0; font-size: 14px; color: var(--text-soft); }
+.badge-verified {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 12px;
+  color: var(--green-text); background: var(--green-bg); border-radius: 6px;
+  padding: 5px 10px; white-space: nowrap;
 }
-
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
+.appareil-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px; margin-top: 14px;
 }
+.appareil-grid > div { display: flex; flex-direction: column; }
+.appareil-grid .k { font-size: 12px; color: var(--text-faint); }
+.appareil-grid .v { font-size: 15px; }
 
-.ticks {
-  position: relative;
-  width: 100%;
-
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
-  }
-
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
-  }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
-  }
+/* --- Carnet en frise (timeline) --- */
+.carnet { margin-top: 22px; }
+.carnet-title {
+  font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--text-faint); margin: 0 0 12px;
 }
+.muted { color: var(--text-faint); }
+.tl-item { display: flex; gap: 14px; }
+.tl-marker { display: flex; flex-direction: column; align-items: center; padding-top: 5px; }
+.tl-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--copper); flex-shrink: 0; }
+.tl-line { width: 2px; flex: 1; background: var(--border); margin: 3px 0; min-height: 14px; }
+.tl-body { padding-bottom: 16px; }
+.tl-date { margin: 0; font-size: 13px; color: var(--text-faint); }
+.tl-type { margin: 3px 0 0; font-size: 15px; font-weight: 600; }
+.tl-desc { margin: 3px 0 0; font-size: 14px; color: var(--text-soft); }
+.tl-part { margin: 3px 0 0; font-size: 13px; color: var(--text-faint); }
