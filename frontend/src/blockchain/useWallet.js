@@ -9,7 +9,15 @@ export function useWallet() {
   const [chainId, setChainId] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState("");
+  // Est-on sur un telephone/tablette ? (aucune librairie, juste le navigateur)
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
+  // Le navigateur a-t-il un portefeuille injecte (ex : extension MetaMask) ?
+  const hasInjectedWallet = typeof window.ethereum !== "undefined";
+
+  // Lien officiel MetaMask qui rouvre CETTE page dans son navigateur integre
+  // (dynamique, pas de domaine en dur — meme logique que le .env)
+  const metamaskDeepLink = `https://link.metamask.io/dapp/${window.location.host}`;
   const connectWallet = useCallback(async () => {
     if (!window.ethereum) {
       setError("MetaMask n'est pas installe.");
@@ -82,5 +90,5 @@ export function useWallet() {
     return await readContract.getMaintenances(boilerId);
   }
 
-  return { account, signer, chainId, isConnecting, error, isCorrectNetwork, connectWallet, getWriteContract, addMaintenance, getMaintenances };
+  return { account, signer, chainId, isConnecting, error, isCorrectNetwork, connectWallet, getWriteContract, addMaintenance, getMaintenances, isMobile, hasInjectedWallet, metamaskDeepLink };
 }

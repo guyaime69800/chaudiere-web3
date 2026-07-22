@@ -20,6 +20,7 @@ function App() {
   const {
     account, connectWallet, isConnecting, error, isCorrectNetwork,
     getWriteContract, addMaintenance, getMaintenances,
+    isMobile, hasInjectedWallet, metamaskDeepLink,
   } = useWallet();
 
   // Formulaire d'enregistrement d'un appareil
@@ -196,15 +197,32 @@ function App() {
       {mode === "pro" && (
         <section className="pro-zone">
           <div className="pro-bar">
-            {account ? (
+          {account ? (
               <span className="status-ok"><span className="dot" /> Connecté : {account.slice(0, 6)}...{account.slice(-4)}</span>
-            ) : (
+            ) : hasInjectedWallet ? (
+              // Cas normal : un portefeuille est detecte (extension MetaMask sur ordi,
+              // ou navigateur integre de l'app MetaMask sur mobile) -> on connecte.
               <button className="btn btn-primary" onClick={connectWallet} disabled={isConnecting}>
                 {isConnecting ? "Connexion..." : "🦊 Connecter mon wallet"}
               </button>
+            ) : isMobile ? (
+              // Mobile SANS portefeuille detecte : impossible de connecter ici.
+              // On propose d'ouvrir CETTE page dans le navigateur integre de MetaMask,
+              // ou il y a un portefeuille. C'est un lien, pas un bouton d'action JS.
+              <a className="btn btn-primary" href={metamaskDeepLink}>
+                🦊 Ouvrir dans l'app MetaMask
+              </a>
+            ) : (
+              // Ordinateur sans extension : on invite a l'installer.
+              <a className="btn btn-primary" href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer">
+                🦊 Installer MetaMask
+              </a>
             )}
             {account && !isCorrectNetwork && <span className="warn">⚠️ Passe sur Polygon (chainId 137).</span>}
             {error && <span className="err">{error}</span>}
+            {isMobile && !hasInjectedWallet && (
+              <span className="muted">Astuce : sur mobile, la connexion se fait dans le navigateur de l'app MetaMask.</span>
+            )}
           </div>
 
           {owner && <p className="admin-line">Administrateur du registre : <code>{owner}</code></p>}
