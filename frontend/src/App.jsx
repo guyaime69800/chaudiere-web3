@@ -154,7 +154,7 @@ function App() {
               <path d="M12 2c.5 3-1 4.3-2.2 5.8C8.4 9.5 7.5 10.8 7.5 13a4.5 4.5 0 0 0 9 0c0-1.4-.5-2.6-1.3-3.7 1.6.8 2.8 2.9 2.8 5.2a7 7 0 0 1-14 0c0-4.3 4-6.5 8-12.5z" />
             </svg>
           </span>
-          <span className="brand-name">CHAUDIÈRE-WEB3</span>
+          <span className="brand-name">CarnetPass</span>
         </div>
 
         {mode === "public" ? (
@@ -225,7 +225,7 @@ function App() {
             )}
           </div>
 
-          {owner && <p className="admin-line">Administrateur du registre : <code>{owner}</code></p>}
+          
 
           {account && (
             <div className="form-card">
