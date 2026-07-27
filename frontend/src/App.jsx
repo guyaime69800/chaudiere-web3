@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom"; // NOUVEAU (routeur) : pour lire l'ID dans l'URL
+import { QRCodeCanvas } from "qrcode.react"; // NOUVEAU (QR) : fabrique l'image du QR code
 import { ethers } from "ethers";
 import { RPC_URL, CONTRACT_ADDRESS } from "./blockchain/config";
 import BoilerRegistryABI from "./blockchain/BoilerRegistry.json";
@@ -63,7 +64,19 @@ function App() {
     const ms = Number(timestampBigInt) * 1000;
     return new Date(ms).toLocaleString("fr-FR");
   }
-
+// NOUVEAU (QR) : telecharge le QR affiche en fichier PNG (pret a imprimer)
+  function telechargerQR(boilerId) {
+    // On recupere l'image QR dessinee a l'ecran (une balise <canvas>)
+    const canvas = document.getElementById(`qr-${boilerId}`);
+    if (!canvas) return;
+    // On la transforme en fichier image
+    const url = canvas.toDataURL("image/png");
+    // On cree un lien invisible et on "clique" dessus pour declencher le telechargement
+    const lien = document.createElement("a");
+    lien.href = url;
+    lien.download = `QR-${boilerId}.png`; // nom du fichier : QR-CHAUD-DEMO.png
+    lien.click();
+  }
   // Charge le carnet d'un appareil
   async function chargerCarnet(boilerId) {
     setIsLoadingCarnet(true);
@@ -270,9 +283,28 @@ function App() {
               </div>
               <span className="badge-verified">✔ Vérifiée</span>
             </div>
-            <div className="appareil-grid">
+           <div className="appareil-grid">
               <div><span className="k">QR Code</span><span className="v">{boiler.qrCode}</span></div>
               <div><span className="k">Propriétaire</span><span className="v">{boiler.owner}</span></div>
+            </div>
+
+            {/* NOUVEAU (QR) : le QR code physique a coller sur l'appareil.
+                Il pointe vers l'adresse EN LIGNE de la fiche -> scannable depuis n'importe quel telephone. */}
+            <div className="qr-zone">
+              <p className="qr-title">QR à coller sur l'appareil</p>
+              <div className="qr-box">
+                <QRCodeCanvas
+                  id={`qr-${boiler.boilerId}`}
+                  value={`https://carnetpass.fr/appareil/${boiler.boilerId}`}
+                  size={160}
+                  level="M"                  /* niveau de correction d'erreur : lisible meme un peu abime */
+                  includeMargin={true}
+                />
+              </div>
+              <button className="btn btn-ghost" onClick={() => telechargerQR(boiler.boilerId)}>
+                ⬇️ Télécharger le QR
+              </button>
+              <p className="qr-hint">Imprime-le et colle-le sur l'appareil. Un scan ouvre cette fiche.</p>
             </div>
           </div>
 
