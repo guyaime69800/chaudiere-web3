@@ -1,13 +1,18 @@
 import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom"; // NOUVEAU (routeur) : pour lire l'ID dans l'URL
 import { ethers } from "ethers";
 import { RPC_URL, CONTRACT_ADDRESS } from "./blockchain/config";
 import BoilerRegistryABI from "./blockchain/BoilerRegistry.json";
 import { useWallet } from "./blockchain/useWallet";
-import "./App.css"; // NOUVEAU : on branche la feuille de style du relooking
+import "./App.css";
 
 function App() {
   // Mode d'affichage : "public" (consultation, sans wallet) ou "pro" (technicien, avec wallet)
   const [mode, setMode] = useState("public");
+
+  // NOUVEAU (routeur) : si l'URL est /appareil/CHAUD-DEMO, on recupere l'ID ici.
+  // Sur la page d'accueil "/", idDepuisURL vaut undefined (c'est normal).
+  const { id: idDepuisURL } = useParams();
 
   const [owner, setOwner] = useState("");
   const [boiler, setBoiler] = useState(null);
@@ -75,11 +80,15 @@ function App() {
     }
   }
 
-  // Recherche : on charge la fiche de l'appareil
-  async function chercherChaudiere() {
+  // Recherche : on charge la fiche de l'appareil.
+  // NOUVEAU : on accepte un ID explicite (venant du QR / de l'URL).
+  // Sinon on prend celui tape dans le champ de recherche.
+  async function chercherChaudiere(idExplicite) {
+    const idAChercher = idExplicite ?? searchId;
     setMessage("");
     setMaintenances([]);
-    const data = await contract.boilers(searchId);
+    if (!idAChercher) return; // rien a chercher, on s'arrete
+    const data = await contract.boilers(idAChercher);
     if (data.exists) {
       setBoiler(data);
     } else {
@@ -94,6 +103,16 @@ function App() {
       chargerCarnet(boiler.boilerId);
     }
   }, [boiler]);
+
+  // NOUVEAU (QR/routeur) : arrivee via une URL directe (ou un QR scanne)
+  // -> on ouvre la fiche de l'appareil automatiquement.
+  useEffect(() => {
+    if (idDepuisURL) {
+      setSearchId(idDepuisURL);       // le champ affiche l'ID scanne
+      chercherChaudiere(idDepuisURL); // ID passe explicitement = pas de course d'etat (le piege du "await")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idDepuisURL]);
 
   // ECRITURE : enregistrer un nouvel appareil (reserve a l'admin, cote contrat)
   async function enregistrerChaudiere() {
@@ -182,7 +201,8 @@ function App() {
             onChange={(e) => setSearchId(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") chercherChaudiere(); }}
           />
-          <button className="btn btn-primary" onClick={chercherChaudiere}>Rechercher</button>
+          {/* NOUVEAU : la fleche () => evite d'envoyer l'evenement du clic comme ID */}
+          <button className="btn btn-primary" onClick={() => chercherChaudiere()}>Rechercher</button>
         </div>
 
         <div className="hero-foot">
@@ -200,20 +220,14 @@ function App() {
           {account ? (
               <span className="status-ok"><span className="dot" /> Connecté : {account.slice(0, 6)}...{account.slice(-4)}</span>
             ) : hasInjectedWallet ? (
-              // Cas normal : un portefeuille est detecte (extension MetaMask sur ordi,
-              // ou navigateur integre de l'app MetaMask sur mobile) -> on connecte.
               <button className="btn btn-primary" onClick={connectWallet} disabled={isConnecting}>
                 {isConnecting ? "Connexion..." : "🦊 Connecter mon wallet"}
               </button>
             ) : isMobile ? (
-              // Mobile SANS portefeuille detecte : impossible de connecter ici.
-              // On propose d'ouvrir CETTE page dans le navigateur integre de MetaMask,
-              // ou il y a un portefeuille. C'est un lien, pas un bouton d'action JS.
               <a className="btn btn-primary" href={metamaskDeepLink}>
                 🦊 Ouvrir dans l'app MetaMask
               </a>
             ) : (
-              // Ordinateur sans extension : on invite a l'installer.
               <a className="btn btn-primary" href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer">
                 🦊 Installer MetaMask
               </a>
@@ -224,8 +238,6 @@ function App() {
               <span className="muted">Astuce : sur mobile, la connexion se fait dans le navigateur de l'app MetaMask.</span>
             )}
           </div>
-
-          
 
           {account && (
             <div className="form-card">
