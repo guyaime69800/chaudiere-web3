@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom"; // NOUVEAU (routeur) : pour lire l'ID dans l'URL
+import { useParams, useNavigate } from "react-router-dom"; // lire l'ID dans l'URL + changer de page
+import ScannerQR from "./ScannerQR"; // NOUVEAU (scan) : la camera qui lit les QR
 import { QRCodeCanvas } from "qrcode.react"; // NOUVEAU (QR) : fabrique l'image du QR code
 import { ethers } from "ethers";
 import { RPC_URL, CONTRACT_ADDRESS } from "./blockchain/config";
@@ -14,6 +15,9 @@ function App() {
   // NOUVEAU (routeur) : si l'URL est /appareil/CHAUD-DEMO, on recupere l'ID ici.
   // Sur la page d'accueil "/", idDepuisURL vaut undefined (c'est normal).
   const { id: idDepuisURL } = useParams();
+  // NOUVEAU (scan) : navigation interne + ouverture/fermeture de la camera
+  const navigate = useNavigate();
+  const [scanOuvert, setScanOuvert] = useState(false);
 
   const [owner, setOwner] = useState("");
   const [boiler, setBoiler] = useState(null);
@@ -109,7 +113,13 @@ function App() {
       setMessage("Aucun appareil trouve avec cet identifiant.");
     }
   }
-
+// NOUVEAU (scan) : appelee quand la camera a lu un QR CarnetPass valide
+  function ouvrirDepuisScan(idScanne) {
+    setScanOuvert(false);              // ferme la camera (et la coupe)
+    setSearchId(idScanne);             // le champ de recherche affiche l'ID lu
+    navigate(`/appareil/${idScanne}`); // l'adresse devient partageable, le bouton Retour marche
+    chercherChaudiere(idScanne);       // charge la fiche tout de suite, meme si on est deja sur cette adresse
+  }
   // Dès qu'un appareil est affiche, on charge son carnet automatiquement
   useEffect(() => {
     if (boiler && boiler.boilerId) {
@@ -219,8 +229,8 @@ function App() {
         </div>
 
         <div className="hero-foot">
-          <button className="linklike" onClick={() => alert("📷 Le scan QR arrive à la prochaine étape.")}>
-            ou scanner un QR code
+        <button className="linklike" onClick={() => setScanOuvert(true)}>
+            📷 ou scanner un QR code
           </button>
           <span className="trust">🛡️ Registre public vérifié sur Polygon · aligné DPP / ESPR</span>
         </div>
@@ -352,7 +362,15 @@ function App() {
               </div>
             )}
           </div>
-        </section>
+</section>
+      )}
+
+      {/* ---------- SCANNER QR (plein ecran, uniquement quand ouvert) ---------- */}
+      {scanOuvert && (
+        <ScannerQR
+          onClose={() => setScanOuvert(false)}
+          onCodeDetecte={ouvrirDepuisScan}
+        />
       )}
     </div>
   );
