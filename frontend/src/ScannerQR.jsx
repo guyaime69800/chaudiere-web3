@@ -93,8 +93,9 @@ const styles = {
     padding: "8px 14px", background: CUIVRE, color: "#fff",
     border: "none", borderRadius: 8, fontSize: 16, cursor: "pointer",
   },
-  zoneCamera: {
-    width: "min(90vw, 420px)", aspectRatio: "1 / 1",
+ zoneCamera: {
+    // Format vertical proche de l'ecran du telephone : bien plus grand qu'un carre.
+    width: "min(96vw, 520px)", aspectRatio: "3 / 4",
     overflow: "hidden", borderRadius: 16, border: `3px solid ${CUIVRE}`,
   },
   aide: {

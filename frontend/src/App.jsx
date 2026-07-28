@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { useParams, useNavigate } from "react-router-dom"; // lire l'ID dans l'URL + changer de page
-import ScannerQR from "./ScannerQR"; // NOUVEAU (scan) : la camera qui lit les QR
+// NOUVEAU (perf) : le scanner n'est telecharge QU'AU MOMENT du clic sur le bouton.
+// Resultat : la page d'accueil s'ouvre bien plus vite, surtout en 4G faible.
+const ScannerQR = lazy(() => import("./ScannerQR"));
 import { QRCodeCanvas } from "qrcode.react"; // NOUVEAU (QR) : fabrique l'image du QR code
 import { ethers } from "ethers";
 import { RPC_URL, CONTRACT_ADDRESS } from "./blockchain/config";
@@ -24,8 +26,13 @@ function App() {
   const [searchId, setSearchId] = useState("");
   const [message, setMessage] = useState("");
 
-  const provider = new ethers.JsonRpcProvider(RPC_URL);
-  const contract = new ethers.Contract(CONTRACT_ADDRESS, BoilerRegistryABI.abi, provider);
+  // NOUVEAU (perf) : useMemo = "fabrique-le UNE fois, puis reutilise".
+  // Sans ca, la connexion blockchain etait recreee a chaque lettre tapee dans un champ.
+  const provider = useMemo(() => new ethers.JsonRpcProvider(RPC_URL), []);
+  const contract = useMemo(
+    () => new ethers.Contract(CONTRACT_ADDRESS, BoilerRegistryABI.abi, provider),
+    [provider]
+  );
 
   const {
     account, connectWallet, isConnecting, error, isCorrectNetwork,
@@ -365,12 +372,14 @@ function App() {
 </section>
       )}
 
-      {/* ---------- SCANNER QR (plein ecran, uniquement quand ouvert) ---------- */}
+     {/* ---------- SCANNER QR (plein ecran, uniquement quand ouvert) ---------- */}
       {scanOuvert && (
-        <ScannerQR
-          onClose={() => setScanOuvert(false)}
-          onCodeDetecte={ouvrirDepuisScan}
-        />
+        <Suspense fallback={<div className="scan-loading">Ouverture de la caméra…</div>}>
+          <ScannerQR
+            onClose={() => setScanOuvert(false)}
+            onCodeDetecte={ouvrirDepuisScan}
+          />
+        </Suspense>
       )}
     </div>
   );

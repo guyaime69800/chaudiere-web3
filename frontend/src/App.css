@@ -159,3 +159,15 @@ body {
 .tl-type { margin: 3px 0 0; font-size: 15px; font-weight: 600; }
 .tl-desc { margin: 3px 0 0; font-size: 14px; color: var(--text-soft); }
 .tl-part { margin: 3px 0 0; font-size: 13px; color: var(--text-faint); }
+/* Message affiche pendant le telechargement du scanner (1re ouverture) */
+.scan-loading {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  z-index: 1000;
+}
