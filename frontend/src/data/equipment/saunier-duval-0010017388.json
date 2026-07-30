@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "equipmentId": "sd-themaplus-condens-30-a-h-fr-0010017388",
+  "identity": {
+    "brand": "Saunier Duval",
+    "productType": "chaudiere_gaz_condensation",
+    "range": "ThemaPlus Condens",
+    "model": "ThemaPlus Condens 30-A",
+    "variant": "H-FR",
+    "manufacturerReference": "0010017388"
+  },
+  "carnetPass": {
+    "linkedIds": [
+      "CHAUD-DEMO"
+    ]
+  },
+  "documents": [],
+  "errorCodes": [],
+  "diagnosticRules": [],
+  "metadata": {
+    "status": "pilot",
+    "verificationStatus": "incomplete",
+    "lastVerifiedAt": null,
+    "notes": "Les informations techniques seront ajoutées uniquement après vérification des documents constructeur."
+  }
+}
