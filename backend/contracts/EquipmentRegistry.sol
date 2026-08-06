@@ -28,7 +28,7 @@ contract EquipmentRegistry {
 
     // Annuaire des equipements : un identifiant -> une fiche Boiler.
     mapping(string => Equipment) public equipments;
-
+    mapping(bytes32 => bool) public registeredSerialNumbers;
     // Carnet d'entretien : un identifiant -> une LISTE de maintenances.
     mapping(string => Maintenance[]) public maintenances;
 
@@ -84,7 +84,12 @@ contract EquipmentRegistry {
         require(bytes(_equipmentId).length > 0, "Identifiant obligatoire");
 
         require(bytes(_serialNumber).length > 0, "Numero de serie obligatoire");
+        bytes32 serialHash = keccak256(bytes(_serialNumber));
 
+        require(
+            !registeredSerialNumbers[serialHash],
+            "Ce numero de serie existe deja"
+        );
         require(!equipments[_equipmentId].exists, "Cet equipement existe deja");
 
         equipments[_equipmentId] = Equipment(
@@ -96,7 +101,7 @@ contract EquipmentRegistry {
             _serialNumber,
             true
         );
-
+registeredSerialNumbers[serialHash] = true;
         emit EquipmentRegistered(
             _equipmentId,
             _brand,
