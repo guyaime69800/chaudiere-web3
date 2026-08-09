@@ -6,7 +6,7 @@ const ScannerQR = lazy(() => import("./ScannerQR"));
 import { QRCodeCanvas } from "qrcode.react"; // NOUVEAU (QR) : fabrique l'image du QR code
 import { ethers } from "ethers";
 import { RPC_URL, CONTRACT_ADDRESS } from "./blockchain/config";
-import BoilerRegistryABI from "./blockchain/BoilerRegistry.json";
+import EquipmentRegistryABI from "./blockchain/EquipmentRegistry.json";
 import { useWallet } from "./blockchain/useWallet";
 import "./App.css";
 
@@ -30,7 +30,7 @@ function App() {
   // Sans ca, la connexion blockchain etait recreee a chaque lettre tapee dans un champ.
   const provider = useMemo(() => new ethers.JsonRpcProvider(RPC_URL), []);
   const contract = useMemo(
-    () => new ethers.Contract(CONTRACT_ADDRESS, BoilerRegistryABI.abi, provider),
+    () => new ethers.Contract(CONTRACT_ADDRESS, EquipmentRegistryABI.abi, provider),
     [provider]
   );
 
@@ -43,8 +43,10 @@ function App() {
   // Formulaire d'enregistrement d'un appareil
   const [formId, setFormId] = useState("");
   const [formQr, setFormQr] = useState("");
-  const [formOwner, setFormOwner] = useState("");
-  const [formLocation, setFormLocation] = useState("");
+  const [formBrand, setFormBrand] = useState("");
+  const [formModel, setFormModel] = useState("");
+  const [formProductReference, setFormProductReference] = useState("");
+  const [formSerialNumber, setFormSerialNumber] = useState("");
   const [isWriting, setIsWriting] = useState(false);
   const [writeMsg, setWriteMsg] = useState("");
 
@@ -75,7 +77,7 @@ function App() {
     const ms = Number(timestampBigInt) * 1000;
     return new Date(ms).toLocaleString("fr-FR");
   }
-// NOUVEAU (QR) : telecharge le QR affiche en fichier PNG (pret a imprimer)
+  // NOUVEAU (QR) : telecharge le QR affiche en fichier PNG (pret a imprimer)
   function telechargerQR(boilerId) {
     // On recupere l'image QR dessinee a l'ecran (une balise <canvas>)
     const canvas = document.getElementById(`qr-${boilerId}`);
@@ -93,7 +95,7 @@ function App() {
     setIsLoadingCarnet(true);
     setCarnetError("");
     try {
-      const liste = await getMaintenances(CONTRACT_ADDRESS, BoilerRegistryABI.abi, boilerId);
+      const liste = await getMaintenances(CONTRACT_ADDRESS, EquipmentRegistryABI.abi, boilerId);
       setMaintenances(liste);
     } catch (err) {
       console.error("[carnet] ECHEC :", err);
@@ -112,7 +114,7 @@ function App() {
     setMessage("");
     setMaintenances([]);
     if (!idAChercher) return; // rien a chercher, on s'arrete
-    const data = await contract.boilers(idAChercher);
+    const data = await contract.equipments(idAChercher);
     if (data.exists) {
       setBoiler(data);
     } else {
@@ -120,7 +122,7 @@ function App() {
       setMessage("Aucun appareil trouve avec cet identifiant.");
     }
   }
-// NOUVEAU (scan) : appelee quand la camera a lu un QR CarnetPass valide
+  // NOUVEAU (scan) : appelee quand la camera a lu un QR CarnetPass valide
   function ouvrirDepuisScan(idScanne) {
     setScanOuvert(false);              // ferme la camera (et la coupe)
     setSearchId(idScanne);             // le champ de recherche affiche l'ID lu
@@ -129,8 +131,8 @@ function App() {
   }
   // Dès qu'un appareil est affiche, on charge son carnet automatiquement
   useEffect(() => {
-    if (boiler && boiler.boilerId) {
-      chargerCarnet(boiler.boilerId);
+    if (boiler && boiler.equipmentId) {
+      chargerCarnet(boiler.equipmentId);
     }
   }, [boiler]);
 
@@ -147,23 +149,68 @@ function App() {
   // ECRITURE : enregistrer un nouvel appareil (reserve a l'admin, cote contrat)
   async function enregistrerChaudiere() {
     setWriteMsg("");
-    if (!account) { setWriteMsg("⚠️ Connecte d'abord ton wallet."); return; }
-    if (!isCorrectNetwork) { setWriteMsg("⚠ Mauvais reseau. Passe sur Polygon (chainId 137)."); return; }
-    if (!formId || !formQr || !formOwner || !formLocation) { setWriteMsg("⚠️ Remplis les 4 champs."); return; }
+
+    if (!account) {
+      setWriteMsg("⚠️ Connecte d'abord ton wallet.");
+      return;
+    }
+
+    if (!isCorrectNetwork) {
+      setWriteMsg("⚠️ Mauvais réseau.");
+      return;
+    }
+
+    if (
+      !formId ||
+      !formQr ||
+      !formBrand ||
+      !formModel ||
+      !formProductReference ||
+      !formSerialNumber
+    ) {
+      setWriteMsg("⚠️ Remplis les 6 champs.");
+      return;
+    }
+
     try {
       setIsWriting(true);
       setWriteMsg("Transaction en cours... confirme dans MetaMask.");
-      const writeContract = getWriteContract(CONTRACT_ADDRESS, BoilerRegistryABI.abi);
-      const tx = await writeContract.registerBoiler(formId, formQr, formOwner, formLocation);
-      setWriteMsg("Envoyee, attente de confirmation...");
+
+      const writeContract = getWriteContract(
+        CONTRACT_ADDRESS,
+        EquipmentRegistryABI.abi
+      );
+
+      const tx = await writeContract.registerEquipment(
+        formId,
+        formQr,
+        formBrand,
+        formModel,
+        formProductReference,
+        formSerialNumber
+      );
+
+      setWriteMsg("Envoyée, attente de confirmation...");
       await tx.wait();
-      setWriteMsg(`✅ Appareil ${formId} enregistre !`);
-      setFormId(""); setFormQr(""); setFormOwner(""); setFormLocation("");
+
+      setWriteMsg(`✅ Appareil ${formId} enregistré !`);
+
+      setFormId("");
+      setFormQr("");
+      setFormBrand("");
+      setFormModel("");
+      setFormProductReference("");
+      setFormSerialNumber("");
     } catch (err) {
       console.error(err);
-      if (err.code === "ACTION_REJECTED") setWriteMsg("❌ Signature refusee.");
-      else if (err.reason) setWriteMsg(`❌ Refuse par le contrat : ${err.reason}`);
-      else setWriteMsg("❌ Echec (voir console).");
+
+      if (err.code === "ACTION_REJECTED") {
+        setWriteMsg("❌ Signature refusée.");
+      } else if (err.reason) {
+        setWriteMsg(`❌ Refusé par le contrat : ${err.reason}`);
+      } else {
+        setWriteMsg("❌ Échec (voir console).");
+      }
     } finally {
       setIsWriting(false);
     }
@@ -179,10 +226,10 @@ function App() {
     try {
       setIsAddingM(true);
       setMMsg("Transaction en cours... confirme dans MetaMask.");
-      await addMaintenance(CONTRACT_ADDRESS, BoilerRegistryABI.abi, boiler.boilerId, mType, mDesc, mTech, mPart);
+      await addMaintenance(CONTRACT_ADDRESS, EquipmentRegistryABI.abi, boiler.equipmentId, mType, mDesc, mTech, mPart);
       setMMsg("✅ Intervention ajoutee !");
       setMType(""); setMDesc(""); setMTech(""); setMPart("");
-      chargerCarnet(boiler.boilerId); // on rafraichit le carnet
+      chargerCarnet(boiler.equipmentId); // on rafraichit le carnet
     } catch (err) {
       console.error(err);
       if (err.code === "ACTION_REJECTED") setMMsg("❌ Signature refusee.");
@@ -226,7 +273,7 @@ function App() {
           <input
             className="field"
             type="text"
-            placeholder="Entrez un ID ou n° de série (ex : CHAUD-DEMO)"
+            placeholder="Entrez un ID équipement (ex : CHAUD-DEMO)"
             value={searchId}
             onChange={(e) => setSearchId(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") chercherChaudiere(); }}
@@ -236,7 +283,7 @@ function App() {
         </div>
 
         <div className="hero-foot">
-        <button className="linklike" onClick={() => setScanOuvert(true)}>
+          <button className="linklike" onClick={() => setScanOuvert(true)}>
             📷 ou scanner un QR code
           </button>
           <span className="trust">🛡️ Registre public vérifié sur Polygon · aligné DPP / ESPR</span>
@@ -247,7 +294,7 @@ function App() {
       {mode === "pro" && (
         <section className="pro-zone">
           <div className="pro-bar">
-          {account ? (
+            {account ? (
               <span className="status-ok"><span className="dot" /> Connecté : {account.slice(0, 6)}...{account.slice(-4)}</span>
             ) : hasInjectedWallet ? (
               <button className="btn btn-primary" onClick={connectWallet} disabled={isConnecting}>
@@ -272,10 +319,47 @@ function App() {
           {account && (
             <div className="form-card">
               <h3>Enregistrer un appareil</h3>
-              <input className="field" placeholder="ID (ex : CHAUD-002)" value={formId} onChange={(e) => setFormId(e.target.value)} />
-              <input className="field" placeholder="QR Code (ex : QR-002)" value={formQr} onChange={(e) => setFormQr(e.target.value)} />
-              <input className="field" placeholder="Propriétaire (ex : Marie Martin)" value={formOwner} onChange={(e) => setFormOwner(e.target.value)} />
-              <input className="field" placeholder="Emplacement (ex : Villeurbanne)" value={formLocation} onChange={(e) => setFormLocation(e.target.value)} />
+              <input
+                className="field"
+                placeholder="ID équipement (ex : CHAUD-002)"
+                value={formId}
+                onChange={(e) => setFormId(e.target.value)}
+              />
+
+              <input
+                className="field"
+                placeholder="QR Code (ex : QR-002)"
+                value={formQr}
+                onChange={(e) => setFormQr(e.target.value)}
+              />
+
+              <input
+                className="field"
+                placeholder="Marque (ex : Saunier Duval)"
+                value={formBrand}
+                onChange={(e) => setFormBrand(e.target.value)}
+              />
+
+              <input
+                className="field"
+                placeholder="Modèle (ex : ThemaPlus Condens 30-A)"
+                value={formModel}
+                onChange={(e) => setFormModel(e.target.value)}
+              />
+
+              <input
+                className="field"
+                placeholder="Référence produit"
+                value={formProductReference}
+                onChange={(e) => setFormProductReference(e.target.value)}
+              />
+
+              <input
+                className="field"
+                placeholder="Numéro de série"
+                value={formSerialNumber}
+                onChange={(e) => setFormSerialNumber(e.target.value)}
+              />
               <button className="btn btn-primary" onClick={enregistrerChaudiere} disabled={isWriting}>
                 {isWriting ? "Enregistrement..." : "Enregistrer"}
               </button>
@@ -294,15 +378,38 @@ function App() {
           <div className="appareil">
             <div className="appareil-head">
               <div>
-                <span className="appareil-type">Chaudière</span>
-                <h2 className="appareil-name">{boiler.boilerId}</h2>
-                <p className="appareil-loc">📍 {boiler.location}</p>
+                <span className="appareil-type">Équipement</span>
+                <h2 className="appareil-name">{boiler.equipmentId}</h2>
+                <p className="appareil-loc">{boiler.brand} · {boiler.model}</p>
               </div>
-              <span className="badge-verified">✔ Vérifiée</span>
+              <span className="badge-verified">✔ Vérifié</span>
             </div>
-           <div className="appareil-grid">
-              <div><span className="k">QR Code</span><span className="v">{boiler.qrCode}</span></div>
-              <div><span className="k">Propriétaire</span><span className="v">{boiler.owner}</span></div>
+
+            <div className="appareil-grid">
+              <div>
+                <span className="k">QR Code</span>
+                <span className="v">{boiler.qrCode}</span>
+              </div>
+
+              <div>
+                <span className="k">Marque</span>
+                <span className="v">{boiler.brand}</span>
+              </div>
+
+              <div>
+                <span className="k">Modèle</span>
+                <span className="v">{boiler.model}</span>
+              </div>
+
+              <div>
+                <span className="k">Référence produit</span>
+                <span className="v">{boiler.productReference}</span>
+              </div>
+
+              <div>
+                <span className="k">Numéro de série</span>
+                <span className="v">{boiler.serialNumber}</span>
+              </div>
             </div>
 
             {/* NOUVEAU (QR) : le QR code physique a coller sur l'appareil.
@@ -311,14 +418,14 @@ function App() {
               <p className="qr-title">QR à coller sur l'appareil</p>
               <div className="qr-box">
                 <QRCodeCanvas
-                  id={`qr-${boiler.boilerId}`}
-                  value={`https://carnetpass.fr/appareil/${boiler.boilerId}`}
+                  id={`qr-${boiler.equipmentId}`}
+                  value={`https://carnetpass.fr/appareil/${boiler.equipmentId}`}
                   size={160}
                   level="M"                  /* niveau de correction d'erreur : lisible meme un peu abime */
                   includeMargin={true}
                 />
               </div>
-              <button className="btn btn-ghost" onClick={() => telechargerQR(boiler.boilerId)}>
+              <button className="btn btn-ghost" onClick={() => telechargerQR(boiler.equipmentId)}>
                 ⬇️ Télécharger le QR
               </button>
               <p className="qr-hint">Imprime-le et colle-le sur l'appareil. Un scan ouvre cette fiche.</p>
@@ -369,10 +476,10 @@ function App() {
               </div>
             )}
           </div>
-</section>
+        </section>
       )}
 
-     {/* ---------- SCANNER QR (plein ecran, uniquement quand ouvert) ---------- */}
+      {/* ---------- SCANNER QR (plein ecran, uniquement quand ouvert) ---------- */}
       {scanOuvert && (
         <Suspense fallback={<div className="scan-loading">Ouverture de la caméra…</div>}>
           <ScannerQR
