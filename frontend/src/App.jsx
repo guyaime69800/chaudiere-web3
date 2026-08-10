@@ -90,6 +90,31 @@ function App() {
     lien.download = `QR-${boilerId}.png`; // nom du fichier : QR-CHAUD-DEMO.png
     lien.click();
   }
+
+  // PARTAGE : ouvre le menu natif du téléphone (WhatsApp, SMS, Mail...)
+  // Si le navigateur ne sait pas partager, on copie simplement le lien.
+  async function partagerCarnetPass(url, titre, texte) {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: titre,
+          text: texte,
+          url: url,
+        });
+        return;
+      }
+
+      await navigator.clipboard.writeText(url);
+      setMessage("✅ Lien copié. Tu peux maintenant le partager.");
+    } catch (err) {
+      // Si l'utilisateur ferme simplement le menu de partage,
+      // ce n'est pas considéré comme une erreur.
+      if (err?.name !== "AbortError") {
+        console.error("[partage] Échec :", err);
+        setMessage("❌ Impossible de partager ce lien.");
+      }
+    }
+  }
   // Charge le carnet d'un appareil
   async function chargerCarnet(boilerId) {
     setIsLoadingCarnet(true);
@@ -223,6 +248,30 @@ function App() {
     if (!isCorrectNetwork) { setMMsg("⚠ Mauvais reseau. Passe sur Polygon (chainId 137)."); return; }
     if (!boiler) { setMMsg("⚠️ Cherche d'abord un appareil."); return; }
     if (!mType || !mDesc || !mTech) { setMMsg("⚠️ Type, description et technicien sont requis."); return; }
+    // RGPD : bloque quelques formes évidentes de données personnelles
+    // avant qu'elles ne soient inscrites de façon permanente sur Polygon.
+    const texteIntervention = `${mType} ${mDesc} ${mTech}`;
+
+    const contientEmail =
+      /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(texteIntervention);
+
+    const contientAdresse =
+      /\b(rue|avenue|boulevard|chemin|impasse|allée|allee|place)\b/i.test(
+        texteIntervention
+      );
+
+    const contientTelephone =
+      /(?:\+33[ .-]?[1-9](?:[ .-]?\d{2}){4}|0[1-9](?:[ .-]\d{2}){4})/.test(
+        texteIntervention
+      );
+
+    if (contientEmail || contientAdresse || contientTelephone) {
+      setMMsg(
+        "❌ Donnée personnelle détectée. Retire toute adresse, téléphone ou e-mail avant l'inscription sur la blockchain."
+      );
+      return;
+    }
+
     try {
       setIsAddingM(true);
       setMMsg("Transaction en cours... confirme dans MetaMask.");
@@ -288,6 +337,18 @@ function App() {
           </button>
           <span className="trust">🛡️ Registre public vérifié sur Polygon · aligné DPP / ESPR</span>
         </div>
+        <button
+          className="btn btn-ghost"
+          onClick={() =>
+            partagerCarnetPass(
+              "https://www.carnetpass.fr",
+              "CarnetPass",
+              "Découvrez CarnetPass, le carnet d'entretien vérifiable de vos équipements."
+            )
+          }
+        >
+          📤 Partager CarnetPass
+        </button>
       </section>
 
       {/* ---------- ESPACE PRO (uniquement en mode pro) ---------- */}
@@ -428,6 +489,18 @@ function App() {
               <button className="btn btn-ghost" onClick={() => telechargerQR(boiler.equipmentId)}>
                 ⬇️ Télécharger le QR
               </button>
+              <button
+                className="btn btn-ghost"
+                onClick={() =>
+                  partagerCarnetPass(
+                    `https://www.carnetpass.fr/appareil/${boiler.equipmentId}`,
+                    `CarnetPass - ${boiler.brand} ${boiler.model}`,
+                    `Consultez le carnet d'entretien de l'équipement ${boiler.equipmentId}.`
+                  )
+                }
+              >
+                📤 Partager cette fiche
+              </button>
               <p className="qr-hint">Imprime-le et colle-le sur l'appareil. Un scan ouvre cette fiche.</p>
             </div>
           </div>
@@ -465,10 +538,40 @@ function App() {
             {mode === "pro" && account && (
               <div className="form-card">
                 <h3>Ajouter une intervention</h3>
-                <input className="field" placeholder="Type (ex : Entretien annuel)" value={mType} onChange={(e) => setMType(e.target.value)} />
-                <input className="field" placeholder="Description (ex : Nettoyage brûleur)" value={mDesc} onChange={(e) => setMDesc(e.target.value)} />
-                <input className="field" placeholder="Technicien (ex : Servigaz)" value={mTech} onChange={(e) => setMTech(e.target.value)} />
-                <input className="field" placeholder="Pièce changée (optionnel)" value={mPart} onChange={(e) => setMPart(e.target.value)} />
+
+                <p className="muted">
+                  🔒 Données techniques uniquement. N'indiquez aucun nom de client,
+                  adresse, téléphone, e-mail ou autre donnée personnelle :
+                  cette intervention sera inscrite sur la blockchain Polygon.
+                </p>
+
+                <input
+                  className="field"
+                  placeholder="Type d'intervention (ex : Entretien annuel)"
+                  value={mType}
+                  onChange={(e) => setMType(e.target.value)}
+                />
+
+                <input
+                  className="field"
+                  placeholder="Description technique uniquement (ex : Nettoyage brûleur)"
+                  value={mDesc}
+                  onChange={(e) => setMDesc(e.target.value)}
+                />
+
+                <input
+                  className="field"
+                  placeholder="Entreprise / identifiant technicien (sans nom ni prénom)"
+                  value={mTech}
+                  onChange={(e) => setMTech(e.target.value)}
+                />
+
+                <input
+                  className="field"
+                  placeholder="Pièce changée / référence (optionnel)"
+                  value={mPart}
+                  onChange={(e) => setMPart(e.target.value)}
+                />
                 <button className="btn btn-primary" onClick={ajouterIntervention} disabled={isAddingM}>
                   {isAddingM ? "Ajout en cours..." : "Ajouter au carnet"}
                 </button>
