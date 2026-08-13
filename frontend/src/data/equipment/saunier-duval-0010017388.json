@@ -54,14 +54,21 @@
       "ThemaPlus Condens 30-A (H-FR)"
     ],
     "manufacturerReference": "0010017388",
-    "usefulPages": {
-      "connectionPlate": [7],
-      "electricalHarnesses": [9],
-      "condensateComponents": [11],
-      "equipmentOverview": [22],
-      "fanAndFlueComponents": [23],
-      "gasConversionKit": [27]
-    },
+   "usefulPages": {
+  "gasMechanism": [3, 4],
+  "pipesAndHydraulics": [5, 6],
+  "connectionPlate": [7, 8],
+  "electricalHarnesses": [9, 10],
+  "condensateComponents": [11, 12],
+  "burner": [15, 16],
+  "expansionVessel": [19, 20],
+  "equipmentOverview": [21, 22],
+  "fanAndFlueComponents": [23, 24],
+  "pumpAndPressureSensor": [25, 26],
+  "gasConversionKit": [27, 28],
+  "hotWaterTank": [29, 30],
+  "heatExchanger": [31, 32]
+},
     "verificationStatus": "verified_from_uploaded_pdf",
     "storage": "external_not_committed",
     "notes": "Catalogue de pièces conservé hors du dépôt GitHub public."

@@ -8,11 +8,14 @@ import { ethers } from "ethers";
 import { RPC_URL, CONTRACT_ADDRESS } from "./blockchain/config";
 import EquipmentRegistryABI from "./blockchain/EquipmentRegistry.json";
 import { useWallet } from "./blockchain/useWallet";
+import { findErrorCode } from "./services/equipmentKnowledge";
 import "./App.css";
 
 function App() {
   // Mode d'affichage : "public" (consultation, sans wallet) ou "pro" (technicien, avec wallet)
   const [mode, setMode] = useState("public");
+  const [technicalResult, setTechnicalResult] = useState(null);
+
 
   // NOUVEAU (routeur) : si l'URL est /appareil/CHAUD-DEMO, on recupere l'ID ici.
   // Sur la page d'accueil "/", idDepuisURL vaut undefined (c'est normal).
@@ -138,7 +141,16 @@ function App() {
     const idAChercher = idExplicite ?? searchId;
     setMessage("");
     setMaintenances([]);
+    setTechnicalResult(null);
     if (!idAChercher) return; // rien a chercher, on s'arrete
+    const erreurTrouvee = findErrorCode(idAChercher);
+
+    if (erreurTrouvee) {
+      setBoiler(null);
+      setTechnicalResult(erreurTrouvee);
+      setMessage(`${erreurTrouvee.code} — ${erreurTrouvee.title}`);
+      return;
+    }
     const data = await contract.equipments(idAChercher);
     if (data.exists) {
       setBoiler(data);
@@ -431,7 +443,43 @@ function App() {
       )}
 
       {/* ---------- MESSAGE "NON TROUVE" ---------- */}
-      {message && <p className="notfound">{message}</p>}
+      {message && !technicalResult && <p className="notfound">{message}</p>}
+      {technicalResult && (
+        <section className="technical-result">
+          <h2>
+            ⚠️ {technicalResult.code} — {technicalResult.title}
+          </h2>
+
+          <h3>Signification</h3>
+          <p>{technicalResult.manufacturerData.meaning}</p>
+
+          <h3>Causes possibles</h3>
+          <ul>
+            {technicalResult.manufacturerData.possibleCauses.map((cause) => (
+              <li key={cause}>{cause}</li>
+            ))}
+          </ul>
+
+          <h3>Contrôles professionnels</h3>
+          <ul>
+            {technicalResult.manufacturerData.professionalChecks.map((check) => (
+              <li key={check}>{check}</li>
+            ))}
+          </ul>
+
+          <h3>Consignes de sécurité</h3>
+          <ul>
+            {technicalResult.userGuidance.allowedActions.map((action) => (
+              <li key={action}>{action}</li>
+            ))}
+          </ul>
+
+          <p>
+            <strong>Source :</strong> document constructeur Saunier Duval —
+            page {technicalResult.source.page}
+          </p>
+        </section>
+      )}
 
       {/* ---------- FICHE APPAREIL + CARNET (si un appareil est trouve) ---------- */}
       {boiler && (
