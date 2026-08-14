@@ -8,13 +8,20 @@ import { ethers } from "ethers";
 import { RPC_URL, CONTRACT_ADDRESS } from "./blockchain/config";
 import EquipmentRegistryABI from "./blockchain/EquipmentRegistry.json";
 import { useWallet } from "./blockchain/useWallet";
-import { findErrorCode } from "./services/equipmentKnowledge";
+import {
+  findErrorCodeForEquipment,
+  loadEquipmentKnowledge,
+} from "./services/equipmentKnowledge";
 import "./App.css";
 
 function App() {
   // Mode d'affichage : "public" (consultation, sans wallet) ou "pro" (technicien, avec wallet)
   const [mode, setMode] = useState("public");
   const [technicalResult, setTechnicalResult] = useState(null);
+  const [equipmentKnowledge, setEquipmentKnowledge] = useState(null);
+
+
+
 
 
   // NOUVEAU (routeur) : si l'URL est /appareil/CHAUD-DEMO, on recupere l'ID ici.
@@ -142,18 +149,14 @@ function App() {
     setMessage("");
     setMaintenances([]);
     setTechnicalResult(null);
+    setEquipmentKnowledge(null);
     if (!idAChercher) return; // rien a chercher, on s'arrete
-    const erreurTrouvee = findErrorCode(idAChercher);
 
-    if (erreurTrouvee) {
-      setBoiler(null);
-      setTechnicalResult(erreurTrouvee);
-      setMessage(`${erreurTrouvee.code} — ${erreurTrouvee.title}`);
-      return;
-    }
     const data = await contract.equipments(idAChercher);
     if (data.exists) {
       setBoiler(data);
+      const knowledge = await loadEquipmentKnowledge(idAchercher);
+      setEquipmentKnowledge(knowledge);
     } else {
       setBoiler(null);
       setMessage("Aucun appareil trouve avec cet identifiant.");
