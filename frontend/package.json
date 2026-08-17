@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vercel/blob": "^2.8.0",
     "@yudiel/react-qr-scanner": "^2.6.0",
     "ethers": "^6.17.0",
     "qrcode.react": "^4.2.0",
