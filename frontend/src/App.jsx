@@ -580,6 +580,18 @@ function App() {
                     <p>
                       Nombre de pages : <strong>{document.pageCount}</strong>
                     </p>
+                    {document.documentUrl && (
+                      <a
+                        className="btn btn-ghost"
+                        href={document.documentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {document.documentType === "exploded_view"
+                          ? "🔧 Ouvrir la vue éclatée"
+                          : "📘 Ouvrir la notice"}
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>
