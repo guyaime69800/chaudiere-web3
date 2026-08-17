@@ -1,18 +1,16 @@
-import { Readable } from "node:stream";
 import { get } from "@vercel/blob";
 
-export default async function handler(request, response) {
+export default async function handler(request) {
   try {
-    const pathname = Array.isArray(request.query.pathname)
-      ? request.query.pathname[0]
-      : request.query.pathname;
+    const url = new URL(request.url, "http://localhost");
+    const pathname = url.searchParams.get("pathname");
 
     if (!pathname) {
-      return response.status(400).send("Document non précisé");
+      return new Response("Document non précisé", {
+        status: 400,
+      });
     }
 
-    // Sécurité : pour l'instant, seuls les documents
-    // de cette chaudière sont autorisés.
     const allowedPrefixes = [
       "saunier-duval/0010017388/notice/",
       "saunier-duval/0010017388/vue-eclatee/",
@@ -23,7 +21,9 @@ export default async function handler(request, response) {
       pathname.toLowerCase().endsWith(".pdf");
 
     if (!documentAutorise) {
-      return response.status(403).send("Document non autorisé");
+      return new Response("Document non autorisé", {
+        status: 403,
+      });
     }
 
     const result = await get(pathname, {
@@ -31,19 +31,24 @@ export default async function handler(request, response) {
     });
 
     if (!result || result.statusCode !== 200) {
-      return response.status(404).send("Document introuvable");
+      return new Response("Document introuvable", {
+        status: 404,
+      });
     }
 
-    response.setHeader(
-      "Content-Type",
-      result.blob.contentType || "application/pdf"
-    );
-    response.setHeader("X-Content-Type-Options", "nosniff");
-    response.setHeader("Cache-Control", "private, no-cache");
-
-    Readable.fromWeb(result.stream).pipe(response);
+    return new Response(result.stream, {
+      headers: {
+        "Content-Type": result.blob.contentType || "application/pdf",
+        "Content-Disposition": "inline",
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "private, no-cache",
+      },
+    });
   } catch (error) {
     console.error("Erreur ouverture document :", error);
-    return response.status(500).send("Erreur serveur");
+
+    return new Response("Erreur serveur", {
+      status: 500,
+    });
   }
 }
