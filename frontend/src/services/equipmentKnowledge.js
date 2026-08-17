@@ -1,10 +1,12 @@
-import equipmentData from "../data/equipment/saunier-duval-0010017388.json";
 import equipmentIndex from "../data/equipment-index.json";
+
 // Catalogue des fichiers techniques disponibles.
-// Vite prépare les fichiers, mais ne charge que celui dont CarnetPass a besoin.
+// Vite connaît tous les fichiers, mais CarnetPass ne charge
+// que celui correspondant à l'équipement recherché.
 const equipmentDataFiles = import.meta.glob("../data/equipment/*.json", {
   import: "default",
 });
+
 // Recherche un équipement dans l'index CarnetPass.
 // On accepte l'ID CarnetPass, l'ID technique ou la référence constructeur.
 export function findEquipmentInIndex(input) {
@@ -24,7 +26,9 @@ export function findEquipmentInIndex(input) {
     }) ?? null
   );
 }
-// Charge les données techniques correspondant à l'équipement trouvé dans l'index.
+
+// Charge uniquement les données techniques
+// correspondant à l'équipement recherché.
 export async function loadEquipmentKnowledge(input) {
   const equipment = findEquipmentInIndex(input);
 
@@ -47,8 +51,9 @@ export async function loadEquipmentKnowledge(input) {
     data,
   };
 }
+
 // Transforme différentes écritures en un format unique.
-// Exemples : F28, f28, F.28, "défaut F28" deviennent "F.28".
+// Exemples : F28, f28, F.28 ou "défaut F28" deviennent "F.28".
 function normalizeErrorCode(input) {
   const text = String(input ?? "").trim().toUpperCase();
 
@@ -61,11 +66,15 @@ function normalizeErrorCode(input) {
   return `F.${match[1]}`;
 }
 
-// Recherche un code défaut dans les données techniques de l'équipement.
-export function findErrorCode(input, equipmentKnowledge = equipmentData) {
+// Recherche un code défaut dans les données techniques
+// de l'équipement qui vient d'être chargé.
+export function findErrorCode(input, equipmentKnowledge) {
   const normalizedCode = normalizeErrorCode(input);
 
-  if (!normalizedCode) {
+  if (
+    !normalizedCode ||
+    !Array.isArray(equipmentKnowledge?.errorCodes)
+  ) {
     return null;
   }
 
@@ -76,13 +85,20 @@ export function findErrorCode(input, equipmentKnowledge = equipmentData) {
   );
 }
 
-// Permettra plus tard d'accéder à toute la base documentaire de cet équipement.
-export function getEquipmentKnowledge() {
-  return equipmentData;
+// Donne accès aux données documentaires d'un équipement.
+// Le chargement reste dynamique.
+export async function getEquipmentKnowledge(input) {
+  const knowledge = await loadEquipmentKnowledge(input);
+
+  return knowledge?.data ?? null;
 }
 
-// Recherche un code défaut uniquement dans les données du bon équipement.
-export async function findErrorCodeForEquipment(equipmentInput, errorInput) {
+// Recherche un code défaut uniquement
+// dans la documentation du bon équipement.
+export async function findErrorCodeForEquipment(
+  equipmentInput,
+  errorInput
+) {
   const knowledge = await loadEquipmentKnowledge(equipmentInput);
 
   if (!knowledge) {

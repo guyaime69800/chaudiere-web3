@@ -155,7 +155,7 @@ function App() {
     const data = await contract.equipments(idAChercher);
     if (data.exists) {
       setBoiler(data);
-      const knowledge = await loadEquipmentKnowledge(idAchercher);
+      const knowledge = await loadEquipmentKnowledge(idAChercher);
       setEquipmentKnowledge(knowledge);
     } else {
       setBoiler(null);
@@ -554,6 +554,36 @@ function App() {
               </button>
               <p className="qr-hint">Imprime-le et colle-le sur l'appareil. Un scan ouvre cette fiche.</p>
             </div>
+            {/* ---------- DOCUMENTATION TECHNIQUE ---------- */}
+            {equipmentKnowledge?.data?.documents?.length > 0 && (
+              <div className="technical-docs">
+                <h3>📚 Documentation technique</h3>
+
+                {equipmentKnowledge.data.documents.map((document) => (
+                  <div className="technical-doc-card" key={document.documentId}>
+                    <p>
+                      <strong>
+                        {document.documentType === "exploded_view"
+                          ? "🔧 Vue éclatée"
+                          : "📘 Notice constructeur"}
+                      </strong>
+                    </p>
+
+                    <p>{document.title}</p>
+
+                    {document.documentCode && (
+                      <p>
+                        Référence document : <strong>{document.documentCode}</strong>
+                      </p>
+                    )}
+
+                    <p>
+                      Nombre de pages : <strong>{document.pageCount}</strong>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* CARNET EN FRISE */}
