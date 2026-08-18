@@ -15,125 +15,180 @@
     ]
   },
   "documents": [
-  {
-    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
-    "title": "Notice d'installation et de maintenance - ThemaPlus Condens",
-    "documentType": "installation_maintenance",
-    "documentCode": "0020238207_08",
-    "documentUrl": "/api/document?pathname=saunier-duval/0010017388/notice/saunier-duval-themaplus-condens-notice-installation-et-maintenance-0020238207-08-08-2023-2968673.pdf",
-    "revisionDate": "2023-07-10",
-    "pageCount": 44,
-    "language": "fr",
-    "sourceType": "manufacturer_document",
-    "sourceName": "Saunier Duval",
-    "appliesTo": [
-      "ThemaPlus Condens 30-A (H-FR)"
-    ],
-    "manufacturerReference": "0010017388",
-    "usefulPages": {
-      "modelValidity": [7],
-      "functionalComponents": [9],
-      "faultCodes": [33, 34, 35],
-      "electricalDiagram": [36, 37],
-      "technicalSpecifications": [38, 39, 40, 41]
-    },
-    "verificationStatus": "verified_from_uploaded_pdf",
-    "storage": "external_not_committed",
-    "notes": "Document constructeur conservé hors du dépôt GitHub public."
-  },
-  {
-    "documentId": "sd-themaplus-condens-30-a-exploded-view-0010017388",
-    "title": "Vue éclatée - ThemaPlus Condens 30-A (H-FR)",
-    "documentType": "exploded_view",
-    "documentUrl": "/api/document?pathname=saunier-duval/0010017388/vue-eclatee/Vue%20%C3%A9clat%C3%A9e%20-%20THEMAPLUS%20CONDENS%2030%20-A%20%28H-FR%29%20-%200010017388%20%281%29.pdf",
-    "documentCode": null,
-    "revisionDate": null,
-    "pageCount": 32,
-    "language": "fr",
-    "sourceType": "manufacturer_spare_parts_catalog",
-    "sourceName": "Saunier Duval",
-    "appliesTo": [
-      "ThemaPlus Condens 30-A (H-FR)"
-    ],
-    "manufacturerReference": "0010017388",
-   "usefulPages": {
-  "gasMechanism": [3, 4],
-  "pipesAndHydraulics": [5, 6],
-  "connectionPlate": [7, 8],
-  "electricalHarnesses": [9, 10],
-  "condensateComponents": [11, 12],
-  "burner": [15, 16],
-  "expansionVessel": [19, 20],
-  "equipmentOverview": [21, 22],
-  "fanAndFlueComponents": [23, 24],
-  "pumpAndPressureSensor": [25, 26],
-  "gasConversionKit": [27, 28],
-  "hotWaterTank": [29, 30],
-  "heatExchanger": [31, 32]
-},
-    "verificationStatus": "verified_from_uploaded_pdf",
-    "storage": "external_not_committed",
-    "notes": "Catalogue de pièces conservé hors du dépôt GitHub public."
-  }
-],
- "errorCodes": [
-  {
-    "code": "F.28",
-    "aliases": [
-      "F28",
-      "f28",
-      "code F28",
-      "défaut F28",
-      "erreur F28"
-    ],
-    "title": "Allumage infructueux au démarrage",
-    "category": "ignition",
-    "manufacturerData": {
-      "meaning": "Le brûleur ne parvient pas à s’allumer lors du démarrage.",
-      "possibleCauses": [
-        "Alimentation en gaz absente, insuffisante ou interrompue",
-        "Défaut du mécanisme gaz",
-        "Entrée d’air ou circuit des condensats obstrué",
-        "Défaut du système d’allumage ou de détection de flamme",
-        "Défaut électrique, électronique ou de mise à la terre",
-        "Réglage de combustion incorrect"
-      ],
-      "professionalChecks": [
-        "Robinet d’arrêt et pression dynamique du gaz",
-        "Mécanisme gaz",
-        "Tube d’entrée d’air",
-        "Circuit des condensats",
-        "Faisceau électrique et connecteurs",
-        "Transformateur et câble d’allumage",
-        "Électrode d’allumage et électrode de surveillance",
-        "Circuit électronique et mise à la terre",
-        "Réglage du CO2"
-      ]
-    },
-    "userGuidance": {
-      "safetyLevel": "professional_required",
-      "allowedActions": [
-        "Vérifier visuellement que la chaudière est alimentée électriquement",
-        "Vérifier sans démontage que le robinet de gaz accessible est ouvert",
-        "Effectuer une seule tentative de réarmement en l’absence d’odeur de gaz",
-        "Contacter un professionnel si le défaut revient"
-      ],
-      "forbiddenActions": [
-        "Démonter la chaudière",
-        "Intervenir sur le mécanisme gaz",
-        "Modifier le réglage de combustion",
-        "Manipuler les électrodes ou les composants électriques"
-      ],
-      "emergencyMessage": "En cas d’odeur de gaz, ne pas réarmer l’appareil, aérer, quitter les lieux et contacter le service d’urgence gaz depuis l’extérieur."
-    },
-    "source": {
+    {
       "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
-      "page": 34,
-      "section": "Codes de défaut - vue d’ensemble",
-      "verificationStatus": "verified_from_uploaded_pdf"
+      "title": "Notice d'installation et de maintenance - ThemaPlus Condens",
+      "documentType": "installation_maintenance",
+      "documentCode": "0020238207_08",
+      "documentUrl": "https://9zitc2y9n0ktt4m8.public.blob.vercel-storage.com/saunier-duval/0010017388/notice/saunier-duval-themaplus-condens-notice-installation-et-maintenance-0020238207-08-08-2023-2968673.pdf",
+      "revisionDate": "2023-07-10",
+      "pageCount": 44,
+      "language": "fr",
+      "sourceType": "manufacturer_document",
+      "sourceName": "Saunier Duval",
+      "appliesTo": [
+        "ThemaPlus Condens 30-A (H-FR)"
+      ],
+      "manufacturerReference": "0010017388",
+      "usefulPages": {
+        "modelValidity": [
+          7
+        ],
+        "functionalComponents": [
+          9
+        ],
+        "faultCodes": [
+          33,
+          34,
+          35
+        ],
+        "electricalDiagram": [
+          36,
+          37
+        ],
+        "technicalSpecifications": [
+          38,
+          39,
+          40,
+          41
+        ]
+      },
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "external_not_committed",
+      "notes": "Document constructeur conservé hors du dépôt GitHub public."
+    },
+    {
+      "documentId": "sd-themaplus-condens-30-a-exploded-view-0010017388",
+      "title": "Vue éclatée - ThemaPlus Condens 30-A (H-FR)",
+      "documentType": "exploded_view",
+      "documentUrl": "https://9zitc2y9n0ktt4m8.public.blob.vercel-storage.com/saunier-duval/0010017388/vue-eclatee/Vue%20%C3%A9clat%C3%A9e%20-%20THEMAPLUS%20CONDENS%2030%20-A%20%28H-FR%29%20-%200010017388%20%281%29.pdf",
+      "documentCode": null,
+      "revisionDate": null,
+      "pageCount": 32,
+      "language": "fr",
+      "sourceType": "manufacturer_spare_parts_catalog",
+      "sourceName": "Saunier Duval",
+      "appliesTo": [
+        "ThemaPlus Condens 30-A (H-FR)"
+      ],
+      "manufacturerReference": "0010017388",
+      "usefulPages": {
+        "gasMechanism": [
+          3,
+          4
+        ],
+        "pipesAndHydraulics": [
+          5,
+          6
+        ],
+        "connectionPlate": [
+          7,
+          8
+        ],
+        "electricalHarnesses": [
+          9,
+          10
+        ],
+        "condensateComponents": [
+          11,
+          12
+        ],
+        "burner": [
+          15,
+          16
+        ],
+        "expansionVessel": [
+          19,
+          20
+        ],
+        "equipmentOverview": [
+          21,
+          22
+        ],
+        "fanAndFlueComponents": [
+          23,
+          24
+        ],
+        "pumpAndPressureSensor": [
+          25,
+          26
+        ],
+        "gasConversionKit": [
+          27,
+          28
+        ],
+        "hotWaterTank": [
+          29,
+          30
+        ],
+        "heatExchanger": [
+          31,
+          32
+        ]
+      },
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "external_not_committed",
+      "notes": "Catalogue de pièces conservé hors du dépôt GitHub public."
     }
-  }
-],
+  ],
+  "errorCodes": [
+    {
+      "code": "F.28",
+      "aliases": [
+        "F28",
+        "f28",
+        "code F28",
+        "défaut F28",
+        "erreur F28"
+      ],
+      "title": "Allumage infructueux au démarrage",
+      "category": "ignition",
+      "manufacturerData": {
+        "meaning": "Le brûleur ne parvient pas à s’allumer lors du démarrage.",
+        "possibleCauses": [
+          "Alimentation en gaz absente, insuffisante ou interrompue",
+          "Défaut du mécanisme gaz",
+          "Entrée d’air ou circuit des condensats obstrué",
+          "Défaut du système d’allumage ou de détection de flamme",
+          "Défaut électrique, électronique ou de mise à la terre",
+          "Réglage de combustion incorrect"
+        ],
+        "professionalChecks": [
+          "Robinet d’arrêt et pression dynamique du gaz",
+          "Mécanisme gaz",
+          "Tube d’entrée d’air",
+          "Circuit des condensats",
+          "Faisceau électrique et connecteurs",
+          "Transformateur et câble d’allumage",
+          "Électrode d’allumage et électrode de surveillance",
+          "Circuit électronique et mise à la terre",
+          "Réglage du CO2"
+        ]
+      },
+      "userGuidance": {
+        "safetyLevel": "professional_required",
+        "allowedActions": [
+          "Vérifier visuellement que la chaudière est alimentée électriquement",
+          "Vérifier sans démontage que le robinet de gaz accessible est ouvert",
+          "Effectuer une seule tentative de réarmement en l’absence d’odeur de gaz",
+          "Contacter un professionnel si le défaut revient"
+        ],
+        "forbiddenActions": [
+          "Démonter la chaudière",
+          "Intervenir sur le mécanisme gaz",
+          "Modifier le réglage de combustion",
+          "Manipuler les électrodes ou les composants électriques"
+        ],
+        "emergencyMessage": "En cas d’odeur de gaz, ne pas réarmer l’appareil, aérer, quitter les lieux et contacter le service d’urgence gaz depuis l’extérieur."
+      },
+      "source": {
+        "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+        "page": 34,
+        "section": "Codes de défaut - vue d’ensemble",
+        "verificationStatus": "verified_from_uploaded_pdf"
+      }
+    }
+  ],
   "diagnosticRules": [],
   "metadata": {
     "status": "pilot",
