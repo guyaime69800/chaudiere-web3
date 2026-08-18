@@ -1,8 +1,8 @@
-import { get } from "@vercel/blob";
+import { issueSignedToken, presignUrl } from "@vercel/blob";
 
 export default async function handler(request) {
   try {
-    const url = new URL(request.url, "http://localhost");
+    const url = new URL(request.url);
     const pathname = url.searchParams.get("pathname");
 
     if (!pathname) {
@@ -26,24 +26,17 @@ export default async function handler(request) {
       });
     }
 
-    const result = await get(pathname, {
-      access: "private",
+    const token = await issueSignedToken({
+      operations: ["get"],
     });
 
-    if (!result || result.statusCode !== 200) {
-      return new Response("Document introuvable", {
-        status: 404,
-      });
-    }
-
-    return new Response(result.stream, {
-      headers: {
-        "Content-Type": result.blob.contentType || "application/pdf",
-        "Content-Disposition": "inline",
-        "X-Content-Type-Options": "nosniff",
-        "Cache-Control": "private, no-cache",
-      },
+    const { presignedUrl } = await presignUrl(token, {
+      pathname,
+      operation: "get",
+      validUntil: Date.now() + 5 * 60 * 1000,
     });
+
+    return Response.redirect(presignedUrl, 302);
   } catch (error) {
     console.error("Erreur ouverture document :", error);
 
