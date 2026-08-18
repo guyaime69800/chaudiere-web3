@@ -340,10 +340,25 @@ function App() {
             placeholder="Entrez un ID équipement (ex : CHAUD-DEMO)"
             value={searchId}
             onChange={(e) => setSearchId(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") chercherChaudiere(); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                if (!searchId) return;
+                navigate(`/appareil/${searchId}`);
+                chercherChaudiere(searchId);
+              }
+            }}
           />
           {/* NOUVEAU : la fleche () => evite d'envoyer l'evenement du clic comme ID */}
-          <button className="btn btn-primary" onClick={() => chercherChaudiere()}>Rechercher</button>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              if (!searchId) return;
+              navigate(`/appareil/${searchId}`);
+              chercherChaudiere(searchId);
+            }}
+          >
+            Rechercher
+          </button>
         </div>
 
         <div className="hero-foot">
