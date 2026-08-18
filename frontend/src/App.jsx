@@ -87,6 +87,94 @@ function App() {
     const ms = Number(timestampBigInt) * 1000;
     return new Date(ms).toLocaleString("fr-FR");
   }
+  // PDF : genere le carnet d'entretien complet de l'equipement affiche
+  async function telechargerCarnetPDF() {
+    if (!boiler) return;
+
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF();
+    let y = 20;
+
+    // Titre
+    doc.setFontSize(20);
+    doc.text("CarnetPass", 20, y);
+
+    y += 10;
+    doc.setFontSize(14);
+    doc.text("Carnet d'entretien de l'equipement", 20, y);
+
+    // Informations de l'appareil
+    y += 15;
+    doc.setFontSize(11);
+    doc.text(`ID : ${boiler.equipmentId}`, 20, y);
+
+    y += 7;
+    doc.text(`Marque : ${boiler.brand}`, 20, y);
+
+    y += 7;
+    doc.text(`Modele : ${boiler.model}`, 20, y);
+
+    y += 7;
+    doc.text(`Reference produit : ${boiler.productReference}`, 20, y);
+
+    y += 12;
+    doc.line(20, y, 190, y);
+
+    y += 10;
+    doc.setFontSize(14);
+    doc.text("Historique des interventions", 20, y);
+
+    if (maintenances.length === 0) {
+      y += 10;
+      doc.setFontSize(11);
+      doc.text("Aucune intervention enregistree.", 20, y);
+    } else {
+      maintenances.forEach((m, index) => {
+        if (y > 250) {
+          doc.addPage();
+          y = 20;
+        }
+
+        y += 12;
+        doc.setFontSize(12);
+        doc.text(`Intervention ${index + 1}`, 20, y);
+
+        y += 7;
+        doc.setFontSize(10);
+        doc.text(`Enregistrement Polygon : ${formatDate(m.date)}`, 20, y);
+
+        y += 6;
+        doc.text(`Type : ${m.interventionType}`, 20, y);
+
+        y += 6;
+        doc.text(`Entreprise / technicien : ${m.technician}`, 20, y);
+
+        y += 6;
+        const description = doc.splitTextToSize(
+          `Description : ${m.description}`,
+          165
+        );
+        doc.text(description, 20, y);
+
+        y += description.length * 5;
+
+        if (m.partChanged) {
+          y += 6;
+          const piece = doc.splitTextToSize(
+            `Piece remplacee : ${m.partChanged}`,
+            165
+          );
+          doc.text(piece, 20, y);
+          y += piece.length * 5;
+        }
+
+        y += 5;
+        doc.line(20, y, 190, y);
+      });
+    }
+
+    doc.save(`CarnetPass-${boiler.equipmentId}.pdf`);
+  }
   // NOUVEAU (QR) : telecharge le QR affiche en fichier PNG (pret a imprimer)
   function telechargerQR(boilerId) {
     // On recupere l'image QR dessinee a l'ecran (une balise <canvas>)
@@ -616,7 +704,13 @@ function App() {
           {/* CARNET EN FRISE */}
           <div className="carnet">
             <p className="carnet-title">Carnet d'entretien</p>
-
+            <button
+              className="btn btn-ghost"
+              onClick={telechargerCarnetPDF}
+              disabled={isLoadingCarnet}
+            >
+              📄 Télécharger le carnet PDF
+            </button>
             {isLoadingCarnet ? (
               <p className="muted">Chargement du carnet...</p>
             ) : carnetError ? (
