@@ -1,7 +1,10 @@
+import OpenAI from "openai";
 import equipmentData from "../src/data/equipment/saunier-duval-0010017388.json" with {
   type: "json",
 };
-
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 // Transforme F28, f28, F.28 ou "défaut F28" en "F.28".
 function normalizeErrorCode(input) {
   const text = String(input ?? "").trim().toUpperCase();
