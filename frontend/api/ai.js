@@ -1,33 +1,23 @@
-export default async function handler(request) {
+export default async function handler(request, response) {
   try {
     if (request.method !== "POST") {
-      return Response.json(
-        {
-          error: "Méthode non autorisée",
-        },
-        {
-          status: 405,
-        }
-      );
+      return response.status(405).json({
+        error: "Méthode non autorisée",
+      });
     }
 
-    const body = await request.json();
+    const body = request.body ?? {};
 
     const equipmentId = String(body?.equipmentId ?? "").trim();
     const question = String(body?.question ?? "").trim();
 
     if (!equipmentId || !question) {
-      return Response.json(
-        {
-          error: "Équipement ou question manquant",
-        },
-        {
-          status: 400,
-        }
-      );
+      return response.status(400).json({
+        error: "Équipement ou question manquant",
+      });
     }
 
-    return Response.json({
+    return response.status(200).json({
       ok: true,
       message: "API IA CarnetPass opérationnelle",
       equipmentId,
@@ -36,13 +26,8 @@ export default async function handler(request) {
   } catch (error) {
     console.error("Erreur API IA CarnetPass :", error);
 
-    return Response.json(
-      {
-        error: "Erreur serveur",
-      },
-      {
-        status: 500,
-      }
-    );
+    return response.status(500).json({
+      error: "Erreur serveur",
+    });
   }
 }
