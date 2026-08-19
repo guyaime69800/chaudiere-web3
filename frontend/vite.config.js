@@ -8,6 +8,9 @@ export default defineConfig({
     // NOUVEAU (PWA) : transforme le site en appli installable
     VitePWA({
       registerType: 'autoUpdate', // l'appli se met a jour toute seule quand tu redeploies
+      workbox: {
+        navigateFallbackDenylist: [/^\/api\//],
+      },
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'CarnetPass — Carnet d\'entretien',
