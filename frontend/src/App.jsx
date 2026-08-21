@@ -12,6 +12,7 @@ import {
   findErrorCodeForEquipment,
   loadEquipmentKnowledge,
 } from "./services/equipmentKnowledge";
+import ReactMarkdown from "react-markdown";
 import "./App.css";
 
 function App() {
@@ -763,7 +764,7 @@ function App() {
 
             {aiAnswer && (
               <div className="ai-answer">
-                {aiAnswer}
+                <ReactMarkdown>{aiAnswer}</ReactMarkdown>
               </div>
             )}
           </div>
