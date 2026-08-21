@@ -19,6 +19,9 @@ function App() {
   const [mode, setMode] = useState("public");
   const [technicalResult, setTechnicalResult] = useState(null);
   const [equipmentKnowledge, setEquipmentKnowledge] = useState(null);
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
 
 
@@ -86,6 +89,40 @@ function App() {
   function formatDate(timestampBigInt) {
     const ms = Number(timestampBigInt) * 1000;
     return new Date(ms).toLocaleString("fr-FR");
+  }
+  async function demanderIA() {
+    if (!boiler?.equipmentId || !aiQuestion.trim()) {
+      return;
+    }
+
+    try {
+      setIsAiLoading(true);
+      setAiAnswer("");
+
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          equipmentId: boiler.equipmentId,
+          question: aiQuestion,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erreur lors de la réponse IA");
+      }
+
+      setAiAnswer(data.answer || "Aucune réponse reçue.");
+    } catch (error) {
+      console.error("Erreur Assistant IA CarnetPass :", error);
+      setAiAnswer("Impossible d'obtenir une réponse de l'assistant pour le moment.");
+    } finally {
+      setIsAiLoading(false);
+    }
   }
   // PDF : genere le carnet d'entretien complet de l'equipement affiche
   async function telechargerCarnetPDF() {
@@ -697,6 +734,36 @@ function App() {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+          {/* ASSISTANT IA CARNETPASS */}
+          <div className="ai-assistant">
+            <p className="ai-title">🤖 Assistant technique CarnetPass</p>
+
+            <p className="muted">
+              Pose une question technique sur cet équipement.
+            </p>
+
+            <textarea
+              className="ai-question"
+              value={aiQuestion}
+              onChange={(e) => setAiQuestion(e.target.value)}
+              placeholder="Ex : Défaut F28 : que dois-je vérifier ?"
+              rows={3}
+            />
+
+            <button
+              className="btn"
+              onClick={demanderIA}
+              disabled={isAiLoading || !aiQuestion.trim()}
+            >
+              {isAiLoading ? "Analyse en cours..." : "🤖 Demander à l’IA"}
+            </button>
+
+            {aiAnswer && (
+              <div className="ai-answer">
+                {aiAnswer}
               </div>
             )}
           </div>
