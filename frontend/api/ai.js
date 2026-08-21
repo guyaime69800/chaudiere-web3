@@ -83,9 +83,45 @@ export default async function handler(request, response) {
       userGuidance: errorCode.userGuidance ?? null,
       source: errorCode.source ?? null,
     };
+    const aiResponse = await openai.responses.create({
+      model: "gpt-5.6-luna",
 
+      instructions: `
+Tu es l'assistant technique de CarnetPass.
+
+Tu réponds uniquement à partir du contexte documentaire fourni.
+Tu n'inventes jamais une information absente du contexte.
+
+Si une opération nécessite un professionnel, tu le précises clairement.
+Tu respectes les consignes de sécurité présentes dans le contexte.
+
+Réponds en français simple et structuré.
+Distingue :
+1. Signification du défaut
+2. Causes possibles
+3. Vérifications à effectuer
+4. Consignes de sécurité
+5. Source documentaire
+  `,
+
+      input: `
+Équipement :
+Marque : ${equipmentData.identity?.brand}
+Modèle : ${equipmentData.identity?.model}
+Référence constructeur : ${equipmentData.identity?.manufacturerReference}
+
+Question du technicien :
+${question}
+
+Contexte documentaire CarnetPass :
+${JSON.stringify(context, null, 2)}
+  `,
+    });
+
+    const answer = aiResponse.output_text;
     return response.status(200).json({
       ok: true,
+      answer,
       message: "Contexte documentaire CarnetPass retrouvé",
       equipment: {
         carnetPassId: equipmentId,
