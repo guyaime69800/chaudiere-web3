@@ -91,6 +91,7 @@ export default async function handler(request, response) {
       ? {
         requestType: "error_code_list",
         codes: equipmentData.errorCodeIndex.codes ?? [],
+        meanings: equipmentData.errorCodeIndex.meanings ?? {},
         note: equipmentData.errorCodeIndex.note ?? null,
         source: equipmentData.errorCodeIndex.source ?? null,
       }
@@ -119,7 +120,7 @@ La demande concerne la liste des codes défaut documentés pour cet équipement.
 
 Présente :
 1. Un titre clair : "Codes défaut documentés"
-2. La liste complète des codes présents dans le contexte
+2. La liste complète des codes présents dans le contexte, avec pour chaque code sa signification présente dans "meanings", au format : F.28 — Anomalie démarrage - allumage infructueux
 3. La remarque constructeur présente dans le contexte
 4. La source documentaire
 
