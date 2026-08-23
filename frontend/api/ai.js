@@ -50,17 +50,7 @@ export default async function handler(request, response) {
       });
     }
 
-    // Cherche un code défaut dans la question du technicien.
-    const normalizedCode = normalizeErrorCode(question);
-
-    if (!normalizedCode) {
-      return response.status(422).json({
-        error: "Aucun code défaut reconnu dans la question",
-      });
-    }
-
-    // Recherche le code défaut uniquement
-    // dans les données du bon équipement.
+    // Analyse la question du technicien.
     const normalizedQuestion = String(question ?? "").toLowerCase();
 
     const wantsErrorCodeList =
@@ -70,6 +60,15 @@ export default async function handler(request, response) {
       normalizedQuestion.includes("codes erreur") ||
       normalizedQuestion.includes("codes d'erreur") ||
       normalizedQuestion.includes("quels sont les codes");
+
+    // Cherche un code défaut précis seulement si nécessaire.
+    const normalizedCode = normalizeErrorCode(question);
+
+    if (!wantsErrorCodeList && !normalizedCode) {
+      return response.status(422).json({
+        error: "Aucun code défaut reconnu dans la question",
+      });
+    }
     const errorCode =
       equipmentData.errorCodes?.find(
         (error) => error.code.toUpperCase() === normalizedCode
