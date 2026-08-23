@@ -61,32 +61,74 @@ export default async function handler(request, response) {
 
     // Recherche le code défaut uniquement
     // dans les données du bon équipement.
+    const normalizedQuestion = String(question ?? "").toLowerCase();
+
+    const wantsErrorCodeList =
+      normalizedQuestion.includes("liste des codes") ||
+      normalizedQuestion.includes("codes défaut") ||
+      normalizedQuestion.includes("codes de défaut") ||
+      normalizedQuestion.includes("codes erreur") ||
+      normalizedQuestion.includes("codes d'erreur") ||
+      normalizedQuestion.includes("quels sont les codes");
     const errorCode =
       equipmentData.errorCodes?.find(
         (error) => error.code.toUpperCase() === normalizedCode
       ) ?? null;
 
-    if (!errorCode) {
+    if (!wantsErrorCodeList && !errorCode) {
       return response.status(404).json({
         error: `Code défaut ${normalizedCode} introuvable pour cet équipement`,
       });
     }
 
-    // Premier contexte documentaire destiné au futur LLM.
-    const context = {
-      code: errorCode.code,
-      title: errorCode.title,
-      meaning: errorCode.manufacturerData?.meaning ?? null,
-      possibleCauses: errorCode.manufacturerData?.possibleCauses ?? [],
-      professionalChecks:
-        errorCode.manufacturerData?.professionalChecks ?? [],
-      userGuidance: errorCode.userGuidance ?? null,
-      source: errorCode.source ?? null,
-    };
+    if (wantsErrorCodeList && !equipmentData.errorCodeIndex) {
+      return response.status(404).json({
+        error: "Liste des codes défaut introuvable pour cet équipement",
+      });
+    }
+
+    // Choisit le bon contexte selon la question du technicien.
+    const context = wantsErrorCodeList
+      ? {
+        requestType: "error_code_list",
+        codes: equipmentData.errorCodeIndex.codes ?? [],
+        note: equipmentData.errorCodeIndex.note ?? null,
+        source: equipmentData.errorCodeIndex.source ?? null,
+      }
+      : {
+        requestType: "error_code_detail",
+        code: errorCode.code,
+        title: errorCode.title,
+        meaning: errorCode.manufacturerData?.meaning ?? null,
+        possibleCauses: errorCode.manufacturerData?.possibleCauses ?? [],
+        professionalChecks:
+          errorCode.manufacturerData?.professionalChecks ?? [],
+        userGuidance: errorCode.userGuidance ?? null,
+        source: errorCode.source ?? null,
+      };
     const aiResponse = await openai.responses.create({
       model: "gpt-5.6-luna",
 
-      instructions: `
+      instructions: wantsErrorCodeList
+        ? `
+Tu es l'assistant technique de CarnetPass.
+
+Tu réponds uniquement à partir du contexte documentaire fourni.
+Tu n'inventes jamais une information absente du contexte.
+
+La demande concerne la liste des codes défaut documentés pour cet équipement.
+
+Présente :
+1. Un titre clair : "Codes défaut documentés"
+2. La liste complète des codes présents dans le contexte
+3. La remarque constructeur présente dans le contexte
+4. La source documentaire
+
+N'invente pas la signification des codes si elle n'est pas fournie.
+Ne prétends pas que tous les codes sont forcément applicables à cet équipement.
+Réponds en français simple et structuré.
+`
+        : `
 Tu es l'assistant technique de CarnetPass.
 
 Tu réponds uniquement à partir du contexte documentaire fourni.
@@ -102,7 +144,7 @@ Distingue :
 3. Vérifications à effectuer
 4. Consignes de sécurité
 5. Source documentaire
-  `,
+`,
 
       input: `
 Équipement :

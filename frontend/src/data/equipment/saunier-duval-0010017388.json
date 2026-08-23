@@ -131,6 +131,64 @@
       "notes": "Catalogue de pièces conservé hors du dépôt GitHub public."
     }
   ],
+  "errorCodeIndex": {
+    "codes": [
+      "F.00",
+      "F.01",
+      "F.02",
+      "F.03",
+      "F.10",
+      "F.11",
+      "F.12",
+      "F.13",
+      "F.20",
+      "F.22",
+      "F.23",
+      "F.24",
+      "F.26",
+      "F.27",
+      "F.28",
+      "F.29",
+      "F.32",
+      "F.42",
+      "F.49",
+      "F.52",
+      "F.53",
+      "F.54",
+      "F.56",
+      "F.57",
+      "F.61",
+      "F.62",
+      "F.63",
+      "F.64",
+      "F.65",
+      "F.67",
+      "F.68",
+      "F.70",
+      "F.71",
+      "F.72",
+      "F.73",
+      "F.74",
+      "F.77",
+      "F.79",
+      "F.81",
+      "F.83",
+      "F.84",
+      "F.85",
+      "F.86"
+    ],
+    "note": "Le tableau constructeur couvre plusieurs produits ; certains codes peuvent ne pas être visibles sur cet équipement.",
+    "source": {
+      "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+      "pages": [
+        33,
+        34,
+        35
+      ],
+      "section": "Codes de défaut - vue d’ensemble",
+      "verificationStatus": "verified_from_uploaded_pdf"
+    }
+  },
   "errorCodes": [
     {
       "code": "F.28",
