@@ -290,6 +290,59 @@
         "section": "Codes de défaut - vue d’ensemble",
         "verificationStatus": "verified_from_uploaded_pdf"
       }
+    },
+    {
+      "code": "F.32",
+      "aliases": [
+        "F32",
+        "f32",
+        "code F32",
+        "défaut F32",
+        "erreur F32"
+      ],
+      "title": "Défaut ventilateur",
+      "category": "ventilation",
+      "manufacturerData": {
+        "meaning": "Ventilateur défectueux ou non raccordé.",
+        "possibleCauses": [
+          "Ventilateur défectueux",
+          "Ventilateur non raccordé",
+          "Obstruction du ventilateur",
+          "Défaut du faisceau électrique",
+          "Défaut du capteur Hall",
+          "Défaut du circuit imprimé",
+          "Obstruction du circuit des gaz de combustion"
+        ],
+        "professionalChecks": [
+          "Connecteur",
+          "Faisceau électrique",
+          "Ventilateur : obstruction, fonctionnement et adéquation du régime",
+          "Capteur Hall",
+          "Circuit imprimé",
+          "Circuit des gaz de combustion : obstruction"
+        ]
+      },
+      "userGuidance": {
+        "safetyLevel": "professional_required",
+        "allowedActions": [
+          "Relever le code défaut affiché",
+          "Vérifier uniquement l'absence d'obstruction extérieure visible sans démontage",
+          "Contacter un professionnel si le défaut persiste"
+        ],
+        "forbiddenActions": [
+          "Démonter la chaudière",
+          "Intervenir sur le ventilateur ou son câblage",
+          "Manipuler les composants électriques",
+          "Intervenir sur le circuit des gaz de combustion"
+        ],
+        "emergencyMessage": "En cas d'odeur anormale de gaz ou de gaz de combustion, arrêter l'appareil, aérer les locaux et contacter un professionnel ou le service d'urgence approprié."
+      },
+      "source": {
+        "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+        "page": 34,
+        "section": "Codes de défaut - vue d'ensemble",
+        "verificationStatus": "verified_from_uploaded_pdf"
+      }
     }
   ],
   "diagnosticRules": [],
