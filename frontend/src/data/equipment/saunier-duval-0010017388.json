@@ -343,6 +343,52 @@
         "section": "Codes de défaut - vue d'ensemble",
         "verificationStatus": "verified_from_uploaded_pdf"
       }
+    },
+    {
+      "code": "F.49",
+      "aliases": [
+        "F49",
+        "f49",
+        "code F49",
+        "défaut F49",
+        "erreur F49"
+      ],
+      "title": "Défaut eBUS",
+      "category": "communication",
+      "manufacturerData": {
+        "meaning": "Sous-tension au niveau de l'eBUS.",
+        "possibleCauses": [
+          "Surcharge de l'eBUS",
+          "Deux tensions d'alimentation de polarités différentes",
+          "Court-circuit sur l'eBUS"
+        ],
+        "professionalChecks": [
+          "Contrôler l'eBUS : surcharge",
+          "Contrôler la présence de deux tensions d'alimentation de polarités différentes",
+          "Contrôler l'eBUS : court-circuit"
+        ]
+      },
+      "userGuidance": {
+        "safetyLevel": "professional_required",
+        "allowedActions": [
+          "Relever le code défaut affiché",
+          "Vérifier sans démontage si un régulateur ou thermostat externe affiche également une anomalie",
+          "Contacter un professionnel si le défaut persiste"
+        ],
+        "forbiddenActions": [
+          "Démonter la chaudière",
+          "Intervenir sur le câblage eBUS",
+          "Manipuler les connecteurs ou le circuit imprimé",
+          "Intervenir sur les composants électriques internes"
+        ],
+        "emergencyMessage": "En cas de fumée, d'odeur de brûlé ou de signe anormal d'échauffement électrique, arrêter l'appareil si cela peut être fait sans danger et contacter un professionnel."
+      },
+      "source": {
+        "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+        "page": 34,
+        "section": "Codes de défaut - vue d'ensemble",
+        "verificationStatus": "verified_from_uploaded_pdf"
+      }
     }
   ],
   "diagnosticRules": [],
