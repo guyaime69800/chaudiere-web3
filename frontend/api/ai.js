@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import equipmentData from "../src/data/equipment/saunier-duval-0010017388.json" with {
   type: "json",
 };
+import { searchRagContext } from "./lib/rag.js";
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -64,17 +65,17 @@ export default async function handler(request, response) {
     // Cherche un code défaut précis seulement si nécessaire.
     const normalizedCode = normalizeErrorCode(question);
 
-    if (!wantsErrorCodeList && !normalizedCode) {
-      return response.status(422).json({
-        error: "Aucun code défaut reconnu dans la question",
-      });
-    }
-    const errorCode =
-      equipmentData.errorCodes?.find(
+    // Si un code F.xx est présent dans la question,
+    // on continue d'utiliser la recherche directe existante.
+    const errorCode = normalizedCode
+      ? equipmentData.errorCodes?.find(
         (error) => error.code.toUpperCase() === normalizedCode
-      ) ?? null;
+      ) ?? null
+      : null;
 
-    if (!wantsErrorCodeList && !errorCode) {
+    // On renvoie une erreur uniquement si le technicien
+    // a réellement demandé un code précis qui n'existe pas.
+    if (!wantsErrorCodeList && normalizedCode && !errorCode) {
       return response.status(404).json({
         error: `Code défaut ${normalizedCode} introuvable pour cet équipement`,
       });
@@ -86,6 +87,17 @@ export default async function handler(request, response) {
       });
     }
 
+    // Une question libre est une question qui ne demande ni
+    // la liste des codes, ni un code F.xx précis.
+    const isFreeQuestion =
+      !wantsErrorCodeList && !normalizedCode;
+
+    // Pour une question libre, on lance le moteur RAG.
+    // Il recherche les 3 passages les plus proches par leur sens.
+    const ragResult = isFreeQuestion
+      ? await searchRagContext(openai, question, 3)
+      : null;
+
     // Choisit le bon contexte selon la question du technicien.
     const context = wantsErrorCodeList
       ? {
@@ -95,17 +107,25 @@ export default async function handler(request, response) {
         note: equipmentData.errorCodeIndex.note ?? null,
         source: equipmentData.errorCodeIndex.source ?? null,
       }
-      : {
-        requestType: "error_code_detail",
-        code: errorCode.code,
-        title: errorCode.title,
-        meaning: errorCode.manufacturerData?.meaning ?? null,
-        possibleCauses: errorCode.manufacturerData?.possibleCauses ?? [],
-        professionalChecks:
-          errorCode.manufacturerData?.professionalChecks ?? [],
-        userGuidance: errorCode.userGuidance ?? null,
-        source: errorCode.source ?? null,
-      };
+      : errorCode
+        ? {
+          requestType: "error_code_detail",
+          code: errorCode.code,
+          title: errorCode.title,
+          meaning: errorCode.manufacturerData?.meaning ?? null,
+          possibleCauses:
+            errorCode.manufacturerData?.possibleCauses ?? [],
+          professionalChecks:
+            errorCode.manufacturerData?.professionalChecks ?? [],
+          userGuidance: errorCode.userGuidance ?? null,
+          source: errorCode.source ?? null,
+        }
+        : {
+          requestType: "semantic_rag",
+          passages: ragResult.topResults,
+          contextText: ragResult.contextText,
+          embeddingTokens: ragResult.tokensUsed,
+        };
     const aiResponse = await openai.responses.create({
       model: "gpt-5.6-luna",
 
@@ -120,7 +140,7 @@ La demande concerne la liste des codes défaut documentés pour cet équipement.
 
 Présente :
 1. Un titre clair : "Codes défaut documentés"
-2. La liste complète des codes présents dans le contexte, avec pour chaque code sa signification présente dans "meanings", au format : F.28 — Anomalie démarrage - allumage infructueux
+2. La liste complète des codes présents dans le contexte, avec pour chaque code sa signification présente dans "meanings"
 3. La remarque constructeur présente dans le contexte
 4. La source documentaire
 
@@ -128,7 +148,8 @@ N'invente pas la signification des codes si elle n'est pas fournie.
 Ne prétends pas que tous les codes sont forcément applicables à cet équipement.
 Réponds en français simple et structuré.
 `
-        : `
+        : errorCode
+          ? `
 Tu es l'assistant technique de CarnetPass.
 
 Tu réponds uniquement à partir du contexte documentaire fourni.
@@ -144,6 +165,29 @@ Distingue :
 3. Vérifications à effectuer
 4. Consignes de sécurité
 5. Source documentaire
+`
+          : `
+Tu es l'assistant technique documentaire de CarnetPass.
+
+La question du technicien peut décrire un symptôme sans donner de code défaut.
+
+Tu réponds uniquement à partir des passages documentaires récupérés par le RAG.
+Tu n'inventes jamais une information absente de ces passages.
+
+IMPORTANT :
+Une proximité sémantique n'est pas un diagnostic certain.
+Ne prétends jamais qu'un code défaut est confirmé s'il n'est pas réellement affiché sur l'appareil.
+
+Si un ou plusieurs passages semblent correspondre au symptôme :
+- présente-les comme des pistes documentaires ;
+- indique le ou les codes concernés ;
+- explique pourquoi ils peuvent être pertinents ;
+- indique les vérifications documentées disponibles ;
+- mentionne la page du document lorsque celle-ci est fournie.
+
+Si plusieurs pistes sont possibles, dis-le clairement.
+
+Réponds en français simple, technique et structuré.
 `,
 
       input: `
