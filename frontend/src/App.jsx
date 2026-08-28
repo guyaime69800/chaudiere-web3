@@ -761,26 +761,23 @@ function App() {
               >
                 📤 Partager cette fiche
               </button>
-              {!isAppInstalled && installPrompt && (
+              {isAppInstalled ? (
+                <button
+                  className="btn btn-ghost"
+                  disabled
+                >
+                  ✅ CarnetPass installé
+                </button>
+              ) : installPrompt ? (
                 <button
                   className="btn btn-primary"
                   onClick={installerCarnetPass}
                 >
                   📲 Installer CarnetPass
                 </button>
-              )}
-              <button
-                className="btn btn-ghost"
-                onClick={() =>
-                  partagerCarnetPass(
-                    window.location.origin,
-                    "CarnetPass",
-                    "Découvrez CarnetPass, le carnet d'entretien numérique de vos équipements."
-                  )
-                }
-              >
-                📤 Partager CarnetPass
-              </button>
+              ) : null}
+
+
               <p className="qr-hint">Imprime-le et colle-le sur l'appareil. Un scan ouvre cette fiche.</p>
             </div>
             {/* ---------- DOCUMENTATION TECHNIQUE ---------- */}
