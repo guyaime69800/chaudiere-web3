@@ -34,6 +34,74 @@ function App() {
   // NOUVEAU (scan) : navigation interne + ouverture/fermeture de la camera
   const navigate = useNavigate();
   const [scanOuvert, setScanOuvert] = useState(false);
+  // Installation PWA : mémorise la proposition d'installation du navigateur.
+  const [installPrompt, setInstallPrompt] = useState(null);
+
+  // Permet de savoir si CarnetPass est déjà installé comme application.
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
+  // Détecte si CarnetPass peut être installé comme application PWA.
+  useEffect(() => {
+    // Si CarnetPass est déjà ouvert comme une application installée,
+    // inutile de proposer une nouvelle installation.
+    const alreadyInstalled =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      navigator.standalone === true;
+
+    if (alreadyInstalled) {
+      setIsAppInstalled(true);
+    }
+
+    // Chrome/Android déclenche cet événement lorsque la PWA
+    // peut être installée.
+    function handleBeforeInstallPrompt(event) {
+      event.preventDefault();
+      setInstallPrompt(event);
+    }
+
+    // Déclenché une fois l'installation terminée.
+    function handleAppInstalled() {
+      setIsAppInstalled(true);
+      setInstallPrompt(null);
+    }
+
+    window.addEventListener(
+      "beforeinstallprompt",
+      handleBeforeInstallPrompt
+    );
+
+    window.addEventListener(
+      "appinstalled",
+      handleAppInstalled
+    );
+
+    return () => {
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt
+      );
+
+      window.removeEventListener(
+        "appinstalled",
+        handleAppInstalled
+      );
+    };
+  }, []);
+  // Lance réellement la fenêtre d'installation de CarnetPass.
+  async function installerCarnetPass() {
+    if (!installPrompt) {
+      return;
+    }
+
+    // Demande à Chrome d'afficher sa fenêtre officielle d'installation.
+    await installPrompt.prompt();
+
+    // Attend le choix de l'utilisateur : installer ou annuler.
+    const choice = await installPrompt.userChoice;
+
+    if (choice.outcome === "accepted") {
+      setInstallPrompt(null);
+    }
+  }
 
   const [owner, setOwner] = useState("");
   const [boiler, setBoiler] = useState(null);
@@ -693,6 +761,14 @@ function App() {
               >
                 📤 Partager cette fiche
               </button>
+              {!isAppInstalled && installPrompt && (
+                <button
+                  className="btn btn-primary"
+                  onClick={installerCarnetPass}
+                >
+                  📲 Installer CarnetPass
+                </button>
+              )}
               <p className="qr-hint">Imprime-le et colle-le sur l'appareil. Un scan ouvre cette fiche.</p>
             </div>
             {/* ---------- DOCUMENTATION TECHNIQUE ---------- */}
