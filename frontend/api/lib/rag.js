@@ -1,6 +1,9 @@
-import ragChunks from "../../src/data/rag/saunier-duval-0020238207-08.chunks.json" with {
+import ragEmbeddingData from "../../src/data/rag/saunier-duval-0020238207-08.embeddings.json" with {
   type: "json",
 };
+
+// Les embeddings des documents ont déjà été calculés une fois.
+const ragItems = ragEmbeddingData.items ?? [];
 
 // Calcule la proximité entre deux embeddings.
 // Plus le score est élevé, plus les deux textes sont proches par leur sens.
@@ -24,36 +27,29 @@ function cosineSimilarity(a, b) {
 // Recherche les passages documentaires les plus proches
 // de la question posée par le technicien.
 export async function searchRagContext(openai, question, topK = 3) {
-  const texts = [
-    question,
-    ...ragChunks.map((chunk) => chunk.text),
-  ];
-
+  // IMPORTANT :
+  // on calcule maintenant uniquement l'embedding de la question.
+  // Les embeddings documentaires sont déjà dans le fichier JSON.
   const embeddingResponse = await openai.embeddings.create({
-    model: "text-embedding-3-small",
-    input: texts,
+    model: ragEmbeddingData.model ?? "text-embedding-3-small",
+    input: question,
   });
 
   const questionEmbedding =
     embeddingResponse.data[0].embedding;
 
-  const results = ragChunks.map((chunk, index) => {
-    const chunkEmbedding =
-      embeddingResponse.data[index + 1].embedding;
-
-    return {
-      chunkId: chunk.chunkId,
-      documentId: chunk.documentId,
-      topic: chunk.topic,
-      page: chunk.page,
-      section: chunk.section,
-      text: chunk.text,
-      score: cosineSimilarity(
-        questionEmbedding,
-        chunkEmbedding
-      ),
-    };
-  });
+  const results = ragItems.map((item) => ({
+    chunkId: item.chunkId,
+    documentId: item.documentId,
+    topic: item.topic,
+    page: item.page,
+    section: item.section,
+    text: item.text,
+    score: cosineSimilarity(
+      questionEmbedding,
+      item.embedding
+    ),
+  }));
 
   results.sort((a, b) => b.score - a.score);
 
