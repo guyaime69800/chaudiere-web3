@@ -2,7 +2,7 @@ import saunierDuvalThemaPlus from "../../src/data/equipment/saunier-duval-001001
   type: "json",
 };
 
-import saunierDuvalThemaPlusEmbeddings from "../../src/data/rag/saunier-duval-0020238207-08.embeddings.json" with {
+import saunierDuvalThemaPlusEmbeddings from "../../src/data/rag/saunier-duval-0020238207-08.full.embeddings.json" with {
   type: "json",
 };
 
