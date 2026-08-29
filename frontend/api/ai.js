@@ -1,7 +1,5 @@
 import OpenAI from "openai";
-import equipmentData from "../src/data/equipment/saunier-duval-0010017388.json" with {
-  type: "json",
-};
+import { getEquipmentConfig } from "./lib/equipment-registry.js";
 import { searchRagContext } from "./lib/rag.js";
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -38,18 +36,22 @@ export default async function handler(request, response) {
       });
     }
 
-    // Vérifie que la question concerne bien
-    // l'équipement documentaire chargé.
-    const equipmentMatches =
-      equipmentData.carnetPass?.linkedIds?.includes(equipmentId) ||
-      equipmentData.equipmentId === equipmentId ||
-      equipmentData.identity?.manufacturerReference === equipmentId;
+    // Recherche automatiquement l'équipement
+    // correspondant à l'identifiant reçu par CarnetPass.
+    const equipmentConfig = getEquipmentConfig(equipmentId);
 
-    if (!equipmentMatches) {
+    if (!equipmentConfig) {
       return response.status(404).json({
         error: "Équipement documentaire introuvable",
       });
     }
+
+    // Récupère les données techniques et les embeddings
+    // correspondant uniquement à cet équipement.
+    const {
+      equipmentData,
+      ragEmbeddingData,
+    } = equipmentConfig;
 
     // Analyse la question du technicien.
     const normalizedQuestion = String(question ?? "").toLowerCase();
@@ -95,7 +97,12 @@ export default async function handler(request, response) {
     // Pour une question libre, on lance le moteur RAG.
     // Il recherche les 3 passages les plus proches par leur sens.
     const ragResult = isFreeQuestion
-      ? await searchRagContext(openai, question, 3)
+     ? await searchRagContext(
+      openai,
+      ragEmbeddingData,
+      question,
+      3
+    )
       : null;
 
     // Choisit le bon contexte selon la question du technicien.
