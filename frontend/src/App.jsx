@@ -182,15 +182,21 @@ function App() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Erreur lors de la réponse IA");
+        throw new Error(
+          data.message ||
+          data.error ||
+          "Erreur lors de la réponse IA"
+        );
       }
 
       setAiAnswer(data.answer || "Aucune réponse reçue.");
     } catch (error) {
       console.error("Erreur Assistant IA CarnetPass :", error);
-      setAiAnswer("Impossible d'obtenir une réponse de l'assistant pour le moment.");
-    } finally {
-      setIsAiLoading(false);
+
+      setAiAnswer(
+        error?.message ||
+        "Impossible d'obtenir une réponse de l'assistant pour le moment."
+      );
     }
   }
   // PDF : genere le carnet d'entretien complet de l'equipement affiche
