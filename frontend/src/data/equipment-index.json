@@ -10,6 +10,16 @@
       "manufacturerReference": "0010017388",
       "dataFile": "equipment/saunier-duval-0010017388.json",
       "status": "pilot"
+    },
+    {
+      "carnetPassId": "CP-2026-000002",
+      "equipmentId": "vaillant-ecotec-plus-vuw-26cs-1-5-n-fr-8000044523",
+      "brand": "Vaillant",
+      "model": "VUW 26CS/1-5",
+      "variant": "N-FR",
+      "manufacturerReference": "8000044523",
+      "dataFile": "equipment/vaillant-8000044523.json",
+      "status": "pilot"
     }
   ]
 }
