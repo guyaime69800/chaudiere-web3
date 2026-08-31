@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.3",
     "@vercel/blob": "^2.8.0",
     "@yudiel/react-qr-scanner": "^2.6.0",
     "ethers": "^6.17.0",
