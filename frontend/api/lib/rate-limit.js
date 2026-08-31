@@ -8,7 +8,7 @@ const redis = new Redis({
 
 export const aiRateLimit = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(10, "1 m"),
+  limiter: Ratelimit.slidingWindow(2, "1 m"),
   prefix: "carnetpass:ai",
   analytics: true,
 });
