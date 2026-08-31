@@ -1,24 +1,10 @@
-import saunierDuvalThemaPlus from "../../src/data/equipment/saunier-duval-0010017388.json" with {
-  type: "json",
-};
-
-import saunierDuvalThemaPlusEmbeddings from "../../src/data/rag/saunier-duval-0020238207-08.full.embeddings.json" with {
-  type: "json",
-};
+import { generatedEquipmentRegistry } from "./equipment-registry.generated.js";
 
 // Registre central des équipements connus de CarnetPass.
 //
-// À l'avenir, chaque nouveau modèle de chaudière
-// sera ajouté ici avec :
-// - ses données techniques
-// - ses documents
-// - ses embeddings RAG
-const equipmentRegistry = [
-  {
-    equipmentData: saunierDuvalThemaPlus,
-    ragEmbeddingData: saunierDuvalThemaPlusEmbeddings,
-  },
-];
+// Ce registre est maintenant généré automatiquement
+// à partir des fichiers équipements et de leurs embeddings RAG.
+const equipmentRegistry = generatedEquipmentRegistry;
 
 // Vérifie si un identifiant correspond à un équipement.
 //

@@ -7,11 +7,12 @@ import { spawnSync } from "child_process";
 // CARNETPASS - IMPORT RAG AUTOMATIQUE
 // ---------------------------------------------------------
 //
-// Ce script orchestre les 3 étapes :
+// Ce script orchestre les 4 étapes :
 //
 // 1. Extraction du PDF
 // 2. Découpage en chunks
 // 3. Génération des embeddings
+// 4. Génération du registre automatique des équipements
 //
 // Exemple :
 //
@@ -185,6 +186,11 @@ const embeddingsPath = path.join(
   `${ragBaseName}.full.embeddings.json`
 );
 
+const generatedRegistryPath = path.resolve(
+  frontendRoot,
+  "api/lib/equipment-registry.generated.js"
+);
+
 // ---------------------------------------------------------
 // FONCTION POUR LANCER UN SCRIPT
 // ---------------------------------------------------------
@@ -288,7 +294,7 @@ if (ignoredPages) {
 
 console.log("");
 console.log(
-  "ÉTAPE 1/3 - Extraction du PDF"
+  "ÉTAPE 1/4 - Extraction du PDF"
 );
 
 runScript(
@@ -315,7 +321,7 @@ console.log(
 
 console.log("");
 console.log(
-  "ÉTAPE 2/3 - Découpage en chunks"
+  "ÉTAPE 2/4 - Découpage en chunks"
 );
 
 const chunkArguments = [
@@ -349,7 +355,7 @@ console.log(
 
 console.log("");
 console.log(
-  "ÉTAPE 3/3 - Génération des embeddings"
+  "ÉTAPE 3/4 - Génération des embeddings"
 );
 
 runScript(
@@ -371,6 +377,34 @@ if (
 
 console.log(
   "Embeddings validés ✅"
+);
+
+// ---------------------------------------------------------
+// ÉTAPE 4 : REGISTRE AUTOMATIQUE
+// ---------------------------------------------------------
+
+console.log("");
+console.log(
+  "ÉTAPE 4/4 - Génération du registre automatique"
+);
+
+runScript(
+  "generate-equipment-registry.mjs",
+  []
+);
+
+if (
+  !fs.existsSync(
+    generatedRegistryPath
+  )
+) {
+  throw new Error(
+    `Le registre automatique n'a pas été créé : ${generatedRegistryPath}`
+  );
+}
+
+console.log(
+  "Registre automatique validé ✅"
 );
 
 // ---------------------------------------------------------
@@ -405,7 +439,12 @@ console.log(
   embeddingsPath
 );
 
+console.log(
+  "Registre :",
+  generatedRegistryPath
+);
+
 console.log("");
 console.log(
-  "Document prêt pour le RAG CarnetPass 🚀"
+  "Document et équipement prêts pour le RAG CarnetPass 🚀"
 );
