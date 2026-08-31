@@ -2,25 +2,53 @@ import fs from "fs";
 import path from "path";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 
-// Fichier décrivant notre équipement Saunier Duval.
-const equipmentPath = path.resolve(
-  "src/data/equipment/saunier-duval-0010017388.json"
-);
+// ---------------------------------------------------------
+// PARAMÈTRES D'IMPORT
+// ---------------------------------------------------------
+//
+// Exemple :
+// node scripts/extract-rag-document.mjs \
+// src/data/equipment/saunier-duval-0010017388.json \
+// installation_maintenance
+//
+// Le premier argument indique l'équipement.
+// Le deuxième indique le type de document.
+// ---------------------------------------------------------
+
+const equipmentFileArg = process.argv[2];
+
+const documentTypeArg =
+  process.argv[3] || "installation_maintenance";
+
+if (!equipmentFileArg) {
+  throw new Error(
+    "Fichier équipement manquant. Exemple : node scripts/extract-rag-document.mjs src/data/equipment/saunier-duval-0010017388.json"
+  );
+}
+
+// Chemin vers le fichier décrivant l'équipement.
+const equipmentPath = path.resolve(equipmentFileArg);
+
+if (!fs.existsSync(equipmentPath)) {
+  throw new Error(
+    `Fichier équipement introuvable : ${equipmentPath}`
+  );
+}
 
 // Lecture des informations de l'équipement.
 const equipmentData = JSON.parse(
   fs.readFileSync(equipmentPath, "utf8")
 );
 
-// Recherche de la notice d'installation / maintenance.
+// Recherche du document demandé.
 const documentData = equipmentData.documents?.find(
   (document) =>
-    document.documentType === "installation_maintenance"
+    document.documentType === documentTypeArg
 );
 
 if (!documentData?.documentUrl) {
   throw new Error(
-    "Notice d'installation / maintenance introuvable pour cet équipement."
+    `Document "${documentTypeArg}" introuvable pour cet équipement.`
   );
 }
 
@@ -28,12 +56,14 @@ console.log("");
 console.log("CarnetPass - Extraction documentaire");
 console.log("------------------------------------");
 console.log("Équipement :", equipmentData.identity?.model);
+console.log("Marque :", equipmentData.identity?.brand);
 console.log("Document :", documentData.title);
+console.log("Type :", documentData.documentType);
 console.log("URL :", documentData.documentUrl);
 console.log("");
 
 // Téléchargement du PDF.
-console.log("Téléchargement de la notice...");
+console.log("Téléchargement du document...");
 
 const pdfResponse = await fetch(documentData.documentUrl);
 
@@ -56,12 +86,19 @@ const pdf = await getDocument({
   data: new Uint8Array(pdfBuffer),
 }).promise;
 
-console.log("Nombre de pages détectées :", pdf.numPages);
+console.log(
+  "Nombre de pages détectées :",
+  pdf.numPages
+);
 
 const pages = [];
 
 // Extraction du texte page par page.
-for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+for (
+  let pageNumber = 1;
+  pageNumber <= pdf.numPages;
+  pageNumber++
+) {
   const page = await pdf.getPage(pageNumber);
 
   const textContent = await page.getTextContent();
@@ -99,25 +136,56 @@ for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
   );
 }
 
-// Fichier de sortie.
-//
-// IMPORTANT :
-// ce fichier contient toute la notice extraite,
-// avec le numéro de chaque page.
+// ---------------------------------------------------------
+// Création automatique du nom de fichier
+// ---------------------------------------------------------
+
+function createSlug(value) {
+  return String(value || "document")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+const brandSlug = createSlug(
+  equipmentData.identity?.brand
+);
+
+const documentSlug = createSlug(
+  documentData.documentCode ||
+    documentData.documentId ||
+    documentData.title
+);
+
 const outputPath = path.resolve(
-  "src/data/rag/saunier-duval-0020238207-08.pages.json"
+  "src/data/rag",
+  `${brandSlug}-${documentSlug}.pages.json`
+);
+
+// Création du dossier si nécessaire.
+fs.mkdirSync(
+  path.dirname(outputPath),
+  { recursive: true }
 );
 
 const outputData = {
   documentId: documentData.documentId,
   documentTitle: documentData.title,
+  documentType: documentData.documentType,
   documentCode: documentData.documentCode,
+
   manufacturerReference:
     equipmentData.identity?.manufacturerReference,
+
   brand: equipmentData.identity?.brand,
   model: equipmentData.identity?.model,
+
   pageCount: pdf.numPages,
+
   extractedAt: new Date().toISOString(),
+
   pages,
 };
 
