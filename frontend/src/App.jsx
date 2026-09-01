@@ -840,7 +840,10 @@ function App() {
             <textarea
               className="ai-question"
               value={aiQuestion}
-              onChange={(e) => setAiQuestion(e.target.value)}
+              onChange={(e) => {
+                setAiQuestion(e.target.value);
+                setAiAnswer("");
+              }}
               placeholder="Ex : Défaut F28 : que dois-je vérifier ?"
               rows={3}
             />
