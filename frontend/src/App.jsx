@@ -113,6 +113,10 @@ function App() {
   // gamme ou référence constructeur.
   const [searchResults, setSearchResults] = useState([]);
   const [searchType, setSearchType] = useState("");
+
+  // Équipement constructeur générique sélectionné.
+  // Important : ce n'est PAS encore un CarnetPass physique.
+  const [selectedEquipment, setSelectedEquipment] = useState(null);
   // NOUVEAU (perf) : useMemo = "fabrique-le UNE fois, puis reutilise".
   // Sans ca, la connexion blockchain etait recreee a chaque lettre tapee dans un champ.
   const provider = useMemo(() => new ethers.JsonRpcProvider(RPC_URL), []);
@@ -165,7 +169,32 @@ function App() {
     return new Date(ms).toLocaleString("fr-FR");
   }
   async function demanderIA() {
-    if (!boiler?.equipmentId || !aiQuestion.trim()) {
+    // -------------------------------------------------------
+    // IDENTIFIANT TECHNIQUE POUR L'IA
+    // -------------------------------------------------------
+    //
+    // Cas 1 :
+    // fiche équipement générique
+    // -> selectedEquipment.equipmentId
+    //
+    // Cas 2 :
+    // CarnetPass physique Redis
+    // -> boiler.technicalEquipmentId
+    //
+    // Cas 3 :
+    // ancien appareil du prototype
+    // -> boiler.equipmentId
+    // -------------------------------------------------------
+
+    const technicalEquipmentId =
+      selectedEquipment?.equipmentId ??
+      boiler?.technicalEquipmentId ??
+      boiler?.equipmentId;
+
+    if (
+      !technicalEquipmentId ||
+      !aiQuestion.trim()
+    ) {
       return;
     }
 
@@ -180,13 +209,15 @@ function App() {
         },
         body: JSON.stringify({
           equipmentId:
-            boiler.technicalEquipmentId ??
-            boiler.equipmentId,
-          question: aiQuestion,
+            technicalEquipmentId,
+
+          question:
+            aiQuestion,
         }),
       });
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (!response.ok) {
         throw new Error(
@@ -197,7 +228,8 @@ function App() {
       }
 
       setAiAnswer(
-        data.answer || "Aucune réponse reçue."
+        data.answer ||
+        "Aucune réponse reçue."
       );
     } catch (error) {
       console.error(
@@ -392,6 +424,7 @@ function App() {
     setEquipmentKnowledge(null);
     setSearchResults([]);
     setSearchType("");
+    setSelectedEquipment(null);
     setAiAnswer("");
 
     try {
@@ -588,6 +621,47 @@ function App() {
       setMessage(
         error?.message ||
         "Impossible d'effectuer la recherche pour le moment."
+      );
+    }
+  }
+  // ---------------------------------------------------------
+  // OUVERTURE D'UNE FICHE ÉQUIPEMENT GÉNÉRIQUE
+  // ---------------------------------------------------------
+  //
+  // Cette fiche représente un modèle constructeur.
+  //
+  // Ce n'est PAS encore un appareil physique CarnetPass.
+  // ---------------------------------------------------------
+
+  async function ouvrirFicheEquipement(equipment) {
+    if (!equipment?.equipmentId) {
+      return;
+    }
+
+    try {
+      setMessage("");
+      setSelectedEquipment(equipment);
+      setSearchResults([]);
+      setEquipmentKnowledge(null);
+      setAiAnswer("");
+      setAiQuestion("");
+
+      const knowledge =
+        await loadEquipmentKnowledge(
+          equipment.equipmentId
+        );
+
+      setEquipmentKnowledge(
+        knowledge
+      );
+    } catch (error) {
+      console.error(
+        "Erreur ouverture fiche équipement :",
+        error
+      );
+
+      setMessage(
+        "Impossible de charger la fiche technique de cet équipement."
       );
     }
   }
@@ -943,8 +1017,181 @@ function App() {
                   Fiche équipement générique — aucun CarnetPass
                   personnel n'est créé par cette recherche.
                 </p>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => ouvrirFicheEquipement(equipment)}
+                >
+                  Ouvrir la fiche
+                </button>
               </div>
             ))}
+          </div>
+        </section>
+      )}
+      {/* ---------- FICHE ÉQUIPEMENT GÉNÉRIQUE ---------- */}
+      {selectedEquipment && (
+        <section className="result">
+          <div className="appareil">
+            <div className="appareil-head">
+              <div>
+                <span className="appareil-type">
+                  Fiche équipement constructeur
+                </span>
+
+                <h2 className="appareil-name">
+                  {selectedEquipment.brand} · {selectedEquipment.model}
+                </h2>
+
+                <p className="appareil-loc">
+                  {selectedEquipment.range}
+                  {selectedEquipment.variant
+                    ? ` · ${selectedEquipment.variant}`
+                    : ""}
+                </p>
+              </div>
+
+              <span className="badge-verified">
+                ✔ Documentation vérifiée
+              </span>
+            </div>
+
+            <div className="appareil-grid">
+              <div>
+                <span className="k">Marque</span>
+                <span className="v">
+                  {selectedEquipment.brand}
+                </span>
+              </div>
+
+              <div>
+                <span className="k">Modèle</span>
+                <span className="v">
+                  {selectedEquipment.model}
+                </span>
+              </div>
+
+              <div>
+                <span className="k">Version</span>
+                <span className="v">
+                  {selectedEquipment.variant || "—"}
+                </span>
+              </div>
+
+              <div>
+                <span className="k">
+                  Référence constructeur
+                </span>
+                <span className="v">
+                  {selectedEquipment.manufacturerReference}
+                </span>
+              </div>
+            </div>
+
+            <p className="muted">
+              Cette fiche décrit un modèle constructeur.
+              Aucun CarnetPass personnel ni QR individuel
+              n'est encore créé.
+            </p>
+
+            {/* ---------- DOCUMENTATION ---------- */}
+            {equipmentKnowledge?.data?.documents?.length > 0 && (
+              <div className="technical-docs">
+                <h3>📚 Documentation technique</h3>
+
+                {equipmentKnowledge.data.documents.map(
+                  (document) => (
+                    <div
+                      className="technical-doc-card"
+                      key={document.documentId}
+                    >
+                      <p>
+                        <strong>
+                          {document.documentType === "exploded_view"
+                            ? "🔧 Vue éclatée"
+                            : document.documentType === "user_manual"
+                              ? "📗 Notice utilisateur"
+                              : "📘 Notice installation / maintenance"}
+                        </strong>
+                      </p>
+
+                      <p>{document.title}</p>
+
+                      {document.documentCode && (
+                        <p>
+                          Référence document :{" "}
+                          <strong>
+                            {document.documentCode}
+                          </strong>
+                        </p>
+                      )}
+
+                      {document.pageCount && (
+                        <p>
+                          Nombre de pages :{" "}
+                          <strong>
+                            {document.pageCount}
+                          </strong>
+                        </p>
+                      )}
+
+                      {document.documentUrl && (
+                        <a
+                          className="btn btn-ghost"
+                          href={document.documentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Ouvrir le document
+                        </a>
+                      )}
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ---------- ASSISTANT IA ---------- */}
+          <div className="ai-assistant">
+            <p className="ai-title">
+              🤖 Assistant technique CarnetPass
+            </p>
+
+            <p className="muted">
+              Pose une question technique sur ce modèle.
+            </p>
+
+            <textarea
+              className="ai-question"
+              value={aiQuestion}
+              onChange={(e) => {
+                setAiQuestion(e.target.value);
+                setAiAnswer("");
+              }}
+              placeholder="Ex : Défaut F28 : que dois-je vérifier ?"
+              rows={3}
+            />
+
+            <button
+              className="btn"
+              onClick={demanderIA}
+              disabled={
+                isAiLoading ||
+                !aiQuestion.trim()
+              }
+            >
+              {isAiLoading
+                ? "Analyse en cours..."
+                : "🤖 Demander à l’IA"}
+            </button>
+
+            {aiAnswer && (
+              <div className="ai-answer">
+                <ReactMarkdown>
+                  {aiAnswer}
+                </ReactMarkdown>
+              </div>
+            )}
           </div>
         </section>
       )}
