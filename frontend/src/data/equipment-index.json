@@ -12,6 +12,15 @@
       "status": "pilot"
     },
     {
+      "equipmentId": "sd-themafast-condens-30-a-h-fr-0010017417",
+      "brand": "Saunier Duval",
+      "model": "ThemaFast Condens 30-A",
+      "variant": "H-FR",
+      "manufacturerReference": "0010017417",
+      "dataFile": "equipment/saunier-duval-0010017417.json",
+      "status": "pilot"
+    },
+    {
       "carnetPassId": "CP-2026-000002",
       "equipmentId": "vaillant-ecotec-plus-vuw-26cs-1-5-n-fr-8000044523",
       "brand": "Vaillant",
