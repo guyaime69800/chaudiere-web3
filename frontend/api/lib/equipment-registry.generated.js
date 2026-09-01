@@ -22,11 +22,27 @@ import rag0_1 from "../../src/data/rag/saunier-duval-sd-themaplus-condens-30-a-e
   type: "json",
 };
 
-import equipment1 from "../../src/data/equipment/vaillant-8000044523.json" with {
+import equipment1 from "../../src/data/equipment/saunier-duval-0010017417.json" with {
   type: "json",
 };
 
-import rag1_0 from "../../src/data/rag/vaillant-0020279448-11.full.embeddings.json" with {
+import rag1_0 from "../../src/data/rag/saunier-duval-0020238209-04.full.embeddings.json" with {
+  type: "json",
+};
+
+import rag1_1 from "../../src/data/rag/saunier-duval-sd-themafast-condens-30-a-exploded-view-0010017417.full.embeddings.json" with {
+  type: "json",
+};
+
+import rag1_2 from "../../src/data/rag/saunier-duval-0020200493-01.full.embeddings.json" with {
+  type: "json",
+};
+
+import equipment2 from "../../src/data/equipment/vaillant-8000044523.json" with {
+  type: "json",
+};
+
+import rag2_0 from "../../src/data/rag/vaillant-0020279448-11.full.embeddings.json" with {
   type: "json",
 };
 
@@ -60,16 +76,47 @@ export const generatedEquipmentRegistry = [
     equipmentData: equipment1,
     ragDocuments: [
       {
-        documentId: "vaillant-ecotec-plus-vuw-installation-maintenance-0020279448-11",
+        documentId: "sd-themafast-condens-installation-maintenance-0020238209-04",
         documentType: "installation_maintenance",
-        title: "Notice d'installation et de maintenance - ecoTEC plus VU/VUW",
+        title: "Notice d'installation et de maintenance - ThemaFast Condens / Thema Condens",
         ragEmbeddingData: rag1_0,
+      },
+      {
+        documentId: "sd-themafast-condens-30-a-exploded-view-0010017417",
+        documentType: "exploded_view",
+        title: "Vue éclatée - ThemaFast Condens 30-A (H-FR)",
+        ragEmbeddingData: rag1_1,
+      },
+      {
+        documentId: "sd-themafast-condens-user-manual-0020200493-01",
+        documentType: "user_manual",
+        title: "Notice d'utilisation - ThemaFast Condens / Thema Condens",
+        ragEmbeddingData: rag1_2,
       },
     ],
     ragEmbeddingData: {
       model: rag1_0.model ?? "text-embedding-3-small",
       items: [
         ...(rag1_0.items ?? []),
+        ...(rag1_1.items ?? []),
+        ...(rag1_2.items ?? []),
+      ],
+    },
+  },
+  {
+    equipmentData: equipment2,
+    ragDocuments: [
+      {
+        documentId: "vaillant-ecotec-plus-vuw-installation-maintenance-0020279448-11",
+        documentType: "installation_maintenance",
+        title: "Notice d'installation et de maintenance - ecoTEC plus VU/VUW",
+        ragEmbeddingData: rag2_0,
+      },
+    ],
+    ragEmbeddingData: {
+      model: rag2_0.model ?? "text-embedding-3-small",
+      items: [
+        ...(rag2_0.items ?? []),
       ],
     },
   },

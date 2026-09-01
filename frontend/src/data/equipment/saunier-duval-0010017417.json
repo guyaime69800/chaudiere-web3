@@ -1,0 +1,248 @@
+{
+  "version": "1.0",
+  "equipmentId": "sd-themafast-condens-30-a-h-fr-0010017417",
+
+  "identity": {
+    "brand": "Saunier Duval",
+    "productType": "chaudiere_gaz_condensation",
+    "range": "ThemaFast Condens",
+    "model": "ThemaFast Condens 30-A",
+    "variant": "H-FR",
+    "manufacturerReference": "0010017417"
+  },
+
+  "carnetPass": {
+    "linkedIds": []
+  },
+
+  "support": {
+    "manufacturer": "Saunier Duval",
+    "hotline": {
+      "label": "Hotline technique Saunier Duval",
+      "phone": null,
+      "hours": null,
+      "source": null,
+      "verifiedAt": null
+    }
+  },
+
+  "documents": [
+    {
+      "documentId": "sd-themafast-condens-installation-maintenance-0020238209-04",
+      "title": "Notice d'installation et de maintenance - ThemaFast Condens / Thema Condens",
+      "documentType": "installation_maintenance",
+      "documentCode": "0020238209_04",
+      "documentUrl": "https://9zitc2y9n0ktt4m8.public.blob.vercel-storage.com/saunier-duval/0010017417/notice/Notice%20d%E2%80%99installation%20-%20THEMAFAST%20CONDENS%2030-A%20%28H-FR%29%20-%200010017417.pdf",
+      "revisionDate": "2019-04-15",
+      "pageCount": 44,
+      "language": "fr",
+      "sourceType": "manufacturer_document",
+      "sourceName": "Saunier Duval",
+      "appliesTo": [
+        "ThemaFast Condens 30-A (H-FR)"
+      ],
+      "manufacturerReference": "0010017417",
+
+      "usefulPages": {
+        "modelValidity": [
+          1,
+          7
+        ],
+        "functionalComponents": [
+          8,
+          9
+        ],
+        "commissioning": [
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "maintenance": [
+          22,
+          23,
+          24,
+          25,
+          26
+        ],
+        "troubleshooting": [
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34
+        ],
+        "diagnosticCodes": [
+          29,
+          30
+        ],
+        "statusCodes": [
+          31
+        ],
+        "faultCodes": [
+          32,
+          33
+        ],
+        "electricalDiagram": [
+          35,
+          36
+        ],
+        "technicalSpecifications": [
+          37,
+          38,
+          39,
+          40,
+          41
+        ]
+      },
+
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "external_not_committed"
+    },
+
+    {
+      "documentId": "sd-themafast-condens-30-a-exploded-view-0010017417",
+      "title": "Vue éclatée - ThemaFast Condens 30-A (H-FR)",
+      "documentType": "exploded_view",
+      "documentCode": null,
+      "documentUrl": "https://9zitc2y9n0ktt4m8.public.blob.vercel-storage.com/saunier-duval/0010017417/vue-eclatee/Vue%20%C3%A9clat%C3%A9e%20-%20THEMAFAST%20CONDENS%2030-A%20%28H-FR%29%20-%200010017417.pdf",
+      "revisionDate": null,
+      "pageCount": 30,
+      "language": "fr",
+      "sourceType": "manufacturer_spare_parts_catalog",
+      "sourceName": "Saunier Duval",
+      "appliesTo": [
+        "ThemaFast Condens 30-A (H-FR)"
+      ],
+      "manufacturerReference": "0010017417",
+
+      "usefulPages": {
+        "hydraulicAndPressureSensor": [
+          1,
+          2
+        ],
+        "electricalComponents": [
+          3,
+          4
+        ],
+        "connectionPlate": [
+          5,
+          6
+        ],
+        "burner": [
+          13,
+          14
+        ],
+        "overview": [
+          25,
+          26
+        ],
+        "partsCatalog": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30
+        ]
+      },
+
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "external_not_committed"
+    },
+
+    {
+      "documentId": "sd-themafast-condens-user-manual-0020200493-01",
+      "title": "Notice d'utilisation - ThemaFast Condens / Thema Condens",
+      "documentType": "user_manual",
+      "documentCode": "0020200493_01",
+      "documentUrl": "https://9zitc2y9n0ktt4m8.public.blob.vercel-storage.com/saunier-duval/0010017417/notice-utilisateur/Notice%20d%E2%80%99utilisation%20-%20THEMAFAST%20CONDENS%2030-A%20%28H-FR%29%20-%200010017417.pdf",
+      "revisionDate": "2017-05-19",
+      "pageCount": 20,
+      "language": "fr",
+      "sourceType": "manufacturer_document",
+      "sourceName": "Saunier Duval",
+      "appliesTo": [
+        "ThemaFast Condens 30-A (H-FR)"
+      ],
+      "manufacturerReference": "0010017417",
+
+      "usefulPages": {
+        "safety": [
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "productDescription": [
+          8,
+          9
+        ],
+        "userOperation": [
+          9,
+          10,
+          11,
+          12
+        ],
+        "troubleshooting": [
+          12,
+          13,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "maintenance": [
+          13
+        ],
+        "service": [
+          14
+        ]
+      },
+
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "external_not_committed"
+    }
+  ],
+
+  "errorCodeIndex": null,
+  "errorCodes": [],
+  "diagnosticRules": [],
+
+  "metadata": {
+    "status": "pilot",
+    "verificationStatus": "verified_documents",
+    "lastVerifiedAt": "2026-09-01",
+    "notes": "Notice installation, notice utilisateur et vue éclatée vérifiées. Le PDF Réglages de combustion est un extrait de la page 19 de la notice installation et n'est pas importé séparément dans le RAG."
+  }
+}
