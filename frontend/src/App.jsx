@@ -108,6 +108,11 @@ function App() {
   const [searchId, setSearchId] = useState("");
   const [message, setMessage] = useState("");
 
+  // Recherche universelle :
+  // mémorise les équipements génériques trouvés par modèle,
+  // gamme ou référence constructeur.
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchType, setSearchType] = useState("");
   // NOUVEAU (perf) : useMemo = "fabrique-le UNE fois, puis reutilise".
   // Sans ca, la connexion blockchain etait recreee a chaque lettre tapee dans un champ.
   const provider = useMemo(() => new ethers.JsonRpcProvider(RPC_URL), []);
@@ -354,82 +359,104 @@ function App() {
   // Recherche : on charge la fiche de l'appareil.
   // NOUVEAU : on accepte un ID explicite (venant du QR / de l'URL).
   // Sinon on prend celui tape dans le champ de recherche.
+  // ---------------------------------------------------------
+  // RECHERCHE UNIVERSELLE CARNETPASS
+  // ---------------------------------------------------------
+  //
+  // Accepte :
+  //
+  // - CarnetPass ID
+  // - référence constructeur
+  // - modèle / gamme
+  // - numéro de série
+  //
+  // Les anciens appareils enregistrés directement sur Polygon
+  // restent compatibles grâce au fallback blockchain.
+  // ---------------------------------------------------------
+
   async function chercherChaudiere(idExplicite) {
-    const idAChercher = String(
+    const valeurRecherche = String(
       idExplicite ?? searchId ?? ""
     ).trim();
 
+    if (!valeurRecherche) {
+      return;
+    }
+
+    // On remet l'écran de recherche à zéro
+    // avant d'afficher le nouveau résultat.
     setMessage("");
+    setBoiler(null);
     setMaintenances([]);
     setTechnicalResult(null);
     setEquipmentKnowledge(null);
-
-    if (!idAChercher) return;
+    setSearchResults([]);
+    setSearchType("");
+    setAiAnswer("");
 
     try {
-      // -------------------------------------------------
-      // 1. ANCIEN CARNETPASS : recherche Polygon
-      // -------------------------------------------------
-
-      const data =
-        await contract.equipments(idAChercher);
-
-      if (data.exists) {
-        setBoiler(data);
-
-        const knowledge =
-          await loadEquipmentKnowledge(
-            idAChercher
-          );
-
-        setEquipmentKnowledge(knowledge);
-
-        return;
-      }
-
-      // -------------------------------------------------
-      // 2. NOUVEAU CARNETPASS : recherche API / Redis
-      // -------------------------------------------------
+      // ---------------------------------------------------
+      // 1. RECHERCHE UNIVERSELLE
+      // ---------------------------------------------------
 
       const response = await fetch(
-        `/api/carnetpass?id=${encodeURIComponent(
-          idAChercher
+        `/api/search?q=${encodeURIComponent(
+          valeurRecherche
         )}`
       );
 
-      const result =
-        await response.json();
+      const result = await response.json();
 
-      if (
-        response.ok &&
-        result.ok &&
-        result.carnetPass
-      ) {
-        const carnetPass =
-          result.carnetPass;
+      if (!response.ok || !result.ok) {
+        throw new Error(
+          result.error ||
+          "Erreur pendant la recherche."
+        );
+      }
 
+      const results = Array.isArray(
+        result.results
+      )
+        ? result.results
+        : [];
+
+      setSearchType(
+        result.searchType ?? ""
+      );
+
+      // ---------------------------------------------------
+      // 2. CARNETPASS PHYSIQUE
+      // ---------------------------------------------------
+
+      const carnetPassResult =
+        results.find(
+          (item) =>
+            item.resultType ===
+            "carnetpass"
+        );
+
+      if (carnetPassResult) {
         const identity =
-          carnetPass.identity ?? {};
+          carnetPassResult.identity ?? {};
 
-        // Objet compatible avec l'interface CarnetPass actuelle.
         const boilerFromCarnetPass = {
           exists: true,
 
-          // ID PUBLIC :
+          // Identifiant public :
           // CP-2026-000003
           equipmentId:
-            carnetPass.carnetPassId,
+            carnetPassResult.carnetPassId,
 
-          // ID TECHNIQUE utilisé par le RAG :
-          // sd-themafast-condens-30-a-h-fr-0010017417
+          // Identifiant technique utilisé
+          // par le RAG :
           technicalEquipmentId:
-            carnetPass.equipmentId,
+            carnetPassResult.equipmentId,
 
           carnetPassId:
-            carnetPass.carnetPassId,
+            carnetPassResult.carnetPassId,
 
           qrCode:
-            carnetPass.carnetPassId,
+            carnetPassResult.carnetPassId,
 
           brand:
             identity.brand ?? "",
@@ -438,54 +465,129 @@ function App() {
             identity.model ?? "",
 
           productReference:
-            carnetPass.manufacturerReference ??
+            carnetPassResult.manufacturerReference ??
+            "",
+
+          manufacturerReference:
+            carnetPassResult.manufacturerReference ??
             "",
 
           serialNumber:
+            carnetPassResult.serialNumber ??
             "Non renseigné",
 
-          manufacturerReference:
-            carnetPass.manufacturerReference ??
-            "",
-
           source:
-            "carnetpass_api",
+            "universal_search",
         };
 
         setBoiler(
           boilerFromCarnetPass
         );
 
-        // IMPORTANT :
-        // le RAG recherche avec l'ID technique,
-        // pas avec CP-2026-000003.
-        const knowledge =
-          await loadEquipmentKnowledge(
-            carnetPass.equipmentId
-          );
+        // Le RAG travaille avec l'identifiant
+        // technique du modèle, pas avec CP-xxxx.
+        if (
+          carnetPassResult.equipmentId
+        ) {
+          const knowledge =
+            await loadEquipmentKnowledge(
+              carnetPassResult.equipmentId
+            );
 
-        setEquipmentKnowledge(
-          knowledge
+          setEquipmentKnowledge(
+            knowledge
+          );
+        }
+
+        return;
+      }
+
+      // ---------------------------------------------------
+      // 3. ÉQUIPEMENT(S) GÉNÉRIQUE(S)
+      // ---------------------------------------------------
+      //
+      // Une recherche par référence ou modèle
+      // NE CRÉE PAS de CarnetPass.
+      //
+      // Elle renvoie seulement les modèles
+      // correspondants.
+      // ---------------------------------------------------
+
+      const equipmentResults =
+        results.filter(
+          (item) =>
+            item.resultType ===
+            "equipment"
+        );
+
+      if (
+        equipmentResults.length > 0
+      ) {
+        setSearchResults(
+          equipmentResults
         );
 
         return;
       }
 
-      setBoiler(null);
+      // ---------------------------------------------------
+      // 4. FALLBACK POLYGON
+      // ---------------------------------------------------
+      //
+      // Compatibilité avec les anciens appareils
+      // du prototype enregistrés directement
+      // dans le smart contract.
+      // ---------------------------------------------------
+
+      try {
+        const polygonData =
+          await contract.equipments(
+            valeurRecherche
+          );
+
+        if (polygonData.exists) {
+          setBoiler(
+            polygonData
+          );
+
+          const knowledge =
+            await loadEquipmentKnowledge(
+              valeurRecherche
+            );
+
+          setEquipmentKnowledge(
+            knowledge
+          );
+
+          setSearchType(
+            "polygon_legacy"
+          );
+
+          return;
+        }
+      } catch (polygonError) {
+        console.warn(
+          "Recherche Polygon non concluante :",
+          polygonError
+        );
+      }
+
+      // ---------------------------------------------------
+      // 5. AUCUN RÉSULTAT
+      // ---------------------------------------------------
 
       setMessage(
-        "Aucun appareil trouvé avec cet identifiant."
+        "Aucun CarnetPass ou équipement trouvé."
       );
     } catch (error) {
       console.error(
-        "Erreur recherche CarnetPass :",
+        "Erreur recherche universelle CarnetPass :",
         error
       );
 
-      setBoiler(null);
-
       setMessage(
-        "Impossible de charger ce CarnetPass pour le moment."
+        error?.message ||
+        "Impossible d'effectuer la recherche pour le moment."
       );
     }
   }
@@ -787,7 +889,65 @@ function App() {
           )}
         </section>
       )}
+      {/* ---------- RÉSULTATS RECHERCHE ÉQUIPEMENTS ---------- */}
+      {searchResults.length > 0 && (
+        <section className="result">
+          <div className="appareil">
+            <div className="appareil-head">
+              <div>
+                <span className="appareil-type">
+                  Équipement constructeur
+                </span>
 
+                <h2 className="appareil-name">
+                  {searchResults.length === 1
+                    ? "Équipement trouvé"
+                    : `${searchResults.length} équipements trouvés`}
+                </h2>
+
+                <p className="appareil-loc">
+                  Sélectionne le modèle correspondant à ton appareil.
+                </p>
+              </div>
+            </div>
+
+            {searchResults.map((equipment) => (
+              <div
+                className="form-card"
+                key={equipment.equipmentId}
+              >
+                <h3>
+                  {equipment.brand} · {equipment.model}
+                </h3>
+
+                {equipment.range && (
+                  <p>
+                    <strong>Gamme :</strong>{" "}
+                    {equipment.range}
+                  </p>
+                )}
+
+                {equipment.variant && (
+                  <p>
+                    <strong>Version :</strong>{" "}
+                    {equipment.variant}
+                  </p>
+                )}
+
+                <p>
+                  <strong>Référence constructeur :</strong>{" "}
+                  {equipment.manufacturerReference}
+                </p>
+
+                <p className="muted">
+                  Fiche équipement générique — aucun CarnetPass
+                  personnel n'est créé par cette recherche.
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
       {/* ---------- MESSAGE "NON TROUVE" ---------- */}
       {message && !technicalResult && <p className="notfound">{message}</p>}
       {technicalResult && (
