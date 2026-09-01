@@ -1,13 +1,35 @@
 // ---------------------------------------------------------
-// CARNETPASS - MOTEUR RAG
-// Recherche sémantique + amélioration de pertinence
+// CARNETPASS - MOTEUR RAG MULTI-DOCUMENTS
+// ---------------------------------------------------------
+//
+// Objectifs :
+//
+// - recherche sémantique ;
+// - recherche lexicale ;
+// - priorité aux codes défaut exacts ;
+// - détection des questions de localisation ;
+// - détection des questions sur les pièces / références ;
+// - exploitation automatique des vues éclatées ;
+// - diversité documentaire : notice + vue éclatée ;
+// - éviter qu'une notice monopolise tout le Top-K.
+//
 // ---------------------------------------------------------
 
-// Calcule la proximité entre deux embeddings.
-//
-// Plus le score est élevé,
-// plus les deux textes sont proches par leur sens.
+// ---------------------------------------------------------
+// SIMILARITÉ COSINUS
+// ---------------------------------------------------------
+
 function cosineSimilarity(a, b) {
+  if (
+    !Array.isArray(a) ||
+    !Array.isArray(b) ||
+    a.length === 0 ||
+    b.length === 0 ||
+    a.length !== b.length
+  ) {
+    return 0;
+  }
+
   let dotProduct = 0;
   let magnitudeA = 0;
   let magnitudeB = 0;
@@ -19,7 +41,8 @@ function cosineSimilarity(a, b) {
   }
 
   const denominator =
-    Math.sqrt(magnitudeA) * Math.sqrt(magnitudeB);
+    Math.sqrt(magnitudeA) *
+    Math.sqrt(magnitudeB);
 
   if (!denominator) {
     return 0;
@@ -29,11 +52,9 @@ function cosineSimilarity(a, b) {
 }
 
 // ---------------------------------------------------------
-// NORMALISATION DU TEXTE
+// NORMALISATION TEXTE
 // ---------------------------------------------------------
 
-// Normalise un texte pour faciliter
-// les comparaisons lexicales.
 function normalizeText(value) {
   return String(value ?? "")
     .normalize("NFD")
@@ -45,7 +66,7 @@ function normalizeText(value) {
 }
 
 // ---------------------------------------------------------
-// MOTS A IGNORER POUR LA RECHERCHE LEXICALE
+// STOP WORDS
 // ---------------------------------------------------------
 
 const STOP_WORDS = new Set([
@@ -74,6 +95,21 @@ const STOP_WORDS = new Set([
   "faire",
   "trouve",
   "trouver",
+  "avoir",
+  "avait",
+  "mon",
+  "ma",
+  "mes",
+  "son",
+  "sa",
+  "ses",
+  "qui",
+  "que",
+  "quoi",
+  "dont",
+  "afin",
+  "apres",
+  "avant",
 ]);
 
 function extractKeywords(text) {
@@ -90,10 +126,16 @@ function extractKeywords(text) {
   ];
 }
 
-// Mesure combien de mots importants de la question
-// sont réellement présents dans le passage documentaire.
-function lexicalSimilarity(question, documentText) {
-  const keywords = extractKeywords(question);
+// ---------------------------------------------------------
+// SIMILARITÉ LEXICALE
+// ---------------------------------------------------------
+
+function lexicalSimilarity(
+  question,
+  documentText
+) {
+  const keywords =
+    extractKeywords(question);
 
   if (keywords.length === 0) {
     return 0;
@@ -102,15 +144,16 @@ function lexicalSimilarity(question, documentText) {
   const normalizedDocument =
     normalizeText(documentText);
 
-  const matches = keywords.filter((keyword) =>
-    normalizedDocument.includes(keyword)
-  ).length;
+  const matches =
+    keywords.filter((keyword) =>
+      normalizedDocument.includes(keyword)
+    ).length;
 
   return matches / keywords.length;
 }
 
 // ---------------------------------------------------------
-// DETECTION DES QUESTIONS DE LOCALISATION
+// QUESTIONS DE LOCALISATION
 // ---------------------------------------------------------
 
 function isLocationQuestion(question) {
@@ -123,17 +166,17 @@ function isLocationQuestion(question) {
     text.includes("localiser") ||
     text.includes("localisation") ||
     text.includes("position") ||
-    text.includes("repere")
+    text.includes("repere") ||
+    text.includes("numero de repere") ||
+    text.includes("quel repere")
   );
 }
 
-// Pour une question de localisation,
-// certains types de passages sont beaucoup plus utiles
-// qu'une page de codes défauts.
 const LOCATION_HINTS = [
   "structure du produit",
   "structure du bloc hydraulique",
   "vue d ensemble",
+  "vue eclatee",
   "emplacement",
   "position",
   "repere",
@@ -142,51 +185,207 @@ const LOCATION_HINTS = [
   "composants",
 ];
 
-// Calcule un bonus documentaire lorsque le passage
-// correspond au type de question posé.
-function calculateIntentBonus(
+// ---------------------------------------------------------
+// QUESTIONS PIÈCES / RÉFÉRENCES
+// ---------------------------------------------------------
+
+function isPartReferenceQuestion(question) {
+  const text = normalizeText(question);
+
+  return (
+    text.includes("reference") ||
+    text.includes("ref piece") ||
+    text.includes("piece detachee") ||
+    text.includes("piece de rechange") ||
+    text.includes("reference constructeur") ||
+    text.includes("reference du capteur") ||
+    text.includes("reference de remplacement") ||
+    text.includes("remplacement") ||
+    text.includes("remplacer") ||
+    text.includes("quelle piece") ||
+    text.includes("quel capteur") ||
+    text.includes("designation") ||
+    text.includes("vue eclatee") ||
+    text.includes("repere")
+  );
+}
+
+const PART_HINTS = [
+  "reference",
+  "ref.",
+  "ref ",
+  "designation",
+  "piece",
+  "piece detachee",
+  "piece de rechange",
+  "remplacement",
+  "remplacer",
+  "repere",
+  "vue eclatee",
+  "capteur",
+  "pompe",
+  "vanne",
+  "moteur",
+  "electrode",
+  "echangeur",
+  "circulateur",
+  "ventilateur",
+];
+
+// ---------------------------------------------------------
+// DÉTECTION TYPE DE DOCUMENT
+// ---------------------------------------------------------
+
+function inferDocumentType(item) {
+  const explicitType =
+    item?.documentType;
+
+  if (explicitType) {
+    const normalized =
+      normalizeText(explicitType);
+
+    if (
+      normalized.includes("exploded") ||
+      normalized.includes("eclatee")
+    ) {
+      return "exploded_view";
+    }
+
+    if (
+      normalized.includes("installation") &&
+      normalized.includes("maintenance")
+    ) {
+      return "installation_maintenance";
+    }
+
+    return explicitType;
+  }
+
+  const source = normalizeText(
+    [
+      item?.documentId,
+      item?.topic,
+      item?.section,
+      item?.title,
+    ]
+      .filter(Boolean)
+      .join(" ")
+  );
+
+  if (
+    source.includes("exploded-view") ||
+    source.includes("exploded view") ||
+    source.includes("vue eclatee") ||
+    source.includes("eclatee")
+  ) {
+    return "exploded_view";
+  }
+
+  if (
+    source.includes(
+      "installation-maintenance"
+    ) ||
+    source.includes(
+      "installation maintenance"
+    )
+  ) {
+    return "installation_maintenance";
+  }
+
+  return "unknown";
+}
+
+// ---------------------------------------------------------
+// BONUS LOCALISATION
+// ---------------------------------------------------------
+
+function calculateLocationBonus(
   question,
   documentText,
-  lexicalScore
+  lexicalScore,
+  documentType
 ) {
   if (!isLocationQuestion(question)) {
     return 0;
   }
 
-  // On ne favorise pas une page de structure
-  // si elle ne contient aucun élément pertinent
-  // par rapport à la question.
-  if (lexicalScore <= 0) {
-    return 0;
+  const text =
+    normalizeText(documentText);
+
+  let bonus = 0;
+
+  const hasLocationHint =
+    LOCATION_HINTS.some((hint) =>
+      text.includes(hint)
+    );
+
+  if (
+    hasLocationHint &&
+    lexicalScore > 0
+  ) {
+    bonus += 0.12;
   }
 
-  const text = normalizeText(documentText);
+  // Une vue éclatée est particulièrement
+  // utile pour localiser une pièce.
+  if (
+    documentType === "exploded_view"
+  ) {
+    bonus += 0.30;
+  }
 
-  const hasLocationHint = LOCATION_HINTS.some(
-    (hint) => text.includes(hint)
-  );
-
-  return hasLocationHint ? 0.12 : 0;
+  return bonus;
 }
 
 // ---------------------------------------------------------
-// NORMALISATION DES CODES DEFAUT F.xxx
+// BONUS PIÈCE / RÉFÉRENCE
 // ---------------------------------------------------------
-//
-// Exemples équivalents :
-//
-// F28
-// F.28
-// F028
-// F.028
-//
-// deviennent tous :
-//
-// F.28
-//
-// Cela permet de comparer correctement
-// la question du technicien
-// avec l'écriture utilisée par le constructeur.
+
+function calculatePartBonus(
+  question,
+  documentText,
+  lexicalScore,
+  documentType
+) {
+  if (!isPartReferenceQuestion(question)) {
+    return 0;
+  }
+
+  const text =
+    normalizeText(documentText);
+
+  let bonus = 0;
+
+  // Très important :
+  // lorsqu'une référence de pièce est demandée,
+  // on favorise franchement la vue éclatée.
+  if (
+    documentType === "exploded_view"
+  ) {
+    bonus += 0.45;
+  }
+
+  const hintMatches =
+    PART_HINTS.filter((hint) =>
+      text.includes(hint)
+    ).length;
+
+  if (hintMatches > 0) {
+    bonus += Math.min(
+      0.18,
+      hintMatches * 0.035
+    );
+  }
+
+  if (lexicalScore > 0.25) {
+    bonus += 0.05;
+  }
+
+  return bonus;
+}
+
+// ---------------------------------------------------------
+// NORMALISATION CODES DÉFAUT
 // ---------------------------------------------------------
 
 function normalizeErrorCodeNumber(value) {
@@ -200,19 +399,7 @@ function normalizeErrorCodeNumber(value) {
 }
 
 // ---------------------------------------------------------
-// EXTRACTION DES CODES DEFAUT
-// ---------------------------------------------------------
-//
-// Recherche les codes F dans un texte.
-//
-// Exemple :
-//
-// "Erreur F.028 puis F074"
-//
-// donne :
-//
-// F.28
-// F.74
+// EXTRACTION CODES DÉFAUT
 // ---------------------------------------------------------
 
 function extractErrorCodes(text) {
@@ -226,9 +413,13 @@ function extractErrorCodes(text) {
 
   let match;
 
-  while ((match = regex.exec(source)) !== null) {
+  while (
+    (match = regex.exec(source)) !== null
+  ) {
     const normalizedCode =
-      normalizeErrorCodeNumber(match[1]);
+      normalizeErrorCodeNumber(
+        match[1]
+      );
 
     if (normalizedCode) {
       codes.add(normalizedCode);
@@ -239,26 +430,7 @@ function extractErrorCodes(text) {
 }
 
 // ---------------------------------------------------------
-// DETECTION D'UNE QUESTION SUR UN CODE DEFAUT
-// ---------------------------------------------------------
-
-function isErrorCodeQuestion(question) {
-  return extractErrorCodes(question).length > 0;
-}
-
-// ---------------------------------------------------------
-// BONUS POUR UN CODE DEFAUT EXACT
-// ---------------------------------------------------------
-//
-// Cette partie est essentielle.
-//
-// Si le technicien demande F28
-// et qu'un chunk contient réellement F.028,
-// ce chunk doit passer AVANT
-// un passage qui parle simplement
-// d'un autre défaut ressemblant.
-//
-// On utilise donc un bonus important.
+// BONUS CODE DÉFAUT
 // ---------------------------------------------------------
 
 function calculateErrorCodeBonus(
@@ -301,30 +473,8 @@ function calculateErrorCodeBonus(
     };
   }
 
-  // -------------------------------------------------------
-  // BONUS PRINCIPAL
-  // -------------------------------------------------------
-  //
-  // Un passage contenant réellement
-  // le code demandé reçoit un bonus fort.
-  // -------------------------------------------------------
-
+  // Très gros bonus pour le code exact.
   const errorCodeBonus = 0.65;
-
-  // -------------------------------------------------------
-  // BONUS TABLEAU / DIAGNOSTIC
-  // -------------------------------------------------------
-  //
-  // Lorsqu'un passage contient également des termes
-  // typiques d'un tableau constructeur :
-  //
-  // Code
-  // Signification
-  // Cause possible
-  // Mesure
-  //
-  // on le favorise encore davantage.
-  // -------------------------------------------------------
 
   const normalizedDocument =
     normalizeText(documentText);
@@ -349,7 +499,9 @@ function calculateErrorCodeBonus(
     );
 
   const errorTableBonus =
-    hasErrorTableHint ? 0.15 : 0;
+    hasErrorTableHint
+      ? 0.15
+      : 0;
 
   return {
     requestedCodes,
@@ -362,33 +514,302 @@ function calculateErrorCodeBonus(
 }
 
 // ---------------------------------------------------------
-// RECHERCHE RAG
+// NORMALISATION DES SOURCES RAG
 // ---------------------------------------------------------
 //
-// Recherche les passages documentaires
-// les plus pertinents pour la question.
+// Compatible avec :
 //
-// ragEmbeddingData correspond uniquement
-// à l'équipement actuellement consulté.
+// 1. ancien format :
+//    { model, items: [...] }
+//
+// 2. tableau de documents :
+//    [ragNotice, ragVueEclatee]
+//
+// 3. structure multi-documents :
+//    { documents: [...] }
+//
+// ---------------------------------------------------------
+
+function getRagSources(
+  ragEmbeddingData
+) {
+  if (!ragEmbeddingData) {
+    return [];
+  }
+
+  if (
+    Array.isArray(ragEmbeddingData)
+  ) {
+    return ragEmbeddingData;
+  }
+
+  if (
+    Array.isArray(
+      ragEmbeddingData.documents
+    )
+  ) {
+    return ragEmbeddingData.documents;
+  }
+
+  if (
+    Array.isArray(
+      ragEmbeddingData.ragDocuments
+    )
+  ) {
+    return ragEmbeddingData.ragDocuments;
+  }
+
+  return [ragEmbeddingData];
+}
+
+function getRagItems(
+  ragEmbeddingData
+) {
+  const sources =
+    getRagSources(ragEmbeddingData);
+
+  const items = [];
+
+  for (const source of sources) {
+    const sourceItems =
+      source?.items ?? [];
+
+    for (const item of sourceItems) {
+      items.push({
+        ...item,
+
+        documentType:
+          item.documentType ??
+          source.documentType ??
+          source.metadata
+            ?.documentType ??
+          inferDocumentType(item),
+
+        ragModel:
+          source.model ?? null,
+      });
+    }
+  }
+
+  return items;
+}
+
+function getEmbeddingModel(
+  ragEmbeddingData
+) {
+  const sources =
+    getRagSources(ragEmbeddingData);
+
+  for (const source of sources) {
+    if (source?.model) {
+      return source.model;
+    }
+  }
+
+  return "text-embedding-3-small";
+}
+
+// ---------------------------------------------------------
+// IDENTIFIANT UNIQUE CHUNK
+// ---------------------------------------------------------
+
+function getResultKey(result) {
+  return [
+    result.documentId ?? "document",
+    result.chunkId ?? "chunk",
+    result.page ?? "page",
+  ].join("::");
+}
+
+// ---------------------------------------------------------
+// SÉLECTION MULTI-DOCUMENTS
+// ---------------------------------------------------------
+//
+// C'est la partie importante de cette correction.
+//
+// Exemple question :
+//
+// "J'ai F22, que vérifier et quelle est
+//  la référence du capteur de pression ?"
+//
+// On veut obligatoirement :
+//
+// - au moins un passage F22 de la notice ;
+// - au moins un passage de la vue éclatée ;
+// - puis compléter avec les meilleurs résultats.
+//
+// ---------------------------------------------------------
+
+function selectDiverseResults(
+  results,
+  {
+    topK,
+    errorCodeQuestion,
+    partReferenceQuestion,
+    locationQuestion,
+  }
+) {
+  const selected = [];
+  const selectedKeys =
+    new Set();
+
+  function add(result) {
+    if (!result) {
+      return;
+    }
+
+    const key =
+      getResultKey(result);
+
+    if (
+      selectedKeys.has(key)
+    ) {
+      return;
+    }
+
+    selectedKeys.add(key);
+    selected.push(result);
+  }
+
+  // -------------------------------------------------------
+  // 1. CODE DÉFAUT EXACT
+  // -------------------------------------------------------
+
+  if (errorCodeQuestion) {
+    const exactCodeResult =
+      results.find(
+        (result) =>
+          result.exactCodeMatch
+      );
+
+    add(exactCodeResult);
+  }
+
+  // -------------------------------------------------------
+  // 2. VUE ÉCLATÉE
+  // -------------------------------------------------------
+  //
+  // Si la question demande :
+  //
+  // - une référence ;
+  // - un remplacement ;
+  // - un repère ;
+  // - un emplacement ;
+  //
+  // on réserve une place à la meilleure
+  // information provenant d'une vue éclatée.
+  // -------------------------------------------------------
+
+  if (
+    partReferenceQuestion ||
+    locationQuestion
+  ) {
+    const explodedViewResult =
+      results.find(
+        (result) =>
+          result.documentType ===
+          "exploded_view"
+      );
+
+    add(explodedViewResult);
+  }
+
+  // -------------------------------------------------------
+  // 3. DIVERSITÉ DOCUMENTAIRE
+  // -------------------------------------------------------
+  //
+  // Si plusieurs documents existent,
+  // on essaye de ne pas envoyer uniquement
+  // trois chunks issus du même PDF.
+  // -------------------------------------------------------
+
+  const selectedDocumentIds =
+    new Set(
+      selected
+        .map(
+          (result) =>
+            result.documentId
+        )
+        .filter(Boolean)
+    );
+
+  if (
+    selected.length < topK
+  ) {
+    const diverseCandidate =
+      results.find((result) => {
+        if (!result.documentId) {
+          return false;
+        }
+
+        return (
+          !selectedDocumentIds.has(
+            result.documentId
+          ) &&
+          !selectedKeys.has(
+            getResultKey(result)
+          )
+        );
+      });
+
+    if (diverseCandidate) {
+      add(diverseCandidate);
+
+      selectedDocumentIds.add(
+        diverseCandidate.documentId
+      );
+    }
+  }
+
+  // -------------------------------------------------------
+  // 4. COMPLÉTER AVEC LE CLASSEMENT GLOBAL
+  // -------------------------------------------------------
+
+  for (const result of results) {
+    if (
+      selected.length >= topK
+    ) {
+      break;
+    }
+
+    add(result);
+  }
+
+  return selected.slice(
+    0,
+    topK
+  );
+}
+
+// ---------------------------------------------------------
+// RECHERCHE RAG
 // ---------------------------------------------------------
 
 export async function searchRagContext(
   openai,
   ragEmbeddingData,
   question,
-  topK = 3
+  topK = 4
 ) {
-  const ragItems =
-    ragEmbeddingData?.items ?? [];
+  // -------------------------------------------------------
+  // 1. RÉCUPÉRER TOUS LES CHUNKS
+  // -------------------------------------------------------
 
-  if (ragItems.length === 0) {
+  const ragItems =
+    getRagItems(
+      ragEmbeddingData
+    );
+
+  if (
+    ragItems.length === 0
+  ) {
     throw new Error(
       "Aucun embedding RAG disponible pour cet équipement"
     );
   }
 
   // -------------------------------------------------------
-  // 1. ANALYSE DE LA QUESTION
+  // 2. ANALYSER LA QUESTION
   // -------------------------------------------------------
 
   const requestedErrorCodes =
@@ -400,153 +821,170 @@ export async function searchRagContext(
   const locationQuestion =
     isLocationQuestion(question);
 
+  const partReferenceQuestion =
+    isPartReferenceQuestion(
+      question
+    );
+
   // -------------------------------------------------------
-  // 2. EMBEDDING DE LA QUESTION
+  // 3. EMBEDDING DE LA QUESTION
   // -------------------------------------------------------
+
+  const model =
+    getEmbeddingModel(
+      ragEmbeddingData
+    );
 
   const embeddingResponse =
     await openai.embeddings.create({
-      model:
-        ragEmbeddingData.model ??
-        "text-embedding-3-small",
-
+      model,
       input: question,
     });
 
   const questionEmbedding =
-    embeddingResponse.data[0].embedding;
+    embeddingResponse
+      .data?.[0]
+      ?.embedding;
+
+  if (!questionEmbedding) {
+    throw new Error(
+      "Embedding de la question introuvable"
+    );
+  }
 
   // -------------------------------------------------------
-  // 3. ANALYSE DE TOUS LES CHUNKS
+  // 4. ANALYSER TOUS LES CHUNKS
   // -------------------------------------------------------
 
-  const results = ragItems.map((item) => {
-    const documentText = [
-      item.topic,
-      item.section,
-      item.text,
-    ]
-      .filter(Boolean)
-      .join("\n");
+  const results =
+    ragItems.map((item) => {
+      const documentType =
+        inferDocumentType(item);
 
-    // -----------------------------------------------------
-    // SCORE SEMANTIQUE
-    // -----------------------------------------------------
+      const documentText = [
+        item.topic,
+        item.section,
+        item.text,
+      ]
+        .filter(Boolean)
+        .join("\n");
 
-    const semanticScore =
-      cosineSimilarity(
-        questionEmbedding,
-        item.embedding
-      );
+      // Score sémantique.
+      const semanticScore =
+        cosineSimilarity(
+          questionEmbedding,
+          item.embedding
+        );
 
-    // -----------------------------------------------------
-    // SCORE LEXICAL
-    // -----------------------------------------------------
+      // Score lexical.
+      const lexicalScore =
+        lexicalSimilarity(
+          question,
+          documentText
+        );
 
-    const lexicalScore =
-      lexicalSimilarity(
-        question,
-        documentText
-      );
+      // Bonus localisation.
+      const locationBonus =
+        calculateLocationBonus(
+          question,
+          documentText,
+          lexicalScore,
+          documentType
+        );
 
-    // -----------------------------------------------------
-    // BONUS SELON LE TYPE DE QUESTION
-    // -----------------------------------------------------
+      // Bonus pièce / référence.
+      const partBonus =
+        calculatePartBonus(
+          question,
+          documentText,
+          lexicalScore,
+          documentType
+        );
 
-    const intentBonus =
-      calculateIntentBonus(
-        question,
-        documentText,
-        lexicalScore
-      );
+      // Bonus code défaut.
+      const errorCodeAnalysis =
+        calculateErrorCodeBonus(
+          question,
+          documentText
+        );
 
-    // -----------------------------------------------------
-    // BONUS CODE DEFAUT
-    // -----------------------------------------------------
+      const {
+        matchedCodes,
+        exactCodeMatch,
+        errorCodeBonus,
+        errorTableBonus,
+      } = errorCodeAnalysis;
 
-    const errorCodeAnalysis =
-      calculateErrorCodeBonus(
-        question,
-        documentText
-      );
+      // ---------------------------------------------------
+      // SCORE GLOBAL
+      // ---------------------------------------------------
 
-    const {
-      matchedCodes,
-      exactCodeMatch,
-      errorCodeBonus,
-      errorTableBonus,
-    } = errorCodeAnalysis;
+      const rankingScore =
+        semanticScore +
+        lexicalScore * 0.08 +
+        locationBonus +
+        partBonus +
+        errorCodeBonus +
+        errorTableBonus;
 
-    // -----------------------------------------------------
-    // SCORE FINAL
-    // -----------------------------------------------------
-    //
-    // Le sens reste la base du moteur.
-    //
-    // On ajoute :
-    //
-    // - un petit bonus lexical ;
-    // - un bonus selon l'intention ;
-    // - un GROS bonus si le code exact est présent ;
-    // - un bonus supplémentaire si le passage ressemble
-    //   à un tableau constructeur de diagnostic.
-    // -----------------------------------------------------
+      return {
+        chunkId:
+          item.chunkId,
 
-    const rankingScore =
-      semanticScore +
-      lexicalScore * 0.08 +
-      intentBonus +
-      errorCodeBonus +
-      errorTableBonus;
+        documentId:
+          item.documentId,
 
-    return {
-      chunkId: item.chunkId,
-      documentId: item.documentId,
-      topic: item.topic,
-      page: item.page,
-      section: item.section,
-      text: item.text,
+        documentType,
 
-      // Score sémantique historique.
-      score: semanticScore,
+        topic:
+          item.topic,
 
-      // Nouveaux éléments de diagnostic RAG.
-      lexicalScore,
-      intentBonus,
+        page:
+          item.page,
 
-      exactCodeMatch,
-      matchedCodes,
-      errorCodeBonus,
-      errorTableBonus,
+        section:
+          item.section,
 
-      rankingScore,
-    };
-  });
+        text:
+          item.text,
+
+        score:
+          semanticScore,
+
+        lexicalScore,
+
+        locationBonus,
+
+        partBonus,
+
+        exactCodeMatch,
+
+        matchedCodes,
+
+        errorCodeBonus,
+
+        errorTableBonus,
+
+        rankingScore,
+      };
+    });
 
   // -------------------------------------------------------
-  // 4. CLASSEMENT
-  // -------------------------------------------------------
-  //
-  // IMPORTANT :
-  //
-  // Si la question contient un code défaut précis,
-  // les chunks contenant réellement ce code
-  // passent avant les chunks qui ne le contiennent pas.
-  //
-  // Ensuite seulement,
-  // on utilise le score global pour les départager.
-  //
-  // Cela évite par exemple que F.022
-  // soit proposé avant F.028
-  // simplement parce que les textes sont proches.
+  // 5. CLASSEMENT GLOBAL
   // -------------------------------------------------------
 
   results.sort((a, b) => {
+    // Lorsqu'un code exact est demandé,
+    // les chunks qui contiennent réellement
+    // ce code restent prioritaires.
     if (
       errorCodeQuestion &&
-      a.exactCodeMatch !== b.exactCodeMatch
+      a.exactCodeMatch !==
+        b.exactCodeMatch
     ) {
-      return a.exactCodeMatch ? -1 : 1;
+      return a.exactCodeMatch
+        ? -1
+        : 1;
     }
 
     return (
@@ -555,40 +993,121 @@ export async function searchRagContext(
     );
   });
 
+  // -------------------------------------------------------
+  // 6. TOP-K MULTI-DOCUMENTS
+  // -------------------------------------------------------
+
   const topResults =
-    results.slice(0, topK);
+    selectDiverseResults(
+      results,
+      {
+        topK,
+        errorCodeQuestion,
+        partReferenceQuestion,
+        locationQuestion,
+      }
+    );
 
   // -------------------------------------------------------
-  // 5. CONTEXTE ENVOYE A L'IA
+  // 7. CONTEXTE ENVOYÉ À L'IA
+  // -------------------------------------------------------
+  //
+  // On précise maintenant explicitement
+  // la provenance de chaque passage.
+  //
+  // Ainsi l'IA sait par exemple :
+  //
+  // - ceci vient de la notice ;
+  // - ceci vient de la vue éclatée.
+  //
   // -------------------------------------------------------
 
-  const contextText = topResults
-    .map(
-      (result) =>
-        `Page : ${result.page}
+  const contextText =
+    topResults
+      .map(
+        (result) =>
+          `Source documentaire :
+Type : ${result.documentType}
+Document : ${result.documentId}
+Page : ${result.page}
 Section : ${result.section}
-Information : ${result.text}`
-    )
-    .join("\n\n---\n\n");
+
+Information :
+${result.text}`
+      )
+      .join(
+        "\n\n----------------------------------------\n\n"
+      );
 
   // -------------------------------------------------------
-  // 6. TYPE DE QUESTION
+  // 8. INTENTION DE LA QUESTION
   // -------------------------------------------------------
 
-  let queryIntent = "general";
+  let queryIntent =
+    "general";
 
-  if (errorCodeQuestion) {
-    queryIntent = "error_code";
-  } else if (locationQuestion) {
-    queryIntent = "component_location";
+  if (
+    errorCodeQuestion &&
+    partReferenceQuestion
+  ) {
+    queryIntent =
+      "error_code_and_part_reference";
+  } else if (
+    errorCodeQuestion &&
+    locationQuestion
+  ) {
+    queryIntent =
+      "error_code_and_component_location";
+  } else if (
+    errorCodeQuestion
+  ) {
+    queryIntent =
+      "error_code";
+  } else if (
+    partReferenceQuestion
+  ) {
+    queryIntent =
+      "part_reference";
+  } else if (
+    locationQuestion
+  ) {
+    queryIntent =
+      "component_location";
   }
 
   // -------------------------------------------------------
-  // 7. RESULTAT
+  // 9. DOCUMENTS UTILISÉS
+  // -------------------------------------------------------
+
+  const documentCoverage = [
+    ...new Set(
+      topResults
+        .map(
+          (result) =>
+            result.documentId
+        )
+        .filter(Boolean)
+    ),
+  ];
+
+  const documentTypeCoverage = [
+    ...new Set(
+      topResults
+        .map(
+          (result) =>
+            result.documentType
+        )
+        .filter(Boolean)
+    ),
+  ];
+
+  // -------------------------------------------------------
+  // 10. RÉSULTAT
   // -------------------------------------------------------
 
   return {
     topResults,
+
     contextText,
 
     queryIntent,
@@ -603,8 +1122,16 @@ Information : ${result.text}`
           )
         : null,
 
+    documentCoverage,
+
+    documentTypeCoverage,
+
+    multiDocumentContext:
+      documentCoverage.length > 1,
+
     tokensUsed:
       embeddingResponse.usage
-        ?.total_tokens ?? null,
+        ?.total_tokens ??
+      null,
   };
 }
