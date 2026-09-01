@@ -1,7 +1,36 @@
 import fs from "fs";
 import path from "path";
 
-// Dossiers contenant les équipements et les embeddings RAG.
+// ---------------------------------------------------------
+// CARNETPASS - REGISTRE RAG MULTI-DOCUMENTS
+// ---------------------------------------------------------
+//
+// Ce script :
+//
+// 1. détecte tous les équipements ;
+// 2. détecte tous les fichiers d'embeddings ;
+// 3. associe chaque PDF à son équipement via documentId ;
+// 4. autorise plusieurs documents par équipement ;
+// 5. génère un registre unique utilisable par l'API IA.
+//
+// Exemple pour un équipement :
+//
+// Saunier Duval ThemaPlus Condens 30-A
+//
+// ├── Notice installation / maintenance
+// │   └── embeddings
+// │
+// └── Vue éclatée
+//     └── embeddings
+//
+// Les items RAG sont ensuite fusionnés afin que rag.js
+// puisse chercher dans tous les documents simultanément.
+// ---------------------------------------------------------
+
+// ---------------------------------------------------------
+// DOSSIERS
+// ---------------------------------------------------------
+
 const equipmentDir = path.resolve(
   "src/data/equipment"
 );
@@ -10,59 +39,123 @@ const ragDir = path.resolve(
   "src/data/rag"
 );
 
-// Fichier qui sera généré automatiquement.
 const outputPath = path.resolve(
   "api/lib/equipment-registry.generated.js"
 );
 
-const outputDir = path.dirname(outputPath);
+const outputDir = path.dirname(
+  outputPath
+);
 
-// Transforme un chemin Windows en chemin utilisable
-// dans un import JavaScript.
-function toImportPath(absolutePath) {
+// ---------------------------------------------------------
+// CHEMIN D'IMPORT JAVASCRIPT
+// ---------------------------------------------------------
+//
+// Transforme notamment :
+//
+// ..\..\src\data\...
+//
+// en :
+//
+// ../../src/data/...
+// ---------------------------------------------------------
+
+function toImportPath(
+  absolutePath
+) {
   let relativePath = path
-    .relative(outputDir, absolutePath)
+    .relative(
+      outputDir,
+      absolutePath
+    )
     .replace(/\\/g, "/");
 
-  if (!relativePath.startsWith(".")) {
-    relativePath = `./${relativePath}`;
+  if (
+    !relativePath.startsWith(".")
+  ) {
+    relativePath =
+      `./${relativePath}`;
   }
 
   return relativePath;
 }
 
-console.log("");
-console.log("CarnetPass - Génération du registre RAG");
-console.log("---------------------------------------");
+// ---------------------------------------------------------
+// DÉBUT
+// ---------------------------------------------------------
 
-// ----------------------------------------------------
-// 1. Recherche de tous les fichiers d'embeddings.
-// ----------------------------------------------------
+console.log("");
+
+console.log(
+  "CarnetPass - Génération du registre RAG multi-documents"
+);
+
+console.log(
+  "--------------------------------------------------------"
+);
+
+// ---------------------------------------------------------
+// 1. EMBEDDINGS DISPONIBLES
+// ---------------------------------------------------------
+
+if (
+  !fs.existsSync(ragDir)
+) {
+  throw new Error(
+    `Dossier RAG introuvable : ${ragDir}`
+  );
+}
 
 const embeddingFiles = fs
   .readdirSync(ragDir)
-  .filter((fileName) =>
-    fileName.endsWith(".full.embeddings.json")
+  .filter(
+    (fileName) =>
+      fileName.endsWith(
+        ".full.embeddings.json"
+      )
   );
 
-// documentId → fichier embeddings
-const embeddingByDocumentId = new Map();
+// documentId → informations embedding
 
-for (const fileName of embeddingFiles) {
-  const filePath = path.join(
-    ragDir,
-    fileName
-  );
+const embeddingByDocumentId =
+  new Map();
 
-  const embeddingData = JSON.parse(
-    fs.readFileSync(filePath, "utf8")
-  );
+for (
+  const fileName
+  of embeddingFiles
+) {
+  const filePath =
+    path.join(
+      ragDir,
+      fileName
+    );
 
-  // Pour nos fichiers actuels, le documentId
-  // est disponible dans les éléments RAG.
+  let embeddingData;
+
+  try {
+    embeddingData =
+      JSON.parse(
+        fs.readFileSync(
+          filePath,
+          "utf8"
+        )
+      );
+  } catch (error) {
+    console.warn(
+      `⚠️ Impossible de lire ${fileName}`
+    );
+
+    console.warn(
+      error.message
+    );
+
+    continue;
+  }
+
   const documentId =
     embeddingData.documentId ??
-    embeddingData.items?.[0]?.documentId;
+    embeddingData.items?.[0]
+      ?.documentId;
 
   if (!documentId) {
     console.warn(
@@ -72,62 +165,161 @@ for (const fileName of embeddingFiles) {
     continue;
   }
 
+  if (
+    embeddingByDocumentId.has(
+      documentId
+    )
+  ) {
+    console.warn(
+      `⚠️ Plusieurs fichiers embeddings détectés pour ${documentId}`
+    );
+  }
+
   embeddingByDocumentId.set(
     documentId,
-    fileName
+    {
+      fileName,
+      filePath,
+      documentId,
+    }
   );
 }
 
-// ----------------------------------------------------
-// 2. Recherche de tous les équipements.
-// ----------------------------------------------------
+// ---------------------------------------------------------
+// 2. ÉQUIPEMENTS DISPONIBLES
+// ---------------------------------------------------------
+
+if (
+  !fs.existsSync(
+    equipmentDir
+  )
+) {
+  throw new Error(
+    `Dossier équipements introuvable : ${equipmentDir}`
+  );
+}
 
 const equipmentFiles = fs
-  .readdirSync(equipmentDir)
-  .filter((fileName) =>
-    fileName.endsWith(".json")
+  .readdirSync(
+    equipmentDir
+  )
+  .filter(
+    (fileName) =>
+      fileName.endsWith(
+        ".json"
+      )
   );
+
+// ---------------------------------------------------------
+// STRUCTURE INTERMÉDIAIRE
+// ---------------------------------------------------------
 
 const registryEntries = [];
 
-for (const equipmentFile of equipmentFiles) {
-  const equipmentPath = path.join(
-    equipmentDir,
-    equipmentFile
-  );
+// ---------------------------------------------------------
+// 3. ASSOCIATION ÉQUIPEMENT ↔ DOCUMENTS RAG
+// ---------------------------------------------------------
 
-  const equipmentData = JSON.parse(
-    fs.readFileSync(
-      equipmentPath,
-      "utf8"
-    )
-  );
-
-  // Pour le moment, le RAG utilise principalement
-  // la notice installation / maintenance.
-  const documentData =
-    equipmentData.documents?.find(
-      (document) =>
-        document.documentType ===
-        "installation_maintenance"
+for (
+  const equipmentFile
+  of equipmentFiles
+) {
+  const equipmentPath =
+    path.join(
+      equipmentDir,
+      equipmentFile
     );
 
-  if (!documentData?.documentId) {
+  let equipmentData;
+
+  try {
+    equipmentData =
+      JSON.parse(
+        fs.readFileSync(
+          equipmentPath,
+          "utf8"
+        )
+      );
+  } catch (error) {
     console.warn(
-      `⚠️ Pas de notice RAG pour ${equipmentFile}`
+      `⚠️ Impossible de lire ${equipmentFile}`
+    );
+
+    console.warn(
+      error.message
     );
 
     continue;
   }
 
-  const embeddingFile =
-    embeddingByDocumentId.get(
-      documentData.documentId
+  const documents =
+    Array.isArray(
+      equipmentData.documents
+    )
+      ? equipmentData.documents
+      : [];
+
+  if (
+    documents.length === 0
+  ) {
+    console.warn(
+      `⚠️ Aucun document pour ${equipmentFile}`
     );
 
-  if (!embeddingFile) {
+    continue;
+  }
+
+  // -------------------------------------------------------
+  // DOCUMENTS AYANT RÉELLEMENT DES EMBEDDINGS
+  // -------------------------------------------------------
+
+  const ragDocuments = [];
+
+  for (
+    const documentData
+    of documents
+  ) {
+    if (
+      !documentData?.documentId
+    ) {
+      continue;
+    }
+
+    const embeddingInfo =
+      embeddingByDocumentId.get(
+        documentData.documentId
+      );
+
+    if (
+      !embeddingInfo
+    ) {
+      console.log(
+        `ℹ️ Pas encore d'embeddings : ${documentData.documentId}`
+      );
+
+      continue;
+    }
+
+    ragDocuments.push({
+      documentData,
+
+      embeddingFile:
+        embeddingInfo.fileName,
+
+      embeddingPath:
+        embeddingInfo.filePath,
+    });
+  }
+
+  // -------------------------------------------------------
+  // AUCUN DOCUMENT RAG POUR CET ÉQUIPEMENT
+  // -------------------------------------------------------
+
+  if (
+    ragDocuments.length === 0
+  ) {
     console.warn(
-      `⚠️ Embeddings introuvables pour ${equipmentFile}`
+      `⚠️ Aucun document RAG exploitable pour ${equipmentFile}`
     );
 
     continue;
@@ -136,26 +328,28 @@ for (const equipmentFile of equipmentFiles) {
   registryEntries.push({
     equipmentFile,
     equipmentPath,
-    embeddingFile,
-    embeddingPath: path.join(
-      ragDir,
-      embeddingFile
-    ),
     equipmentData,
-    documentData,
+    ragDocuments,
   });
 }
 
-// ----------------------------------------------------
-// 3. Génération des imports JavaScript.
-// ----------------------------------------------------
+// ---------------------------------------------------------
+// 4. GÉNÉRATION DES IMPORTS
+// ---------------------------------------------------------
 
 const imports = [];
 
 registryEntries.forEach(
-  (entry, index) => {
+  (
+    entry,
+    equipmentIndex
+  ) => {
+    // -----------------------------------------------------
+    // IMPORT DE LA FICHE ÉQUIPEMENT
+    // -----------------------------------------------------
+
     imports.push(
-      `import equipment${index} from "${toImportPath(
+      `import equipment${equipmentIndex} from "${toImportPath(
         entry.equipmentPath
       )}" with {`
     );
@@ -170,64 +364,212 @@ registryEntries.forEach(
 
     imports.push("");
 
-    imports.push(
-      `import rag${index} from "${toImportPath(
-        entry.embeddingPath
-      )}" with {`
-    );
+    // -----------------------------------------------------
+    // IMPORT DE TOUS LES EMBEDDINGS DE L'ÉQUIPEMENT
+    // -----------------------------------------------------
 
-    imports.push(
-      `  type: "json",`
-    );
+    entry.ragDocuments.forEach(
+      (
+        ragDocument,
+        documentIndex
+      ) => {
+        imports.push(
+          `import rag${equipmentIndex}_${documentIndex} from "${toImportPath(
+            ragDocument.embeddingPath
+          )}" with {`
+        );
 
-    imports.push(
-      `};`
-    );
+        imports.push(
+          `  type: "json",`
+        );
 
-    imports.push("");
+        imports.push(
+          `};`
+        );
+
+        imports.push("");
+      }
+    );
   }
 );
 
-// ----------------------------------------------------
-// 4. Génération du registre.
-// ----------------------------------------------------
+// ---------------------------------------------------------
+// 5. GÉNÉRATION DU REGISTRE
+// ---------------------------------------------------------
 
 const registryLines = [
+  "// ---------------------------------------------------------",
+  "// CARNETPASS - REGISTRE RAG",
+  "// ---------------------------------------------------------",
+  "//",
   "// FICHIER GÉNÉRÉ AUTOMATIQUEMENT.",
-  "// Ne pas ajouter les équipements manuellement ici.",
+  "//",
+  "// NE PAS MODIFIER MANUELLEMENT.",
+  "//",
+  "// Plusieurs documents peuvent être associés",
+  "// au même équipement.",
+  "// ---------------------------------------------------------",
   "",
   ...imports,
+  "",
   "export const generatedEquipmentRegistry = [",
 ];
 
+// ---------------------------------------------------------
+// ENTRÉES DU REGISTRE
+// ---------------------------------------------------------
+
 registryEntries.forEach(
-  (entry, index) => {
-    registryLines.push("  {");
-
+  (
+    entry,
+    equipmentIndex
+  ) => {
     registryLines.push(
-      `    equipmentData: equipment${index},`
+      "  {"
     );
 
     registryLines.push(
-      `    ragEmbeddingData: rag${index},`
+      `    equipmentData: equipment${equipmentIndex},`
     );
 
-    registryLines.push("  },");
+    // -----------------------------------------------------
+    // LISTE DÉTAILLÉE DES DOCUMENTS RAG
+    // -----------------------------------------------------
+
+    registryLines.push(
+      "    ragDocuments: ["
+    );
+
+    entry.ragDocuments.forEach(
+      (
+        ragDocument,
+        documentIndex
+      ) => {
+        const documentId =
+          JSON.stringify(
+            ragDocument.documentData
+              .documentId
+          );
+
+        const documentType =
+          JSON.stringify(
+            ragDocument.documentData
+              .documentType ??
+              null
+          );
+
+        const title =
+          JSON.stringify(
+            ragDocument.documentData
+              .title ??
+              null
+          );
+
+        registryLines.push(
+          "      {"
+        );
+
+        registryLines.push(
+          `        documentId: ${documentId},`
+        );
+
+        registryLines.push(
+          `        documentType: ${documentType},`
+        );
+
+        registryLines.push(
+          `        title: ${title},`
+        );
+
+        registryLines.push(
+          `        ragEmbeddingData: rag${equipmentIndex}_${documentIndex},`
+        );
+
+        registryLines.push(
+          "      },"
+        );
+      }
+    );
+
+    registryLines.push(
+      "    ],"
+    );
+
+    // -----------------------------------------------------
+    // COMPATIBILITÉ AVEC LE MOTEUR RAG ACTUEL
+    // -----------------------------------------------------
+    //
+    // rag.js utilise actuellement :
+    //
+    // ragEmbeddingData.items
+    //
+    // On fusionne donc les items de tous les PDF.
+    //
+    // Ainsi rag.js peut déjà chercher dans :
+    //
+    // notice + vue éclatée + futurs documents.
+    // -----------------------------------------------------
+
+    registryLines.push(
+      "    ragEmbeddingData: {"
+    );
+
+    registryLines.push(
+      `      model: rag${equipmentIndex}_0.model ?? "text-embedding-3-small",`
+    );
+
+    registryLines.push(
+      "      items: ["
+    );
+
+    entry.ragDocuments.forEach(
+      (
+        ragDocument,
+        documentIndex
+      ) => {
+        registryLines.push(
+          `        ...(rag${equipmentIndex}_${documentIndex}.items ?? []),`
+        );
+      }
+    );
+
+    registryLines.push(
+      "      ],"
+    );
+
+    registryLines.push(
+      "    },"
+    );
+
+    registryLines.push(
+      "  },"
+    );
   }
 );
 
-registryLines.push("];");
+registryLines.push(
+  "];"
+);
+
 registryLines.push("");
+
+// ---------------------------------------------------------
+// 6. ÉCRITURE DU FICHIER
+// ---------------------------------------------------------
 
 fs.writeFileSync(
   outputPath,
-  registryLines.join("\n"),
+  registryLines.join(
+    "\n"
+  ),
   "utf8"
 );
 
-// ----------------------------------------------------
-// Résultat.
-// ----------------------------------------------------
+// ---------------------------------------------------------
+// 7. RÉSULTAT
+// ---------------------------------------------------------
+
+console.log("");
 
 console.log(
   "Équipements détectés :",
@@ -244,27 +586,69 @@ console.log(
   registryEntries.length
 );
 
-for (const entry of registryEntries) {
+console.log("");
+
+// ---------------------------------------------------------
+// AFFICHAGE DE CHAQUE ÉQUIPEMENT
+// ---------------------------------------------------------
+
+for (
+  const entry
+  of registryEntries
+) {
   console.log(
     "✅",
-    entry.equipmentData.identity?.brand,
+    entry.equipmentData.identity
+      ?.brand ??
+      "Marque inconnue",
     "-",
-    entry.equipmentData.identity?.model
+    entry.equipmentData.identity
+      ?.model ??
+      "Modèle inconnu"
   );
 
   console.log(
-    "   Document :",
-    entry.documentData.documentId
+    "   Documents RAG :",
+    entry.ragDocuments.length
   );
 
-  console.log(
-    "   Embeddings :",
-    entry.embeddingFile
-  );
+  for (
+    const ragDocument
+    of entry.ragDocuments
+  ) {
+    console.log(
+      "   ├─",
+      ragDocument.documentData
+        .documentType ??
+        "type inconnu"
+    );
+
+    console.log(
+      "   │  Document :",
+      ragDocument.documentData
+        .documentId
+    );
+
+    console.log(
+      "   │  Embeddings :",
+      ragDocument.embeddingFile
+    );
+  }
+
+  console.log("");
 }
 
-console.log("");
+// ---------------------------------------------------------
+// TERMINÉ
+// ---------------------------------------------------------
+
 console.log(
   "Registre généré :",
   outputPath
+);
+
+console.log("");
+
+console.log(
+  "Registre RAG multi-documents prêt ✅"
 );
