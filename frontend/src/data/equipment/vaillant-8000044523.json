@@ -1,0 +1,135 @@
+{
+  "version": "1.0",
+  "equipmentId": "vaillant-ecotec-plus-vuw-26cs-1-5-n-fr-8000044523",
+
+  "identity": {
+    "brand": "Vaillant",
+    "productType": "chaudiere_gaz_condensation",
+    "range": "ecoTEC plus",
+    "model": "VUW 26CS/1-5",
+    "variant": "N-FR",
+    "manufacturerReference": "8000044523"
+  },
+
+  "carnetPass": {
+    "linkedIds": [
+      "CP-2026-000002"
+    ]
+  },
+
+  "support": {
+    "manufacturer": "Vaillant",
+    "hotline": {
+      "label": "Hotline technique Vaillant",
+      "phone": null,
+      "hours": null,
+      "source": null,
+      "verifiedAt": null
+    }
+  },
+
+  "documents": [
+    {
+      "documentId": "vaillant-ecotec-plus-vuw-installation-maintenance-0020279448-11",
+      "title": "Notice d'installation et de maintenance - ecoTEC plus VU/VUW",
+      "documentType": "installation_maintenance",
+      "documentCode": "0020279448_11",
+      "documentUrl": "https://9zitc2y9n0ktt4m8.public.blob.vercel-storage.com/vaillant/8000044523/notice/_ecotec-plus_1451572.pdf",
+      "revisionDate": "2025-09-10",
+      "pageCount": 100,
+      "language": "fr",
+      "sourceType": "manufacturer_document",
+      "sourceName": "Vaillant",
+      "appliesTo": [
+        "VUW 26CS/1-5 (N-FR)"
+      ],
+      "manufacturerReference": "8000044523",
+
+      "usefulPages": {
+        "modelValidity": [
+          8
+        ],
+
+        "functionalComponents": [
+          9,
+          10
+        ],
+
+        "maintenance": [
+          34,
+          35,
+          36,
+          37,
+          38
+        ],
+
+        "troubleshooting": [
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47
+        ],
+
+        "faultCodes": [
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76
+        ],
+
+        "electricalDiagram": [
+          81,
+          82,
+          83,
+          84,
+          85,
+          86,
+          87,
+          88,
+          89,
+          90
+        ],
+
+        "technicalSpecifications": [
+          92,
+          93,
+          94,
+          95,
+          96
+        ]
+      },
+
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "external_not_committed",
+      "notes": "Notice constructeur Vaillant vérifiée. Vue éclatée avec références de pièces à ajouter ultérieurement."
+    }
+  ],
+
+  "errorCodeIndex": null,
+  "errorCodes": [],
+  "diagnosticRules": [],
+
+  "metadata": {
+    "status": "pilot",
+    "verificationStatus": "partial",
+    "lastVerifiedAt": "2026-09-01",
+    "notes": "Notice constructeur vérifiée. Vue éclatée et hotline technique à compléter."
+  }
+}
