@@ -28,6 +28,10 @@ function cosineSimilarity(a, b) {
   return dotProduct / denominator;
 }
 
+// ---------------------------------------------------------
+// NORMALISATION DU TEXTE
+// ---------------------------------------------------------
+
 // Normalise un texte pour faciliter
 // les comparaisons lexicales.
 function normalizeText(value) {
@@ -40,8 +44,10 @@ function normalizeText(value) {
     .trim();
 }
 
-// Mots très fréquents que l'on ne veut pas utiliser
-// pour calculer la pertinence lexicale.
+// ---------------------------------------------------------
+// MOTS A IGNORER POUR LA RECHERCHE LEXICALE
+// ---------------------------------------------------------
+
 const STOP_WORDS = new Set([
   "avec",
   "dans",
@@ -103,8 +109,10 @@ function lexicalSimilarity(question, documentText) {
   return matches / keywords.length;
 }
 
-// Détecte les questions qui cherchent
-// l'emplacement physique d'un composant.
+// ---------------------------------------------------------
+// DETECTION DES QUESTIONS DE LOCALISATION
+// ---------------------------------------------------------
+
 function isLocationQuestion(question) {
   const text = normalizeText(question);
 
@@ -161,11 +169,209 @@ function calculateIntentBonus(
   return hasLocationHint ? 0.12 : 0;
 }
 
+// ---------------------------------------------------------
+// NORMALISATION DES CODES DEFAUT F.xxx
+// ---------------------------------------------------------
+//
+// Exemples équivalents :
+//
+// F28
+// F.28
+// F028
+// F.028
+//
+// deviennent tous :
+//
+// F.28
+//
+// Cela permet de comparer correctement
+// la question du technicien
+// avec l'écriture utilisée par le constructeur.
+// ---------------------------------------------------------
+
+function normalizeErrorCodeNumber(value) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return null;
+  }
+
+  return `F.${numericValue}`;
+}
+
+// ---------------------------------------------------------
+// EXTRACTION DES CODES DEFAUT
+// ---------------------------------------------------------
+//
+// Recherche les codes F dans un texte.
+//
+// Exemple :
+//
+// "Erreur F.028 puis F074"
+//
+// donne :
+//
+// F.28
+// F.74
+// ---------------------------------------------------------
+
+function extractErrorCodes(text) {
+  const source =
+    String(text ?? "").toUpperCase();
+
+  const regex =
+    /\bF\s*\.?\s*(\d{1,3})\b/g;
+
+  const codes = new Set();
+
+  let match;
+
+  while ((match = regex.exec(source)) !== null) {
+    const normalizedCode =
+      normalizeErrorCodeNumber(match[1]);
+
+    if (normalizedCode) {
+      codes.add(normalizedCode);
+    }
+  }
+
+  return [...codes];
+}
+
+// ---------------------------------------------------------
+// DETECTION D'UNE QUESTION SUR UN CODE DEFAUT
+// ---------------------------------------------------------
+
+function isErrorCodeQuestion(question) {
+  return extractErrorCodes(question).length > 0;
+}
+
+// ---------------------------------------------------------
+// BONUS POUR UN CODE DEFAUT EXACT
+// ---------------------------------------------------------
+//
+// Cette partie est essentielle.
+//
+// Si le technicien demande F28
+// et qu'un chunk contient réellement F.028,
+// ce chunk doit passer AVANT
+// un passage qui parle simplement
+// d'un autre défaut ressemblant.
+//
+// On utilise donc un bonus important.
+// ---------------------------------------------------------
+
+function calculateErrorCodeBonus(
+  question,
+  documentText
+) {
+  const requestedCodes =
+    extractErrorCodes(question);
+
+  if (requestedCodes.length === 0) {
+    return {
+      requestedCodes: [],
+      documentCodes: [],
+      matchedCodes: [],
+      exactCodeMatch: false,
+      errorCodeBonus: 0,
+      errorTableBonus: 0,
+    };
+  }
+
+  const documentCodes =
+    extractErrorCodes(documentText);
+
+  const matchedCodes =
+    requestedCodes.filter((code) =>
+      documentCodes.includes(code)
+    );
+
+  const exactCodeMatch =
+    matchedCodes.length > 0;
+
+  if (!exactCodeMatch) {
+    return {
+      requestedCodes,
+      documentCodes,
+      matchedCodes: [],
+      exactCodeMatch: false,
+      errorCodeBonus: 0,
+      errorTableBonus: 0,
+    };
+  }
+
+  // -------------------------------------------------------
+  // BONUS PRINCIPAL
+  // -------------------------------------------------------
+  //
+  // Un passage contenant réellement
+  // le code demandé reçoit un bonus fort.
+  // -------------------------------------------------------
+
+  const errorCodeBonus = 0.65;
+
+  // -------------------------------------------------------
+  // BONUS TABLEAU / DIAGNOSTIC
+  // -------------------------------------------------------
+  //
+  // Lorsqu'un passage contient également des termes
+  // typiques d'un tableau constructeur :
+  //
+  // Code
+  // Signification
+  // Cause possible
+  // Mesure
+  //
+  // on le favorise encore davantage.
+  // -------------------------------------------------------
+
+  const normalizedDocument =
+    normalizeText(documentText);
+
+  const ERROR_TABLE_HINTS = [
+    "signification",
+    "cause possible",
+    "causes possibles",
+    "mesure",
+    "mesures",
+    "code signification",
+    "codes de mode de secours",
+    "code erreur",
+    "code defaut",
+    "remede",
+    "solution",
+  ];
+
+  const hasErrorTableHint =
+    ERROR_TABLE_HINTS.some((hint) =>
+      normalizedDocument.includes(hint)
+    );
+
+  const errorTableBonus =
+    hasErrorTableHint ? 0.15 : 0;
+
+  return {
+    requestedCodes,
+    documentCodes,
+    matchedCodes,
+    exactCodeMatch,
+    errorCodeBonus,
+    errorTableBonus,
+  };
+}
+
+// ---------------------------------------------------------
+// RECHERCHE RAG
+// ---------------------------------------------------------
+//
 // Recherche les passages documentaires
 // les plus pertinents pour la question.
 //
 // ragEmbeddingData correspond uniquement
 // à l'équipement actuellement consulté.
+// ---------------------------------------------------------
+
 export async function searchRagContext(
   openai,
   ragEmbeddingData,
@@ -182,7 +388,20 @@ export async function searchRagContext(
   }
 
   // -------------------------------------------------------
-  // 1. EMBEDDING DE LA QUESTION
+  // 1. ANALYSE DE LA QUESTION
+  // -------------------------------------------------------
+
+  const requestedErrorCodes =
+    extractErrorCodes(question);
+
+  const errorCodeQuestion =
+    requestedErrorCodes.length > 0;
+
+  const locationQuestion =
+    isLocationQuestion(question);
+
+  // -------------------------------------------------------
+  // 2. EMBEDDING DE LA QUESTION
   // -------------------------------------------------------
 
   const embeddingResponse =
@@ -198,7 +417,7 @@ export async function searchRagContext(
     embeddingResponse.data[0].embedding;
 
   // -------------------------------------------------------
-  // 2. ANALYSE DE TOUS LES CHUNKS
+  // 3. ANALYSE DE TOUS LES CHUNKS
   // -------------------------------------------------------
 
   const results = ragItems.map((item) => {
@@ -210,17 +429,29 @@ export async function searchRagContext(
       .filter(Boolean)
       .join("\n");
 
+    // -----------------------------------------------------
+    // SCORE SEMANTIQUE
+    // -----------------------------------------------------
+
     const semanticScore =
       cosineSimilarity(
         questionEmbedding,
         item.embedding
       );
 
+    // -----------------------------------------------------
+    // SCORE LEXICAL
+    // -----------------------------------------------------
+
     const lexicalScore =
       lexicalSimilarity(
         question,
         documentText
       );
+
+    // -----------------------------------------------------
+    // BONUS SELON LE TYPE DE QUESTION
+    // -----------------------------------------------------
 
     const intentBonus =
       calculateIntentBonus(
@@ -229,15 +460,44 @@ export async function searchRagContext(
         lexicalScore
       );
 
+    // -----------------------------------------------------
+    // BONUS CODE DEFAUT
+    // -----------------------------------------------------
+
+    const errorCodeAnalysis =
+      calculateErrorCodeBonus(
+        question,
+        documentText
+      );
+
+    const {
+      matchedCodes,
+      exactCodeMatch,
+      errorCodeBonus,
+      errorTableBonus,
+    } = errorCodeAnalysis;
+
+    // -----------------------------------------------------
+    // SCORE FINAL
+    // -----------------------------------------------------
+    //
     // Le sens reste la base du moteur.
     //
-    // On ajoute seulement :
+    // On ajoute :
+    //
     // - un petit bonus lexical ;
-    // - un bonus spécifique au type de question.
+    // - un bonus selon l'intention ;
+    // - un GROS bonus si le code exact est présent ;
+    // - un bonus supplémentaire si le passage ressemble
+    //   à un tableau constructeur de diagnostic.
+    // -----------------------------------------------------
+
     const rankingScore =
       semanticScore +
       lexicalScore * 0.08 +
-      intentBonus;
+      intentBonus +
+      errorCodeBonus +
+      errorTableBonus;
 
     return {
       chunkId: item.chunkId,
@@ -247,28 +507,59 @@ export async function searchRagContext(
       section: item.section,
       text: item.text,
 
+      // Score sémantique historique.
       score: semanticScore,
+
+      // Nouveaux éléments de diagnostic RAG.
       lexicalScore,
       intentBonus,
+
+      exactCodeMatch,
+      matchedCodes,
+      errorCodeBonus,
+      errorTableBonus,
+
       rankingScore,
     };
   });
 
   // -------------------------------------------------------
-  // 3. CLASSEMENT
+  // 4. CLASSEMENT
+  // -------------------------------------------------------
+  //
+  // IMPORTANT :
+  //
+  // Si la question contient un code défaut précis,
+  // les chunks contenant réellement ce code
+  // passent avant les chunks qui ne le contiennent pas.
+  //
+  // Ensuite seulement,
+  // on utilise le score global pour les départager.
+  //
+  // Cela évite par exemple que F.022
+  // soit proposé avant F.028
+  // simplement parce que les textes sont proches.
   // -------------------------------------------------------
 
-  results.sort(
-    (a, b) =>
+  results.sort((a, b) => {
+    if (
+      errorCodeQuestion &&
+      a.exactCodeMatch !== b.exactCodeMatch
+    ) {
+      return a.exactCodeMatch ? -1 : 1;
+    }
+
+    return (
       b.rankingScore -
       a.rankingScore
-  );
+    );
+  });
 
   const topResults =
     results.slice(0, topK);
 
   // -------------------------------------------------------
-  // 4. CONTEXTE ENVOYÉ À L'IA
+  // 5. CONTEXTE ENVOYE A L'IA
   // -------------------------------------------------------
 
   const contextText = topResults
@@ -280,14 +571,37 @@ Information : ${result.text}`
     )
     .join("\n\n---\n\n");
 
+  // -------------------------------------------------------
+  // 6. TYPE DE QUESTION
+  // -------------------------------------------------------
+
+  let queryIntent = "general";
+
+  if (errorCodeQuestion) {
+    queryIntent = "error_code";
+  } else if (locationQuestion) {
+    queryIntent = "component_location";
+  }
+
+  // -------------------------------------------------------
+  // 7. RESULTAT
+  // -------------------------------------------------------
+
   return {
     topResults,
     contextText,
 
-    queryIntent:
-      isLocationQuestion(question)
-        ? "component_location"
-        : "general",
+    queryIntent,
+
+    requestedErrorCodes,
+
+    exactErrorCodeFound:
+      errorCodeQuestion
+        ? topResults.some(
+            (result) =>
+              result.exactCodeMatch
+          )
+        : null,
 
     tokensUsed:
       embeddingResponse.usage
