@@ -15,9 +15,9 @@ import {
 import ReactMarkdown from "react-markdown";
 import "./App.css";
 
-function App() {
+function App({ initialMode = "public" }) {
   // Mode d'affichage : "public" (consultation, sans wallet) ou "pro" (technicien, avec wallet)
-  const [mode, setMode] = useState("public");
+  const [mode, setMode] = useState(initialMode);
   const [technicalResult, setTechnicalResult] = useState(null);
   const [equipmentKnowledge, setEquipmentKnowledge] = useState(null);
   const [aiQuestion, setAiQuestion] = useState("");
@@ -922,7 +922,7 @@ function App() {
         </div>
 
         {mode === "public" ? (
-          <button className="btn btn-ghost" onClick={() => setMode("pro")}>
+          <button className="btn btn-ghost" onClick={() => navigate("/connexion")}>
             🔒 Espace pro
           </button>
         ) : (
