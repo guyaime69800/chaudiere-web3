@@ -117,6 +117,9 @@ function App() {
   // Équipement constructeur générique sélectionné.
   // Important : ce n'est PAS encore un CarnetPass physique.
   const [selectedEquipment, setSelectedEquipment] = useState(null);
+  const [personalSerialNumber, setPersonalSerialNumber] = useState("");
+  const [isCreatingCarnetPass, setIsCreatingCarnetPass] = useState(false);
+  const [carnetPassCreationMessage, setCarnetPassCreationMessage] = useState("");
   // NOUVEAU (perf) : useMemo = "fabrique-le UNE fois, puis reutilise".
   // Sans ca, la connexion blockchain etait recreee a chaque lettre tapee dans un champ.
   const provider = useMemo(() => new ethers.JsonRpcProvider(RPC_URL), []);
@@ -665,7 +668,104 @@ function App() {
       );
     }
   }
+  async function creerCarnetPassPersonnel() {
+    if (
+      !selectedEquipment?.manufacturerReference ||
+      !personalSerialNumber.trim()
+    ) {
+      setCarnetPassCreationMessage(
+        "Renseigne le numéro de série de l'appareil."
+      );
+      return;
+    }
 
+    try {
+      setIsCreatingCarnetPass(true);
+      setCarnetPassCreationMessage("");
+
+      const response = await fetch("/api/carnetpass", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          manufacturerReference:
+            selectedEquipment.manufacturerReference,
+          serialNumber:
+            personalSerialNumber.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      // Si ce numéro de série possède déjà un CarnetPass,
+      // on ouvre simplement le CarnetPass existant.
+      if (
+        response.status === 409 &&
+        data?.carnetPassId
+      ) {
+        setCarnetPassCreationMessage(
+          "Cet appareil possède déjà un CarnetPass. Ouverture..."
+        );
+
+        setSearchId(data.carnetPassId);
+
+        navigate(
+          `/appareil/${data.carnetPassId}`
+        );
+
+        await chercherChaudiere(
+          data.carnetPassId
+        );
+
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+          "Impossible de créer le CarnetPass."
+        );
+      }
+
+      const carnetPassId =
+        data?.carnetPassId;
+
+      if (!carnetPassId) {
+        throw new Error(
+          "Le serveur n'a pas retourné d'identifiant CarnetPass."
+        );
+      }
+
+      setCarnetPassCreationMessage(
+        `CarnetPass ${carnetPassId} créé avec succès.`
+      );
+
+      setPersonalSerialNumber("");
+
+      setSearchId(carnetPassId);
+
+      navigate(
+        `/appareil/${carnetPassId}`
+      );
+
+      await chercherChaudiere(
+        carnetPassId
+      );
+    } catch (error) {
+      console.error(
+        "Erreur création CarnetPass personnel :",
+        error
+      );
+
+      setCarnetPassCreationMessage(
+        error?.message ||
+        "Impossible de créer le CarnetPass."
+      );
+    } finally {
+      setIsCreatingCarnetPass(false);
+    }
+  }
   // NOUVEAU (scan) : appelee quand la camera a lu un QR CarnetPass valide
   function ouvrirDepuisScan(idScanne) {
     setScanOuvert(false);              // ferme la camera (et la coupe)
@@ -1092,7 +1192,44 @@ function App() {
               Aucun CarnetPass personnel ni QR individuel
               n'est encore créé.
             </p>
+            {/* ---------- CRÉATION CARNETPASS PERSONNEL ---------- */}
+            <div className="technical-docs">
+              <h3>🏷️ C’est mon appareil</h3>
 
+              <p className="muted">
+                Renseigne le numéro de série indiqué sur l’appareil pour créer son CarnetPass personnel.
+              </p>
+
+              <input
+                type="text"
+                value={personalSerialNumber}
+                onChange={(e) => {
+                  setPersonalSerialNumber(e.target.value);
+                  setCarnetPassCreationMessage("");
+                }}
+                placeholder="Numéro de série"
+                disabled={isCreatingCarnetPass}
+              />
+
+              <button
+                className="btn btn-primary"
+                onClick={creerCarnetPassPersonnel}
+                disabled={
+                  isCreatingCarnetPass ||
+                  !personalSerialNumber.trim()
+                }
+              >
+                {isCreatingCarnetPass
+                  ? "Création en cours..."
+                  : "Créer mon CarnetPass"}
+              </button>
+
+              {carnetPassCreationMessage && (
+                <p className="muted">
+                  {carnetPassCreationMessage}
+                </p>
+              )}
+            </div>
             {/* ---------- DOCUMENTATION ---------- */}
             {equipmentKnowledge?.data?.documents?.length > 0 && (
               <div className="technical-docs">
