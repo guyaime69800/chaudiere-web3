@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/appareil/:path*",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
