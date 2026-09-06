@@ -1,54 +1,88 @@
 // ScannerQR.jsx
-// -----------------------------------------------------------------------------
-// Scanner de QR code par la camera du telephone.
-// Ce composant fait UNE seule chose : lire un QR et renvoyer l'identifiant
-// de l'appareil. C'est App.jsx qui decide ensuite quoi en faire.
-// -----------------------------------------------------------------------------
+// Lit un QR puis transmet son identifiant à App.jsx.
+// Accepte les anciens identifiants et les futurs jetons QR aléatoires.
 
 import { Scanner } from "@yudiel/react-qr-scanner";
 import { useState } from "react";
 
-const CUIVRE = "#B87333"; // couleur de l'identite CarnetPass
+const CUIVRE = "#B87333";
+
+// Vérifie uniquement le FORMAT : le serveur vérifiera ensuite
+// que le CarnetPass existe et quelles informations sont accessibles.
+function identifiantValide(identifiant) {
+  // Format prévu : cp_qr_ suivi de 43 caractères.
+  // Les majuscules/minuscules d'un jeton ne doivent jamais être changées.
+  // Un préfixe ressemblant à celui d'un jeton ne doit pas être accepté
+  // comme un ancien identifiant si le jeton est mal formé.
+  if (/^cp_qr_/i.test(identifiant)) {
+    return /^cp_qr_[A-Za-z0-9_-]{43}$/.test(identifiant);
+  }
+
+  // Compatibilité avec les anciens QR : CP-2026-000003, CHAUD-DEMO, etc.
+  return /^[A-Za-z0-9._-]{3,40}$/.test(identifiant);
+}
+
+function extraireId(valeur, origineCourante) {
+  if (typeof valeur !== "string") return null;
+
+  const texte = valeur.trim();
+  if (!texte || texte.length > 2048) return null;
+
+  // Cas 1 : identifiant ou jeton écrit directement dans le QR.
+  if (identifiantValide(texte)) return texte;
+
+  // Cas 2 : adresse complète d'une fiche CarnetPass.
+  try {
+    const url = new URL(texte);
+
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      return null;
+    }
+
+    // Aucun identifiant de connexion n'est attendu dans une adresse QR.
+    if (url.username || url.password) return null;
+
+    const originesAutorisees = new Set([
+      "https://carnetpass.fr",
+      "https://www.carnetpass.fr",
+      "https://carnetpass.com",
+      "https://www.carnetpass.com",
+      "https://test.carnetpass.fr",
+      origineCourante,
+    ]);
+
+    if (!originesAutorisees.has(url.origin)) return null;
+
+    // Une seule partie après /appareil/ ; une barre finale est tolérée.
+    const correspondance = url.pathname.match(/^\/appareil\/([^/]+)\/?$/);
+    if (!correspondance) return null;
+
+    const identifiant = decodeURIComponent(correspondance[1]);
+    return identifiantValide(identifiant) ? identifiant : null;
+  } catch {
+    // Adresse invalide ou caractères encodés incorrectement.
+    return null;
+  }
+}
 
 export default function ScannerQR({ onClose, onCodeDetecte }) {
   const [erreur, setErreur] = useState("");
 
-  // Transforme le contenu du QR en identifiant d'appareil.
-  // Cas 1 : une adresse complete -> https://carnetpass.fr/appareil/CHAUD-DEMO
-  // Cas 2 : juste l'identifiant  -> CHAUD-DEMO
-  // Renvoie null si ce n'est pas un QR CarnetPass.
-  function extraireId(valeur) {
-    const texte = valeur.trim();
-
-    try {
-      // On ne garde QUE le chemin de l'adresse. Aucun risque d'etre envoye
-      // sur un site exterieur, meme avec un QR trafique.
-      const chemin = new URL(texte).pathname; // -> "/appareil/CHAUD-DEMO"
-      if (chemin.startsWith("/appareil/")) {
-        return decodeURIComponent(chemin.replace("/appareil/", ""));
-      }
-      return null; // c'est bien une adresse, mais pas une fiche CarnetPass
-    } catch {
-      // Pas une adresse web : on accepte un identifiant ecrit tel quel
-      const formatId = /^[A-Za-z0-9._-]{3,40}$/; // lettres, chiffres, - . _
-      return formatId.test(texte) ? texte : null;
-    }
-  }
-
-  // Appelee des qu'un QR est detecte par la camera
   const handleScan = (codesDetectes) => {
-    const valeur = codesDetectes?.[0]?.rawValue; // on prend le premier QR lu
+    const valeur = codesDetectes?.[0]?.rawValue;
     if (!valeur) return;
 
-    const id = extraireId(valeur);
-    if (id) {
-      onCodeDetecte(id); // on remonte l'info a App.jsx
+    const identifiant = extraireId(valeur, window.location.origin);
+
+    if (identifiant) {
+      // On transmet uniquement l'identifiant : App.jsx ouvre la fiche
+      // dans l'application courante, jamais sur le site contenu dans le QR.
+      onCodeDetecte(identifiant);
     } else {
-      setErreur("Ce QR n'est pas un QR CarnetPass.");
+      setErreur("Ce QR n'est pas un QR CarnetPass valide.");
     }
   };
 
-  // Appelee si la camera ne demarre pas (autorisation refusee, pas de camera...)
   const handleError = (err) => {
     setErreur("Caméra inaccessible. Vérifie l'autorisation du navigateur.");
     console.error("[scan] erreur camera :", err);
@@ -64,9 +98,9 @@ export default function ScannerQR({ onClose, onCodeDetecte }) {
         <Scanner
           onScan={handleScan}
           onError={handleError}
-          formats={["qr_code"]}                       // on ne lit QUE les QR : plus rapide et plus fiable
-          constraints={{ facingMode: "environment" }} // camera arriere du telephone
-          components={{ finder: true, torch: true }}  // cadre de visee + lampe torche
+          formats={["qr_code"]}
+          constraints={{ facingMode: "environment" }}
+          components={{ finder: true, torch: true }}
           styles={{
             container: { width: "100%", height: "100%" },
             finderBorder: 4,
@@ -81,7 +115,6 @@ export default function ScannerQR({ onClose, onCodeDetecte }) {
   );
 }
 
-// Styles ecrits ici : le composant marche sans ajouter de fichier CSS
 const styles = {
   overlay: {
     position: "fixed", inset: 0, background: "#000",
@@ -93,8 +126,7 @@ const styles = {
     padding: "8px 14px", background: CUIVRE, color: "#fff",
     border: "none", borderRadius: 8, fontSize: 16, cursor: "pointer",
   },
- zoneCamera: {
-    // Format vertical proche de l'ecran du telephone : bien plus grand qu'un carre.
+  zoneCamera: {
     width: "min(96vw, 520px)", aspectRatio: "3 / 4",
     overflow: "hidden", borderRadius: 16, border: `3px solid ${CUIVRE}`,
   },

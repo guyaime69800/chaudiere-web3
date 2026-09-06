@@ -475,45 +475,29 @@ function App({ initialMode = "public" }) {
         const identity =
           carnetPassResult.identity ?? {};
 
+        const ouvertureParJeton = valeurRecherche.length === 49
+          && /^cp_qr_[A-Za-z0-9_-]{43}$/.test(valeurRecherche);
+
         const boilerFromCarnetPass = {
           exists: true,
+          equipmentId: carnetPassResult.carnetPassId,
+          technicalEquipmentId: carnetPassResult.equipmentId,
+          carnetPassId: carnetPassResult.carnetPassId,
+          qrCode: carnetPassResult.carnetPassId,
+          brand: identity.brand ?? "",
+          model: identity.model ?? "",
+          productReference: carnetPassResult.manufacturerReference ?? "",
+          manufacturerReference: carnetPassResult.manufacturerReference ?? "",
 
-          // Identifiant public :
-          // CP-2026-000003
-          equipmentId:
-            carnetPassResult.carnetPassId,
+          // Le jeton provient du lien ouvert, jamais d'une recherche par numéro.
+          // origin = adresse de base de l'application actuellement ouverte.
+          publicQrUrl: ouvertureParJeton
+            ? `${window.location.origin}/appareil/${encodeURIComponent(valeurRecherche)}`
+            : null,
 
-          // Identifiant technique utilisé
-          // par le RAG :
-          technicalEquipmentId:
-            carnetPassResult.equipmentId,
-
-          carnetPassId:
-            carnetPassResult.carnetPassId,
-
-          qrCode:
-            carnetPassResult.carnetPassId,
-
-          brand:
-            identity.brand ?? "",
-
-          model:
-            identity.model ?? "",
-
-          productReference:
-            carnetPassResult.manufacturerReference ??
-            "",
-
-          manufacturerReference:
-            carnetPassResult.manufacturerReference ??
-            "",
-
-          serialNumber:
-            carnetPassResult.serialNumber ??
-            "Non renseigné",
-
-          source:
-            "universal_search",
+          // Les API publiques ne fournissent pas les données privées du carnet.
+          publicTechnicalOnly: true,
+          source: "universal_search",
         };
 
         setBoiler(
@@ -574,6 +558,13 @@ function App({ initialMode = "public" }) {
       // du prototype enregistrés directement
       // dans le smart contract.
       // ---------------------------------------------------
+
+      // Un jeton QR est traité uniquement par les API CarnetPass.
+      // S'il est introuvable, on ne l'envoie jamais au service Polygon.
+      if (/^cp_qr_/i.test(valeurRecherche)) {
+        setMessage("Ce QR CarnetPass est introuvable ou désactivé.");
+        return;
+      }
 
       try {
         const polygonData =
@@ -669,12 +660,21 @@ function App({ initialMode = "public" }) {
     }
   }
   async function creerCarnetPassPersonnel() {
-    if (
-      !selectedEquipment?.manufacturerReference ||
-      !personalSerialNumber.trim()
-    ) {
+    if (isCreatingCarnetPass) return;
+
+    const manufacturerReference = selectedEquipment?.manufacturerReference;
+    const serialNumber = personalSerialNumber.trim();
+
+    if (!manufacturerReference || !serialNumber) {
       setCarnetPassCreationMessage(
-        "Renseigne le numéro de série de l'appareil."
+        "Sélectionne un modèle et renseigne le numéro de série de l'appareil."
+      );
+      return;
+    }
+
+    if (serialNumber.length > 128) {
+      setCarnetPassCreationMessage(
+        "Le numéro de série ne doit pas dépasser 128 caractères."
       );
       return;
     }
@@ -685,100 +685,91 @@ function App({ initialMode = "public" }) {
 
       const response = await fetch("/api/carnetpass", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          manufacturerReference:
-            selectedEquipment.manufacturerReference,
-          serialNumber:
-            personalSerialNumber.trim(),
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ manufacturerReference, serialNumber }),
       });
 
       const data = await response.json();
 
-      // Si ce numéro de série possède déjà un CarnetPass,
-      // on ouvre simplement le CarnetPass existant.
-      if (
-        response.status === 409 &&
-        data?.carnetPassId
-      ) {
-        setCarnetPassCreationMessage(
-          "Cet appareil possède déjà un CarnetPass. Ouverture..."
-        );
-
-        setSearchId(data.carnetPassId);
-
-        navigate(
-          `/appareil/${data.carnetPassId}`
-        );
-
-        await chercherChaudiere(
-          data.carnetPassId
-        );
-
-        return;
-      }
-
-      if (!response.ok) {
+      // Un doublon affiche un message : il ne donne pas accès au carnet existant.
+      if (!response.ok || data?.ok !== true) {
         throw new Error(
-          data?.error ||
-          "Impossible de créer le CarnetPass."
+          data?.error || "Impossible de créer le CarnetPass."
         );
       }
 
-      const carnetPassId =
-        data?.carnetPassId;
+      const carnetPassId = data.carnetPassId;
+      const qrToken = data.qrToken;
 
-      if (!carnetPassId) {
+      const validCarnetPassId = typeof carnetPassId === "string"
+        && carnetPassId.length === 14
+        && /^CP-\d{4}-\d{6}$/.test(carnetPassId);
+
+      const validQrToken = typeof qrToken === "string"
+        && qrToken.length === 49
+        && /^cp_qr_[A-Za-z0-9_-]{43}$/.test(qrToken);
+
+      if (!validCarnetPassId || !validQrToken) {
         throw new Error(
-          "Le serveur n'a pas retourné d'identifiant CarnetPass."
+          "Le serveur annonce une création, mais la réponse QR est incomplète. Ne relance pas la création pour cet appareil."
         );
       }
 
       setCarnetPassCreationMessage(
         `CarnetPass ${carnetPassId} créé avec succès.`
       );
-
       setPersonalSerialNumber("");
+      setSearchId(qrToken);
 
-      setSearchId(carnetPassId);
+      // On conserve exactement les majuscules et minuscules du jeton.
+      navigate(`/appareil/${encodeURIComponent(qrToken)}`);
 
-      navigate(
-        `/appareil/${carnetPassId}`
-      );
-
-      await chercherChaudiere(
-        carnetPassId
-      );
+      // L'effet qui surveille idDepuisURL chargera la fiche automatiquement.
+      // Il ne faut pas relancer chercherChaudiere ici : cela ferait deux lectures.
     } catch (error) {
-      console.error(
-        "Erreur création CarnetPass personnel :",
-        error
-      );
-
+      console.error("Erreur création CarnetPass personnel.");
       setCarnetPassCreationMessage(
-        error?.message ||
-        "Impossible de créer le CarnetPass."
+        error?.message || "Impossible de créer le CarnetPass."
       );
     } finally {
       setIsCreatingCarnetPass(false);
     }
   }
   // NOUVEAU (scan) : appelee quand la camera a lu un QR CarnetPass valide
+  function ouvrirRecherche(valeur) {
+    const recherche = String(valeur ?? "").trim();
+    if (!recherche) return;
+
+    setSearchId(recherche);
+
+    if (recherche === idDepuisURL) {
+      // Même adresse : on actualise directement la fiche.
+      chercherChaudiere(recherche);
+      return;
+    }
+
+    // Nouvelle adresse : l'effet sur idDepuisURL lancera la recherche.
+    navigate(`/appareil/${encodeURIComponent(recherche)}`);
+  }
+
   function ouvrirDepuisScan(idScanne) {
-    setScanOuvert(false);              // ferme la camera (et la coupe)
-    setSearchId(idScanne);             // le champ de recherche affiche l'ID lu
-    navigate(`/appareil/${idScanne}`); // l'adresse devient partageable, le bouton Retour marche
-    chercherChaudiere(idScanne);       // charge la fiche tout de suite, meme si on est deja sur cette adresse
+    setScanOuvert(false);
+    ouvrirRecherche(idScanne);
   }
   // Dès qu'un appareil est affiche, on charge son carnet automatiquement
   useEffect(() => {
-    if (boiler && boiler.equipmentId) {
-      chargerCarnet(boiler.equipmentId);
+    // Une fiche publique donne uniquement accès aux informations techniques.
+    if (
+      !boiler?.equipmentId
+      || mode === "public"
+      || boiler.publicTechnicalOnly === true
+    ) {
+      setMaintenances([]);
+      return;
     }
-  }, [boiler]);
+
+    chargerCarnet(boiler.equipmentId);
+  }, [boiler, mode]);
 
   // NOUVEAU (QR/routeur) : arrivee via une URL directe (ou un QR scanne)
   // -> on ouvre la fiche de l'appareil automatiquement.
@@ -946,20 +937,15 @@ function App({ initialMode = "public" }) {
             onChange={(e) => setSearchId(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                if (!searchId) return;
-                navigate(`/appareil/${searchId}`);
-                chercherChaudiere(searchId);
+                e.preventDefault();
+                ouvrirRecherche(searchId);
               }
             }}
           />
           {/* NOUVEAU : la fleche () => evite d'envoyer l'evenement du clic comme ID */}
           <button
             className="btn btn-primary"
-            onClick={() => {
-              if (!searchId) return;
-              navigate(`/appareil/${searchId}`);
-              chercherChaudiere(searchId);
-            }}
+            onClick={() => ouvrirRecherche(searchId)}
           >
             Rechercher
           </button>
@@ -1405,45 +1391,70 @@ function App({ initialMode = "public" }) {
                 <span className="v">{boiler.productReference}</span>
               </div>
 
-              <div>
-                <span className="k">Numéro de série</span>
-                <span className="v">{boiler.serialNumber}</span>
-              </div>
+              {mode === "pro" && boiler.publicTechnicalOnly !== true && (
+                <div>
+                  <span className="k">Numéro de série</span>
+                  <span className="v">{boiler.serialNumber}</span>
+                </div>
+              )}
             </div>
 
             {/* NOUVEAU (QR) : le QR code physique a coller sur l'appareil.
                 Il pointe vers l'adresse EN LIGNE de la fiche -> scannable depuis n'importe quel telephone. */}
             <div className="qr-zone">
-              <p className="qr-title">QR à coller sur l'appareil</p>
-              <div className="qr-box">
-                <QRCodeCanvas
-                  id={`qr-${boiler.equipmentId}`}
-                  value={`https://carnetpass.fr/appareil/${boiler.equipmentId}`}
-                  size={160}
-                  level="M"                  /* niveau de correction d'erreur : lisible meme un peu abime */
-                  includeMargin={true}
-                />
-              </div>
-              <button className="btn btn-ghost" onClick={() => telechargerQR(boiler.equipmentId)}>
-                ⬇️ Télécharger le QR
-              </button>
+              <p className="qr-title">
+                {boiler.publicQrUrl
+                  ? "QR individuel de l'appareil"
+                  : "Partager la fiche technique"}
+              </p>
+
+              {boiler.publicQrUrl ? (
+                <>
+                  <div className="qr-box">
+                    <QRCodeCanvas
+                      id={`qr-${boiler.equipmentId}`}
+                      value={boiler.publicQrUrl}
+                      size={160}
+                      level="M"
+                      includeMargin={true}
+                    />
+                  </div>
+
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() => telechargerQR(boiler.equipmentId)}
+                  >
+                    ⬇️ Télécharger le QR
+                  </button>
+
+                  <p className="qr-hint">
+                    Imprimez ce QR et collez-le sur l'appareil.
+                    Un scan ouvre sa fiche technique.
+                  </p>
+                </>
+              ) : (
+                <p className="qr-hint">
+                  Ouvrez le lien individuel de cet appareil pour télécharger son QR.
+                  Vous pouvez partager sa fiche technique ci-dessous.
+                </p>
+              )}
+
               <button
                 className="btn btn-ghost"
                 onClick={() =>
                   partagerCarnetPass(
-                    `https://www.carnetpass.fr/appareil/${boiler.equipmentId}`,
+                    boiler.publicQrUrl
+                    || `${window.location.origin}/appareil/${encodeURIComponent(boiler.equipmentId)}`,
                     `CarnetPass - ${boiler.brand} ${boiler.model}`,
-                    `Consultez le carnet d'entretien de l'équipement ${boiler.equipmentId}.`
+                    `Consultez la fiche technique de l'équipement ${boiler.equipmentId}.`
                   )
                 }
               >
                 📤 Partager cette fiche
               </button>
+
               {isAppInstalled ? (
-                <button
-                  className="btn btn-ghost"
-                  disabled
-                >
+                <button className="btn btn-ghost" disabled>
                   ✅ CarnetPass installé
                 </button>
               ) : installPrompt ? (
@@ -1454,9 +1465,6 @@ function App({ initialMode = "public" }) {
                   📲 Installer CarnetPass
                 </button>
               ) : null}
-
-
-              <p className="qr-hint">Imprime-le et colle-le sur l'appareil. Un scan ouvre cette fiche.</p>
             </div>
             {/* ---------- DOCUMENTATION TECHNIQUE ---------- */}
             {equipmentKnowledge?.data?.documents?.length > 0 && (
@@ -1535,86 +1543,88 @@ function App({ initialMode = "public" }) {
             )}
           </div>
 
-          {/* CARNET EN FRISE */}
-          <div className="carnet">
-            <p className="carnet-title">Carnet d'entretien</p>
-            <button
-              className="btn btn-ghost"
-              onClick={telechargerCarnetPDF}
-              disabled={isLoadingCarnet}
-            >
-              📄 Télécharger le carnet PDF
-            </button>
-            {isLoadingCarnet ? (
-              <p className="muted">Chargement du carnet...</p>
-            ) : carnetError ? (
-              <p className="err">❌ {carnetError}</p>
-            ) : maintenances.length === 0 ? (
-              <p className="muted">Aucune intervention enregistrée pour cet appareil.</p>
-            ) : (
-              <div className="timeline">
-                {maintenances.map((m, index) => (
-                  <div className="tl-item" key={index}>
-                    <div className="tl-marker">
-                      <span className="tl-dot" />
-                      {index < maintenances.length - 1 && <span className="tl-line" />}
+          {/* Historique masqué sur les fiches techniques publiques */}
+          {mode === "pro" && boiler.publicTechnicalOnly !== true && (
+            <div className="carnet">
+              <p className="carnet-title">Carnet d'entretien</p>
+              <button
+                className="btn btn-ghost"
+                onClick={telechargerCarnetPDF}
+                disabled={isLoadingCarnet}
+              >
+                📄 Télécharger le carnet PDF
+              </button>
+              {isLoadingCarnet ? (
+                <p className="muted">Chargement du carnet...</p>
+              ) : carnetError ? (
+                <p className="err">❌ {carnetError}</p>
+              ) : maintenances.length === 0 ? (
+                <p className="muted">Aucune intervention enregistrée pour cet appareil.</p>
+              ) : (
+                <div className="timeline">
+                  {maintenances.map((m, index) => (
+                    <div className="tl-item" key={index}>
+                      <div className="tl-marker">
+                        <span className="tl-dot" />
+                        {index < maintenances.length - 1 && <span className="tl-line" />}
+                      </div>
+                      <div className="tl-body">
+                        <p className="tl-date">{formatDate(m.date)}</p>
+                        <p className="tl-type">{m.interventionType}</p>
+                        <p className="tl-desc">{m.description} — {m.technician}</p>
+                        {m.partChanged && <p className="tl-part">Pièce changée : {m.partChanged}</p>}
+                      </div>
                     </div>
-                    <div className="tl-body">
-                      <p className="tl-date">{formatDate(m.date)}</p>
-                      <p className="tl-type">{m.interventionType}</p>
-                      <p className="tl-desc">{m.description} — {m.technician}</p>
-                      {m.partChanged && <p className="tl-part">Pièce changée : {m.partChanged}</p>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
 
-            {/* AJOUT D'INTERVENTION (mode pro + wallet connecte) */}
-            {mode === "pro" && account && (
-              <div className="form-card">
-                <h3>Ajouter une intervention</h3>
+              {/* AJOUT D'INTERVENTION (mode pro + wallet connecte) */}
+              {mode === "pro" && account && (
+                <div className="form-card">
+                  <h3>Ajouter une intervention</h3>
 
-                <p className="muted">
-                  🔒 Données techniques uniquement. N'indiquez aucun nom de client,
-                  adresse, téléphone, e-mail ou autre donnée personnelle :
-                  cette intervention sera inscrite sur la blockchain Polygon.
-                </p>
+                  <p className="muted">
+                    🔒 Données techniques uniquement. N'indiquez aucun nom de client,
+                    adresse, téléphone, e-mail ou autre donnée personnelle :
+                    cette intervention sera inscrite sur la blockchain Polygon.
+                  </p>
 
-                <input
-                  className="field"
-                  placeholder="Type d'intervention (ex : Entretien annuel)"
-                  value={mType}
-                  onChange={(e) => setMType(e.target.value)}
-                />
+                  <input
+                    className="field"
+                    placeholder="Type d'intervention (ex : Entretien annuel)"
+                    value={mType}
+                    onChange={(e) => setMType(e.target.value)}
+                  />
 
-                <input
-                  className="field"
-                  placeholder="Description technique uniquement (ex : Nettoyage brûleur)"
-                  value={mDesc}
-                  onChange={(e) => setMDesc(e.target.value)}
-                />
+                  <input
+                    className="field"
+                    placeholder="Description technique uniquement (ex : Nettoyage brûleur)"
+                    value={mDesc}
+                    onChange={(e) => setMDesc(e.target.value)}
+                  />
 
-                <input
-                  className="field"
-                  placeholder="Entreprise / identifiant technicien (sans nom ni prénom)"
-                  value={mTech}
-                  onChange={(e) => setMTech(e.target.value)}
-                />
+                  <input
+                    className="field"
+                    placeholder="Entreprise / identifiant technicien (sans nom ni prénom)"
+                    value={mTech}
+                    onChange={(e) => setMTech(e.target.value)}
+                  />
 
-                <input
-                  className="field"
-                  placeholder="Pièce changée / référence (optionnel)"
-                  value={mPart}
-                  onChange={(e) => setMPart(e.target.value)}
-                />
-                <button className="btn btn-primary" onClick={ajouterIntervention} disabled={isAddingM}>
-                  {isAddingM ? "Ajout en cours..." : "Ajouter au carnet"}
-                </button>
-                {mMsg && <p className="form-msg">{mMsg}</p>}
-              </div>
-            )}
-          </div>
+                  <input
+                    className="field"
+                    placeholder="Pièce changée / référence (optionnel)"
+                    value={mPart}
+                    onChange={(e) => setMPart(e.target.value)}
+                  />
+                  <button className="btn btn-primary" onClick={ajouterIntervention} disabled={isAddingM}>
+                    {isAddingM ? "Ajout en cours..." : "Ajouter au carnet"}
+                  </button>
+                  {mMsg && <p className="form-msg">{mMsg}</p>}
+                </div>
+              )}
+            </div>
+          )}
         </section>
       )}
 

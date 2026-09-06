@@ -1,570 +1,301 @@
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
-
 import { generatedEquipmentRegistry } from "./lib/equipment-registry.generated.js";
+import {
+  createQrToken,
+  isQrToken,
+  qrTokenRedisKey,
+  toPublicCarnetPass,
+} from "./lib/carnetpass-access.js";
 
-// ---------------------------------------------------------
-// CARNETPASS - API DE CRÉATION DES CARNETS
-// ---------------------------------------------------------
-//
-// Cette API permet :
-//
-// POST /api/carnetpass
-// -> créer automatiquement un nouveau CarnetPass
-//
-// GET /api/carnetpass?id=CP-2026-000003
-// -> retrouver un CarnetPass déjà créé
-//
-// Aucun nom, adresse ou donnée personnelle propriétaire
-// n'est nécessaire.
-//
-// Le CarnetPass est rattaché à l'ÉQUIPEMENT.
-// ---------------------------------------------------------
+// POST : crée un carnet et remet son jeton QR une seule fois.
+// GET ?token=... : lit la fiche technique à partir d'un nouveau QR.
+// GET ?id=CP-... : conserve la lecture TECHNIQUE des anciens liens.
+// La création reste publique pour les tests : l'autorisation Pro
+// devra être ajoutée avant la commercialisation.
 
 const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_KV_REST_API_URL,
-    token: process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN,
+  url: process.env.UPSTASH_REDIS_REST_KV_REST_API_URL,
+  token: process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN,
 });
-
-// ---------------------------------------------------------
-// ANTI-ABUS
-// ---------------------------------------------------------
-//
-// Un particulier peut créer plusieurs CarnetPass,
-// mais on évite qu'un robot en crée des milliers.
-//
-// 10 créations maximum par heure et par IP.
-// ---------------------------------------------------------
 
 const creationRateLimit = new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(10, "1 h"),
-    prefix: "carnetpass:create",
-    analytics: true,
+  redis,
+  limiter: Ratelimit.slidingWindow(10, "1 h"),
+  prefix: "carnetpass:create",
+  analytics: true,
 });
 
-// ---------------------------------------------------------
-// UTILITAIRES
-// ---------------------------------------------------------
-
-function normalizeManufacturerReference(value) {
-    return String(value ?? "")
-        .trim()
-        .replace(/\s+/g, "");
-}
-
-function normalizeCarnetPassId(value) {
-    return String(value ?? "")
-        .trim()
-        .toUpperCase();
-}
-function normalizeSerialNumber(value) {
-    return String(value ?? "")
-        .trim()
-        .toUpperCase()
-        .replace(/\s+/g, "");
-}
+const readingRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(60, "1 m"),
+  prefix: "carnetpass:read",
+  analytics: true,
+});
 
 function getClientIp(req) {
-    const forwarded =
-        req.headers["x-forwarded-for"];
-
-    if (typeof forwarded === "string") {
-        return (
-            forwarded
-                .split(",")[0]
-                ?.trim() || "unknown"
-        );
-    }
-
-    return (
-        req.headers["x-real-ip"] ||
-        "unknown"
-    );
+  const forwarded = req.headers?.["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0]?.trim() || "unknown";
+  }
+  const realIp = req.headers?.["x-real-ip"];
+  return typeof realIp === "string" ? realIp : "unknown";
 }
 
-// ---------------------------------------------------------
-// RECHERCHE DU MODÈLE TECHNIQUE
-// ---------------------------------------------------------
-//
-// On cherche l'équipement grâce à sa référence
-// constructeur.
-//
-// Exemple :
-//
-// 0010017417
-// -> Saunier Duval
-// -> ThemaFast Condens 30-A
-// ---------------------------------------------------------
-
-function findEquipmentByManufacturerReference(
-    manufacturerReference
-) {
-    const wantedReference =
-        normalizeManufacturerReference(
-            manufacturerReference
-        );
-
-    if (!wantedReference) {
-        return null;
-    }
-
-    return (
-        generatedEquipmentRegistry.find(
-            (entry) => {
-                const equipmentReference =
-                    normalizeManufacturerReference(
-                        entry?.equipmentData?.identity
-                            ?.manufacturerReference
-                    );
-
-                return (
-                    equipmentReference ===
-                    wantedReference
-                );
-            }
-        ) ?? null
-    );
+function normalizeReference(value) {
+  return String(value ?? "").trim().replace(/\s+/g, "");
 }
 
-// ---------------------------------------------------------
-// FORMAT DU NUMÉRO CARNETPASS
-// ---------------------------------------------------------
-
-function formatCarnetPassId(
-    year,
-    sequence
-) {
-    return `CP-${year}-${String(
-        sequence
-    ).padStart(6, "0")}`;
+function validText(value, maxLength) {
+  return typeof value === "string"
+    && value.length <= maxLength
+    && !/[\u0000-\u001f\u007f]/.test(value);
 }
 
-// ---------------------------------------------------------
-// INITIALISATION DU COMPTEUR
-// ---------------------------------------------------------
-//
-// CP-2026-000001 et CP-2026-000002 existent déjà
-// dans le prototype.
-//
-// Si Redis n'a encore jamais créé de compteur,
-// on démarre donc à 2.
-//
-// Le premier nouveau numéro sera :
-//
-// CP-2026-000003
-// ---------------------------------------------------------
+async function checkRateLimit(limiter, req, res) {
+  const result = await limiter.limit(getClientIp(req));
+  if (result.success) return true;
 
-async function initialiseCounterIfNeeded(
-    year
-) {
-    const counterKey =
-        `carnetpass:counter:${year}`;
-
-    const current =
-        await redis.get(counterKey);
-
-    if (current === null) {
-        await redis.set(
-            counterKey,
-            2,
-            {
-                nx: true,
-            }
-        );
-    }
-
-    return counterKey;
+  const seconds = Number.isFinite(result.reset)
+    ? Math.max(1, Math.ceil((result.reset - Date.now()) / 1000))
+    : 60;
+  res.setHeader("Retry-After", String(seconds));
+  res.status(429).json({
+    ok: false,
+    error: "Trop de demandes. Réessaie un peu plus tard.",
+  });
+  return false;
 }
 
-// ---------------------------------------------------------
-// CRÉATION D'UN CARNETPASS
-// ---------------------------------------------------------
+// Lua = langage exécuté ici directement par Redis.
+// Les contrôles et les écritures s'effectuent sans qu'une autre
+// création puisse s'intercaler : cela évite les doublons simultanés.
+// KEYS : fiche, empreinte QR, index série, index modèle, index équipement.
+// ARGV : fiche JSON, numéro CarnetPass, présence d'un numéro de série.
+const CREATE_SCRIPT = `
+  if redis.call("EXISTS", KEYS[1]) == 1
+     or redis.call("EXISTS", KEYS[2]) == 1 then
+    return "retry"
+  end
+  if ARGV[3] == "1" and redis.call("EXISTS", KEYS[3]) == 1 then
+    return "duplicate_serial"
+  end
 
-async function createCarnetPass(
-    req,
-    res
-) {
-    // ---------------------------
-    // Protection anti-abus
-    // ---------------------------
+  local manufacturerType = redis.call("TYPE", KEYS[4]).ok
+  local equipmentType = redis.call("TYPE", KEYS[5]).ok
+  if (manufacturerType ~= "none" and manufacturerType ~= "set")
+     or (equipmentType ~= "none" and equipmentType ~= "set") then
+    return "invalid_index"
+  end
 
-    const ip = getClientIp(req);
+  redis.call("SET", KEYS[1], ARGV[1])
+  redis.call("SET", KEYS[2], ARGV[2])
+  if ARGV[3] == "1" then
+    redis.call("SET", KEYS[3], ARGV[2])
+  end
+  redis.call("SADD", KEYS[4], ARGV[2])
+  redis.call("SADD", KEYS[5], ARGV[2])
+  return "created"
+`;
 
-    const rateLimitResult =
-        await creationRateLimit.limit(ip);
+async function createCarnetPass(req, res) {
+  if (!(await checkRateLimit(creationRateLimit, req, res))) return;
 
-    if (!rateLimitResult.success) {
-        return res.status(429).json({
-            ok: false,
-            error:
-                "Trop de créations CarnetPass. Réessaie un peu plus tard.",
-        });
+  const body = req.body;
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return res.status(400).json({ ok: false, error: "Données invalides." });
+  }
+
+  if (!validText(body.manufacturerReference, 128)) {
+    return res.status(400).json({
+      ok: false,
+      error: "Référence constructeur invalide : 128 caractères maximum.",
+    });
+  }
+
+  const manufacturerReference = normalizeReference(body.manufacturerReference);
+  if (!manufacturerReference) {
+    return res.status(400).json({
+      ok: false,
+      error: "La référence constructeur est obligatoire.",
+    });
+  }
+
+  const rawSerial = body.serialNumber ?? "";
+  if (!validText(rawSerial, 128)) {
+    return res.status(400).json({
+      ok: false,
+      error: "Numéro de série invalide : 128 caractères maximum.",
+    });
+  }
+  const serialNumber = rawSerial.trim().toUpperCase().replace(/\s+/g, "");
+
+  const entry = generatedEquipmentRegistry.find((item) =>
+    normalizeReference(item?.equipmentData?.identity?.manufacturerReference)
+      === manufacturerReference
+  );
+
+  if (!entry) {
+    return res.status(404).json({
+      ok: false,
+      error: "Cette référence constructeur n'est pas encore disponible dans CarnetPass.",
+    });
+  }
+
+  const equipmentData = entry.equipmentData;
+  const identity = equipmentData.identity ?? {};
+  const equipmentId = equipmentData.equipmentId;
+  if (typeof equipmentId !== "string" || !equipmentId) {
+    throw new Error("Identifiant technique absent du registre.");
+  }
+
+  const year = new Date().getUTCFullYear();
+  const counterKey = `carnetpass:counter:${year}`;
+  // NX = créer seulement si cette entrée n'existe pas déjà.
+  // Le compteur existant est conservé ; 1 et 2 restent réservés au prototype.
+  await redis.set(counterKey, 2, { nx: true });
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const sequence = Number(await redis.incr(counterKey));
+    if (!Number.isSafeInteger(sequence) || sequence < 1 || sequence > 999999) {
+      throw new Error("Compteur CarnetPass hors limites.");
     }
 
-    // ---------------------------
-    // Référence constructeur
-    // ---------------------------
+    const carnetPassId = `CP-${year}-${String(sequence).padStart(6, "0")}`;
+    const qrToken = createQrToken();
+    const now = new Date().toISOString();
 
-    const manufacturerReference =
-        normalizeManufacturerReference(
-            req.body?.manufacturerReference
-        );
-
-    if (!manufacturerReference) {
-        return res.status(400).json({
-            ok: false,
-            error:
-                "La référence constructeur est obligatoire.",
-        });
-    }
-    // ---------------------------
-    // Numéro de série
-    // ---------------------------
-
-    const serialNumber =
-        normalizeSerialNumber(
-            req.body?.serialNumber
-        );
-
-    // Si un numéro de série est fourni,
-    // on vérifie qu'il n'est pas déjà
-    // associé à un autre CarnetPass.
-    if (serialNumber) {
-        const existingCarnetPassId =
-            await redis.get(
-                `carnetpass:serial:${serialNumber}`
-            );
-
-        if (existingCarnetPassId) {
-            return res.status(409).json({
-                ok: false,
-                error:
-                    "Un CarnetPass existe déjà pour ce numéro de série.",
-                carnetPassId:
-                    normalizeCarnetPassId(
-                        existingCarnetPassId
-                    ),
-            });
-        }
-    }
-    // ---------------------------
-    // Recherche du modèle
-    // ---------------------------
-
-    const registryEntry =
-        findEquipmentByManufacturerReference(
-            manufacturerReference
-        );
-
-    if (!registryEntry) {
-        return res.status(404).json({
-            ok: false,
-            error:
-                "Cette référence constructeur n'est pas encore disponible dans CarnetPass.",
-            manufacturerReference,
-        });
-    }
-
-    const equipmentData =
-        registryEntry.equipmentData;
-
-    const identity =
-        equipmentData.identity ?? {};
-
-    // ---------------------------
-    // Génération du numéro
-    // ---------------------------
-
-    const year =
-        new Date().getUTCFullYear();
-
-    const counterKey =
-        await initialiseCounterIfNeeded(
-            year
-        );
-
-    let carnetPassId = null;
-
-    // Plusieurs essais protègent contre
-    // un éventuel doublon ou une création simultanée.
-
-    for (
-        let attempt = 0;
-        attempt < 20;
-        attempt += 1
-    ) {
-        const sequence =
-            await redis.incr(counterKey);
-
-        const candidateId =
-            formatCarnetPassId(
-                year,
-                sequence
-            );
-
-        const redisKey =
-            `carnetpass:${candidateId}`;
-
-        const alreadyExists =
-            await redis.exists(redisKey);
-
-        if (!alreadyExists) {
-            carnetPassId =
-                candidateId;
-
-            break;
-        }
-    }
-
-    if (!carnetPassId) {
-        return res.status(500).json({
-            ok: false,
-            error:
-                "Impossible de générer un identifiant CarnetPass unique.",
-        });
-    }
-
-    // ---------------------------
-    // Données du CarnetPass
-    // ---------------------------
-
-    const now =
-        new Date().toISOString();
-
+    // Le jeton lisible n'est PAS ajouté à cet objet.
     const carnetPass = {
-        version: "1.0",
-
-        carnetPassId,
-
-        equipmentId:
-            equipmentData.equipmentId,
-
-        manufacturerReference,
-        serialNumber:
-            serialNumber || null,
-
-        identity: {
-            brand:
-                identity.brand ?? null,
-
-            productType:
-                identity.productType ?? null,
-
-            range:
-                identity.range ?? null,
-
-            model:
-                identity.model ?? null,
-
-            variant:
-                identity.variant ?? null,
-        },
-
-        access: {
-            type: "public",
-            ownerAccountRequired: false,
-        },
-
-        status: "active",
-
-        createdAt: now,
-        updatedAt: now,
+      version: "1.1",
+      carnetPassId,
+      equipmentId,
+      manufacturerReference,
+      serialNumber: serialNumber || null,
+      identity: {
+        brand: identity.brand ?? null,
+        productType: identity.productType ?? null,
+        range: identity.range ?? null,
+        model: identity.model ?? null,
+        variant: identity.variant ?? null,
+      },
+      access: { type: "public_technical", ownerAccountRequired: false },
+      status: "active",
+      createdAt: now,
+      updatedAt: now,
     };
 
-    // ---------------------------
-    // Enregistrement Redis
-    // ---------------------------
-
-    const carnetPassKey =
-        `carnetpass:${carnetPassId}`;
-
-    await redis.set(
+    const carnetPassKey = `carnetpass:${carnetPassId}`;
+    const result = await redis.eval(
+      CREATE_SCRIPT,
+      [
         carnetPassKey,
-        carnetPass
-    );
-    // ---------------------------
-    // Index par numéro de série
-    // ---------------------------
-    //
-    // Exemple :
-    //
-    // carnetpass:serial:SERIE123456
-    // -> CP-2026-000004
-    //
-    // Grâce à cet index, la recherche
-    // universelle pourra retrouver
-    // directement l'appareil physique.
-    // ---------------------------
-
-    if (serialNumber) {
-        const serialIndexKey =
-            `carnetpass:serial:${serialNumber}`;
-
-        const serialIndexCreated =
-            await redis.set(
-                serialIndexKey,
-                carnetPassId,
-                {
-                    nx: true,
-                }
-            );
-
-        // Sécurité supplémentaire :
-        // si deux créations arrivent quasiment
-        // en même temps avec le même numéro
-        // de série, Redis n'en accepte qu'une.
-        if (!serialIndexCreated) {
-            await redis.del(
-                carnetPassKey
-            );
-
-            const existingCarnetPassId =
-                await redis.get(
-                    serialIndexKey
-                );
-
-            return res.status(409).json({
-                ok: false,
-                error:
-                    "Un CarnetPass existe déjà pour ce numéro de série.",
-                carnetPassId:
-                    normalizeCarnetPassId(
-                        existingCarnetPassId
-                    ),
-            });
-        }
-    }
-    // Index par référence constructeur.
-    //
-    // Cela permettra plus tard de savoir
-    // quels CarnetPass utilisent un modèle.
-
-    await redis.sadd(
+        qrTokenRedisKey(qrToken),
+        // Sans série, la troisième entrée n'est jamais utilisée par le script.
+        serialNumber ? `carnetpass:serial:${serialNumber}` : carnetPassKey,
         `carnetpass:manufacturer:${manufacturerReference}`,
-        carnetPassId
+        `carnetpass:equipment:${equipmentId}`,
+      ],
+      [JSON.stringify(carnetPass), carnetPassId, serialNumber ? "1" : "0"]
     );
 
-    // Index par équipement technique.
+    if (result === "retry") continue;
 
-    if (equipmentData.equipmentId) {
-        await redis.sadd(
-            `carnetpass:equipment:${equipmentData.equipmentId}`,
-            carnetPassId
-        );
+    if (result === "duplicate_serial") {
+      // Un numéro de série ne donne pas droit au carnet ni à son jeton QR.
+      return res.status(409).json({
+        ok: false,
+        error: "Un CarnetPass existe déjà pour ce numéro de série. Utilise le QR déjà associé à l'appareil.",
+      });
+    }
+
+    if (result !== "created") {
+      throw new Error("Enregistrement CarnetPass impossible.");
     }
 
     return res.status(201).json({
-        ok: true,
-
-        carnetPassId,
-
-        equipment: {
-            equipmentId:
-                equipmentData.equipmentId,
-
-            manufacturerReference,
-
-            brand:
-                identity.brand ?? null,
-
-            range:
-                identity.range ?? null,
-
-            model:
-                identity.model ?? null,
-
-            variant:
-                identity.variant ?? null,
-        },
-
-        createdAt: now,
+      ok: true,
+      carnetPassId,
+      // Remis uniquement lors de cette création, jamais par une lecture d'ID.
+      qrToken,
+      // Chemin relatif : App.jsx choisira le domaine de test ou de production.
+      qrPath: `/appareil/${qrToken}`,
+      equipment: {
+        equipmentId,
+        manufacturerReference,
+        brand: identity.brand ?? null,
+        range: identity.range ?? null,
+        model: identity.model ?? null,
+        variant: identity.variant ?? null,
+      },
+      createdAt: now,
     });
+  }
+
+  throw new Error("Impossible de générer un identifiant unique.");
 }
 
-// ---------------------------------------------------------
-// LECTURE D'UN CARNETPASS
-// ---------------------------------------------------------
+async function getCarnetPass(req, res) {
+  if (!(await checkRateLimit(readingRateLimit, req, res))) return;
 
-async function getCarnetPass(
-    req,
-    res
-) {
-    const carnetPassId =
-        normalizeCarnetPassId(
-            req.query?.id
-        );
+  const query = req.query ?? {};
+  const hasToken = query.token !== undefined;
+  const hasId = query.id !== undefined;
 
-    if (!carnetPassId) {
-        return res.status(400).json({
-            ok: false,
-            error:
-                "Identifiant CarnetPass manquant.",
-        });
-    }
-
-    const carnetPass =
-        await redis.get(
-            `carnetpass:${carnetPassId}`
-        );
-
-    if (!carnetPass) {
-        return res.status(404).json({
-            ok: false,
-            error:
-                "CarnetPass introuvable.",
-        });
-    }
-
-    return res.status(200).json({
-        ok: true,
-        carnetPass,
+  // On refuse une demande ambiguë plutôt que d'utiliser l'autre paramètre.
+  if (hasToken === hasId) {
+    return res.status(400).json({
+      ok: false,
+      error: "Indique un jeton QR ou un numéro CarnetPass, un seul à la fois.",
     });
+  }
+
+  let carnetPassId;
+  if (hasToken) {
+    if (!isQrToken(query.token)) {
+      return res.status(400).json({ ok: false, error: "Format du jeton QR invalide." });
+    }
+    carnetPassId = await redis.get(qrTokenRedisKey(query.token));
+  } else {
+    if (!validText(query.id, 32)) {
+      return res.status(400).json({ ok: false, error: "Numéro CarnetPass invalide." });
+    }
+    carnetPassId = query.id.trim().toUpperCase();
+    if (!/^CP-\d{4}-\d{6}$/.test(carnetPassId)) {
+      return res.status(400).json({ ok: false, error: "Numéro CarnetPass invalide." });
+    }
+  }
+
+  if (typeof carnetPassId !== "string" || !/^CP-\d{4}-\d{6}$/.test(carnetPassId)) {
+    return res.status(404).json({ ok: false, error: "CarnetPass introuvable." });
+  }
+
+  const carnetPass = await redis.get(`carnetpass:${carnetPassId}`);
+  if (!carnetPass || carnetPass.status !== "active") {
+    return res.status(404).json({ ok: false, error: "CarnetPass introuvable." });
+  }
+
+  return res.status(200).json({
+    ok: true,
+    carnetPass: toPublicCarnetPass(carnetPass),
+  });
 }
 
-// ---------------------------------------------------------
-// HANDLER VERCEL
-// ---------------------------------------------------------
+export default async function handler(req, res) {
+  // Les réponses, notamment celle contenant le nouveau jeton, ne sont pas mises en cache.
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("CDN-Cache-Control", "no-store");
+  res.setHeader("Vercel-CDN-Cache-Control", "no-store");
 
-export default async function handler(
-    req,
-    res
-) {
-    try {
-        if (req.method === "POST") {
-            return await createCarnetPass(
-                req,
-                res
-            );
-        }
+  try {
+    if (req.method === "POST") return await createCarnetPass(req, res);
+    if (req.method === "GET") return await getCarnetPass(req, res);
 
-        if (req.method === "GET") {
-            return await getCarnetPass(
-                req,
-                res
-            );
-        }
-
-        res.setHeader(
-            "Allow",
-            "GET, POST"
-        );
-
-        return res.status(405).json({
-            ok: false,
-            error:
-                "Méthode non autorisée.",
-        });
-    } catch (error) {
-        console.error(
-            "Erreur API CarnetPass :",
-            error
-        );
-
-        return res.status(500).json({
-            ok: false,
-            error:
-                "Erreur interne CarnetPass.",
-        });
-    }
+    res.setHeader("Allow", "GET, POST");
+    return res.status(405).json({ ok: false, error: "Méthode non autorisée." });
+  } catch {
+    // Ne pas journaliser les requêtes, les jetons ou les erreurs Redis brutes.
+    console.error("Erreur interne API CarnetPass.");
+    return res.status(500).json({ ok: false, error: "Erreur interne CarnetPass." });
+  }
 }

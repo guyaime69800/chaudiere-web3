@@ -1,41 +1,38 @@
 import { Redis } from "@upstash/redis";
-
+import { Ratelimit } from "@upstash/ratelimit";
 import { generatedEquipmentRegistry } from "./lib/equipment-registry.generated.js";
+import {
+  isQrToken,
+  qrTokenRedisKey,
+  toPublicCarnetPass,
+} from "./lib/carnetpass-access.js";
 
-// ---------------------------------------------------------
-// CARNETPASS - RECHERCHE UNIVERSELLE
-// ---------------------------------------------------------
-//
-// GET /api/search?q=...
-//
-// La recherche peut reconnaître :
-//
-// - CarnetPass ID
-//   CP-2026-000003
-//
-// - Référence constructeur
-//   0010017417
-//
-// - Modèle / gamme
-//   ThemaFast
-//   ThemaFast Condens 30-A
-//
-// - Numéro de série
-//   lorsqu'un index numéro de série existera dans Redis.
-//
-// IMPORTANT :
-// Une recherche d'équipement générique ne crée JAMAIS
-// automatiquement un CarnetPass.
-// ---------------------------------------------------------
+// RECHERCHE PUBLIQUE : GET /api/search?q=...
+// Accepte un jeton QR, un numéro CarnetPass, une référence constructeur,
+// un identifiant technique, un modèle, une gamme ou une marque.
+// La recherche par numéro de série est réservée au futur accès Pro autorisé.
+// Cette API ne crée aucun carnet et ne renvoie jamais une fiche privée.
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_KV_REST_API_URL,
   token: process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN,
 });
 
-// ---------------------------------------------------------
-// NORMALISATION
-// ---------------------------------------------------------
+const searchRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(60, "1 m"),
+  prefix: "carnetpass:search",
+  analytics: true,
+});
+
+function getClientIp(req) {
+  const forwarded = req.headers?.["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0]?.trim() || "unknown";
+  }
+  const realIp = req.headers?.["x-real-ip"];
+  return typeof realIp === "string" ? realIp : "unknown";
+}
 
 function normalizeText(value) {
   return String(value ?? "")
@@ -49,473 +46,206 @@ function normalizeText(value) {
 }
 
 function normalizeCompact(value) {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/g, "");
+  return normalizeText(value).replace(/ /g, "");
 }
 
 function normalizeManufacturerReference(value) {
-  return String(value ?? "")
-    .trim()
-    .replace(/\s+/g, "");
+  return String(value ?? "").trim().replace(/\s+/g, "");
 }
 
-function normalizeCarnetPassId(value) {
-  return String(value ?? "")
-    .trim()
-    .toUpperCase();
+function publicText(value) {
+  return typeof value === "string" ? value : null;
 }
 
-function normalizeSerialNumber(value) {
-  return String(value ?? "")
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, "");
-}
-
-// ---------------------------------------------------------
-// DÉTECTION CARNETPASS
-// ---------------------------------------------------------
-
-function looksLikeCarnetPassId(value) {
-  return /^CP-\d{4}-\d{6}$/i.test(
-    String(value ?? "").trim()
-  );
-}
-
-// ---------------------------------------------------------
-// FORMAT D'UN ÉQUIPEMENT GÉNÉRIQUE
-// ---------------------------------------------------------
-
+// Sélection explicite des informations d'un modèle constructeur.
 function formatEquipmentResult(entry) {
-  const equipmentData =
-    entry?.equipmentData ?? {};
-
-  const identity =
-    equipmentData.identity ?? {};
+  const equipmentData = entry?.equipmentData ?? {};
+  const identity = equipmentData.identity ?? {};
 
   return {
     resultType: "equipment",
-
-    equipmentId:
-      equipmentData.equipmentId ?? null,
-
-    manufacturerReference:
-      identity.manufacturerReference ?? null,
-
-    brand:
-      identity.brand ?? null,
-
-    productType:
-      identity.productType ?? null,
-
-    range:
-      identity.range ?? null,
-
-    model:
-      identity.model ?? null,
-
-    variant:
-      identity.variant ?? null,
+    equipmentId: publicText(equipmentData.equipmentId),
+    manufacturerReference: publicText(identity.manufacturerReference),
+    brand: publicText(identity.brand),
+    productType: publicText(identity.productType),
+    range: publicText(identity.range),
+    model: publicText(identity.model),
+    variant: publicText(identity.variant),
   };
 }
 
-// ---------------------------------------------------------
-// RECHERCHE PAR RÉFÉRENCE CONSTRUCTEUR
-// ---------------------------------------------------------
-
 function findByManufacturerReference(query) {
-  const wanted =
-    normalizeManufacturerReference(query);
+  const wanted = normalizeManufacturerReference(query);
+  if (!wanted) return null;
 
-  if (!wanted) {
-    return null;
-  }
-
-  return (
-    generatedEquipmentRegistry.find(
-      (entry) => {
-        const reference =
-          normalizeManufacturerReference(
-            entry?.equipmentData?.identity
-              ?.manufacturerReference
-          );
-
-        return reference === wanted;
-      }
-    ) ?? null
-  );
+  return generatedEquipmentRegistry.find((entry) =>
+    normalizeManufacturerReference(
+      entry?.equipmentData?.identity?.manufacturerReference
+    ) === wanted
+  ) ?? null;
 }
-
-// ---------------------------------------------------------
-// RECHERCHE PAR EQUIPMENT ID
-// ---------------------------------------------------------
 
 function findByEquipmentId(query) {
-  const wanted =
-    normalizeCompact(query);
+  const wanted = normalizeCompact(query);
+  if (!wanted) return null;
 
-  if (!wanted) {
-    return null;
-  }
-
-  return (
-    generatedEquipmentRegistry.find(
-      (entry) => {
-        const equipmentId =
-          normalizeCompact(
-            entry?.equipmentData?.equipmentId
-          );
-
-        return equipmentId === wanted;
-      }
-    ) ?? null
-  );
+  return generatedEquipmentRegistry.find((entry) =>
+    normalizeCompact(entry?.equipmentData?.equipmentId) === wanted
+  ) ?? null;
 }
 
-// ---------------------------------------------------------
-// RECHERCHE PAR MODÈLE / GAMME / MARQUE
-// ---------------------------------------------------------
-
+// Le classement existant des résultats est conservé.
 function searchEquipmentCatalog(query) {
-  const wanted =
-    normalizeText(query);
+  const wanted = normalizeText(query);
+  if (!wanted) return [];
 
-  if (!wanted) {
-    return [];
-  }
+  return generatedEquipmentRegistry
+    .map((entry) => {
+      const equipmentData = entry?.equipmentData ?? {};
+      const identity = equipmentData.identity ?? {};
+      const brand = normalizeText(identity.brand);
+      const range = normalizeText(identity.range);
+      const model = normalizeText(identity.model);
+      const variant = normalizeText(identity.variant);
+      const manufacturerReference = normalizeText(identity.manufacturerReference);
+      const equipmentId = normalizeText(equipmentData.equipmentId);
 
-  const results =
-    generatedEquipmentRegistry
-      .map((entry) => {
-        const equipmentData =
-          entry?.equipmentData ?? {};
+      const searchableText = [
+        brand, range, model, variant, manufacturerReference, equipmentId,
+      ].filter(Boolean).join(" ");
 
-        const identity =
-          equipmentData.identity ?? {};
+      let score = 0;
+      if (model === wanted) score += 100;
+      if (range === wanted) score += 90;
+      if (model.startsWith(wanted)) score += 70;
+      if (range.startsWith(wanted)) score += 60;
+      if (searchableText.includes(wanted)) score += 40;
 
-        const brand =
-          normalizeText(identity.brand);
-
-        const range =
-          normalizeText(identity.range);
-
-        const model =
-          normalizeText(identity.model);
-
-        const variant =
-          normalizeText(identity.variant);
-
-        const manufacturerReference =
-          normalizeText(
-            identity.manufacturerReference
-          );
-
-        const equipmentId =
-          normalizeText(
-            equipmentData.equipmentId
-          );
-
-        const searchableText = [
-          brand,
-          range,
-          model,
-          variant,
-          manufacturerReference,
-          equipmentId,
-        ]
-          .filter(Boolean)
-          .join(" ");
-
-        let score = 0;
-
-        // Correspondance exacte avec le modèle.
-        if (model === wanted) {
-          score += 100;
-        }
-
-        // Correspondance exacte avec la gamme.
-        if (range === wanted) {
-          score += 90;
-        }
-
-        // Le modèle commence par la recherche.
-        if (model.startsWith(wanted)) {
-          score += 70;
-        }
-
-        // La gamme commence par la recherche.
-        if (range.startsWith(wanted)) {
-          score += 60;
-        }
-
-        // Correspondance partielle générale.
-        if (searchableText.includes(wanted)) {
-          score += 40;
-        }
-
-        return {
-          entry,
-          score,
-        };
-      })
-      .filter((item) => item.score > 0)
-      .sort(
-        (a, b) =>
-          b.score - a.score
-      )
-      .slice(0, 10);
-
-  return results.map(
-    ({ entry }) =>
-      formatEquipmentResult(entry)
-  );
+      return { entry, score };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
+    .map(({ entry }) => formatEquipmentResult(entry));
 }
 
-// ---------------------------------------------------------
-// RECHERCHE PAR NUMÉRO DE SÉRIE
-// ---------------------------------------------------------
-//
-// Cette fonction est déjà prête pour la prochaine étape.
-//
-// Plus tard, lors de :
-//
-// "C'est mon appareil"
-//       ↓
-// saisie numéro de série
-//       ↓
-// création CarnetPass
-//
-// nous créerons dans Redis :
-//
-// carnetpass:serial:NUMERO
-// -> CP-2026-xxxxxx
-//
-// Pour le moment les CarnetPass existants ne possèdent
-// pas encore cet index.
-// ---------------------------------------------------------
-
-async function findCarnetPassBySerialNumber(
-  query
-) {
-  const serialNumber =
-    normalizeSerialNumber(query);
-
-  if (!serialNumber) {
+// Cette fonction retourne seulement la partie publique d'un carnet actif.
+async function findPublicCarnetPass(carnetPassId) {
+  if (typeof carnetPassId !== "string"
+      || !/^CP-\d{4}-\d{6}$/.test(carnetPassId)) {
     return null;
   }
 
-  const carnetPassId =
-    await redis.get(
-      `carnetpass:serial:${serialNumber}`
-    );
+  const carnetPass = await redis.get(`carnetpass:${carnetPassId}`);
+  if (!carnetPass || carnetPass.status !== "active") return null;
 
-  if (!carnetPassId) {
-    return null;
-  }
+  const publicCarnetPass = toPublicCarnetPass(carnetPass);
+  if (!publicCarnetPass) return null;
 
-  const carnetPass =
-    await redis.get(
-      `carnetpass:${normalizeCarnetPassId(
-        carnetPassId
-      )}`
-    );
-
-  return carnetPass ?? null;
+  return {
+    resultType: "carnetpass",
+    carnetPassId: publicCarnetPass.carnetPassId,
+    equipmentId: publicCarnetPass.equipmentId,
+    manufacturerReference: publicCarnetPass.manufacturerReference,
+    identity: publicCarnetPass.identity,
+  };
 }
 
-// ---------------------------------------------------------
-// HANDLER
-// ---------------------------------------------------------
+function sendResults(res, searchType, results) {
+  // On ne recopie pas la recherche saisie : elle peut contenir un jeton.
+  return res.status(200).json({ ok: true, searchType, results });
+}
 
-export default async function handler(
-  req,
-  res
-) {
+export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("CDN-Cache-Control", "no-store");
+  res.setHeader("Vercel-CDN-Cache-Control", "no-store");
+
   try {
-    // Cette API est uniquement destinée à la lecture.
     if (req.method !== "GET") {
-      res.setHeader(
-        "Allow",
-        "GET"
-      );
-
+      res.setHeader("Allow", "GET");
       return res.status(405).json({
         ok: false,
-        error:
-          "Méthode non autorisée.",
+        error: "Méthode non autorisée.",
       });
     }
 
-    const query =
-      String(req.query?.q ?? "").trim();
+    const limit = await searchRateLimit.limit(getClientIp(req));
+    if (!limit.success) {
+      const seconds = Number.isFinite(limit.reset)
+        ? Math.max(1, Math.ceil((limit.reset - Date.now()) / 1000))
+        : 60;
+      res.setHeader("Retry-After", String(seconds));
+      return res.status(429).json({
+        ok: false,
+        error: "Trop de recherches. Réessaie un peu plus tard.",
+      });
+    }
 
-    if (!query) {
+    const rawQuery = req.query?.q;
+    if (typeof rawQuery !== "string" || rawQuery.length > 160
+        || /[\u0000-\u001f\u007f]/.test(rawQuery)) {
       return res.status(400).json({
         ok: false,
-        error:
-          "Recherche manquante.",
+        error: "Recherche invalide : 160 caractères maximum.",
       });
     }
 
-    // ---------------------------------------------------
-    // 1. CARNETPASS ID
-    // ---------------------------------------------------
+    const query = rawQuery.trim();
+    if (!query) {
+      return res.status(400).json({ ok: false, error: "Recherche manquante." });
+    }
 
-    if (
-      looksLikeCarnetPassId(query)
-    ) {
-      const carnetPassId =
-        normalizeCarnetPassId(query);
-
-      const carnetPass =
-        await redis.get(
-          `carnetpass:${carnetPassId}`
-        );
-
-      if (carnetPass) {
-        return res.status(200).json({
-          ok: true,
-          query,
-          searchType:
-            "carnetpass",
-
-          results: [
-            {
-              resultType:
-                "carnetpass",
-
-              ...carnetPass,
-            },
-          ],
+    // 1. Nouveau jeton QR : conserver exactement les majuscules/minuscules.
+    if (/^cp_qr_/i.test(query)) {
+      if (!isQrToken(query)) {
+        return res.status(400).json({
+          ok: false,
+          error: "Format du jeton QR invalide.",
         });
       }
-
-      return res.status(200).json({
-        ok: true,
-        query,
-        searchType:
-          "carnetpass",
-        results: [],
-      });
+      const carnetPassId = await redis.get(qrTokenRedisKey(query));
+      const carnetPass = await findPublicCarnetPass(carnetPassId);
+      return sendResults(res, "qr_token", carnetPass ? [carnetPass] : []);
     }
 
-    // ---------------------------------------------------
-    // 2. RÉFÉRENCE CONSTRUCTEUR EXACTE
-    // ---------------------------------------------------
+    // 2. Numéro métier : compatibilité avec les anciennes fiches publiques.
+    if (/^CP-\d{4}-\d{6}$/i.test(query)) {
+      const carnetPass = await findPublicCarnetPass(query.toUpperCase());
+      return sendResults(res, "carnetpass", carnetPass ? [carnetPass] : []);
+    }
 
-    const referenceMatch =
-      findByManufacturerReference(
-        query
-      );
-
+    // 3. Référence constructeur exacte.
+    const referenceMatch = findByManufacturerReference(query);
     if (referenceMatch) {
-      return res.status(200).json({
-        ok: true,
-        query,
-        searchType:
-          "manufacturer_reference",
-
-        results: [
-          formatEquipmentResult(
-            referenceMatch
-          ),
-        ],
-      });
+      return sendResults(res, "manufacturer_reference", [
+        formatEquipmentResult(referenceMatch),
+      ]);
     }
 
-    // ---------------------------------------------------
-    // 3. EQUIPMENT ID TECHNIQUE EXACT
-    // ---------------------------------------------------
-
-    const equipmentIdMatch =
-      findByEquipmentId(query);
-
+    // 4. Identifiant technique exact du modèle.
+    const equipmentIdMatch = findByEquipmentId(query);
     if (equipmentIdMatch) {
-      return res.status(200).json({
-        ok: true,
-        query,
-        searchType:
-          "equipment_id",
-
-        results: [
-          formatEquipmentResult(
-            equipmentIdMatch
-          ),
-        ],
-      });
+      return sendResults(res, "equipment_id", [
+        formatEquipmentResult(equipmentIdMatch),
+      ]);
     }
 
-    // ---------------------------------------------------
-    // 4. MODÈLE / GAMME / MARQUE
-    // ---------------------------------------------------
-
-    const equipmentResults =
-      searchEquipmentCatalog(query);
-
+    // 5. Modèle, gamme ou marque.
+    const equipmentResults = searchEquipmentCatalog(query);
     if (equipmentResults.length > 0) {
-      return res.status(200).json({
-        ok: true,
-        query,
-        searchType:
-          "equipment_catalog",
-
-        results:
-          equipmentResults,
-      });
+      return sendResults(res, "equipment_catalog", equipmentResults);
     }
 
-    // ---------------------------------------------------
-    // 5. NUMÉRO DE SÉRIE
-    // ---------------------------------------------------
-
-    const carnetPassBySerial =
-      await findCarnetPassBySerialNumber(
-        query
-      );
-
-    if (carnetPassBySerial) {
-      return res.status(200).json({
-        ok: true,
-        query,
-        searchType:
-          "serial_number",
-
-        results: [
-          {
-            resultType:
-              "carnetpass",
-
-            ...carnetPassBySerial,
-          },
-        ],
-      });
-    }
-
-    // ---------------------------------------------------
-    // AUCUN RÉSULTAT
-    // ---------------------------------------------------
-
-    return res.status(200).json({
-      ok: true,
-      query,
-      searchType:
-        "unknown",
-      results: [],
-    });
-  } catch (error) {
-    console.error(
-      "Erreur recherche universelle CarnetPass :",
-      error
-    );
-
+    // Aucun accès à l'index privé carnetpass:serial:... ici.
+    // Une recherche par série nécessitera les autorisations Pro côté serveur.
+    return sendResults(res, "unknown", []);
+  } catch {
+    // Ne pas journaliser la recherche, les jetons ou les erreurs Redis brutes.
+    console.error("Erreur interne recherche CarnetPass.");
     return res.status(500).json({
       ok: false,
-      error:
-        "Erreur interne pendant la recherche.",
+      error: "Erreur interne pendant la recherche.",
     });
   }
 }
