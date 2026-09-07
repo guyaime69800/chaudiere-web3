@@ -142,3 +142,25 @@ export async function getMyCompany(userId) {
     },
   };
 }
+
+export async function updateCompanySiret(companyId, siret) {
+  const normalizedSiret = siret.replace(/\s/g, "");
+  if (!/^\d{14}$/.test(normalizedSiret)) {
+    throw new Error("Le SIRET doit contenir exactement 14 chiffres.");
+  }
+
+  const { error } = await supabase.rpc("update_company_siret", {
+    p_company_id: companyId,
+    p_siret: normalizedSiret,
+  });
+
+  if (error) {
+    if (error.code === "42501") {
+      throw new Error("Votre session ou votre rôle ne permet pas cette modification. Reconnectez-vous ou contactez le propriétaire.");
+    }
+    if (error.code === "22023") {
+      throw new Error("Le SIRET doit contenir exactement 14 chiffres.");
+    }
+    throw new Error("Impossible d’enregistrer le SIRET. Actualisez le statut avant de réessayer.");
+  }
+}

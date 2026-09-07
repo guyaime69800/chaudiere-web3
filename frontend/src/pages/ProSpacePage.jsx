@@ -5,6 +5,7 @@ import { signOut } from "../services/authService";
 import {
   createCompany,
   getMyCompany,
+  updateCompanySiret,
 } from "../services/companyService";
 import "./ProSpacePage.css";
 
@@ -49,11 +50,94 @@ function getRoleLabel(role) {
   return labels[role] || role;
 }
 
+function CompanySiretForm({ company, onEditing, onSaved }) {
+  const [siret, setSiret] = useState(company.siret || "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const normalizedSiret = siret.replace(/\s/g, "");
+  const unchanged = normalizedSiret === (company.siret || "");
+  const canEdit = ["owner", "admin"].includes(company.role);
+
+  async function handleSave(event) {
+    event.preventDefault();
+    if (busy || !canEdit || unchanged) return;
+    onEditing();
+    setError("");
+    if (!/^\d{14}$/.test(normalizedSiret)) {
+      setError("Le SIRET doit contenir exactement 14 chiffres. Les espaces sont acceptés.");
+      return;
+    }
+    setBusy(true);
+    try {
+      await updateCompanySiret(company.id, normalizedSiret);
+      onSaved();
+    } catch (saveError) {
+      setError(saveError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="pro-dashboard-grid" aria-labelledby="company-siret-title">
+      <article className="pro-dashboard-card" style={{ gridColumn: "1 / -1", minWidth: 0 }}>
+        <h2 id="company-siret-title">{company.siret ? "SIRET de l’entreprise" : "Renseigner mon SIRET"}</h2>
+        {canEdit ? (
+          <form className="pro-form" onSubmit={handleSave} aria-busy={busy}>
+            <label htmlFor="company-siret">
+              <span>SIRET de {company.name}</span>
+              <input
+                id="company-siret"
+                name="companySiret"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={64}
+                required
+                value={siret}
+                onChange={(event) => {
+                  setSiret(event.target.value);
+                  setError("");
+                  onEditing();
+                }}
+                disabled={busy}
+                aria-describedby={`company-siret-help${error ? " company-siret-error" : ""}`}
+                aria-errormessage={error ? "company-siret-error" : undefined}
+                aria-invalid={Boolean(error)}
+                placeholder="14 chiffres"
+              />
+            </label>
+            <p id="company-siret-help" className="pro-form-notice">
+              L’enregistrement du SIRET ne valide pas automatiquement votre entreprise.
+              Toute modification nécessite une nouvelle validation avant de créer des carnets.
+              {company.verification?.status === "suspended" && " La suspension restera en place : contactez l’assistance."}
+            </p>
+            {error && (
+              <p id="company-siret-error" className="pro-form-error" role="alert">
+                {error}
+              </p>
+            )}
+            <button className="pro-primary-button" type="submit" disabled={busy || unchanged}>
+              {busy ? "Enregistrement…" : "Enregistrer le SIRET"}
+            </button>
+          </form>
+        ) : (
+          <div>
+            <p>SIRET : {company.siret || "Non renseigné"}</p>
+            <p>Seul le propriétaire ou un administrateur peut modifier le SIRET.</p>
+          </div>
+        )}
+      </article>
+    </section>
+  );
+}
+
 export default function ProSpacePage() {
   const { user } = useAuth();
   const userId = user?.id;
 
   const [company, setCompany] = useState(null);
+  const [siretMessage, setSiretMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [loadError, setLoadError] = useState("");
@@ -463,6 +547,21 @@ export default function ProSpacePage() {
           Actualiser le statut
         </button>
       </section>
+      {siretMessage && (
+        <p className="pro-form-notice" role="status" style={{ padding: "0 24px", textAlign: "center" }}>
+          {siretMessage}
+        </p>
+      )}
+      <CompanySiretForm
+        key={`${company.id}:${company.siret || ""}`}
+        company={company}
+        onEditing={() => setSiretMessage("")}
+        onSaved={() => {
+          setSiretMessage("SIRET enregistré. Consultez le statut de validation affiché au-dessus.");
+          setLoading(true);
+          setRefreshKey((currentKey) => currentKey + 1);
+        }}
+      />
       <section className="pro-stat-grid">
         <article>
           <span>Équipements suivis</span>
