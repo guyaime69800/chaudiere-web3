@@ -14,7 +14,7 @@ import {
 } from "./services/equipmentKnowledge";
 import ReactMarkdown from "react-markdown";
 import "./App.css";
-
+import { supabase } from "./services/supabaseClient";
 function App({ initialMode = "public" }) {
   // Mode d'affichage : "public" (consultation, sans wallet) ou "pro" (technicien, avec wallet)
   const [mode, setMode] = useState(initialMode);
@@ -683,10 +683,38 @@ function App({ initialMode = "public" }) {
       setIsCreatingCarnetPass(true);
       setCarnetPassCreationMessage("");
 
+      // Récupère la session de connexion dans le navigateur.
+      const {
+        data: sessionData,
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        throw new Error(
+          "Impossible de récupérer ta connexion. Reconnecte-toi puis réessaie."
+        );
+      }
+
+      const accessToken = sessionData?.session?.access_token;
+
+      if (!accessToken) {
+        throw new Error(
+          "Connecte-toi à ton compte professionnel pour créer un carnet."
+        );
+      }
+
+      // Transmet le jeton de connexion au serveur.
+      // Le serveur vérifie lui-même l'utilisateur et son entreprise.
       const response = await fetch("/api/carnetpass", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ manufacturerReference, serialNumber }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          manufacturerReference,
+          serialNumber,
+        }),
       });
 
       const data = await response.json();
@@ -1211,7 +1239,21 @@ function App({ initialMode = "public" }) {
               </button>
 
               {carnetPassCreationMessage && (
-                <p className="muted">
+                <p
+                  role="status"
+                  style={{
+                    color: "#991b1b",
+                    backgroundColor: "#fef2f2",
+                    border: "1px solid #fca5a5",
+                    borderLeft: "4px solid #b91c1c",
+                    borderRadius: "8px",
+                    padding: "12px 16px",
+                    marginTop: "16px",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    lineHeight: 1.5,
+                  }}
+                >
                   {carnetPassCreationMessage}
                 </p>
               )}
