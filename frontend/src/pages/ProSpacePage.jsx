@@ -7,6 +7,10 @@ import {
   getMyCompany,
   updateCompanySiret,
 } from "../services/companyService";
+import {
+  createCompanyEquipment,
+  getCompanyEquipments,
+} from "../services/equipmentService";
 import "./ProSpacePage.css";
 
 const EMPTY_FORM = {
@@ -14,6 +18,13 @@ const EMPTY_FORM = {
   siret: "",
   phone: "",
   jobTitle: "",
+};
+
+const EMPTY_EQUIPMENT_FORM = {
+  brand: "",
+  model: "",
+  productReference: "",
+  serialNumber: "",
 };
 
 function Brand() {
@@ -145,6 +156,17 @@ export default function ProSpacePage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [equipments, setEquipments] = useState([]);
+  const [equipmentLoading, setEquipmentLoading] = useState(false);
+  const [equipmentLoadError, setEquipmentLoadError] = useState("");
+  const [equipmentFormOpen, setEquipmentFormOpen] = useState(false);
+  const [equipmentForm, setEquipmentForm] = useState(
+    EMPTY_EQUIPMENT_FORM
+  );
+  const [equipmentError, setEquipmentError] = useState("");
+  const [equipmentMessage, setEquipmentMessage] = useState("");
+  const [equipmentSubmitting, setEquipmentSubmitting] = useState(false);
+  const [equipmentRefreshKey, setEquipmentRefreshKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -181,6 +203,42 @@ export default function ProSpacePage() {
       cancelled = true;
     };
   }, [userId, refreshKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEquipments() {
+      if (!company?.id) {
+        setEquipments([]);
+        return;
+      }
+
+      setEquipmentLoading(true);
+      setEquipmentLoadError("");
+
+      try {
+        const equipmentData = await getCompanyEquipments(company.id);
+
+        if (!cancelled) {
+          setEquipments(equipmentData);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setEquipmentLoadError(error.message);
+        }
+      } finally {
+        if (!cancelled) {
+          setEquipmentLoading(false);
+        }
+      }
+    }
+
+    loadEquipments();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [company?.id, equipmentRefreshKey]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -230,6 +288,52 @@ export default function ProSpacePage() {
       await signOut();
     } finally {
       setSigningOut(false);
+    }
+  }
+
+  function handleEquipmentChange(event) {
+    const { name, value } = event.target;
+
+    setEquipmentForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+    }));
+    setEquipmentError("");
+    setEquipmentMessage("");
+  }
+
+  async function handleEquipmentSubmit(event) {
+    event.preventDefault();
+    setEquipmentError("");
+    setEquipmentMessage("");
+
+    if (!equipmentForm.brand.trim()) {
+      setEquipmentError("Indiquez la marque de l’équipement.");
+      return;
+    }
+
+    if (!equipmentForm.model.trim()) {
+      setEquipmentError("Indiquez le modèle de l’équipement.");
+      return;
+    }
+
+    if (!equipmentForm.serialNumber.trim()) {
+      setEquipmentError("Indiquez le numéro de série de l’équipement.");
+      return;
+    }
+
+    setEquipmentSubmitting(true);
+
+    try {
+      await createCompanyEquipment(company.id, equipmentForm);
+      setEquipmentForm(EMPTY_EQUIPMENT_FORM);
+      setEquipmentFormOpen(false);
+      setEquipmentMessage("Équipement ajouté avec succès.");
+      setEquipmentRefreshKey((currentKey) => currentKey + 1);
+    } catch (error) {
+      setEquipmentError(error.message);
+    } finally {
+      setEquipmentSubmitting(false);
     }
   }
 
@@ -565,8 +669,12 @@ export default function ProSpacePage() {
       <section className="pro-stat-grid">
         <article>
           <span>Équipements suivis</span>
-          <strong>0</strong>
-          <small>Ajoutez votre premier équipement</small>
+          <strong>{equipmentLoading ? "…" : equipments.length}</strong>
+          <small>
+            {equipments.length > 0
+              ? `${equipments.length} équipement${equipments.length > 1 ? "s" : ""} enregistré${equipments.length > 1 ? "s" : ""}`
+              : "Ajoutez votre premier équipement"}
+          </small>
         </article>
 
         <article>
@@ -589,25 +697,151 @@ export default function ProSpacePage() {
       </section>
 
       <section className="pro-dashboard-grid">
-        <article className="pro-dashboard-card">
+        <article className="pro-dashboard-card pro-equipment-card">
           <div>
             <span className="pro-dashboard-icon" aria-hidden="true">
               🔧
             </span>
-            <h2>Commencez votre espace</h2>
+            <h2>Équipements de l’entreprise</h2>
             <p>
-              La prochaine étape permettra d’ajouter et de gérer
-              les équipements de votre entreprise.
+              Ajoutez les chaudières, pompes à chaleur, climatisations
+              et autres équipements suivis par votre entreprise.
             </p>
           </div>
 
           <button
             className="pro-primary-button"
             type="button"
-            disabled
+            disabled={!companyApproved}
+            onClick={() => {
+              setEquipmentFormOpen((isOpen) => !isOpen);
+              setEquipmentError("");
+              setEquipmentMessage("");
+            }}
           >
-            Ajouter un équipement — bientôt
+            {companyApproved
+              ? equipmentFormOpen
+                ? "Fermer le formulaire"
+                : "Ajouter un équipement"
+              : "Validation requise"}
           </button>
+
+          {!companyApproved && (
+            <p className="pro-equipment-lock">
+              L’ajout sera disponible après la validation du SIRET de l’entreprise.
+            </p>
+          )}
+
+          {equipmentMessage && (
+            <p className="pro-form-success" role="status">
+              {equipmentMessage}
+            </p>
+          )}
+
+          {equipmentLoadError && (
+            <p className="pro-form-error" role="alert">
+              {equipmentLoadError}
+            </p>
+          )}
+
+          {equipmentFormOpen && companyApproved && (
+            <form
+              className="pro-form pro-equipment-form"
+              onSubmit={handleEquipmentSubmit}
+              aria-busy={equipmentSubmitting}
+            >
+              <div className="pro-form-row">
+                <label>
+                  <span>Marque *</span>
+                  <input
+                    name="brand"
+                    type="text"
+                    value={equipmentForm.brand}
+                    onChange={handleEquipmentChange}
+                    placeholder="Ex. Saunier Duval"
+                    maxLength={100}
+                    disabled={equipmentSubmitting}
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span>Modèle *</span>
+                  <input
+                    name="model"
+                    type="text"
+                    value={equipmentForm.model}
+                    onChange={handleEquipmentChange}
+                    placeholder="Ex. ThemaPlus Condens"
+                    maxLength={150}
+                    disabled={equipmentSubmitting}
+                    required
+                  />
+                </label>
+              </div>
+
+              <div className="pro-form-row">
+                <label>
+                  <span>Référence produit</span>
+                  <input
+                    name="productReference"
+                    type="text"
+                    value={equipmentForm.productReference}
+                    onChange={handleEquipmentChange}
+                    placeholder="Ex. 0010017388"
+                    maxLength={100}
+                    disabled={equipmentSubmitting}
+                  />
+                </label>
+
+                <label>
+                  <span>Numéro de série *</span>
+                  <input
+                    name="serialNumber"
+                    type="text"
+                    value={equipmentForm.serialNumber}
+                    onChange={handleEquipmentChange}
+                    placeholder="Numéro indiqué sur l’appareil"
+                    maxLength={150}
+                    disabled={equipmentSubmitting}
+                    required
+                  />
+                </label>
+              </div>
+
+              {equipmentError && (
+                <p className="pro-form-error" role="alert">
+                  {equipmentError}
+                </p>
+              )}
+
+              <button
+                className="pro-primary-button"
+                type="submit"
+                disabled={equipmentSubmitting}
+              >
+                {equipmentSubmitting
+                  ? "Enregistrement…"
+                  : "Enregistrer l’équipement"}
+              </button>
+            </form>
+          )}
+
+          {equipments.length > 0 && (
+            <ul className="pro-equipment-list">
+              {equipments.map((equipment) => (
+                <li key={equipment.id}>
+                  <div>
+                    <strong>{equipment.brand} {equipment.model}</strong>
+                    <span>N° de série : {equipment.serial_number}</span>
+                  </div>
+                  {equipment.product_reference && (
+                    <small>Réf. {equipment.product_reference}</small>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </article>
 
         <article className="pro-dashboard-card">

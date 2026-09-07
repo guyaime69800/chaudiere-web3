@@ -987,3 +987,97 @@
     width: 100%;
   }
 }
+
+/* Ajout et liste des équipements */
+
+.pro-equipment-card {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.pro-equipment-card > .pro-equipment-lock,
+.pro-equipment-card > .pro-form-success,
+.pro-equipment-card > .pro-form-error,
+.pro-equipment-card > .pro-equipment-form,
+.pro-equipment-card > .pro-equipment-list {
+  grid-column: 1 / -1;
+}
+
+.pro-equipment-lock {
+  margin-top: 20px !important;
+  padding: 12px 14px;
+  border-radius: 11px;
+  background: var(--pro-orange-light);
+}
+
+.pro-equipment-form {
+  margin-top: 26px;
+  padding-top: 26px;
+  border-top: 1px solid var(--pro-line);
+}
+
+.pro-equipment-form .pro-primary-button {
+  justify-self: start;
+}
+
+.pro-form-success {
+  margin: 20px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #86efac;
+  border-radius: 11px;
+  color: #166534;
+  background: #f0fdf4;
+  font-size: 13px;
+}
+
+.pro-equipment-list {
+  display: grid;
+  gap: 10px;
+  margin: 24px 0 0;
+  padding: 24px 0 0;
+  border-top: 1px solid var(--pro-line);
+  list-style: none;
+}
+
+.pro-equipment-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px;
+  border: 1px solid var(--pro-line);
+  border-radius: 13px;
+  background: #fffdfc;
+}
+
+.pro-equipment-list strong,
+.pro-equipment-list span {
+  display: block;
+}
+
+.pro-equipment-list strong {
+  margin-bottom: 4px;
+}
+
+.pro-equipment-list span,
+.pro-equipment-list small {
+  color: var(--pro-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 720px) {
+  .pro-equipment-card {
+    grid-template-columns: 1fr;
+  }
+
+  .pro-equipment-card > .pro-primary-button {
+    width: 100%;
+    max-width: none;
+  }
+
+  .pro-equipment-list li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
