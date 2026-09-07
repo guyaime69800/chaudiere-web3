@@ -368,6 +368,38 @@ export default function ProSpacePage() {
   }
 
   const plan = company.subscription?.plan || "free";
+  const verification = company.verification;
+  const companyApproved =
+    verification?.status === "approved" &&
+    /^\d{14}$/.test(company.siret || "") &&
+    verification.verified_siret === company.siret &&
+    Boolean(verification.verified_at);
+
+  let verificationTitle = "Entreprise en attente de validation";
+  let verificationMessage =
+    "Votre entreprise doit être validée avant de pouvoir créer des carnets.";
+
+  if (companyApproved) {
+    verificationTitle = "Entreprise validée";
+    verificationMessage =
+      "La validation de votre entreprise permet la création de carnets.";
+  } else if (verification?.status === "suspended") {
+    verificationTitle = "Validation suspendue";
+    verificationMessage =
+      "La création de carnets est bloquée. Contactez l’assistance.";
+  } else if (verification?.status === "rejected") {
+    verificationTitle = "Validation refusée";
+    verificationMessage =
+      "Contactez l’assistance pour connaître les informations à corriger.";
+  } else if (!company.siret) {
+    verificationTitle = "SIRET à renseigner";
+    verificationMessage =
+      "Aucun SIRET n’est enregistré pour votre entreprise. Sa validation est nécessaire avant de pouvoir créer des carnets.";
+  } else if (verification?.status === "approved") {
+    verificationTitle = "Validation à vérifier";
+    verificationMessage =
+      "Les informations actuelles ne correspondent pas à une validation complète. La création de carnets reste bloquée.";
+  }
 
   return (
     <main className="pro-space pro-dashboard">
@@ -410,7 +442,40 @@ export default function ProSpacePage() {
           </div>
         </div>
       </section>
+      <section
+        aria-label="Validation de l’entreprise"
+        style={{
+          margin: "24px 0",
+          padding: "20px 24px",
+          borderRadius: "16px",
+          backgroundColor: companyApproved ? "#f0fdf4" : "#fef2f2",
+          border: `1px solid ${companyApproved ? "#86efac" : "#fca5a5"}`,
+          borderLeft: `5px solid ${companyApproved ? "#15803d" : "#b91c1c"}`,
+          color: companyApproved ? "#166534" : "#991b1b",
+        }}
+      >
+        <h2
+          style={{
+            margin: "0 0 8px",
+            fontSize: "20px",
+            color: "inherit",
+          }}
+        >
+          {verificationTitle}
+        </h2>
 
+        <p style={{ margin: "0 0 16px", color: "inherit" }}>
+          {verificationMessage}
+        </p>
+
+        <button
+          type="button"
+          className="pro-button pro-button-secondary"
+          onClick={() => setRefreshKey((currentKey) => currentKey + 1)}
+        >
+          Actualiser le statut
+        </button>
+      </section>
       <section className="pro-stat-grid">
         <article>
           <span>Équipements suivis</span>
