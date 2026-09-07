@@ -266,7 +266,7 @@ async function requireVerifiedCompany(req, res) {
     } = await supabase
       .from("companies")
       .select(
-        "id, siret, company_verifications(status, verified_siret, verified_at)"
+        "id, siret, is_demo, company_verifications(status, verified_siret, verified_at)"
       )
       .eq("id", membership.company_id)
       .maybeSingle();
@@ -277,30 +277,22 @@ async function requireVerifiedCompany(req, res) {
 
     const verification = company?.company_verifications;
 
-    if (
-      !company
-      || !verification
-      || verification.status !== "approved"
-    ) {
+    const demoAllowed =
+      company?.is_demo === true &&
+      verification?.status !== "suspended";
+
+    const verifiedAllowed =
+      verification?.status === "approved" &&
+      typeof company?.siret === "string" &&
+      /^[0-9]{14}$/.test(company.siret) &&
+      company.siret === verification.verified_siret &&
+      Boolean(verification.verified_at);
+
+    if (!company || (!demoAllowed && !verifiedAllowed)) {
       return deny(
         403,
         "COMPANY_NOT_APPROVED",
         "Ton entreprise doit être validée avant de pouvoir créer un carnet."
-      );
-    }
-
-    // Une validation d'un ancien SIRET ne donne aucun droit au SIRET actuel.
-
-    if (
-      typeof company.siret !== "string"
-      || !/^[0-9]{14}$/.test(company.siret)
-      || company.siret !== verification.verified_siret
-      || !verification.verified_at
-    ) {
-      return deny(
-        403,
-        "COMPANY_RECHECK_REQUIRED",
-        "Le SIRET de ton entreprise doit être vérifié avant de créer un carnet."
       );
     }
 
