@@ -11,12 +11,16 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider } from "./context/AuthProvider";
 import AuthPage from "./pages/AuthPage.jsx";
 import ProSpacePage from "./pages/ProSpacePage.jsx";
-
+import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          <Route
+            path="/reinitialiser-mot-de-passe"
+            element={<ResetPasswordPage />}
+          />
           {/* Accueil public */}
           <Route path="/" element={<App />} />
 
