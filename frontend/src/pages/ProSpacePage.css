@@ -32,7 +32,8 @@
 }
 
 .pro-space button,
-.pro-space input {
+.pro-space input,
+.pro-space select {
   font: inherit;
 }
 
@@ -348,7 +349,8 @@
   font-weight: 750;
 }
 
-.pro-form input {
+.pro-form input,
+.pro-form select {
   width: 100%;
   min-height: 54px;
   padding: 0 16px;
@@ -367,11 +369,13 @@
   color: #aa9a94;
 }
 
-.pro-form input:hover {
+.pro-form input:hover,
+.pro-form select:hover {
   border-color: #cfbcb4;
 }
 
-.pro-form input:focus {
+.pro-form input:focus,
+.pro-form select:focus {
   border-color: var(--pro-orange);
   background: #ffffff;
   box-shadow: 0 0 0 4px rgba(201, 54, 8, 0.1);

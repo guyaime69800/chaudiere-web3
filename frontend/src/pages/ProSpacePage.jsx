@@ -21,6 +21,7 @@ const EMPTY_FORM = {
 };
 
 const EMPTY_EQUIPMENT_FORM = {
+  equipmentType: "boiler",
   brand: "",
   model: "",
   productReference: "",
@@ -59,6 +60,19 @@ function getRoleLabel(role) {
   };
 
   return labels[role] || role;
+}
+
+function getEquipmentTypeLabel(type) {
+  const labels = {
+    boiler: "Chaudière",
+    heat_pump: "Pompe à chaleur",
+    air_conditioning: "Climatisation",
+    vmc: "VMC",
+    rooftop: "Rooftop",
+    other: "Autre",
+  };
+
+  return labels[type] || "Autre";
 }
 
 function CompanySiretForm({ company, onEditing, onSaved }) {
@@ -750,6 +764,24 @@ export default function ProSpacePage() {
               onSubmit={handleEquipmentSubmit}
               aria-busy={equipmentSubmitting}
             >
+              <label>
+                <span>Type d’équipement *</span>
+                <select
+                  name="equipmentType"
+                  value={equipmentForm.equipmentType}
+                  onChange={handleEquipmentChange}
+                  disabled={equipmentSubmitting}
+                  required
+                >
+                  <option value="boiler">Chaudière</option>
+                  <option value="heat_pump">Pompe à chaleur</option>
+                  <option value="air_conditioning">Climatisation</option>
+                  <option value="vmc">VMC</option>
+                  <option value="rooftop">Rooftop</option>
+                  <option value="other">Autre</option>
+                </select>
+              </label>
+
               <div className="pro-form-row">
                 <label>
                   <span>Marque *</span>
@@ -833,6 +865,7 @@ export default function ProSpacePage() {
                 <li key={equipment.id}>
                   <div>
                     <strong>{equipment.brand} {equipment.model}</strong>
+                    <span>{getEquipmentTypeLabel(equipment.equipment_type)}</span>
                     <span>N° de série : {equipment.serial_number}</span>
                   </div>
                   {equipment.product_reference && (

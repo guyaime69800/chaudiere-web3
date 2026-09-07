@@ -33,7 +33,7 @@ export async function getCompanyEquipments(companyId) {
   const { data, error } = await supabase
     .from("equipments")
     .select(
-      "id, brand, model, product_reference, serial_number, created_at"
+      "id, equipment_type, brand, model, product_reference, serial_number, created_at"
     )
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
@@ -50,6 +50,7 @@ export async function createCompanyEquipment(companyId, equipment) {
     "create_company_equipment",
     {
       p_company_id: companyId,
+      p_equipment_type: equipment.equipmentType,
       p_brand: equipment.brand.trim(),
       p_model: equipment.model.trim(),
       p_product_reference:
