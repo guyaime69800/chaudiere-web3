@@ -571,17 +571,24 @@ export default function ProSpacePage() {
 
   const plan = company.subscription?.plan || "free";
   const verification = company.verification;
-  const companyApproved =
+  const companyVerified =
     verification?.status === "approved" &&
     /^\d{14}$/.test(company.siret || "") &&
     verification.verified_siret === company.siret &&
     Boolean(verification.verified_at);
 
+  const companyCanCreateEquipment =
+    companyVerified || company.is_demo === true;
+
   let verificationTitle = "Entreprise en attente de validation";
   let verificationMessage =
     "Votre entreprise doit être validée avant de pouvoir créer des carnets.";
 
-  if (companyApproved) {
+  if (company.is_demo === true) {
+    verificationTitle = "Mode démonstration";
+    verificationMessage =
+      "Cet espace de démonstration peut créer des équipements sans représenter une entreprise officiellement validée.";
+  } else if (companyVerified) {
     verificationTitle = "Entreprise validée";
     verificationMessage =
       "La validation de votre entreprise permet la création de carnets.";
@@ -646,7 +653,7 @@ export default function ProSpacePage() {
       </section>
       <section
         aria-labelledby="company-verification-title"
-        className={`pro-verification ${companyApproved ? "pro-verification--approved" : ""
+        className={`pro-verification ${companyVerified ? "pro-verification--approved" : ""
           }`}
       >
         <div className="pro-verification-content">
@@ -726,21 +733,21 @@ export default function ProSpacePage() {
           <button
             className="pro-primary-button"
             type="button"
-            disabled={!companyApproved}
+            disabled={!companyCanCreateEquipment}
             onClick={() => {
               setEquipmentFormOpen((isOpen) => !isOpen);
               setEquipmentError("");
               setEquipmentMessage("");
             }}
           >
-            {companyApproved
+            {companyCanCreateEquipment
               ? equipmentFormOpen
                 ? "Fermer le formulaire"
                 : "Ajouter un équipement"
               : "Validation requise"}
           </button>
 
-          {!companyApproved && (
+          {!companyCanCreateEquipment && (
             <p className="pro-equipment-lock">
               L’ajout sera disponible après la validation du SIRET de l’entreprise.
             </p>
@@ -758,7 +765,7 @@ export default function ProSpacePage() {
             </p>
           )}
 
-          {equipmentFormOpen && companyApproved && (
+          {equipmentFormOpen && companyCanCreateEquipment && (
             <form
               className="pro-form pro-equipment-form"
               onSubmit={handleEquipmentSubmit}

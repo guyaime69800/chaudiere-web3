@@ -81,7 +81,7 @@ export async function getMyCompany(userId) {
     error: companyError,
   } = await supabase
     .from("companies")
-    .select("id, name, siret, phone, created_at")
+    .select("id, name, siret, phone, is_demo, created_at")
     .eq("id", membership.company_id)
     .single();
 
