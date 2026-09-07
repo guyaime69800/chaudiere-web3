@@ -244,7 +244,13 @@ export default function AuthPage({ mode = "connexion" }) {
                   : "Se connecter"}
             </button>
           </form>
-
+          {!isSignUp && (
+            <p className="auth-switch">
+              <Link to="/reinitialiser-mot-de-passe">
+                Mot de passe oublié ?
+              </Link>
+            </p>
+          )}
           <p className="auth-switch">
             {isSignUp ? "Vous avez déjà un compte ?" : "Nouveau sur CarnetPass ?"}{" "}
             <Link to={isSignUp ? "/connexion" : "/inscription"}>

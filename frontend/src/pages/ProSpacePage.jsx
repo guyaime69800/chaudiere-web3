@@ -443,34 +443,21 @@ export default function ProSpacePage() {
         </div>
       </section>
       <section
-        aria-label="Validation de l’entreprise"
-        style={{
-          margin: "24px 0",
-          padding: "20px 24px",
-          borderRadius: "16px",
-          backgroundColor: companyApproved ? "#f0fdf4" : "#fef2f2",
-          border: `1px solid ${companyApproved ? "#86efac" : "#fca5a5"}`,
-          borderLeft: `5px solid ${companyApproved ? "#15803d" : "#b91c1c"}`,
-          color: companyApproved ? "#166534" : "#991b1b",
-        }}
+        aria-labelledby="company-verification-title"
+        className={`pro-verification ${companyApproved ? "pro-verification--approved" : ""
+          }`}
       >
-        <h2
-          style={{
-            margin: "0 0 8px",
-            fontSize: "20px",
-            color: "inherit",
-          }}
-        >
-          {verificationTitle}
-        </h2>
+        <div className="pro-verification-content">
+          <h2 id="company-verification-title">
+            {verificationTitle}
+          </h2>
 
-        <p style={{ margin: "0 0 16px", color: "inherit" }}>
-          {verificationMessage}
-        </p>
+          <p>{verificationMessage}</p>
+        </div>
 
         <button
           type="button"
-          className="pro-button pro-button-secondary"
+          className="pro-verification-button"
           onClick={() => setRefreshKey((currentKey) => currentKey + 1)}
         >
           Actualiser le statut
