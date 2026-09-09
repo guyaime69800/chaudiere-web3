@@ -6,6 +6,7 @@ import {
   createCompany,
   getMyCompany,
   updateCompanySiret,
+  verifyMyCompany,
 } from "../services/companyService";
 import {
   createCompanyEquipment,
@@ -163,6 +164,7 @@ export default function ProSpacePage() {
 
   const [company, setCompany] = useState(null);
   const [siretMessage, setSiretMessage] = useState("");
+  const [verificationBusy, setVerificationBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [loadError, setLoadError] = useState("");
@@ -294,7 +296,26 @@ export default function ProSpacePage() {
       setSubmitting(false);
     }
   }
+  async function handleCompanyVerification() {
+    if (verificationBusy) return;
 
+    setVerificationBusy(true);
+    setSiretMessage("");
+
+    try {
+      const result = await verifyMyCompany();
+
+      setSiretMessage(
+        result.message || "Vérification terminée."
+      );
+
+      setRefreshKey((currentKey) => currentKey + 1);
+    } catch (error) {
+      setSiretMessage(error.message);
+    } finally {
+      setVerificationBusy(false);
+    }
+  }
   async function handleSignOut() {
     setSigningOut(true);
 
@@ -667,9 +688,31 @@ export default function ProSpacePage() {
         <button
           type="button"
           className="pro-verification-button"
-          onClick={() => setRefreshKey((currentKey) => currentKey + 1)}
+          disabled={
+            verificationBusy
+            || (
+              !companyVerified
+              && company.is_demo !== true
+              && (
+                !company.siret
+                || verification?.status === "suspended"
+              )
+            )
+          }
+          onClick={() => {
+            if (companyVerified || company.is_demo === true) {
+              setRefreshKey((currentKey) => currentKey + 1);
+              return;
+            }
+
+            handleCompanyVerification();
+          }}
         >
-          Actualiser le statut
+          {verificationBusy
+            ? "Vérification…"
+            : companyVerified || company.is_demo === true
+              ? "Actualiser le statut"
+              : "Vérifier mon entreprise"}
         </button>
       </section>
       {siretMessage && (

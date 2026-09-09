@@ -164,3 +164,44 @@ export async function updateCompanySiret(companyId, siret) {
     throw new Error("Impossible d’enregistrer le SIRET. Actualisez le statut avant de réessayer.");
   }
 }
+
+export async function verifyMyCompany() {
+  const {
+    data: sessionData,
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  const accessToken = sessionData?.session?.access_token;
+
+  if (sessionError || !accessToken) {
+    throw new Error(
+      "Votre connexion a expiré. Reconnectez-vous."
+    );
+  }
+
+  let response;
+
+  try {
+    response = await fetch("/api/verify-company", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  } catch {
+    throw new Error(
+      "Le service de vérification est inaccessible. Réessayez."
+    );
+  }
+
+  const result = await response.json().catch(() => null);
+
+  if (!response.ok || !result?.ok) {
+    throw new Error(
+      result?.error
+      || "Impossible de vérifier l’entreprise."
+    );
+  }
+
+  return result;
+}
