@@ -872,6 +872,12 @@ export default function ProSpacePage() {
             </p>
           )}
 
+          {equipmentError && (
+            <p className="pro-form-error" role="alert">
+              {equipmentError}
+            </p>
+          )}
+
           {equipmentFormOpen && companyCanCreateEquipment && (
             <form
               className="pro-form pro-equipment-form"
@@ -954,12 +960,6 @@ export default function ProSpacePage() {
                   />
                 </label>
               </div>
-
-              {equipmentError && (
-                <p className="pro-form-error" role="alert">
-                  {equipmentError}
-                </p>
-              )}
 
               <button
                 className="pro-primary-button"
