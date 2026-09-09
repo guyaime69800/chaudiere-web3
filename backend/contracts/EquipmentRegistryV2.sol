@@ -2,31 +2,45 @@
 pragma solidity ^0.8.20;
 
 contract EquipmentRegistryV2 {
-    struct Equipment {
-        string equipmentId;
-        string qrCode;
-        string brand;
-        string model;
-        string productReference;
-        string serialNumber;
+    // Preuve de création d'un équipement.
+    // Aucune donnée métier lisible n'est enregistrée publiquement.
+    struct EquipmentProof {
+        bytes32 dataHash;
+        bytes32 serialHash;
+        uint256 registeredAt;
         bool exists;
     }
 
-    struct Maintenance {
-        uint256 date;
-        string interventionType;
-        string description;
-        string technician;
-        string partChanged;
+    // Preuve d'une intervention de maintenance.
+    struct MaintenanceProof {
+        bytes32 proofId;
+        bytes32 dataHash;
+        uint256 recordedAt;
     }
 
     address public owner;
+    address public pendingOwner;
     bool public paused;
 
+    // Portefeuilles techniques autorisés à écrire.
     mapping(address => bool) public writers;
-    mapping(string => Equipment) public equipments;
-    mapping(bytes32 => bool) public registeredSerialNumbers;
-    mapping(string => Maintenance[]) private maintenances;
+
+    // Empreinte de l'identifiant interne vers la preuve de l'équipement.
+    mapping(bytes32 => EquipmentProof) public equipments;
+
+    // Empêche l'enregistrement multiple d'un même numéro de série.
+    mapping(bytes32 => bool) public registeredSerialHashes;
+
+    // Empêche qu'une intervention soit inscrite deux fois.
+    mapping(bytes32 => bool) public registeredMaintenanceProofs;
+
+    // Historique des preuves de maintenance par équipement.
+    mapping(bytes32 => MaintenanceProof[]) private maintenances;
+
+    event OwnershipTransferStarted(
+        address indexed currentOwner,
+        address indexed pendingOwner
+    );
 
     event OwnershipTransferred(
         address indexed previousOwner,
@@ -41,26 +55,27 @@ contract EquipmentRegistryV2 {
     event PauseUpdated(bool paused);
 
     event EquipmentRegistered(
-        string indexed equipmentId,
-        string brand,
-        string model,
-        string productReference,
-        string serialNumber
+        bytes32 indexed equipmentKey,
+        bytes32 indexed dataHash,
+        bytes32 indexed serialHash,
+        uint256 registeredAt
     );
 
     event MaintenanceAdded(
-        string indexed equipmentId,
-        string interventionType,
-        string technician
+        bytes32 indexed equipmentKey,
+        bytes32 indexed proofId,
+        bytes32 indexed dataHash,
+        uint256 recordedAt
     );
 
     error Unauthorized();
     error ContractPaused();
     error InvalidAddress();
-    error InvalidValue();
+    error InvalidHash();
     error EquipmentAlreadyExists();
     error SerialNumberAlreadyExists();
     error EquipmentNotFound();
+    error MaintenanceProofAlreadyExists();
 
     constructor() {
         owner = msg.sender;
@@ -96,121 +111,164 @@ contract EquipmentRegistryV2 {
             revert InvalidAddress();
         }
 
+        // Le propriétaire doit toujours conserver un accès d'urgence.
+        if (writer == owner && !authorized) {
+            revert Unauthorized();
+        }
+
         writers[writer] = authorized;
+
         emit WriterUpdated(writer, authorized);
     }
 
     function setPaused(bool newPaused) external onlyOwner {
         paused = newPaused;
+
         emit PauseUpdated(newPaused);
     }
 
+    // Première étape du transfert de propriété.
+    // Le nouveau propriétaire devra ensuite accepter.
     function transferOwnership(
         address newOwner
     ) external onlyOwner {
-        if (newOwner == address(0)) {
+        if (newOwner == address(0) || newOwner == owner) {
             revert InvalidAddress();
         }
 
+        pendingOwner = newOwner;
+
+        emit OwnershipTransferStarted(owner, newOwner);
+    }
+
+    // Deuxième étape : évite de perdre le contrat à cause
+    // d'une mauvaise adresse saisie.
+    function acceptOwnership() external {
+        if (msg.sender != pendingOwner) {
+            revert Unauthorized();
+        }
+
         address previousOwner = owner;
+        address newOwner = pendingOwner;
+
+        owner = newOwner;
+        pendingOwner = address(0);
 
         writers[previousOwner] = false;
         writers[newOwner] = true;
-        owner = newOwner;
 
         emit WriterUpdated(previousOwner, false);
         emit WriterUpdated(newOwner, true);
         emit OwnershipTransferred(previousOwner, newOwner);
     }
 
+    // Enregistre seulement les empreintes cryptographiques.
+    //
+    // equipmentKey :
+    // empreinte de l'identifiant interne Supabase.
+    //
+    // dataHash :
+    // empreinte des données complètes de l'équipement.
+    //
+    // serialHash :
+    // empreinte du numéro de série avec le périmètre entreprise.
     function registerEquipment(
-        string memory equipmentId,
-        string memory qrCode,
-        string memory brand,
-        string memory model,
-        string memory productReference,
-        string memory serialNumber
+        bytes32 equipmentKey,
+        bytes32 dataHash,
+        bytes32 serialHash
     ) external onlyWriter {
         if (
-            bytes(equipmentId).length == 0 ||
-            bytes(qrCode).length == 0 ||
-            bytes(brand).length == 0 ||
-            bytes(model).length == 0 ||
-            bytes(serialNumber).length == 0
+            equipmentKey == bytes32(0) ||
+            dataHash == bytes32(0) ||
+            serialHash == bytes32(0)
         ) {
-            revert InvalidValue();
+            revert InvalidHash();
         }
 
-        if (equipments[equipmentId].exists) {
+        if (equipments[equipmentKey].exists) {
             revert EquipmentAlreadyExists();
         }
 
-        bytes32 serialHash = keccak256(bytes(serialNumber));
-
-        if (registeredSerialNumbers[serialHash]) {
+        if (registeredSerialHashes[serialHash]) {
             revert SerialNumberAlreadyExists();
         }
 
-        equipments[equipmentId] = Equipment({
-            equipmentId: equipmentId,
-            qrCode: qrCode,
-            brand: brand,
-            model: model,
-            productReference: productReference,
-            serialNumber: serialNumber,
+        uint256 registrationDate = block.timestamp;
+
+        equipments[equipmentKey] = EquipmentProof({
+            dataHash: dataHash,
+            serialHash: serialHash,
+            registeredAt: registrationDate,
             exists: true
         });
 
-        registeredSerialNumbers[serialHash] = true;
+        registeredSerialHashes[serialHash] = true;
 
         emit EquipmentRegistered(
-            equipmentId,
-            brand,
-            model,
-            productReference,
-            serialNumber
+            equipmentKey,
+            dataHash,
+            serialHash,
+            registrationDate
         );
     }
 
+    // Enregistre uniquement la preuve d'une intervention.
+    //
+    // proofId :
+    // identifiant unique de l'intervention transformé en empreinte.
+    //
+    // dataHash :
+    // empreinte du contenu complet de l'intervention.
     function addMaintenance(
-        string memory equipmentId,
-        string memory interventionType,
-        string memory description,
-        string memory technician,
-        string memory partChanged
+        bytes32 equipmentKey,
+        bytes32 proofId,
+        bytes32 dataHash
     ) external onlyWriter {
-        if (!equipments[equipmentId].exists) {
+        if (
+            equipmentKey == bytes32(0) ||
+            proofId == bytes32(0) ||
+            dataHash == bytes32(0)
+        ) {
+            revert InvalidHash();
+        }
+
+        if (!equipments[equipmentKey].exists) {
             revert EquipmentNotFound();
         }
 
-        if (
-            bytes(interventionType).length == 0 ||
-            bytes(description).length == 0 ||
-            bytes(technician).length == 0
-        ) {
-            revert InvalidValue();
+        if (registeredMaintenanceProofs[proofId]) {
+            revert MaintenanceProofAlreadyExists();
         }
 
-        maintenances[equipmentId].push(
-            Maintenance({
-                date: block.timestamp,
-                interventionType: interventionType,
-                description: description,
-                technician: technician,
-                partChanged: partChanged
+        uint256 recordingDate = block.timestamp;
+
+        maintenances[equipmentKey].push(
+            MaintenanceProof({
+                proofId: proofId,
+                dataHash: dataHash,
+                recordedAt: recordingDate
             })
         );
 
+        registeredMaintenanceProofs[proofId] = true;
+
         emit MaintenanceAdded(
-            equipmentId,
-            interventionType,
-            technician
+            equipmentKey,
+            proofId,
+            dataHash,
+            recordingDate
         );
     }
 
     function getMaintenances(
-        string memory equipmentId
-    ) external view returns (Maintenance[] memory) {
-        return maintenances[equipmentId];
+        bytes32 equipmentKey
+    ) external view returns (MaintenanceProof[] memory) {
+        return maintenances[equipmentKey];
+    }
+
+    function getMaintenanceCount(
+        bytes32 equipmentKey
+    ) external view returns (uint256) {
+        return maintenances[equipmentKey].length;
     }
 }
