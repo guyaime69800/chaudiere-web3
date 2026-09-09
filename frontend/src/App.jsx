@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from "react";
-import { useParams, useNavigate } from "react-router-dom"; // lire l'ID dans l'URL + changer de page
+import { useParams, useNavigate, useLocation } from "react-router-dom"; // lire l'ID dans l'URL + changer de page
 // NOUVEAU (perf) : le scanner n'est telecharge QU'AU MOMENT du clic sur le bouton.
 // Resultat : la page d'accueil s'ouvre bien plus vite, surtout en 4G faible.
 const ScannerQR = lazy(() => import("./ScannerQR"));
@@ -33,6 +33,7 @@ function App({ initialMode = "public" }) {
   const { id: idDepuisURL } = useParams();
   // NOUVEAU (scan) : navigation interne + ouverture/fermeture de la camera
   const navigate = useNavigate();
+  const location = useLocation();
   const [scanOuvert, setScanOuvert] = useState(false);
   // Installation PWA : mémorise la proposition d'installation du navigateur.
   const [installPrompt, setInstallPrompt] = useState(null);
@@ -659,6 +660,87 @@ function App({ initialMode = "public" }) {
       );
     }
   }
+
+  // Arrivée depuis l'espace professionnel : retrouve la fiche constructeur
+  // et reprend automatiquement le numéro de série déjà enregistré.
+  useEffect(() => {
+    const professionalEquipment = location.state?.professionalEquipment;
+
+    if (
+      !professionalEquipment?.productReference ||
+      !professionalEquipment?.serialNumber
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function ouvrirDepuisEspacePro() {
+      const productReference = String(
+        professionalEquipment.productReference
+      ).trim();
+
+      try {
+        setMode("pro");
+        setMessage("");
+        setBoiler(null);
+        setSearchResults([]);
+        setSelectedEquipment(null);
+
+        const response = await fetch(
+          `/api/search?q=${encodeURIComponent(productReference)}`
+        );
+        const result = await response.json();
+
+        if (!response.ok || result?.ok !== true) {
+          throw new Error(
+            result?.error || "Impossible de charger cette référence."
+          );
+        }
+
+        const normalizedReference = productReference.replace(/\s+/g, "");
+        const equipment = (result.results || []).find(
+          (item) =>
+            item.resultType === "equipment" &&
+            String(item.manufacturerReference || "").replace(/\s+/g, "") ===
+              normalizedReference
+        );
+
+        if (!equipment) {
+          throw new Error(
+            "La documentation technique de cette référence n’est pas encore disponible."
+          );
+        }
+
+        const knowledge = await loadEquipmentKnowledge(equipment.equipmentId);
+
+        if (cancelled) return;
+
+        setSelectedEquipment(equipment);
+        setEquipmentKnowledge(knowledge);
+        setPersonalSerialNumber(professionalEquipment.serialNumber);
+        setAiAnswer("");
+        setAiQuestion("");
+      } catch (error) {
+        if (!cancelled) {
+          setMessage(
+            error?.message || "Impossible d’ouvrir cet équipement."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          // Retire les données temporaires de l'historique du navigateur.
+          navigate(location.pathname, { replace: true, state: null });
+        }
+      }
+    }
+
+    ouvrirDepuisEspacePro();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, location.state, navigate]);
   async function creerCarnetPassPersonnel() {
     if (isCreatingCarnetPass) return;
 

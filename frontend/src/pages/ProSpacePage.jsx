@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { signOut } from "../services/authService";
 import {
@@ -161,6 +161,7 @@ function CompanySiretForm({ company, onEditing, onSaved }) {
 export default function ProSpacePage() {
   const { user } = useAuth();
   const userId = user?.id;
+  const navigate = useNavigate();
 
   const [company, setCompany] = useState(null);
   const [siretMessage, setSiretMessage] = useState("");
@@ -183,6 +184,7 @@ export default function ProSpacePage() {
   const [equipmentMessage, setEquipmentMessage] = useState("");
   const [equipmentSubmitting, setEquipmentSubmitting] = useState(false);
   const [equipmentRefreshKey, setEquipmentRefreshKey] = useState(0);
+  const [openingEquipmentId, setOpeningEquipmentId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -369,6 +371,68 @@ export default function ProSpacePage() {
       setEquipmentError(error.message);
     } finally {
       setEquipmentSubmitting(false);
+    }
+  }
+
+  async function handleOpenEquipment(equipment) {
+    if (openingEquipmentId) return;
+
+    const productReference = String(
+      equipment?.product_reference || ""
+    ).trim();
+
+    if (!productReference) {
+      setEquipmentError(
+        "Ajoutez une référence produit avant de créer le CarnetPass."
+      );
+      return;
+    }
+
+    setOpeningEquipmentId(equipment.id);
+    setEquipmentError("");
+    setEquipmentMessage("");
+
+    try {
+      const response = await fetch(
+        `/api/search?q=${encodeURIComponent(productReference)}`
+      );
+      const result = await response.json();
+
+      if (!response.ok || result?.ok !== true) {
+        throw new Error(
+          result?.error || "Impossible de vérifier cette référence."
+        );
+      }
+
+      const normalizedReference = productReference.replace(/\s+/g, "");
+      const catalogEquipment = (result.results || []).find(
+        (item) =>
+          item.resultType === "equipment" &&
+          String(item.manufacturerReference || "").replace(/\s+/g, "") ===
+            normalizedReference
+      );
+
+      if (!catalogEquipment) {
+        setEquipmentError(
+          "La documentation technique de cette référence n’est pas encore disponible dans CarnetPass."
+        );
+        return;
+      }
+
+      navigate("/", {
+        state: {
+          professionalEquipment: {
+            productReference,
+            serialNumber: equipment.serial_number,
+          },
+        },
+      });
+    } catch (error) {
+      setEquipmentError(
+        error?.message || "Impossible d’ouvrir cet équipement."
+      );
+    } finally {
+      setOpeningEquipmentId(null);
     }
   }
 
@@ -913,14 +977,29 @@ export default function ProSpacePage() {
             <ul className="pro-equipment-list">
               {equipments.map((equipment) => (
                 <li key={equipment.id}>
-                  <div>
+                  <button
+                    className="pro-equipment-open-button"
+                    type="button"
+                    onClick={() => handleOpenEquipment(equipment)}
+                    disabled={Boolean(openingEquipmentId)}
+                    aria-label={`Ouvrir ${equipment.brand} ${equipment.model}`}
+                  >
+                    <div>
                     <strong>{equipment.brand} {equipment.model}</strong>
                     <span>{getEquipmentTypeLabel(equipment.equipment_type)}</span>
                     <span>N° de série : {equipment.serial_number}</span>
-                  </div>
-                  {equipment.product_reference && (
-                    <small>Réf. {equipment.product_reference}</small>
-                  )}
+                    </div>
+                    <div className="pro-equipment-open-action">
+                      {equipment.product_reference && (
+                        <small>Réf. {equipment.product_reference}</small>
+                      )}
+                      <strong>
+                        {openingEquipmentId === equipment.id
+                          ? "Vérification…"
+                          : "Créer le CarnetPass →"}
+                      </strong>
+                    </div>
+                  </button>
                 </li>
               ))}
             </ul>
