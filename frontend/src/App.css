@@ -36,7 +36,7 @@ body {
 #root { max-width: none; margin: 0; padding: 0; text-align: left; }
 
 /* --- Conteneur principal centre --- */
-.app { max-width: 720px; margin: 0 auto; padding: 24px 20px 80px; }
+.app { max-width: 1080px; margin: 0 auto; padding: 24px 28px 80px; }
 
 /* --- Barre du haut --- */
 .topbar {
@@ -63,9 +63,13 @@ body {
 .btn-ghost:hover { background: var(--surface-alt); }
 
 /* --- Hero + recherche --- */
-.hero { text-align: center; padding: 40px 0 8px; }
-.hero h1 { font-size: 26px; font-weight: 600; margin: 0 0 10px; }
-.hero p { color: var(--text-soft); max-width: 460px; margin: 0 auto; }
+.hero {
+  text-align: center; padding: 58px 32px 30px; margin-top: 22px;
+  border: 1px solid var(--border); border-radius: 24px;
+  background: radial-gradient(circle at 50% 0%, #fff 0%, #fffaf6 48%, #f8f3ed 100%);
+}
+.hero h1 { font-size: clamp(30px, 4vw, 46px); line-height: 1.12; font-weight: 750; margin: 0 auto 16px; max-width: 780px; }
+.hero p { color: var(--text-soft); max-width: 650px; margin: 0 auto; font-size: 18px; }
 .search { display: flex; gap: 8px; max-width: 520px; margin: 24px auto 12px; }
 .field {
   padding: 11px 14px; font-size: 15px; border: 1px solid var(--border);
@@ -82,6 +86,19 @@ body {
 .linklike { background: none; border: none; cursor: pointer; color: var(--copper); font-size: 14px; padding: 0; }
 .linklike:hover { text-decoration: underline; }
 .trust { font-size: 12px; color: var(--text-faint); }
+
+.pro-context-banner {
+  display: flex; align-items: center; gap: 14px; max-width: 760px;
+  margin: 22px auto 0; padding: 16px 18px; box-sizing: border-box;
+  border: 1px solid #bbf7d0; border-radius: 14px; background: #f0fdf4;
+}
+.pro-context-icon {
+  display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px;
+  border-radius: 50%; background: #dcfce7; color: #15803d; font-weight: 800;
+}
+.pro-context-banner div { display: flex; flex-direction: column; }
+.pro-context-banner strong { font-size: 15px; color: #166534; }
+.pro-context-banner div span { font-size: 13px; color: #3f6212; }
 
 /* --- Espace pro --- */
 .pro-zone { margin-top: 24px; }
@@ -114,7 +131,7 @@ body {
 }
 
 /* --- Resultat : fiche appareil --- */
-.result { margin-top: 28px; }
+.result { margin: 32px auto 0; max-width: 900px; }
 .appareil {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-card); padding: 20px;
@@ -142,6 +159,42 @@ body {
 .appareil-grid > div { display: flex; flex-direction: column; }
 .appareil-grid .k { font-size: 12px; color: var(--text-faint); }
 .appareil-grid .v { font-size: 15px; }
+
+.appareil--catalog { padding: clamp(22px, 4vw, 36px); box-shadow: 0 24px 60px rgba(68, 45, 30, 0.08); }
+.appareil--catalog .appareil-name { font-size: clamp(24px, 3vw, 32px); line-height: 1.2; }
+.appareil--catalog .appareil-grid {
+  padding: 18px; margin-top: 20px; border-radius: 12px; background: var(--surface-alt);
+}
+.catalog-intro {
+  margin: 20px 0; padding-left: 14px; border-left: 3px solid #f2c8b4;
+  color: var(--text-soft); font-size: 14px;
+}
+.claim-card {
+  margin-top: 26px; padding: clamp(20px, 4vw, 30px); border: 1px solid #fed7c3;
+  border-radius: 18px; background: linear-gradient(135deg, #fff8f4 0%, #fff 75%);
+}
+.claim-card-label {
+  display: inline-block; margin-bottom: 8px; color: var(--copper); font-size: 12px;
+  font-weight: 750; letter-spacing: .08em; text-transform: uppercase;
+}
+.claim-card h3 { margin: 0; font-size: 22px; line-height: 1.3; }
+.claim-card > p { margin: 8px 0 20px; color: var(--text-soft); }
+.claim-card-action { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; }
+.claim-card-action label { display: flex; flex-direction: column; gap: 7px; }
+.claim-card-action label > span { font-size: 13px; font-weight: 650; }
+.claim-card-button { min-height: 47px; padding-inline: 24px; white-space: nowrap; }
+
+@media (max-width: 720px) {
+  .app { padding: 16px 14px 56px; }
+  .topbar { align-items: flex-start; gap: 12px; }
+  .hero { padding: 38px 18px 24px; }
+  .hero p { font-size: 16px; }
+  .search { flex-direction: column; }
+  .search .btn { width: 100%; }
+  .appareil-head { flex-direction: column; }
+  .claim-card-action { grid-template-columns: 1fr; }
+  .claim-card-button { width: 100%; }
+}
 
 /* --- Carnet en frise (timeline) --- */
 .carnet { margin-top: 22px; }

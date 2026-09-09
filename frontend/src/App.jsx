@@ -130,20 +130,9 @@ function App({ initialMode = "public" }) {
   );
 
   const {
-    account, connectWallet, isConnecting, error, isCorrectNetwork,
-    getWriteContract, addMaintenance, getMaintenances,
-    isMobile, hasInjectedWallet, metamaskDeepLink,
+    account, isCorrectNetwork,
+    addMaintenance, getMaintenances,
   } = useWallet();
-
-  // Formulaire d'enregistrement d'un appareil
-  const [formId, setFormId] = useState("");
-  const [formQr, setFormQr] = useState("");
-  const [formBrand, setFormBrand] = useState("");
-  const [formModel, setFormModel] = useState("");
-  const [formProductReference, setFormProductReference] = useState("");
-  const [formSerialNumber, setFormSerialNumber] = useState("");
-  const [isWriting, setIsWriting] = useState(false);
-  const [writeMsg, setWriteMsg] = useState("");
 
   // Carnet d'entretien
   const [maintenances, setMaintenances] = useState([]);
@@ -891,76 +880,6 @@ function App({ initialMode = "public" }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idDepuisURL]);
 
-  // ECRITURE : enregistrer un nouvel appareil (reserve a l'admin, cote contrat)
-  async function enregistrerChaudiere() {
-    setWriteMsg("");
-
-    if (!account) {
-      setWriteMsg("⚠️ Connecte d'abord ton wallet.");
-      return;
-    }
-
-    if (!isCorrectNetwork) {
-      setWriteMsg("⚠️ Mauvais réseau.");
-      return;
-    }
-
-    if (
-      !formId ||
-      !formQr ||
-      !formBrand ||
-      !formModel ||
-      !formProductReference ||
-      !formSerialNumber
-    ) {
-      setWriteMsg("⚠️ Remplis les 6 champs.");
-      return;
-    }
-
-    try {
-      setIsWriting(true);
-      setWriteMsg("Transaction en cours... confirme dans MetaMask.");
-
-      const writeContract = getWriteContract(
-        CONTRACT_ADDRESS,
-        EquipmentRegistryABI.abi
-      );
-
-      const tx = await writeContract.registerEquipment(
-        formId,
-        formQr,
-        formBrand,
-        formModel,
-        formProductReference,
-        formSerialNumber
-      );
-
-      setWriteMsg("Envoyée, attente de confirmation...");
-      await tx.wait();
-
-      setWriteMsg(`✅ Appareil ${formId} enregistré !`);
-
-      setFormId("");
-      setFormQr("");
-      setFormBrand("");
-      setFormModel("");
-      setFormProductReference("");
-      setFormSerialNumber("");
-    } catch (err) {
-      console.error(err);
-
-      if (err.code === "ACTION_REJECTED") {
-        setWriteMsg("❌ Signature refusée.");
-      } else if (err.reason) {
-        setWriteMsg(`❌ Refusé par le contrat : ${err.reason}`);
-      } else {
-        setWriteMsg("❌ Échec (voir console).");
-      }
-    } finally {
-      setIsWriting(false);
-    }
-  }
-
   // ECRITURE : ajouter une intervention a l'appareil affiche
   async function ajouterIntervention() {
     setMMsg("");
@@ -1065,7 +984,7 @@ function App({ initialMode = "public" }) {
           <button className="linklike" onClick={() => setScanOuvert(true)}>
             📷 ou scanner un QR code
           </button>
-          <span className="trust">🛡️ Registre public vérifié sur Polygon · aligné DPP / ESPR</span>
+          <span className="trust">🛡️ Données sécurisées et historique vérifiable</span>
         </div>
         <button
           className="btn btn-ghost"
@@ -1083,86 +1002,18 @@ function App({ initialMode = "public" }) {
 
       {/* ---------- ESPACE PRO (uniquement en mode pro) ---------- */}
       {mode === "pro" && (
-        <section className="pro-zone">
-          <div className="pro-bar">
-            {account ? (
-              <span className="status-ok"><span className="dot" /> Connecté : {account.slice(0, 6)}...{account.slice(-4)}</span>
-            ) : hasInjectedWallet ? (
-              <button className="btn btn-primary" onClick={connectWallet} disabled={isConnecting}>
-                {isConnecting ? "Connexion..." : "🦊 Connecter mon wallet"}
-              </button>
-            ) : isMobile ? (
-              <a className="btn btn-primary" href={metamaskDeepLink}>
-                🦊 Ouvrir dans l'app MetaMask
-              </a>
-            ) : (
-              <a className="btn btn-primary" href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer">
-                🦊 Installer MetaMask
-              </a>
-            )}
-            {account && !isCorrectNetwork && <span className="warn">⚠️ Passe sur Polygon (chainId 137).</span>}
-            {error && <span className="err">{error}</span>}
-            {isMobile && !hasInjectedWallet && (
-              <span className="muted">Astuce : sur mobile, la connexion se fait dans le navigateur de l'app MetaMask.</span>
-            )}
+        <section className="pro-context-banner" aria-label="Parcours professionnel">
+          <span className="pro-context-icon" aria-hidden="true">✓</span>
+          <div>
+            <strong>Équipement sélectionné depuis votre espace professionnel</strong>
+            <span>Vérifiez les informations, puis créez son CarnetPass en quelques secondes.</span>
           </div>
-
-          {account && (
-            <div className="form-card">
-              <h3>Enregistrer un appareil</h3>
-              <input
-                className="field"
-                placeholder="ID équipement (ex : CHAUD-002)"
-                value={formId}
-                onChange={(e) => setFormId(e.target.value)}
-              />
-
-              <input
-                className="field"
-                placeholder="QR Code (ex : QR-002)"
-                value={formQr}
-                onChange={(e) => setFormQr(e.target.value)}
-              />
-
-              <input
-                className="field"
-                placeholder="Marque (ex : Saunier Duval)"
-                value={formBrand}
-                onChange={(e) => setFormBrand(e.target.value)}
-              />
-
-              <input
-                className="field"
-                placeholder="Modèle (ex : ThemaPlus Condens 30-A)"
-                value={formModel}
-                onChange={(e) => setFormModel(e.target.value)}
-              />
-
-              <input
-                className="field"
-                placeholder="Référence produit"
-                value={formProductReference}
-                onChange={(e) => setFormProductReference(e.target.value)}
-              />
-
-              <input
-                className="field"
-                placeholder="Numéro de série"
-                value={formSerialNumber}
-                onChange={(e) => setFormSerialNumber(e.target.value)}
-              />
-              <button className="btn btn-primary" onClick={enregistrerChaudiere} disabled={isWriting}>
-                {isWriting ? "Enregistrement..." : "Enregistrer"}
-              </button>
-              {writeMsg && <p className="form-msg">{writeMsg}</p>}
-            </div>
-          )}
         </section>
       )}
       {/* ---------- RÉSULTATS RECHERCHE ÉQUIPEMENTS ---------- */}
       {searchResults.length > 0 && (
-        <section className="result">
-          <div className="appareil">
+        <section className="result result--catalog">
+          <div className="appareil appareil--catalog">
             <div className="appareil-head">
               <div>
                 <span className="appareil-type">
@@ -1283,42 +1134,48 @@ function App({ initialMode = "public" }) {
               </div>
             </div>
 
-            <p className="muted">
+            <p className="catalog-intro">
               Cette fiche décrit un modèle constructeur.
               Aucun CarnetPass personnel ni QR individuel
               n'est encore créé.
             </p>
             {/* ---------- CRÉATION CARNETPASS PERSONNEL ---------- */}
-            <div className="technical-docs">
-              <h3>🏷️ C’est mon appareil</h3>
+            <div className="technical-docs claim-card">
+              <span className="claim-card-label">Étape suivante</span>
+              <h3>Créez le carnet numérique de cet appareil</h3>
 
-              <p className="muted">
-                Renseigne le numéro de série indiqué sur l’appareil pour créer son CarnetPass personnel.
+              <p>
+                Le numéro de série permet d’associer durablement la documentation et l’historique au bon équipement.
               </p>
+              <div className="claim-card-action">
+                <label>
+                  <span>Numéro de série</span>
+                  <input
+                    className="field"
+                    type="text"
+                    value={personalSerialNumber}
+                    onChange={(e) => {
+                      setPersonalSerialNumber(e.target.value);
+                      setCarnetPassCreationMessage("");
+                    }}
+                    placeholder="Ex. DEMO-CP-001"
+                    disabled={isCreatingCarnetPass}
+                  />
+                </label>
 
-              <input
-                type="text"
-                value={personalSerialNumber}
-                onChange={(e) => {
-                  setPersonalSerialNumber(e.target.value);
-                  setCarnetPassCreationMessage("");
-                }}
-                placeholder="Numéro de série"
-                disabled={isCreatingCarnetPass}
-              />
-
-              <button
-                className="btn btn-primary"
-                onClick={creerCarnetPassPersonnel}
-                disabled={
-                  isCreatingCarnetPass ||
-                  !personalSerialNumber.trim()
-                }
-              >
-                {isCreatingCarnetPass
-                  ? "Création en cours..."
-                  : "Créer mon CarnetPass"}
-              </button>
+                <button
+                  className="btn btn-primary claim-card-button"
+                  onClick={creerCarnetPassPersonnel}
+                  disabled={
+                    isCreatingCarnetPass ||
+                    !personalSerialNumber.trim()
+                  }
+                >
+                  {isCreatingCarnetPass
+                    ? "Création en cours..."
+                    : "Créer le CarnetPass"}
+                </button>
+              </div>
 
               {carnetPassCreationMessage && (
                 <p
