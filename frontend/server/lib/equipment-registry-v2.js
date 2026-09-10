@@ -11,11 +11,17 @@ const REGISTRY_ABI = [
   "function writers(address) view returns (bool)",
 ];
 
+function diagnosticError(code) {
+  const error = new Error(code);
+  error.code = code;
+  return error;
+}
+
 function requiredEnvironmentVariable(name) {
   const value = process.env[name];
 
   if (typeof value !== "string" || !value.trim()) {
-    throw new Error(`Configuration serveur manquante : ${name}.`);
+    throw diagnosticError(`ENV_MISSING_${name}`);
   }
 
   return value.trim();
@@ -38,57 +44,70 @@ export async function checkEquipmentRegistryV2() {
   try {
     parsedRpcUrl = new URL(rpcUrl);
   } catch {
-    throw new Error("POLYGON_RPC_URL est invalide.");
+    throw diagnosticError("RPC_URL_INVALID");
   }
 
   if (parsedRpcUrl.protocol !== "https:") {
-    throw new Error("POLYGON_RPC_URL doit utiliser HTTPS.");
+    throw diagnosticError("RPC_URL_NOT_HTTPS");
   }
 
   if (!/^0x[0-9a-fA-F]{64}$/.test(privateKey)) {
-    throw new Error("POLYGON_SERVER_PRIVATE_KEY est invalide.");
+    throw diagnosticError("PRIVATE_KEY_FORMAT");
   }
 
   if (
     !ethers.isAddress(contractAddress) ||
     contractAddress === ethers.ZeroAddress
   ) {
-    throw new Error("EQUIPMENT_REGISTRY_V2_ADDRESS est invalide.");
+    throw diagnosticError("CONTRACT_ADDRESS_INVALID");
   }
 
   if (
     !ethers.isAddress(expectedWalletAddress) ||
     expectedWalletAddress === ethers.ZeroAddress
   ) {
-    throw new Error("POLYGON_SERVER_WALLET_ADDRESS est invalide.");
+    throw diagnosticError("SERVER_WALLET_ADDRESS_INVALID");
   }
 
   const provider = new ethers.JsonRpcProvider(rpcUrl);
-  const network = await provider.getNetwork();
 
-  if (network.chainId !== POLYGON_CHAIN_ID) {
-    throw new Error(
-      `Mauvais réseau Polygon : Chain ID ${network.chainId.toString()}.`
-    );
+  let network;
+
+  try {
+    network = await provider.getNetwork();
+  } catch {
+    throw diagnosticError("RPC_CONNECTION_FAILED");
   }
 
-  const serverWallet = new ethers.Wallet(privateKey, provider);
+  if (network.chainId !== POLYGON_CHAIN_ID) {
+    throw diagnosticError("WRONG_NETWORK");
+  }
+
+  let serverWallet;
+
+  try {
+    serverWallet = new ethers.Wallet(privateKey, provider);
+  } catch {
+    throw diagnosticError("PRIVATE_KEY_PARSE_FAILED");
+  }
 
   if (
     serverWallet.address.toLowerCase() !==
     expectedWalletAddress.toLowerCase()
   ) {
-    throw new Error(
-      "La clé serveur ne correspond pas à l’adresse publique prévue."
-    );
+    throw diagnosticError("WALLET_MISMATCH");
   }
 
-  const contractCode = await provider.getCode(contractAddress);
+  let contractCode;
+
+  try {
+    contractCode = await provider.getCode(contractAddress);
+  } catch {
+    throw diagnosticError("CONTRACT_LOOKUP_FAILED");
+  }
 
   if (contractCode === "0x") {
-    throw new Error(
-      "Aucun contrat n’existe à l’adresse configurée."
-    );
+    throw diagnosticError("CONTRACT_NOT_FOUND");
   }
 
   const contract = new ethers.Contract(
@@ -97,13 +116,22 @@ export async function checkEquipmentRegistryV2() {
     provider
   );
 
-  const [owner, paused, serverAuthorized, balance] =
-    await Promise.all([
-      contract.owner(),
-      contract.paused(),
-      contract.writers(serverWallet.address),
-      provider.getBalance(serverWallet.address),
-    ]);
+  let owner;
+  let paused;
+  let serverAuthorized;
+  let balance;
+
+  try {
+    [owner, paused, serverAuthorized, balance] =
+      await Promise.all([
+        contract.owner(),
+        contract.paused(),
+        contract.writers(serverWallet.address),
+        provider.getBalance(serverWallet.address),
+      ]);
+  } catch {
+    throw diagnosticError("CONTRACT_READ_FAILED");
+  }
 
   return {
     chainId: Number(POLYGON_CHAIN_ID),

@@ -38,14 +38,42 @@ export default async function handler(req, res) {
         balanceWei: status.balanceWei,
       },
     });
-  } catch {
-    // Ne jamais renvoyer une clé privée, un RPC secret
-    // ou une erreur brute provenant de Polygon / ethers.
-    console.error("Erreur de contrôle EquipmentRegistryV2.");
+    } catch (error) {
+    // Seuls ces codes de diagnostic peuvent être renvoyés.
+    // Aucune clé privée, URL RPC ou erreur brute n'est exposée.
+    const allowedDiagnostics = new Set([
+      "RPC_URL_INVALID",
+      "RPC_URL_NOT_HTTPS",
+      "PRIVATE_KEY_FORMAT",
+      "CONTRACT_ADDRESS_INVALID",
+      "SERVER_WALLET_ADDRESS_INVALID",
+      "RPC_CONNECTION_FAILED",
+      "WRONG_NETWORK",
+      "PRIVATE_KEY_PARSE_FAILED",
+      "WALLET_MISMATCH",
+      "CONTRACT_LOOKUP_FAILED",
+      "CONTRACT_NOT_FOUND",
+      "CONTRACT_READ_FAILED",
+    ]);
+
+    const diagnostic =
+      typeof error?.code === "string" &&
+      allowedDiagnostics.has(error.code)
+        ? error.code
+        : typeof error?.code === "string" &&
+            error.code.startsWith("ENV_MISSING_")
+          ? error.code
+          : "UNKNOWN";
+
+    console.error(
+      "Erreur de contrôle EquipmentRegistryV2 :",
+      diagnostic
+    );
 
     return res.status(503).json({
       ok: false,
       error: "Le contrôle Polygon V2 est momentanément indisponible.",
+      diagnostic,
     });
-  }
+}
 }
