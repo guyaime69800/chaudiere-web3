@@ -18,4 +18,22 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  {
+    files: [
+      'api/**/*.js',
+      'server/**/*.js',
+      'scripts/**/*.js',
+      'test/**/*.js',
+      'vite.config.js',
+    ],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
+    files: ['api/carnetpass.js'],
+    rules: {
+      'no-control-regex': 'off',
+    },
+  },
 ])

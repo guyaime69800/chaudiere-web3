@@ -3,6 +3,10 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { generatedEquipmentRegistry } from "./lib/equipment-registry.generated.js";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import {
+  buildEquipmentProof,
+  registerEquipmentProof,
+} from "../server/lib/equipment-registry-v2.js";
+import {
   createQrToken,
   isQrToken,
   qrTokenRedisKey,
@@ -112,6 +116,95 @@ const CREATE_SCRIPT = `
   return "created"
 `;
 
+// Une seule transaction à la fois peut utiliser le wallet serveur.
+// Le jeton empêche une requête de libérer le verrou d'une autre requête.
+const POLYGON_WRITER_LOCK_KEY = "carnetpass:polygon-writer-lock";
+const POLYGON_WRITER_LOCK_SECONDS = 180;
+
+const RELEASE_LOCK_SCRIPT = `
+  if redis.call("GET", KEYS[1]) == ARGV[1] then
+    return redis.call("DEL", KEYS[1])
+  end
+
+  return 0
+`;
+
+// La fiche ne devient active qu'après confirmation de la transaction.
+const UPDATE_PENDING_SCRIPT = `
+  local current = redis.call("GET", KEYS[1])
+
+  if not current then
+    return "missing"
+  end
+
+  local decoded = cjson.decode(current)
+
+  if decoded.carnetPassId ~= ARGV[2]
+     or decoded.status ~= "blockchain_pending" then
+    return "conflict"
+  end
+
+  redis.call("SET", KEYS[1], ARGV[1])
+
+  return "updated"
+`;
+
+// Si aucune transaction n'a été envoyée, la réservation peut être retirée
+// sans laisser un faux CarnetPass ni bloquer définitivement son numéro de série.
+const ROLLBACK_PENDING_SCRIPT = `
+  local current = redis.call("GET", KEYS[1])
+
+  if not current then
+    return "missing"
+  end
+
+  local decoded = cjson.decode(current)
+
+  if decoded.carnetPassId ~= ARGV[1]
+     or decoded.status ~= "blockchain_pending" then
+    return "conflict"
+  end
+
+  if redis.call("GET", KEYS[2]) ~= ARGV[1]
+     or redis.call("GET", KEYS[3]) ~= ARGV[1] then
+    return "conflict"
+  end
+
+  redis.call("DEL", KEYS[1])
+  redis.call("DEL", KEYS[2])
+  redis.call("DEL", KEYS[3])
+  redis.call("SREM", KEYS[4], ARGV[1])
+  redis.call("SREM", KEYS[5], ARGV[1])
+
+  return "rolled_back"
+`;
+
+async function updatePendingCarnetPass(carnetPassKey, carnetPass) {
+  let lastError;
+
+  // Une courte nouvelle tentative couvre une coupure Redis passagère après
+  // l'envoi d'une transaction, sans jamais envoyer la transaction deux fois.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const result = await redis.eval(
+        UPDATE_PENDING_SCRIPT,
+        [carnetPassKey],
+        [JSON.stringify(carnetPass), carnetPass.carnetPassId]
+      );
+
+      if (result !== "updated") {
+        throw new Error("État CarnetPass incompatible.");
+      }
+
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
+}
+
 async function createCarnetPass(req, res) {
   if (!(await checkRateLimit(creationRateLimit, req, res))) return;
 
@@ -160,6 +253,13 @@ async function createCarnetPass(req, res) {
     .toUpperCase()
     .replace(/\s+/g, "");
 
+  if (!serialNumber) {
+    return res.status(400).json({
+      ok: false,
+      error: "Le numéro de série est obligatoire.",
+    });
+  }
+
   const entry = generatedEquipmentRegistry.find((item) =>
     normalizeReference(
       item?.equipmentData?.identity?.manufacturerReference
@@ -181,117 +281,305 @@ async function createCarnetPass(req, res) {
     throw new Error("Identifiant technique absent du registre.");
   }
 
-  const year = new Date().getUTCFullYear();
-  const counterKey = `carnetpass:counter:${year}`;
+  const writerLockToken = createQrToken();
+  const lockAcquired = await redis.set(
+    POLYGON_WRITER_LOCK_KEY,
+    writerLockToken,
+    { nx: true, ex: POLYGON_WRITER_LOCK_SECONDS }
+  );
 
-  // NX = créer seulement si cette entrée n'existe pas déjà.
-  // Le compteur existant est conservé ; 1 et 2 restent réservés au prototype.
+  if (!lockAcquired) {
+    res.setHeader("Retry-After", "5");
 
-  await redis.set(counterKey, 2, { nx: true });
+    return res.status(503).json({
+      ok: false,
+      code: "POLYGON_WRITER_BUSY",
+      error: "Une autre preuve Polygon est en cours. Patiente quelques secondes puis réessaie.",
+    });
+  }
 
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    const sequence = Number(await redis.incr(counterKey));
+  try {
+    const year = new Date().getUTCFullYear();
+    const counterKey = `carnetpass:counter:${year}`;
 
-    if (
-      !Number.isSafeInteger(sequence)
-      || sequence < 1
-      || sequence > 999999
-    ) {
-      throw new Error("Compteur CarnetPass hors limites.");
-    }
+    // NX = créer seulement si cette entrée n'existe pas déjà.
+    // Le compteur existant est conservé ; 1 et 2 restent réservés au prototype.
+    await redis.set(counterKey, 2, { nx: true });
 
-    const carnetPassId = `CP-${year}-${String(sequence).padStart(6, "0")}`;
-    const qrToken = createQrToken();
-    const now = new Date().toISOString();
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const sequence = Number(await redis.incr(counterKey));
 
-    // Le jeton lisible n'est PAS ajouté à cet objet.
+      if (
+        !Number.isSafeInteger(sequence)
+        || sequence < 1
+        || sequence > 999999
+      ) {
+        throw new Error("Compteur CarnetPass hors limites.");
+      }
 
-    const carnetPass = {
-      version: "1.2",
-      createdByUserId: creator.userId,
-      createdByCompanyId: creator.companyId,
-      carnetPassId,
-      equipmentId,
-      manufacturerReference,
-      serialNumber: serialNumber || null,
-      identity: {
+      const carnetPassId =
+        `CP-${year}-${String(sequence).padStart(6, "0")}`;
+      const qrToken = createQrToken();
+      const now = new Date().toISOString();
+      const equipmentIdentity = {
         brand: identity.brand ?? null,
         productType: identity.productType ?? null,
         range: identity.range ?? null,
         model: identity.model ?? null,
         variant: identity.variant ?? null,
-      },
-      access: {
-        type: "public_technical",
-        ownerAccountRequired: false,
-      },
-      status: "active",
-      createdAt: now,
-      updatedAt: now,
-    };
+      };
 
-    const carnetPassKey = `carnetpass:${carnetPassId}`;
-
-    const result = await redis.eval(
-      CREATE_SCRIPT,
-      [
-        carnetPassKey,
-        qrTokenRedisKey(qrToken),
-
-        // Sans série, la troisième entrée n'est jamais utilisée par le script.
-        serialNumber
-          ? `carnetpass:serial:${serialNumber}`
-          : carnetPassKey,
-
-        `carnetpass:manufacturer:${manufacturerReference}`,
-        `carnetpass:equipment:${equipmentId}`,
-      ],
-      [
-        JSON.stringify(carnetPass),
+      const proof = buildEquipmentProof({
         carnetPassId,
-        serialNumber ? "1" : "0",
-      ]
-    );
-
-    if (result === "retry") continue;
-
-    if (result === "duplicate_serial") {
-      // Un numéro de série ne donne pas droit au carnet ni à son jeton QR.
-
-      return res.status(409).json({
-        ok: false,
-        error: "Un CarnetPass existe déjà pour ce numéro de série. Utilise le QR déjà associé à l'appareil.",
+        companyId: creator.companyId,
+        serialNumber,
+        data: {
+          schema: "carnetpass.equipment.v1",
+          carnetPassId,
+          equipmentId,
+          manufacturerReference,
+          serialNumber,
+          identity: equipmentIdentity,
+          createdByCompanyId: creator.companyId,
+          createdByUserId: creator.userId,
+          createdAt: now,
+        },
       });
-    }
 
-    if (result !== "created") {
-      throw new Error("Enregistrement CarnetPass impossible.");
-    }
-
-    return res.status(201).json({
-      ok: true,
-      carnetPassId,
-
-      // Remis uniquement lors de cette création, jamais par une lecture d'ID.
-      qrToken,
-
-      // Chemin relatif : App.jsx choisira le domaine de test ou de production.
-      qrPath: `/appareil/${qrToken}`,
-
-      equipment: {
+      // Le jeton lisible n'est PAS ajouté à cet objet.
+      // La fiche reste invisible tant que Polygon ne l'a pas confirmée.
+      let carnetPass = {
+        version: "1.3",
+        createdByUserId: creator.userId,
+        createdByCompanyId: creator.companyId,
+        carnetPassId,
         equipmentId,
         manufacturerReference,
-        brand: identity.brand ?? null,
-        range: identity.range ?? null,
-        model: identity.model ?? null,
-        variant: identity.variant ?? null,
-      },
+        serialNumber,
+        identity: equipmentIdentity,
+        access: {
+          type: "public_technical",
+          ownerAccountRequired: false,
+        },
+        status: "blockchain_pending",
+        blockchain: {
+          proofSchema: "carnetpass.equipment.v1",
+          state: "reserved",
+          equipmentKey: proof.equipmentKey,
+          dataHash: proof.dataHash,
+          serialHash: proof.serialHash,
+        },
+        createdAt: now,
+        updatedAt: now,
+      };
 
-      createdAt: now,
-    });
+      const carnetPassKey = `carnetpass:${carnetPassId}`;
+      const qrKey = qrTokenRedisKey(qrToken);
+      const serialKey = `carnetpass:serial:${serialNumber}`;
+      const manufacturerKey =
+        `carnetpass:manufacturer:${manufacturerReference}`;
+      const equipmentKey = `carnetpass:equipment:${equipmentId}`;
+
+      const result = await redis.eval(
+        CREATE_SCRIPT,
+        [
+          carnetPassKey,
+          qrKey,
+          serialKey,
+          manufacturerKey,
+          equipmentKey,
+        ],
+        [JSON.stringify(carnetPass), carnetPassId, "1"]
+      );
+
+      if (result === "retry") continue;
+
+      if (result === "duplicate_serial") {
+        // Un numéro de série ne donne pas droit au carnet ni à son jeton QR.
+        return res.status(409).json({
+          ok: false,
+          error: "Un CarnetPass existe déjà pour ce numéro de série. Utilise le QR déjà associé à l'appareil.",
+        });
+      }
+
+      if (result !== "created") {
+        throw new Error("Enregistrement CarnetPass impossible.");
+      }
+
+      let submittedTransaction = null;
+      let confirmedProof = null;
+
+      try {
+        confirmedProof = await registerEquipmentProof({
+          ...proof,
+          onTransactionSent: async (submitted) => {
+            // Cette affectation précède l'écriture Redis : même si Redis
+            // répond mal, on sait qu'il ne faut surtout pas renvoyer la preuve.
+            submittedTransaction = submitted;
+            const submittedAt = new Date().toISOString();
+
+            carnetPass = {
+              ...carnetPass,
+              updatedAt: submittedAt,
+              blockchain: {
+                ...carnetPass.blockchain,
+                ...submitted,
+                state: "submitted",
+                submittedAt,
+              },
+            };
+
+            await updatePendingCarnetPass(carnetPassKey, carnetPass);
+          },
+        });
+
+        const confirmedAt = new Date().toISOString();
+
+        carnetPass = {
+          ...carnetPass,
+          status: "active",
+          updatedAt: confirmedAt,
+          blockchain: {
+            ...carnetPass.blockchain,
+            ...confirmedProof,
+            state: "confirmed",
+            confirmedAt,
+          },
+        };
+
+        await updatePendingCarnetPass(carnetPassKey, carnetPass);
+
+        return res.status(201).json({
+          ok: true,
+          carnetPassId,
+
+          // Remis uniquement lors de cette création, jamais par une lecture d'ID.
+          qrToken,
+
+          // Chemin relatif : App.jsx choisira le domaine de test ou de production.
+          qrPath: `/appareil/${qrToken}`,
+
+          equipment: {
+            equipmentId,
+            manufacturerReference,
+            brand: identity.brand ?? null,
+            range: identity.range ?? null,
+            model: identity.model ?? null,
+            variant: identity.variant ?? null,
+          },
+
+          blockchain: {
+            chainId: confirmedProof.chainId,
+            contractAddress: confirmedProof.contractAddress,
+            transactionHash: confirmedProof.transactionHash,
+            blockNumber: confirmedProof.blockNumber,
+          },
+          createdAt: now,
+        });
+      } catch (error) {
+        const diagnostic = typeof error?.code === "string"
+          ? error.code
+          : "UNKNOWN";
+        const errorTransactionHash =
+          typeof error?.transactionHash === "string"
+            ? error.transactionHash
+            : null;
+
+        if (!submittedTransaction && errorTransactionHash) {
+          submittedTransaction = {
+            transactionHash: errorTransactionHash,
+          };
+        }
+
+        const definitelyNotRegistered = !submittedTransaction
+          || diagnostic === "TRANSACTION_REVERTED";
+
+        console.error(
+          "Échec de la preuve Polygon CarnetPass :",
+          diagnostic
+        );
+
+        if (definitelyNotRegistered) {
+          try {
+            await redis.eval(
+              ROLLBACK_PENDING_SCRIPT,
+              [
+                carnetPassKey,
+                qrKey,
+                serialKey,
+                manufacturerKey,
+                equipmentKey,
+              ],
+              [carnetPassId]
+            );
+          } catch {
+            console.error("Nettoyage de la réservation CarnetPass impossible.");
+          }
+
+          if (
+            diagnostic === "SERIAL_ALREADY_EXISTS"
+            || diagnostic === "EQUIPMENT_ALREADY_EXISTS"
+          ) {
+            return res.status(409).json({
+              ok: false,
+              code: diagnostic,
+              error: "Une preuve Polygon existe déjà pour cet équipement ou ce numéro de série.",
+            });
+          }
+
+          return res.status(503).json({
+            ok: false,
+            code: "POLYGON_REGISTRATION_FAILED",
+            error: "La preuve Polygon n'a pas été créée. Aucun CarnetPass actif n'a été publié. Réessaie plus tard.",
+          });
+        }
+
+        // La transaction a été remise à Polygon. En cas de réponse incertaine,
+        // conserver la réservation empêche une seconde transaction identique.
+        const pendingAt = new Date().toISOString();
+        const pendingState = confirmedProof
+          ? "confirmed_storage_pending"
+          : "confirmation_pending";
+
+        carnetPass = {
+          ...carnetPass,
+          status: "blockchain_pending",
+          updatedAt: pendingAt,
+          blockchain: {
+            ...carnetPass.blockchain,
+            ...submittedTransaction,
+            ...(confirmedProof ?? {}),
+            state: pendingState,
+          },
+        };
+
+        try {
+          await updatePendingCarnetPass(carnetPassKey, carnetPass);
+        } catch {
+          console.error("État Polygon en attente non enregistré.");
+        }
+
+        return res.status(503).json({
+          ok: false,
+          code: "POLYGON_CONFIRMATION_PENDING",
+          error: "La transaction Polygon a été envoyée mais sa confirmation est encore incertaine. Ne relance pas la création pour ce numéro de série.",
+        });
+      }
+    }
+
+    throw new Error("Impossible de générer un identifiant unique.");
+  } finally {
+    try {
+      await redis.eval(
+        RELEASE_LOCK_SCRIPT,
+        [POLYGON_WRITER_LOCK_KEY],
+        [writerLockToken]
+      );
+    } catch {
+      // Le verrou possède aussi une expiration automatique de sécurité.
+      console.error("Libération du verrou Polygon impossible.");
+    }
   }
-
-  throw new Error("Impossible de générer un identifiant unique.");
 }
 
 async function getCarnetPass(req, res) {

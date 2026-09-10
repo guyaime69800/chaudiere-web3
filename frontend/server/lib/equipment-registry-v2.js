@@ -6,13 +6,21 @@ import { ethers } from "ethers";
 const POLYGON_CHAIN_ID = 137n;
 
 const REGISTRY_ABI = [
+  "error Unauthorized()",
+  "error ContractPaused()",
+  "error InvalidHash()",
+  "error EquipmentAlreadyExists()",
+  "error SerialNumberAlreadyExists()",
   "function owner() view returns (address)",
   "function paused() view returns (bool)",
   "function writers(address) view returns (bool)",
+  "function equipments(bytes32) view returns (bytes32 dataHash, bytes32 serialHash, uint256 registeredAt, bool exists)",
+  "function registeredSerialHashes(bytes32) view returns (bool)",
+  "function registerEquipment(bytes32 equipmentKey, bytes32 dataHash, bytes32 serialHash)",
 ];
 
-function diagnosticError(code) {
-  const error = new Error(code);
+function diagnosticError(code, cause) {
+  const error = new Error(code, cause ? { cause } : undefined);
   error.code = code;
   return error;
 }
@@ -27,15 +35,95 @@ function requiredEnvironmentVariable(name) {
   return value.trim();
 }
 
-export async function checkEquipmentRegistryV2() {
-  const rpcUrl = requiredEnvironmentVariable("POLYGON_RPC_URL");
- const rawPrivateKey = requiredEnvironmentVariable(
-  "POLYGON_SERVER_PRIVATE_KEY"
-);
+function normalizePrivateKey(rawPrivateKey) {
+  return rawPrivateKey.startsWith("0x")
+    ? rawPrivateKey
+    : `0x${rawPrivateKey}`;
+}
 
-const privateKey = rawPrivateKey.startsWith("0x")
-  ? rawPrivateKey
-  : `0x${rawPrivateKey}`;
+function validateBytes32(value, code) {
+  if (!ethers.isHexString(value, 32) || value === ethers.ZeroHash) {
+    throw diagnosticError(code);
+  }
+}
+
+function normalizeForCanonicalJson(value) {
+  if (
+    value === null
+    || typeof value === "string"
+    || typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(normalizeForCanonicalJson);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.keys(value)
+      .sort()
+      .reduce((result, key) => {
+        if (value[key] !== undefined) {
+          result[key] = normalizeForCanonicalJson(value[key]);
+        }
+
+        return result;
+      }, {});
+  }
+
+  throw diagnosticError("PROOF_DATA_INVALID");
+}
+
+// Produit toujours la même chaîne pour les mêmes données, quel que soit
+// l'ordre initial des propriétés JavaScript.
+export function canonicalizeEquipmentProofData(value) {
+  return JSON.stringify(normalizeForCanonicalJson(value));
+}
+
+// Les informations lisibles restent dans la base privée. Polygon reçoit
+// seulement trois empreintes bytes32, impossibles à relire comme du texte.
+export function buildEquipmentProof({
+  carnetPassId,
+  companyId,
+  serialNumber,
+  data,
+}) {
+  if (
+    typeof carnetPassId !== "string"
+    || !/^CP-\d{4}-\d{6}$/.test(carnetPassId)
+  ) {
+    throw diagnosticError("CARNETPASS_ID_INVALID");
+  }
+
+  if (typeof companyId !== "string" || !companyId) {
+    throw diagnosticError("COMPANY_ID_INVALID");
+  }
+
+  if (typeof serialNumber !== "string" || !serialNumber) {
+    throw diagnosticError("SERIAL_NUMBER_INVALID");
+  }
+
+  const canonicalData = canonicalizeEquipmentProofData(data);
+
+  return {
+    equipmentKey: ethers.id(`equipment:${carnetPassId}`),
+    dataHash: ethers.keccak256(ethers.toUtf8Bytes(canonicalData)),
+    serialHash: ethers.id(
+      `company:${companyId}|serial:${serialNumber}`
+    ),
+  };
+}
+
+async function createRegistryContext() {
+  const rpcUrl = requiredEnvironmentVariable("POLYGON_RPC_URL");
+  const privateKey = normalizePrivateKey(
+    requiredEnvironmentVariable("POLYGON_SERVER_PRIVATE_KEY")
+  );
   const contractAddress = requiredEnvironmentVariable(
     "EQUIPMENT_REGISTRY_V2_ADDRESS"
   );
@@ -60,15 +148,15 @@ const privateKey = rawPrivateKey.startsWith("0x")
   }
 
   if (
-    !ethers.isAddress(contractAddress) ||
-    contractAddress === ethers.ZeroAddress
+    !ethers.isAddress(contractAddress)
+    || contractAddress === ethers.ZeroAddress
   ) {
     throw diagnosticError("CONTRACT_ADDRESS_INVALID");
   }
 
   if (
-    !ethers.isAddress(expectedWalletAddress) ||
-    expectedWalletAddress === ethers.ZeroAddress
+    !ethers.isAddress(expectedWalletAddress)
+    || expectedWalletAddress === ethers.ZeroAddress
   ) {
     throw diagnosticError("SERVER_WALLET_ADDRESS_INVALID");
   }
@@ -79,8 +167,8 @@ const privateKey = rawPrivateKey.startsWith("0x")
 
   try {
     network = await provider.getNetwork();
-  } catch {
-    throw diagnosticError("RPC_CONNECTION_FAILED");
+  } catch (error) {
+    throw diagnosticError("RPC_CONNECTION_FAILED", error);
   }
 
   if (network.chainId !== POLYGON_CHAIN_ID) {
@@ -91,13 +179,13 @@ const privateKey = rawPrivateKey.startsWith("0x")
 
   try {
     serverWallet = new ethers.Wallet(privateKey, provider);
-  } catch {
-    throw diagnosticError("PRIVATE_KEY_PARSE_FAILED");
+  } catch (error) {
+    throw diagnosticError("PRIVATE_KEY_PARSE_FAILED", error);
   }
 
   if (
-    serverWallet.address.toLowerCase() !==
-    expectedWalletAddress.toLowerCase()
+    serverWallet.address.toLowerCase()
+    !== expectedWalletAddress.toLowerCase()
   ) {
     throw diagnosticError("WALLET_MISMATCH");
   }
@@ -106,19 +194,75 @@ const privateKey = rawPrivateKey.startsWith("0x")
 
   try {
     contractCode = await provider.getCode(contractAddress);
-  } catch {
-    throw diagnosticError("CONTRACT_LOOKUP_FAILED");
+  } catch (error) {
+    throw diagnosticError("CONTRACT_LOOKUP_FAILED", error);
   }
 
   if (contractCode === "0x") {
     throw diagnosticError("CONTRACT_NOT_FOUND");
   }
 
-  const contract = new ethers.Contract(
+  return {
+    provider,
+    serverWallet,
+    contractAddress: ethers.getAddress(contractAddress),
+    readContract: new ethers.Contract(
+      contractAddress,
+      REGISTRY_ABI,
+      provider
+    ),
+  };
+}
+
+function contractErrorName(error, contractInterface) {
+  if (typeof error?.revert?.name === "string") {
+    return error.revert.name;
+  }
+
+  const possibleData = [
+    error?.data,
+    error?.info?.error?.data,
+    error?.error?.data,
+  ];
+
+  for (const candidate of possibleData) {
+    const data = typeof candidate === "string"
+      ? candidate
+      : candidate?.data;
+
+    if (typeof data !== "string") continue;
+
+    try {
+      return contractInterface.parseError(data)?.name ?? null;
+    } catch {
+      // Cette donnée ne correspond pas à une erreur de notre contrat.
+    }
+  }
+
+  return null;
+}
+
+function mapContractWriteError(error, contractInterface) {
+  const name = contractErrorName(error, contractInterface);
+
+  const codes = {
+    ContractPaused: "CONTRACT_PAUSED",
+    Unauthorized: "SERVER_WALLET_NOT_AUTHORIZED",
+    InvalidHash: "PROOF_INVALID",
+    EquipmentAlreadyExists: "EQUIPMENT_ALREADY_EXISTS",
+    SerialNumberAlreadyExists: "SERIAL_ALREADY_EXISTS",
+  };
+
+  return diagnosticError(codes[name] ?? "CONTRACT_WRITE_FAILED", error);
+}
+
+export async function checkEquipmentRegistryV2() {
+  const {
+    provider,
+    serverWallet,
     contractAddress,
-    REGISTRY_ABI,
-    provider
-  );
+    readContract,
+  } = await createRegistryContext();
 
   let owner;
   let paused;
@@ -126,15 +270,14 @@ const privateKey = rawPrivateKey.startsWith("0x")
   let balance;
 
   try {
-    [owner, paused, serverAuthorized, balance] =
-      await Promise.all([
-        contract.owner(),
-        contract.paused(),
-        contract.writers(serverWallet.address),
-        provider.getBalance(serverWallet.address),
-      ]);
-  } catch {
-    throw diagnosticError("CONTRACT_READ_FAILED");
+    [owner, paused, serverAuthorized, balance] = await Promise.all([
+      readContract.owner(),
+      readContract.paused(),
+      readContract.writers(serverWallet.address),
+      provider.getBalance(serverWallet.address),
+    ]);
+  } catch (error) {
+    throw diagnosticError("CONTRACT_READ_FAILED", error);
   }
 
   return {
@@ -145,5 +288,130 @@ const privateKey = rawPrivateKey.startsWith("0x")
     serverAuthorized,
     paused,
     balanceWei: balance.toString(),
+  };
+}
+
+export async function registerEquipmentProof({
+  equipmentKey,
+  dataHash,
+  serialHash,
+  onTransactionSent,
+}) {
+  validateBytes32(equipmentKey, "EQUIPMENT_KEY_INVALID");
+  validateBytes32(dataHash, "DATA_HASH_INVALID");
+  validateBytes32(serialHash, "SERIAL_HASH_INVALID");
+
+  const {
+    provider,
+    serverWallet,
+    contractAddress,
+    readContract,
+  } = await createRegistryContext();
+
+  let paused;
+  let serverAuthorized;
+  let balance;
+  let existingEquipment;
+  let existingSerial;
+
+  try {
+    [paused, serverAuthorized, balance, existingEquipment, existingSerial] =
+      await Promise.all([
+        readContract.paused(),
+        readContract.writers(serverWallet.address),
+        provider.getBalance(serverWallet.address),
+        readContract.equipments(equipmentKey),
+        readContract.registeredSerialHashes(serialHash),
+      ]);
+  } catch (error) {
+    throw diagnosticError("CONTRACT_READ_FAILED", error);
+  }
+
+  if (paused) {
+    throw diagnosticError("CONTRACT_PAUSED");
+  }
+
+  if (!serverAuthorized) {
+    throw diagnosticError("SERVER_WALLET_NOT_AUTHORIZED");
+  }
+
+  if (balance === 0n) {
+    throw diagnosticError("SERVER_WALLET_EMPTY");
+  }
+
+  if (existingEquipment.exists) {
+    throw diagnosticError("EQUIPMENT_ALREADY_EXISTS");
+  }
+
+  if (existingSerial) {
+    throw diagnosticError("SERIAL_ALREADY_EXISTS");
+  }
+
+  const writeContract = readContract.connect(serverWallet);
+  let transaction;
+
+  try {
+    transaction = await writeContract.registerEquipment(
+      equipmentKey,
+      dataHash,
+      serialHash
+    );
+  } catch (error) {
+    const mapped = mapContractWriteError(
+      error,
+      writeContract.interface
+    );
+    const possibleHash = error?.transactionHash
+      ?? error?.receipt?.hash
+      ?? error?.receipt?.transactionHash;
+
+    if (typeof possibleHash === "string") {
+      mapped.transactionHash = possibleHash;
+    }
+
+    throw mapped;
+  }
+
+  const submitted = {
+    chainId: Number(POLYGON_CHAIN_ID),
+    contractAddress,
+    transactionHash: transaction.hash,
+  };
+
+  if (typeof onTransactionSent === "function") {
+    try {
+      await onTransactionSent(submitted);
+    } catch {
+      // La transaction est déjà partie : attendre son résultat reste prioritaire.
+      // L'appelant réécrira l'état complet après la confirmation.
+      console.error("État de transaction Polygon non enregistré immédiatement.");
+    }
+  }
+
+  let receipt;
+
+  try {
+    receipt = await transaction.wait(1);
+  } catch (error) {
+    const code = error?.receipt?.status === 0
+      ? "TRANSACTION_REVERTED"
+      : "TRANSACTION_CONFIRMATION_FAILED";
+    const mapped = diagnosticError(
+      code,
+      error
+    );
+    mapped.transactionHash = transaction.hash;
+    throw mapped;
+  }
+
+  if (!receipt || receipt.status !== 1) {
+    const error = diagnosticError("TRANSACTION_REVERTED");
+    error.transactionHash = transaction.hash;
+    throw error;
+  }
+
+  return {
+    ...submitted,
+    blockNumber: receipt.blockNumber,
   };
 }
