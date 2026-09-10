@@ -1,5 +1,5 @@
-import { requireVerifiedCompany } from "./lib/require-verified-company.js";
-import { checkEquipmentRegistryV2 } from "./lib/equipment-registry-v2.js";
+import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
+import { checkEquipmentRegistryV2 } from "../server/lib/equipment-registry-v2.js";
 
 export default async function handler(req, res) {
   // Cette route contient des informations de contrôle :

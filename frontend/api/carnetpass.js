@@ -1,7 +1,7 @@
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 import { generatedEquipmentRegistry } from "./lib/equipment-registry.generated.js";
-import { requireVerifiedCompany } from "./lib/require-verified-company.js";
+import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import {
   createQrToken,
   isQrToken,
