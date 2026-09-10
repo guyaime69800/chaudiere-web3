@@ -29,9 +29,13 @@ function requiredEnvironmentVariable(name) {
 
 export async function checkEquipmentRegistryV2() {
   const rpcUrl = requiredEnvironmentVariable("POLYGON_RPC_URL");
-  const privateKey = requiredEnvironmentVariable(
-    "POLYGON_SERVER_PRIVATE_KEY"
-  );
+ const rawPrivateKey = requiredEnvironmentVariable(
+  "POLYGON_SERVER_PRIVATE_KEY"
+);
+
+const privateKey = rawPrivateKey.startsWith("0x")
+  ? rawPrivateKey
+  : `0x${rawPrivateKey}`;
   const contractAddress = requiredEnvironmentVariable(
     "EQUIPMENT_REGISTRY_V2_ADDRESS"
   );
