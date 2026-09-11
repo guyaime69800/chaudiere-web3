@@ -1,0 +1,121 @@
+.pro-polygon-monitor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  width: min(1240px, calc(100% - 64px));
+  margin: 18px auto 0;
+  padding: 22px 24px;
+  border: 1px solid #d9d2ce;
+  border-left: 5px solid #766d68;
+  border-radius: 18px;
+  color: #4d4541;
+  background: #f8f6f5;
+}
+
+.pro-polygon-monitor--healthy {
+  border-color: #86efac;
+  border-left-color: #15803d;
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.pro-polygon-monitor--warning {
+  border-color: #fcd34d;
+  border-left-color: #d97706;
+  color: #92400e;
+  background: #fffbeb;
+}
+
+.pro-polygon-monitor--critical {
+  border-color: #fca5a5;
+  border-left-color: #b91c1c;
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.pro-polygon-monitor-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.pro-polygon-monitor-icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: 850;
+}
+
+.pro-polygon-monitor-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+}
+
+.pro-polygon-monitor h2 {
+  margin: 0 0 5px;
+  color: inherit;
+  font-size: 19px;
+}
+
+.pro-polygon-monitor p {
+  margin: 0;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pro-polygon-monitor-actions {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: end;
+  gap: 8px;
+}
+
+.pro-polygon-monitor-actions > strong {
+  font-size: 22px;
+}
+
+.pro-polygon-monitor-actions > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pro-polygon-monitor a,
+.pro-polygon-monitor button {
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.pro-polygon-monitor button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+@media (max-width: 720px) {
+  .pro-polygon-monitor {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 18px;
+    width: calc(100% - 32px);
+  }
+
+  .pro-polygon-monitor-actions {
+    justify-items: start;
+  }
+}

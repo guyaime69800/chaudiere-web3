@@ -1,4 +1,11 @@
 import { ethers } from "ethers";
+import {
+  calculatePolygonTransactionBudget,
+  getPolygonBalanceStatus,
+  POLYGON_BALANCE_CRITICAL_WEI,
+  POLYGON_BALANCE_WARNING_WEI,
+  POLYGON_MINIMUM_RESERVE_WEI,
+} from "./polygon-wallet-health.js";
 
 // Ce fichier s’exécute uniquement sur le serveur Vercel.
 // Ne jamais l’importer dans frontend/src.
@@ -288,6 +295,15 @@ export async function checkEquipmentRegistryV2() {
     serverAuthorized,
     paused,
     balanceWei: balance.toString(),
+    balancePol: ethers.formatEther(balance),
+    balanceStatus: getPolygonBalanceStatus(balance),
+    balanceThresholds: {
+      warningPol: ethers.formatEther(POLYGON_BALANCE_WARNING_WEI),
+      criticalPol: ethers.formatEther(POLYGON_BALANCE_CRITICAL_WEI),
+      minimumReservePol: ethers.formatEther(
+        POLYGON_MINIMUM_RESERVE_WEI
+      ),
+    },
   };
 }
 
@@ -335,10 +351,6 @@ export async function registerEquipmentProof({
     throw diagnosticError("SERVER_WALLET_NOT_AUTHORIZED");
   }
 
-  if (balance === 0n) {
-    throw diagnosticError("SERVER_WALLET_EMPTY");
-  }
-
   if (existingEquipment.exists) {
     throw diagnosticError("EQUIPMENT_ALREADY_EXISTS");
   }
@@ -347,23 +359,108 @@ export async function registerEquipmentProof({
     throw diagnosticError("SERIAL_ALREADY_EXISTS");
   }
 
+  if (balance <= POLYGON_MINIMUM_RESERVE_WEI) {
+    console.warn(
+      JSON.stringify({
+        level: "warn",
+        message: "polygon_wallet_balance_too_low",
+        balanceStatus: getPolygonBalanceStatus(balance),
+        balanceWei: balance.toString(),
+        requiredBalanceWei:
+          POLYGON_MINIMUM_RESERVE_WEI.toString(),
+      })
+    );
+
+    throw diagnosticError("SERVER_WALLET_BALANCE_TOO_LOW");
+  }
+
   const writeContract = readContract.connect(serverWallet);
+  let gasBudget;
+  let transactionOverrides;
+
+  try {
+    const [estimatedGas, feeData] = await Promise.all([
+      writeContract.registerEquipment.estimateGas(
+        equipmentKey,
+        dataHash,
+        serialHash
+      ),
+      provider.getFeeData(),
+    ]);
+
+    const feePerGas =
+      feeData.maxFeePerGas ?? feeData.gasPrice;
+
+    gasBudget = calculatePolygonTransactionBudget({
+      estimatedGas,
+      feePerGas,
+    });
+
+    transactionOverrides = {
+      gasLimit: gasBudget.gasLimit,
+    };
+
+    if (feeData.maxFeePerGas !== null) {
+      transactionOverrides.maxFeePerGas =
+        feeData.maxFeePerGas;
+
+      if (feeData.maxPriorityFeePerGas !== null) {
+        transactionOverrides.maxPriorityFeePerGas =
+          feeData.maxPriorityFeePerGas;
+      }
+    } else {
+      transactionOverrides.gasPrice = feeData.gasPrice;
+    }
+  } catch (error) {
+    if (
+      error?.code === "GAS_ESTIMATE_INVALID" ||
+      error?.code === "GAS_PRICE_UNAVAILABLE"
+    ) {
+      throw error;
+    }
+
+    throw mapContractWriteError(
+      error,
+      writeContract.interface
+    );
+  }
+
+  if (balance < gasBudget.requiredBalanceWei) {
+    console.warn(
+      JSON.stringify({
+        level: "warn",
+        message: "polygon_wallet_balance_too_low",
+        balanceStatus: getPolygonBalanceStatus(balance),
+        balanceWei: balance.toString(),
+        requiredBalanceWei:
+          gasBudget.requiredBalanceWei.toString(),
+        estimatedMaximumFeeWei:
+          gasBudget.estimatedMaximumFeeWei.toString(),
+      })
+    );
+
+    throw diagnosticError("SERVER_WALLET_BALANCE_TOO_LOW");
+  }
+
   let transaction;
 
   try {
     transaction = await writeContract.registerEquipment(
       equipmentKey,
       dataHash,
-      serialHash
+      serialHash,
+      transactionOverrides
     );
   } catch (error) {
     const mapped = mapContractWriteError(
       error,
       writeContract.interface
     );
-    const possibleHash = error?.transactionHash
-      ?? error?.receipt?.hash
-      ?? error?.receipt?.transactionHash;
+
+    const possibleHash =
+      error?.transactionHash ??
+      error?.receipt?.hash ??
+      error?.receipt?.transactionHash;
 
     if (typeof possibleHash === "string") {
       mapped.transactionHash = possibleHash;
@@ -410,8 +507,28 @@ export async function registerEquipmentProof({
     throw error;
   }
 
+  const transactionFeeWei =
+    typeof receipt.fee === "bigint"
+      ? receipt.fee
+      : receipt.gasUsed * receipt.gasPrice;
+
+  let balanceAfter = balance - transactionFeeWei;
+
+  try {
+    balanceAfter = await provider.getBalance(
+      serverWallet.address
+    );
+  } catch {
+    // La transaction est déjà confirmée.
+    // Le calcul local sert de solution de secours.
+  }
+
   return {
     ...submitted,
     blockNumber: receipt.blockNumber,
+    transactionFeeWei: transactionFeeWei.toString(),
+    balanceAfterWei: balanceAfter.toString(),
+    balanceStatusAfter:
+      getPolygonBalanceStatus(balanceAfter),
   };
 }

@@ -2,8 +2,9 @@ import { requireVerifiedCompany } from "../server/lib/require-verified-company.j
 import { checkEquipmentRegistryV2 } from "../server/lib/equipment-registry-v2.js";
 
 export default async function handler(req, res) {
-  // Cette route contient des informations de contrôle :
-  // on interdit leur mise en cache.
+  const startedAt = Date.now();
+  const requestId = req.headers?.["x-vercel-id"] ?? null;
+
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("CDN-Cache-Control", "no-store");
   res.setHeader("Vercel-CDN-Cache-Control", "no-store");
@@ -17,15 +18,37 @@ export default async function handler(req, res) {
     });
   }
 
-  // Vérifie le compte Supabase, l'entreprise et le rôle.
   const creator = await requireVerifiedCompany(req, res);
 
   if (!creator) return;
 
+  if (!["owner", "admin"].includes(creator.role)) {
+    return res.status(403).json({
+      ok: false,
+      code: "ROLE_FORBIDDEN",
+      error:
+        "Seul un propriétaire ou un administrateur peut consulter l’état Polygon.",
+    });
+  }
+
   try {
-    // Lecture uniquement :
-    // cette fonction ne doit envoyer aucune transaction blockchain.
     const status = await checkEquipmentRegistryV2();
+    const logMethod =
+      status.balanceStatus === "healthy" ? "log" : "warn";
+
+    console[logMethod](
+      JSON.stringify({
+        level:
+          status.balanceStatus === "healthy" ? "info" : "warn",
+        message: "polygon_status_checked",
+        route: "/api/polygon-status",
+        requestId,
+        durationMs: Date.now() - startedAt,
+        balanceStatus: status.balanceStatus,
+        serverAuthorized: status.serverAuthorized,
+        paused: status.paused,
+      })
+    );
 
     return res.status(200).json({
       ok: true,
@@ -36,11 +59,12 @@ export default async function handler(req, res) {
         serverAuthorized: status.serverAuthorized,
         paused: status.paused,
         balanceWei: status.balanceWei,
+        balancePol: status.balancePol,
+        balanceStatus: status.balanceStatus,
+        balanceThresholds: status.balanceThresholds,
       },
     });
-    } catch (error) {
-    // Seuls ces codes de diagnostic peuvent être renvoyés.
-    // Aucune clé privée, URL RPC ou erreur brute n'est exposée.
+  } catch (error) {
     const allowedDiagnostics = new Set([
       "RPC_URL_INVALID",
       "RPC_URL_NOT_HTTPS",
@@ -66,14 +90,21 @@ export default async function handler(req, res) {
           : "UNKNOWN";
 
     console.error(
-      "Erreur de contrôle EquipmentRegistryV2 :",
-      diagnostic
+      JSON.stringify({
+        level: "error",
+        message: "polygon_status_failed",
+        route: "/api/polygon-status",
+        requestId,
+        durationMs: Date.now() - startedAt,
+        diagnostic,
+      })
     );
 
     return res.status(503).json({
       ok: false,
-      error: "Le contrôle Polygon V2 est momentanément indisponible.",
+      error:
+        "Le contrôle Polygon V2 est momentanément indisponible.",
       diagnostic,
     });
-}
+  }
 }

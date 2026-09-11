@@ -473,6 +473,9 @@ async function createCarnetPass(req, res) {
             contractAddress: confirmedProof.contractAddress,
             transactionHash: confirmedProof.transactionHash,
             blockNumber: confirmedProof.blockNumber,
+            transactionFeeWei: confirmedProof.transactionFeeWei,
+            balanceAfterWei: confirmedProof.balanceAfterWei,
+            balanceStatusAfter: confirmedProof.balanceStatusAfter,
           },
           createdAt: now,
         });
@@ -526,7 +529,17 @@ async function createCarnetPass(req, res) {
               error: "Une preuve Polygon existe déjà pour cet équipement ou ce numéro de série.",
             });
           }
-
+          if (
+            diagnostic === "SERVER_WALLET_BALANCE_TOO_LOW" ||
+            diagnostic === "SERVER_WALLET_EMPTY"
+          ) {
+            return res.status(503).json({
+              ok: false,
+              code: "POLYGON_BALANCE_INSUFFICIENT",
+              error:
+                "La réserve POL du service blockchain est insuffisante. Aucun CarnetPass actif n'a été publié. Un administrateur doit recharger le wallet serveur.",
+            });
+          }
           return res.status(503).json({
             ok: false,
             code: "POLYGON_REGISTRATION_FAILED",

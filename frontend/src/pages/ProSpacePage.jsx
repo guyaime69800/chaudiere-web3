@@ -12,6 +12,7 @@ import {
   createCompanyEquipment,
   getCompanyEquipments,
 } from "../services/equipmentService";
+import { PolygonWalletMonitor } from "../components/PolygonWalletMonitor";
 import "./ProSpacePage.css";
 
 const EMPTY_FORM = {
@@ -159,7 +160,7 @@ function CompanySiretForm({ company, onEditing, onSaved }) {
 }
 
 export default function ProSpacePage() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const userId = user?.id;
   const navigate = useNavigate();
 
@@ -409,7 +410,7 @@ export default function ProSpacePage() {
         (item) =>
           item.resultType === "equipment" &&
           String(item.manufacturerReference || "").replace(/\s+/g, "") ===
-            normalizedReference
+          normalizedReference
       );
 
       if (!catalogEquipment) {
@@ -823,7 +824,10 @@ export default function ProSpacePage() {
           <small>Compte actif</small>
         </article>
       </section>
-
+      <PolygonWalletMonitor
+        companyRole={company.role}
+        accessToken={session?.access_token}
+      />
       <section className="pro-dashboard-grid">
         <article className="pro-dashboard-card pro-equipment-card">
           <div>
@@ -985,9 +989,9 @@ export default function ProSpacePage() {
                     aria-label={`Ouvrir ${equipment.brand} ${equipment.model}`}
                   >
                     <div>
-                    <strong>{equipment.brand} {equipment.model}</strong>
-                    <span>{getEquipmentTypeLabel(equipment.equipment_type)}</span>
-                    <span>N° de série : {equipment.serial_number}</span>
+                      <strong>{equipment.brand} {equipment.model}</strong>
+                      <span>{getEquipmentTypeLabel(equipment.equipment_type)}</span>
+                      <span>N° de série : {equipment.serial_number}</span>
                     </div>
                     <div className="pro-equipment-open-action">
                       {equipment.product_reference && (
