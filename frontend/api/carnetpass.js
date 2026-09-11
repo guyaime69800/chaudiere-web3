@@ -537,7 +537,7 @@ async function createCarnetPass(req, res) {
               ok: false,
               code: "POLYGON_BALANCE_INSUFFICIENT",
               error:
-                "La réserve POL du service blockchain est insuffisante. Aucun CarnetPass actif n'a été publié. Un administrateur doit recharger le wallet serveur.",
+                "Le service de certification est momentanément indisponible. Aucun CarnetPass actif n'a été publié. Réessaie plus tard ou contacte le support.",
             });
           }
           return res.status(503).json({

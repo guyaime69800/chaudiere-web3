@@ -12,7 +12,6 @@ import {
   createCompanyEquipment,
   getCompanyEquipments,
 } from "../services/equipmentService";
-import { PolygonWalletMonitor } from "../components/PolygonWalletMonitor";
 import "./ProSpacePage.css";
 
 const EMPTY_FORM = {
@@ -160,7 +159,7 @@ function CompanySiretForm({ company, onEditing, onSaved }) {
 }
 
 export default function ProSpacePage() {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const userId = user?.id;
   const navigate = useNavigate();
 
@@ -824,10 +823,7 @@ export default function ProSpacePage() {
           <small>Compte actif</small>
         </article>
       </section>
-      <PolygonWalletMonitor
-        companyRole={company.role}
-        accessToken={session?.access_token}
-      />
+     
       <section className="pro-dashboard-grid">
         <article className="pro-dashboard-card pro-equipment-card">
           <div>
