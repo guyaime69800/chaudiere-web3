@@ -185,7 +185,6 @@ export default function ProSpacePage() {
   const [equipmentMessage, setEquipmentMessage] = useState("");
   const [equipmentSubmitting, setEquipmentSubmitting] = useState(false);
   const [equipmentRefreshKey, setEquipmentRefreshKey] = useState(0);
-  const [openingEquipmentId, setOpeningEquipmentId] = useState(null);
   const [carnetPassStatuses, setCarnetPassStatuses] = useState({});
   const [carnetPassStatusLoading, setCarnetPassStatusLoading] = useState(false);
   const [carnetPassStatusError, setCarnetPassStatusError] = useState("");
@@ -430,8 +429,8 @@ export default function ProSpacePage() {
     }
   }
 
-  async function handleOpenEquipment(equipment) {
-    if (openingEquipmentId || carnetPassStatusLoading) return;
+  function handleOpenEquipment(equipment) {
+    if (carnetPassStatusLoading) return;
 
     const carnetPassStatus = carnetPassStatuses[equipment.id];
 
@@ -472,52 +471,20 @@ export default function ProSpacePage() {
       return;
     }
 
-    setOpeningEquipmentId(equipment.id);
     setEquipmentError("");
     setEquipmentMessage("");
 
-    try {
-      const response = await fetch(
-        `/api/search?q=${encodeURIComponent(productReference)}`
-      );
-      const result = await response.json();
-
-      if (!response.ok || result?.ok !== true) {
-        throw new Error(
-          result?.error || "Impossible de vérifier cette référence."
-        );
-      }
-
-      const normalizedReference = productReference.replace(/\s+/g, "");
-      const catalogEquipment = (result.results || []).find(
-        (item) =>
-          item.resultType === "equipment"
-          && String(item.manufacturerReference || "").replace(/\s+/g, "")
-          === normalizedReference
-      );
-
-      if (!catalogEquipment) {
-        setEquipmentError(
-          "La documentation technique de cette référence n’est pas encore disponible dans CarnetPass."
-        );
-        return;
-      }
-
-      navigate("/", {
-        state: {
-          professionalEquipment: {
-            productReference,
-            serialNumber: equipment.serial_number,
-          },
+    navigate("/", {
+      state: {
+        professionalEquipment: {
+          productReference,
+          serialNumber: equipment.serial_number,
+          brand: equipment.brand,
+          model: equipment.model,
+          productType: getEquipmentTypeLabel(equipment.equipment_type),
         },
-      });
-    } catch (error) {
-      setEquipmentError(
-        error?.message || "Impossible d’ouvrir cet équipement."
-      );
-    } finally {
-      setOpeningEquipmentId(null);
-    }
+      },
+    });
   }
 
   if (loading) {
@@ -1089,8 +1056,7 @@ export default function ProSpacePage() {
                       type="button"
                       onClick={() => handleOpenEquipment(equipment)}
                       disabled={
-                        Boolean(openingEquipmentId)
-                        || statusIsLoading
+                        statusIsLoading
                         || carnetPassStatus?.status === "blockchain_pending"
                         || (
                           carnetPassStatus?.exists === true
@@ -1109,16 +1075,17 @@ export default function ProSpacePage() {
                         <span>N° de série : {equipment.serial_number}</span>
                       </div>
 
-                      <div className="pro-equipment-open-action">
+                      <div
+                        className={`pro-equipment-open-action${carnetPassStatus?.status === "active"
+                          ? " pro-equipment-open-action--view"
+                          : ""
+                          }`}
+                      >
                         {equipment.product_reference && (
                           <small>Réf. {equipment.product_reference}</small>
                         )}
 
-                        <strong>
-                          {openingEquipmentId === equipment.id
-                            ? "Vérification…"
-                            : actionLabel}
-                        </strong>
+                        <strong>{actionLabel}</strong>
                       </div>
                     </button>
                   </li>

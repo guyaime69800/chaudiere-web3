@@ -15,6 +15,13 @@ import {
 import ReactMarkdown from "react-markdown";
 import "./App.css";
 import { supabase } from "./services/supabaseClient";
+const GENERIC_EQUIPMENT_ID_PREFIX = "generic-";
+
+function hasTechnicalDocumentation(equipmentId) {
+  return typeof equipmentId === "string"
+    && equipmentId.length > 0
+    && !equipmentId.startsWith(GENERIC_EQUIPMENT_ID_PREFIX);
+}
 function App({ initialMode = "public" }) {
   // Mode d'affichage : "public" (consultation, sans wallet) ou "pro" (technicien, avec wallet)
   const [mode, setMode] = useState(initialMode);
@@ -497,7 +504,7 @@ function App({ initialMode = "public" }) {
         // Le RAG travaille avec l'identifiant
         // technique du modèle, pas avec CP-xxxx.
         if (
-          carnetPassResult.equipmentId
+          hasTechnicalDocumentation(carnetPassResult.equipmentId)
         ) {
           const knowledge =
             await loadEquipmentKnowledge(
@@ -650,8 +657,9 @@ function App({ initialMode = "public" }) {
     }
   }
 
-  // Arrivée depuis l'espace professionnel : retrouve la fiche constructeur
-  // et reprend automatiquement le numéro de série déjà enregistré.
+  // Arrivée depuis l'espace professionnel : ouvre la fiche constructeur
+  // lorsqu'elle existe, sinon prépare une fiche générique sans bloquer
+  // la création du CarnetPass.
   useEffect(() => {
     const professionalEquipment = location.state?.professionalEquipment;
 
@@ -669,59 +677,88 @@ function App({ initialMode = "public" }) {
         professionalEquipment.productReference
       ).trim();
 
-      try {
-        setMode("pro");
-        setMessage("");
-        setBoiler(null);
-        setSearchResults([]);
-        setSelectedEquipment(null);
+      const genericEquipment = {
+        equipmentId: null,
+        manufacturerReference: productReference,
+        brand: String(
+          professionalEquipment.brand || "Équipement"
+        ).trim(),
+        model: String(
+          professionalEquipment.model || productReference
+        ).trim(),
+        productType: String(
+          professionalEquipment.productType || "Autre équipement"
+        ).trim(),
+        range: "",
+        variant: "",
+        documentationAvailable: false,
+      };
 
+      setMode("pro");
+      setMessage("");
+      setBoiler(null);
+      setSearchResults([]);
+      setSelectedEquipment(null);
+      setEquipmentKnowledge(null);
+      setPersonalSerialNumber(professionalEquipment.serialNumber);
+      setAiAnswer("");
+      setAiQuestion("");
+
+      let equipmentToOpen = genericEquipment;
+      let knowledge = null;
+
+      try {
         const response = await fetch(
           `/api/search?q=${encodeURIComponent(productReference)}`
         );
         const result = await response.json();
 
-        if (!response.ok || result?.ok !== true) {
-          throw new Error(
-            result?.error || "Impossible de charger cette référence."
-          );
-        }
+        if (response.ok && result?.ok === true) {
+          const normalizedReference = productReference.replace(/\s+/g, "");
 
-        const normalizedReference = productReference.replace(/\s+/g, "");
-        const equipment = (result.results || []).find(
-          (item) =>
-            item.resultType === "equipment" &&
-            String(item.manufacturerReference || "").replace(/\s+/g, "") ===
+          const equipment = (result.results || []).find(
+            (item) =>
+              item.resultType === "equipment" &&
+              String(item.manufacturerReference || "").replace(/\s+/g, "") ===
               normalizedReference
+          );
+
+          if (equipment) {
+            try {
+              knowledge = await loadEquipmentKnowledge(
+                equipment.equipmentId
+              );
+            } catch {
+              console.warn(
+                "Documentation technique momentanément indisponible."
+              );
+            }
+
+            const documents = knowledge?.data?.documents;
+
+            equipmentToOpen = {
+              ...equipment,
+              documentationAvailable:
+                Array.isArray(documents) && documents.length > 0,
+            };
+          }
+        }
+      } catch {
+        console.warn(
+          "Recherche documentaire indisponible, ouverture de la fiche générique."
         );
-
-        if (!equipment) {
-          throw new Error(
-            "La documentation technique de cette référence n’est pas encore disponible."
-          );
-        }
-
-        const knowledge = await loadEquipmentKnowledge(equipment.equipmentId);
-
-        if (cancelled) return;
-
-        setSelectedEquipment(equipment);
-        setEquipmentKnowledge(knowledge);
-        setPersonalSerialNumber(professionalEquipment.serialNumber);
-        setAiAnswer("");
-        setAiQuestion("");
-      } catch (error) {
-        if (!cancelled) {
-          setMessage(
-            error?.message || "Impossible d’ouvrir cet équipement."
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          // Retire les données temporaires de l'historique du navigateur.
-          navigate(location.pathname, { replace: true, state: null });
-        }
       }
+
+      if (cancelled) return;
+
+      setSelectedEquipment(equipmentToOpen);
+      setEquipmentKnowledge(knowledge);
+
+      // Retire les données temporaires de l'historique du navigateur.
+      navigate(location.pathname, {
+        replace: true,
+        state: null,
+      });
     }
 
     ouvrirDepuisEspacePro();
@@ -785,6 +822,9 @@ function App({ initialMode = "public" }) {
         body: JSON.stringify({
           manufacturerReference,
           serialNumber,
+          brand: selectedEquipment?.brand,
+          model: selectedEquipment?.model,
+          productType: selectedEquipment?.productType,
         }),
       });
 
@@ -1090,16 +1130,22 @@ function App({ initialMode = "public" }) {
                 </h2>
 
                 <p className="appareil-loc">
-                  {selectedEquipment.range}
+                  {selectedEquipment.range || selectedEquipment.productType}
                   {selectedEquipment.variant
                     ? ` · ${selectedEquipment.variant}`
                     : ""}
                 </p>
               </div>
 
-              <span className="badge-verified">
-                ✔ Documentation vérifiée
-              </span>
+              {selectedEquipment.documentationAvailable === false ? (
+                <span className="badge-documentation-pending">
+                  Documentation à compléter
+                </span>
+              ) : (
+                <span className="badge-verified">
+                  ✔ Documentation vérifiée
+                </span>
+              )}
             </div>
 
             <div className="appareil-grid">
@@ -1135,10 +1181,19 @@ function App({ initialMode = "public" }) {
             </div>
 
             <p className="catalog-intro">
-              Cette fiche décrit un modèle constructeur.
-              Aucun CarnetPass personnel ni QR individuel
-              n'est encore créé.
+              {selectedEquipment.documentationAvailable === false
+                ? "Cet équipement n’a pas encore de documentation technique dans CarnetPass. Cela n’empêche pas la création de son carnet numérique."
+                : "Cette fiche décrit un modèle constructeur. Aucun CarnetPass personnel ni QR individuel n'est encore créé."}
             </p>
+
+            {selectedEquipment.documentationAvailable === false && (
+              <div className="documentation-optional-notice" role="status">
+                <strong>Vous pouvez continuer.</strong>
+                <span>
+                  La documentation pourra être ajoutée plus tard par photo ou par PDF.
+                </span>
+              </div>
+            )}
             {/* ---------- CRÉATION CARNETPASS PERSONNEL ---------- */}
             <div className="technical-docs claim-card">
               <span className="claim-card-label">Étape suivante</span>
@@ -1256,369 +1311,390 @@ function App({ initialMode = "public" }) {
           </div>
 
           {/* ---------- ASSISTANT IA ---------- */}
-          <div className="ai-assistant">
-            <p className="ai-title">
-              🤖 Assistant technique CarnetPass
-            </p>
-
-            <p className="muted">
-              Pose une question technique sur ce modèle.
-            </p>
-
-            <textarea
-              className="ai-question"
-              value={aiQuestion}
-              onChange={(e) => {
-                setAiQuestion(e.target.value);
-                setAiAnswer("");
-              }}
-              placeholder="Ex : Défaut F28 : que dois-je vérifier ?"
-              rows={3}
-            />
-
-            <button
-              className="btn"
-              onClick={demanderIA}
-              disabled={
-                isAiLoading ||
-                !aiQuestion.trim()
-              }
-            >
-              {isAiLoading
-                ? "Analyse en cours..."
-                : "🤖 Demander à l’IA"}
-            </button>
-
-            {aiAnswer && (
-              <div className="ai-answer">
-                <ReactMarkdown>
-                  {aiAnswer}
-                </ReactMarkdown>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-      {/* ---------- MESSAGE "NON TROUVE" ---------- */}
-      {message && !technicalResult && <p className="notfound">{message}</p>}
-      {technicalResult && (
-        <section className="technical-result">
-          <h2>
-            ⚠️ {technicalResult.code} — {technicalResult.title}
-          </h2>
-
-          <h3>Signification</h3>
-          <p>{technicalResult.manufacturerData.meaning}</p>
-
-          <h3>Causes possibles</h3>
-          <ul>
-            {technicalResult.manufacturerData.possibleCauses.map((cause) => (
-              <li key={cause}>{cause}</li>
-            ))}
-          </ul>
-
-          <h3>Contrôles professionnels</h3>
-          <ul>
-            {technicalResult.manufacturerData.professionalChecks.map((check) => (
-              <li key={check}>{check}</li>
-            ))}
-          </ul>
-
-          <h3>Consignes de sécurité</h3>
-          <ul>
-            {technicalResult.userGuidance.allowedActions.map((action) => (
-              <li key={action}>{action}</li>
-            ))}
-          </ul>
-
-          <p>
-            <strong>Source :</strong> document constructeur Saunier Duval —
-            page {technicalResult.source.page}
-          </p>
-        </section>
-      )}
-
-      {/* ---------- FICHE APPAREIL + CARNET (si un appareil est trouve) ---------- */}
-      {boiler && (
-        <section className="result">
-          <div className="appareil">
-            <div className="appareil-head">
-              <div>
-                <span className="appareil-type">Équipement</span>
-                <h2 className="appareil-name">{boiler.equipmentId}</h2>
-                <p className="appareil-loc">{boiler.brand} · {boiler.model}</p>
-              </div>
-              <span className="badge-verified">✔ Vérifié</span>
-            </div>
-
-            <div className="appareil-grid">
-              <div>
-                <span className="k">QR Code</span>
-                <span className="v">{boiler.qrCode}</span>
-              </div>
-
-              <div>
-                <span className="k">Marque</span>
-                <span className="v">{boiler.brand}</span>
-              </div>
-
-              <div>
-                <span className="k">Modèle</span>
-                <span className="v">{boiler.model}</span>
-              </div>
-
-              <div>
-                <span className="k">Référence produit</span>
-                <span className="v">{boiler.productReference}</span>
-              </div>
-
-              {mode === "pro" && boiler.publicTechnicalOnly !== true && (
-                <div>
-                  <span className="k">Numéro de série</span>
-                  <span className="v">{boiler.serialNumber}</span>
-                </div>
-              )}
-            </div>
-
-            {/* NOUVEAU (QR) : le QR code physique a coller sur l'appareil.
-                Il pointe vers l'adresse EN LIGNE de la fiche -> scannable depuis n'importe quel telephone. */}
-            <div className="qr-zone">
-              <p className="qr-title">
-                {boiler.publicQrUrl
-                  ? "QR individuel de l'appareil"
-                  : "Partager la fiche technique"}
+          {equipmentKnowledge?.data?.documents?.length > 0 && (
+            <div className="ai-assistant">
+              <p className="ai-title">
+                🤖 Assistant technique CarnetPass
               </p>
 
-              {boiler.publicQrUrl ? (
-                <>
-                  <div className="qr-box">
-                    <QRCodeCanvas
-                      id={`qr-${boiler.equipmentId}`}
-                      value={boiler.publicQrUrl}
-                      size={160}
-                      level="M"
-                      includeMargin={true}
-                    />
-                  </div>
+              <p className="muted">
+                Pose une question technique sur ce modèle.
+              </p>
 
-                  <button
-                    className="btn btn-ghost"
-                    onClick={() => telechargerQR(boiler.equipmentId)}
-                  >
-                    ⬇️ Télécharger le QR
-                  </button>
-
-                  <p className="qr-hint">
-                    Imprimez ce QR et collez-le sur l'appareil.
-                    Un scan ouvre sa fiche technique.
-                  </p>
-                </>
-              ) : (
-                <p className="qr-hint">
-                  Ouvrez le lien individuel de cet appareil pour télécharger son QR.
-                  Vous pouvez partager sa fiche technique ci-dessous.
-                </p>
-              )}
+              <textarea
+                className="ai-question"
+                value={aiQuestion}
+                onChange={(e) => {
+                  setAiQuestion(e.target.value);
+                  setAiAnswer("");
+                }}
+                placeholder="Ex : Défaut F28 : que dois-je vérifier ?"
+                rows={3}
+              />
 
               <button
-                className="btn btn-ghost"
-                onClick={() =>
-                  partagerCarnetPass(
-                    boiler.publicQrUrl
-                    || `${window.location.origin}/appareil/${encodeURIComponent(boiler.equipmentId)}`,
-                    `CarnetPass - ${boiler.brand} ${boiler.model}`,
-                    `Consultez la fiche technique de l'équipement ${boiler.equipmentId}.`
-                  )
-                }
+                className="btn"
+                onClick={demanderIA}
+                disabled={isAiLoading || !aiQuestion.trim()}
               >
-                📤 Partager cette fiche
+                {isAiLoading
+                  ? "Analyse en cours..."
+                  : "🤖 Demander à l’IA"}
               </button>
 
-              {isAppInstalled ? (
-                <button className="btn btn-ghost" disabled>
-                  ✅ CarnetPass installé
-                </button>
-              ) : installPrompt ? (
-                <button
-                  className="btn btn-primary"
-                  onClick={installerCarnetPass}
-                >
-                  📲 Installer CarnetPass
-                </button>
-              ) : null}
-            </div>
-            {/* ---------- DOCUMENTATION TECHNIQUE ---------- */}
-            {equipmentKnowledge?.data?.documents?.length > 0 && (
-              <div className="technical-docs">
-                <h3>📚 Documentation technique</h3>
-
-                {equipmentKnowledge.data.documents.map((document) => (
-                  <div className="technical-doc-card" key={document.documentId}>
-                    <p>
-                      <strong>
-                        {document.documentType === "exploded_view"
-                          ? "🔧 Vue éclatée"
-                          : "📘 Notice constructeur"}
-                      </strong>
-                    </p>
-
-                    <p>{document.title}</p>
-
-                    {document.documentCode && (
-                      <p>
-                        Référence document : <strong>{document.documentCode}</strong>
-                      </p>
-                    )}
-
-                    <p>
-                      Nombre de pages : <strong>{document.pageCount}</strong>
-                    </p>
-                    {document.documentUrl && (
-                      <a
-                        className="btn btn-ghost"
-                        href={document.documentUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {document.documentType === "exploded_view"
-                          ? "🔧 Ouvrir la vue éclatée"
-                          : "📘 Ouvrir la notice"}
-                      </a>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          {/* ASSISTANT IA CARNETPASS */}
-          <div className="ai-assistant">
-            <p className="ai-title">🤖 Assistant technique CarnetPass</p>
-
-            <p className="muted">
-              Pose une question technique sur cet équipement.
-            </p>
-
-            <textarea
-              className="ai-question"
-              value={aiQuestion}
-              onChange={(e) => {
-                setAiQuestion(e.target.value);
-                setAiAnswer("");
-              }}
-              placeholder="Ex : Défaut F28 : que dois-je vérifier ?"
-              rows={3}
-            />
-
-            <button
-              className="btn"
-              onClick={demanderIA}
-              disabled={isAiLoading || !aiQuestion.trim()}
-            >
-              {isAiLoading ? "Analyse en cours..." : "🤖 Demander à l’IA"}
-            </button>
-
-            {aiAnswer && (
-              <div className="ai-answer">
-                <ReactMarkdown>{aiAnswer}</ReactMarkdown>
-              </div>
-            )}
-          </div>
-
-          {/* Historique masqué sur les fiches techniques publiques */}
-          {mode === "pro" && boiler.publicTechnicalOnly !== true && (
-            <div className="carnet">
-              <p className="carnet-title">Carnet d'entretien</p>
-              <button
-                className="btn btn-ghost"
-                onClick={telechargerCarnetPDF}
-                disabled={isLoadingCarnet}
-              >
-                📄 Télécharger le carnet PDF
-              </button>
-              {isLoadingCarnet ? (
-                <p className="muted">Chargement du carnet...</p>
-              ) : carnetError ? (
-                <p className="err">❌ {carnetError}</p>
-              ) : maintenances.length === 0 ? (
-                <p className="muted">Aucune intervention enregistrée pour cet appareil.</p>
-              ) : (
-                <div className="timeline">
-                  {maintenances.map((m, index) => (
-                    <div className="tl-item" key={index}>
-                      <div className="tl-marker">
-                        <span className="tl-dot" />
-                        {index < maintenances.length - 1 && <span className="tl-line" />}
-                      </div>
-                      <div className="tl-body">
-                        <p className="tl-date">{formatDate(m.date)}</p>
-                        <p className="tl-type">{m.interventionType}</p>
-                        <p className="tl-desc">{m.description} — {m.technician}</p>
-                        {m.partChanged && <p className="tl-part">Pièce changée : {m.partChanged}</p>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* AJOUT D'INTERVENTION (mode pro + wallet connecte) */}
-              {mode === "pro" && account && (
-                <div className="form-card">
-                  <h3>Ajouter une intervention</h3>
-
-                  <p className="muted">
-                    🔒 Données techniques uniquement. N'indiquez aucun nom de client,
-                    adresse, téléphone, e-mail ou autre donnée personnelle :
-                    cette intervention sera inscrite sur la blockchain Polygon.
-                  </p>
-
-                  <input
-                    className="field"
-                    placeholder="Type d'intervention (ex : Entretien annuel)"
-                    value={mType}
-                    onChange={(e) => setMType(e.target.value)}
-                  />
-
-                  <input
-                    className="field"
-                    placeholder="Description technique uniquement (ex : Nettoyage brûleur)"
-                    value={mDesc}
-                    onChange={(e) => setMDesc(e.target.value)}
-                  />
-
-                  <input
-                    className="field"
-                    placeholder="Entreprise / identifiant technicien (sans nom ni prénom)"
-                    value={mTech}
-                    onChange={(e) => setMTech(e.target.value)}
-                  />
-
-                  <input
-                    className="field"
-                    placeholder="Pièce changée / référence (optionnel)"
-                    value={mPart}
-                    onChange={(e) => setMPart(e.target.value)}
-                  />
-                  <button className="btn btn-primary" onClick={ajouterIntervention} disabled={isAddingM}>
-                    {isAddingM ? "Ajout en cours..." : "Ajouter au carnet"}
-                  </button>
-                  {mMsg && <p className="form-msg">{mMsg}</p>}
+              {aiAnswer && (
+                <div className="ai-answer">
+                  <ReactMarkdown>
+                    {aiAnswer}
+                  </ReactMarkdown>
                 </div>
               )}
             </div>
           )}
-        </section>
-      )}
 
-      {/* ---------- SCANNER QR (plein ecran, uniquement quand ouvert) ---------- */}
-      {scanOuvert && (
-        <Suspense fallback={<div className="scan-loading">Ouverture de la caméra…</div>}>
-          <ScannerQR
-            onClose={() => setScanOuvert(false)}
-            onCodeDetecte={ouvrirDepuisScan}
-          />
-        </Suspense>
+
+        </section>
+      )
+      }
+      {/* ---------- MESSAGE "NON TROUVE" ---------- */}
+      {message && !technicalResult && <p className="notfound">{message}</p>}
+      {
+        technicalResult && (
+          <section className="technical-result">
+            <h2>
+              ⚠️ {technicalResult.code} — {technicalResult.title}
+            </h2>
+
+            <h3>Signification</h3>
+            <p>{technicalResult.manufacturerData.meaning}</p>
+
+            <h3>Causes possibles</h3>
+            <ul>
+              {technicalResult.manufacturerData.possibleCauses.map((cause) => (
+                <li key={cause}>{cause}</li>
+              ))}
+            </ul>
+
+            <h3>Contrôles professionnels</h3>
+            <ul>
+              {technicalResult.manufacturerData.professionalChecks.map((check) => (
+                <li key={check}>{check}</li>
+              ))}
+            </ul>
+
+            <h3>Consignes de sécurité</h3>
+            <ul>
+              {technicalResult.userGuidance.allowedActions.map((action) => (
+                <li key={action}>{action}</li>
+              ))}
+            </ul>
+
+            <p>
+              <strong>Source :</strong> document constructeur Saunier Duval —
+              page {technicalResult.source.page}
+            </p>
+          </section>
+        )
+      }
+
+      {/* ---------- FICHE APPAREIL + CARNET (si un appareil est trouve) ---------- */}
+      {
+        boiler && (
+          <section className="result">
+            <div className="appareil">
+              <div className="appareil-head">
+                <div>
+                  <span className="appareil-type">Équipement</span>
+                  <h2 className="appareil-name">{boiler.equipmentId}</h2>
+                  <p className="appareil-loc">{boiler.brand} · {boiler.model}</p>
+                </div>
+                <span className="badge-verified">✔ Vérifié</span>
+              </div>
+
+              <div className="appareil-grid">
+                <div>
+                  <span className="k">QR Code</span>
+                  <span className="v">{boiler.qrCode}</span>
+                </div>
+
+                <div>
+                  <span className="k">Marque</span>
+                  <span className="v">{boiler.brand}</span>
+                </div>
+
+                <div>
+                  <span className="k">Modèle</span>
+                  <span className="v">{boiler.model}</span>
+                </div>
+
+                <div>
+                  <span className="k">Référence produit</span>
+                  <span className="v">{boiler.productReference}</span>
+                </div>
+
+                {mode === "pro" && boiler.publicTechnicalOnly !== true && (
+                  <div>
+                    <span className="k">Numéro de série</span>
+                    <span className="v">{boiler.serialNumber}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* NOUVEAU (QR) : le QR code physique a coller sur l'appareil.
+                Il pointe vers l'adresse EN LIGNE de la fiche -> scannable depuis n'importe quel telephone. */}
+              <div className="qr-zone">
+                <p className="qr-title">
+                  {boiler.publicQrUrl
+                    ? "QR individuel de l'appareil"
+                    : "Partager la fiche technique"}
+                </p>
+
+                {boiler.publicQrUrl ? (
+                  <>
+                    <div className="qr-box">
+                      <QRCodeCanvas
+                        id={`qr-${boiler.equipmentId}`}
+                        value={boiler.publicQrUrl}
+                        size={160}
+                        level="M"
+                        includeMargin={true}
+                      />
+                    </div>
+
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => telechargerQR(boiler.equipmentId)}
+                    >
+                      ⬇️ Télécharger le QR
+                    </button>
+
+                    <p className="qr-hint">
+                      Imprimez ce QR et collez-le sur l'appareil.
+                      Un scan ouvre sa fiche technique.
+                    </p>
+                  </>
+                ) : (
+                  <p className="qr-hint">
+                    Ouvrez le lien individuel de cet appareil pour télécharger son QR.
+                    Vous pouvez partager sa fiche technique ci-dessous.
+                  </p>
+                )}
+
+                <button
+                  className="btn btn-ghost"
+                  onClick={() =>
+                    partagerCarnetPass(
+                      boiler.publicQrUrl
+                      || `${window.location.origin}/appareil/${encodeURIComponent(boiler.equipmentId)}`,
+                      `CarnetPass - ${boiler.brand} ${boiler.model}`,
+                      `Consultez la fiche technique de l'équipement ${boiler.equipmentId}.`
+                    )
+                  }
+                >
+                  📤 Partager cette fiche
+                </button>
+
+                {isAppInstalled ? (
+                  <button className="btn btn-ghost" disabled>
+                    ✅ CarnetPass installé
+                  </button>
+                ) : installPrompt ? (
+                  <button
+                    className="btn btn-primary"
+                    onClick={installerCarnetPass}
+                  >
+                    📲 Installer CarnetPass
+                  </button>
+                ) : null}
+              </div>
+              {/* ---------- DOCUMENTATION TECHNIQUE ---------- */}
+              {equipmentKnowledge?.data?.documents?.length > 0 && (
+                <div className="technical-docs">
+                  <h3>📚 Documentation technique</h3>
+
+                  {equipmentKnowledge.data.documents.map((document) => (
+                    <div className="technical-doc-card" key={document.documentId}>
+                      <p>
+                        <strong>
+                          {document.documentType === "exploded_view"
+                            ? "🔧 Vue éclatée"
+                            : "📘 Notice constructeur"}
+                        </strong>
+                      </p>
+
+                      <p>{document.title}</p>
+
+                      {document.documentCode && (
+                        <p>
+                          Référence document : <strong>{document.documentCode}</strong>
+                        </p>
+                      )}
+
+                      <p>
+                        Nombre de pages : <strong>{document.pageCount}</strong>
+                      </p>
+                      {document.documentUrl && (
+                        <a
+                          className="btn btn-ghost"
+                          href={document.documentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {document.documentType === "exploded_view"
+                            ? "🔧 Ouvrir la vue éclatée"
+                            : "📘 Ouvrir la notice"}
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* ASSISTANT IA CARNETPASS */}
+            {equipmentKnowledge?.data?.documents?.length > 0 ? (
+              <div className="ai-assistant">
+                <p className="ai-title">
+                  🤖 Assistant technique CarnetPass
+                </p>
+
+                <p className="muted">
+                  Pose une question technique sur cet équipement.
+                </p>
+
+                <textarea
+                  className="ai-question"
+                  value={aiQuestion}
+                  onChange={(e) => {
+                    setAiQuestion(e.target.value);
+                    setAiAnswer("");
+                  }}
+                  placeholder="Ex : Défaut F28 : que dois-je vérifier ?"
+                  rows={3}
+                />
+
+                <button
+                  className="btn"
+                  onClick={demanderIA}
+                  disabled={isAiLoading || !aiQuestion.trim()}
+                >
+                  {isAiLoading
+                    ? "Analyse en cours..."
+                    : "🤖 Demander à l’IA"}
+                </button>
+
+                {aiAnswer && (
+                  <div className="ai-answer">
+                    <ReactMarkdown>{aiAnswer}</ReactMarkdown>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="documentation-optional-notice" role="status">
+                <strong>Documentation technique à compléter.</strong>
+                <span>
+                  Le CarnetPass reste utilisable. L’assistant IA sera disponible
+                  lorsqu’une documentation aura été associée à cet équipement.
+                </span>
+              </div>
+            )}
+      {/* Historique masqué sur les fiches techniques publiques */}
+      {mode === "pro" && boiler.publicTechnicalOnly !== true && (
+        <div className="carnet">
+          <p className="carnet-title">Carnet d'entretien</p>
+          <button
+            className="btn btn-ghost"
+            onClick={telechargerCarnetPDF}
+            disabled={isLoadingCarnet}
+          >
+            📄 Télécharger le carnet PDF
+          </button>
+          {isLoadingCarnet ? (
+            <p className="muted">Chargement du carnet...</p>
+          ) : carnetError ? (
+            <p className="err">❌ {carnetError}</p>
+          ) : maintenances.length === 0 ? (
+            <p className="muted">Aucune intervention enregistrée pour cet appareil.</p>
+          ) : (
+            <div className="timeline">
+              {maintenances.map((m, index) => (
+                <div className="tl-item" key={index}>
+                  <div className="tl-marker">
+                    <span className="tl-dot" />
+                    {index < maintenances.length - 1 && <span className="tl-line" />}
+                  </div>
+                  <div className="tl-body">
+                    <p className="tl-date">{formatDate(m.date)}</p>
+                    <p className="tl-type">{m.interventionType}</p>
+                    <p className="tl-desc">{m.description} — {m.technician}</p>
+                    {m.partChanged && <p className="tl-part">Pièce changée : {m.partChanged}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* AJOUT D'INTERVENTION (mode pro + wallet connecte) */}
+          {mode === "pro" && account && (
+            <div className="form-card">
+              <h3>Ajouter une intervention</h3>
+
+              <p className="muted">
+                🔒 Données techniques uniquement. N'indiquez aucun nom de client,
+                adresse, téléphone, e-mail ou autre donnée personnelle :
+                cette intervention sera inscrite sur la blockchain Polygon.
+              </p>
+
+              <input
+                className="field"
+                placeholder="Type d'intervention (ex : Entretien annuel)"
+                value={mType}
+                onChange={(e) => setMType(e.target.value)}
+              />
+
+              <input
+                className="field"
+                placeholder="Description technique uniquement (ex : Nettoyage brûleur)"
+                value={mDesc}
+                onChange={(e) => setMDesc(e.target.value)}
+              />
+
+              <input
+                className="field"
+                placeholder="Entreprise / identifiant technicien (sans nom ni prénom)"
+                value={mTech}
+                onChange={(e) => setMTech(e.target.value)}
+              />
+
+              <input
+                className="field"
+                placeholder="Pièce changée / référence (optionnel)"
+                value={mPart}
+                onChange={(e) => setMPart(e.target.value)}
+              />
+              <button className="btn btn-primary" onClick={ajouterIntervention} disabled={isAddingM}>
+                {isAddingM ? "Ajout en cours..." : "Ajouter au carnet"}
+              </button>
+              {mMsg && <p className="form-msg">{mMsg}</p>}
+            </div>
+          )}
+        </div>
       )}
-    </div>
+    </section>
+  )
+}
+
+{/* ---------- SCANNER QR (plein ecran, uniquement quand ouvert) ---------- */ }
+{
+  scanOuvert && (
+    <Suspense fallback={<div className="scan-loading">Ouverture de la caméra…</div>}>
+      <ScannerQR
+        onClose={() => setScanOuvert(false)}
+        onCodeDetecte={ouvrirDepuisScan}
+      />
+    </Suspense>
+  )
+}
+    </div >
   );
 }
 

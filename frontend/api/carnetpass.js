@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 import { generatedEquipmentRegistry } from "./lib/equipment-registry.generated.js";
@@ -59,7 +60,26 @@ function validText(value, maxLength) {
     && value.length <= maxLength
     && !/[\u0000-\u001f\u007f]/.test(value);
 }
+function normalizeIdentityText(value) {
+  return String(value ?? "").trim().replace(/\s+/g, " ");
+}
 
+function createGenericEquipmentId({
+  manufacturerReference,
+  brand,
+  model,
+}) {
+  const fingerprint = [manufacturerReference, brand, model]
+    .map((value) => normalizeIdentityText(value).toUpperCase())
+    .join("|");
+
+  const digest = createHash("sha256")
+    .update(fingerprint, "utf8")
+    .digest("hex")
+    .slice(0, 24);
+
+  return `generic-${digest}`;
+}
 async function checkRateLimit(limiter, req, res) {
   const result = await limiter.limit(getClientIp(req));
 
@@ -266,14 +286,50 @@ async function createCarnetPass(req, res) {
     ) === manufacturerReference
   );
 
-  if (!entry) {
-    return res.status(404).json({
-      ok: false,
-      error: "Cette référence constructeur n'est pas encore disponible dans CarnetPass.",
-    });
+  let equipmentData;
+
+  if (entry) {
+    equipmentData = entry.equipmentData;
+  } else {
+    if (
+      !validText(body.brand, 100)
+      || !validText(body.model, 160)
+      || !validText(body.productType ?? "", 80)
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error: "Informations de l'équipement invalides.",
+      });
+    }
+
+    const brand = normalizeIdentityText(body.brand);
+    const model = normalizeIdentityText(body.model);
+    const productType =
+      normalizeIdentityText(body.productType) || "Autre équipement";
+
+    if (!brand || !model) {
+      return res.status(400).json({
+        ok: false,
+        error: "La marque et le modèle sont obligatoires.",
+      });
+    }
+
+    equipmentData = {
+      equipmentId: createGenericEquipmentId({
+        manufacturerReference,
+        brand,
+        model,
+      }),
+      identity: {
+        brand,
+        productType,
+        range: null,
+        model,
+        variant: null,
+      },
+    };
   }
 
-  const equipmentData = entry.equipmentData;
   const identity = equipmentData.identity ?? {};
   const equipmentId = equipmentData.equipmentId;
 

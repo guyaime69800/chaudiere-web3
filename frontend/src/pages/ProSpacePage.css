@@ -1095,6 +1095,9 @@
   color: var(--pro-orange-dark);
   font-size: 12px;
 }
+.pro-equipment-open-action--view strong {
+  color: #0369a1;
+}
 
 .pro-equipment-list strong,
 .pro-equipment-list span {
