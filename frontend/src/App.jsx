@@ -472,8 +472,10 @@ function App({ initialMode = "public" }) {
         const identity =
           carnetPassResult.identity ?? {};
 
-        const ouvertureParJeton = valeurRecherche.length === 49
-          && /^cp_qr_[A-Za-z0-9_-]{43}$/.test(valeurRecherche);
+        const identifiantQr =
+          /^cp_qr_[A-Za-z0-9_-]{43}$/.test(valeurRecherche)
+            ? valeurRecherche
+            : carnetPassResult.carnetPassId;
 
         const boilerFromCarnetPass = {
           exists: true,
@@ -488,9 +490,9 @@ function App({ initialMode = "public" }) {
 
           // Le jeton provient du lien ouvert, jamais d'une recherche par numéro.
           // origin = adresse de base de l'application actuellement ouverte.
-          publicQrUrl: ouvertureParJeton
-            ? `${window.location.origin}/appareil/${encodeURIComponent(valeurRecherche)}`
-            : null,
+          publicQrUrl: `${window.location.origin}/appareil/${encodeURIComponent(
+            identifiantQr
+          )}`,
 
           // Les API publiques ne fournissent pas les données privées du carnet.
           publicTechnicalOnly: true,
@@ -1597,103 +1599,103 @@ function App({ initialMode = "public" }) {
                 </span>
               </div>
             )}
-      {/* Historique masqué sur les fiches techniques publiques */}
-      {mode === "pro" && boiler.publicTechnicalOnly !== true && (
-        <div className="carnet">
-          <p className="carnet-title">Carnet d'entretien</p>
-          <button
-            className="btn btn-ghost"
-            onClick={telechargerCarnetPDF}
-            disabled={isLoadingCarnet}
-          >
-            📄 Télécharger le carnet PDF
-          </button>
-          {isLoadingCarnet ? (
-            <p className="muted">Chargement du carnet...</p>
-          ) : carnetError ? (
-            <p className="err">❌ {carnetError}</p>
-          ) : maintenances.length === 0 ? (
-            <p className="muted">Aucune intervention enregistrée pour cet appareil.</p>
-          ) : (
-            <div className="timeline">
-              {maintenances.map((m, index) => (
-                <div className="tl-item" key={index}>
-                  <div className="tl-marker">
-                    <span className="tl-dot" />
-                    {index < maintenances.length - 1 && <span className="tl-line" />}
+            {/* Historique masqué sur les fiches techniques publiques */}
+            {mode === "pro" && boiler.publicTechnicalOnly !== true && (
+              <div className="carnet">
+                <p className="carnet-title">Carnet d'entretien</p>
+                <button
+                  className="btn btn-ghost"
+                  onClick={telechargerCarnetPDF}
+                  disabled={isLoadingCarnet}
+                >
+                  📄 Télécharger le carnet PDF
+                </button>
+                {isLoadingCarnet ? (
+                  <p className="muted">Chargement du carnet...</p>
+                ) : carnetError ? (
+                  <p className="err">❌ {carnetError}</p>
+                ) : maintenances.length === 0 ? (
+                  <p className="muted">Aucune intervention enregistrée pour cet appareil.</p>
+                ) : (
+                  <div className="timeline">
+                    {maintenances.map((m, index) => (
+                      <div className="tl-item" key={index}>
+                        <div className="tl-marker">
+                          <span className="tl-dot" />
+                          {index < maintenances.length - 1 && <span className="tl-line" />}
+                        </div>
+                        <div className="tl-body">
+                          <p className="tl-date">{formatDate(m.date)}</p>
+                          <p className="tl-type">{m.interventionType}</p>
+                          <p className="tl-desc">{m.description} — {m.technician}</p>
+                          {m.partChanged && <p className="tl-part">Pièce changée : {m.partChanged}</p>}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="tl-body">
-                    <p className="tl-date">{formatDate(m.date)}</p>
-                    <p className="tl-type">{m.interventionType}</p>
-                    <p className="tl-desc">{m.description} — {m.technician}</p>
-                    {m.partChanged && <p className="tl-part">Pièce changée : {m.partChanged}</p>}
+                )}
+
+                {/* AJOUT D'INTERVENTION (mode pro + wallet connecte) */}
+                {mode === "pro" && account && (
+                  <div className="form-card">
+                    <h3>Ajouter une intervention</h3>
+
+                    <p className="muted">
+                      🔒 Données techniques uniquement. N'indiquez aucun nom de client,
+                      adresse, téléphone, e-mail ou autre donnée personnelle :
+                      cette intervention sera inscrite sur la blockchain Polygon.
+                    </p>
+
+                    <input
+                      className="field"
+                      placeholder="Type d'intervention (ex : Entretien annuel)"
+                      value={mType}
+                      onChange={(e) => setMType(e.target.value)}
+                    />
+
+                    <input
+                      className="field"
+                      placeholder="Description technique uniquement (ex : Nettoyage brûleur)"
+                      value={mDesc}
+                      onChange={(e) => setMDesc(e.target.value)}
+                    />
+
+                    <input
+                      className="field"
+                      placeholder="Entreprise / identifiant technicien (sans nom ni prénom)"
+                      value={mTech}
+                      onChange={(e) => setMTech(e.target.value)}
+                    />
+
+                    <input
+                      className="field"
+                      placeholder="Pièce changée / référence (optionnel)"
+                      value={mPart}
+                      onChange={(e) => setMPart(e.target.value)}
+                    />
+                    <button className="btn btn-primary" onClick={ajouterIntervention} disabled={isAddingM}>
+                      {isAddingM ? "Ajout en cours..." : "Ajouter au carnet"}
+                    </button>
+                    {mMsg && <p className="form-msg">{mMsg}</p>}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </section>
+        )
+      }
 
-          {/* AJOUT D'INTERVENTION (mode pro + wallet connecte) */}
-          {mode === "pro" && account && (
-            <div className="form-card">
-              <h3>Ajouter une intervention</h3>
-
-              <p className="muted">
-                🔒 Données techniques uniquement. N'indiquez aucun nom de client,
-                adresse, téléphone, e-mail ou autre donnée personnelle :
-                cette intervention sera inscrite sur la blockchain Polygon.
-              </p>
-
-              <input
-                className="field"
-                placeholder="Type d'intervention (ex : Entretien annuel)"
-                value={mType}
-                onChange={(e) => setMType(e.target.value)}
-              />
-
-              <input
-                className="field"
-                placeholder="Description technique uniquement (ex : Nettoyage brûleur)"
-                value={mDesc}
-                onChange={(e) => setMDesc(e.target.value)}
-              />
-
-              <input
-                className="field"
-                placeholder="Entreprise / identifiant technicien (sans nom ni prénom)"
-                value={mTech}
-                onChange={(e) => setMTech(e.target.value)}
-              />
-
-              <input
-                className="field"
-                placeholder="Pièce changée / référence (optionnel)"
-                value={mPart}
-                onChange={(e) => setMPart(e.target.value)}
-              />
-              <button className="btn btn-primary" onClick={ajouterIntervention} disabled={isAddingM}>
-                {isAddingM ? "Ajout en cours..." : "Ajouter au carnet"}
-              </button>
-              {mMsg && <p className="form-msg">{mMsg}</p>}
-            </div>
-          )}
-        </div>
-      )}
-    </section>
-  )
-}
-
-{/* ---------- SCANNER QR (plein ecran, uniquement quand ouvert) ---------- */ }
-{
-  scanOuvert && (
-    <Suspense fallback={<div className="scan-loading">Ouverture de la caméra…</div>}>
-      <ScannerQR
-        onClose={() => setScanOuvert(false)}
-        onCodeDetecte={ouvrirDepuisScan}
-      />
-    </Suspense>
-  )
-}
+      {/* ---------- SCANNER QR (plein ecran, uniquement quand ouvert) ---------- */}
+      {
+        scanOuvert && (
+          <Suspense fallback={<div className="scan-loading">Ouverture de la caméra…</div>}>
+            <ScannerQR
+              onClose={() => setScanOuvert(false)}
+              onCodeDetecte={ouvrirDepuisScan}
+            />
+          </Suspense>
+        )
+      }
     </div >
   );
 }
