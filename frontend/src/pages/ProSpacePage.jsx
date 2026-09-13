@@ -12,6 +12,7 @@ import {
   createCompanyEquipment,
   getCompanyEquipments,
 } from "../services/equipmentService";
+import { getCompanyCarnetPassStatuses } from "../services/carnetPassService";
 import "./ProSpacePage.css";
 
 const EMPTY_FORM = {
@@ -185,6 +186,9 @@ export default function ProSpacePage() {
   const [equipmentSubmitting, setEquipmentSubmitting] = useState(false);
   const [equipmentRefreshKey, setEquipmentRefreshKey] = useState(0);
   const [openingEquipmentId, setOpeningEquipmentId] = useState(null);
+  const [carnetPassStatuses, setCarnetPassStatuses] = useState({});
+  const [carnetPassStatusLoading, setCarnetPassStatusLoading] = useState(false);
+  const [carnetPassStatusError, setCarnetPassStatusError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -257,6 +261,57 @@ export default function ProSpacePage() {
       cancelled = true;
     };
   }, [company?.id, equipmentRefreshKey]);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCarnetPassStatuses() {
+      if (!company?.id || equipmentLoading) return;
+
+      if (equipments.length === 0) {
+        setCarnetPassStatuses({});
+        setCarnetPassStatusError("");
+        setCarnetPassStatusLoading(false);
+        return;
+      }
+
+      setCarnetPassStatusLoading(true);
+      setCarnetPassStatusError("");
+
+      try {
+        const statuses = await getCompanyCarnetPassStatuses(
+          equipments.map((equipment) => equipment.serial_number)
+        );
+
+        if (!cancelled) {
+          setCarnetPassStatuses(
+            Object.fromEntries(
+              equipments.map((equipment, index) => [
+                equipment.id,
+                statuses[index] || { exists: false },
+              ])
+            )
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setCarnetPassStatuses({});
+          setCarnetPassStatusError(
+            error?.message || "Impossible de vérifier les CarnetPass."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setCarnetPassStatusLoading(false);
+        }
+      }
+    }
+
+    loadCarnetPassStatuses();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [company?.id, equipmentLoading, equipments]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -375,7 +430,35 @@ export default function ProSpacePage() {
   }
 
   async function handleOpenEquipment(equipment) {
-    if (openingEquipmentId) return;
+    if (openingEquipmentId || carnetPassStatusLoading) return;
+
+    const carnetPassStatus = carnetPassStatuses[equipment.id];
+
+    if (carnetPassStatusError || !carnetPassStatus) {
+      setEquipmentError(
+        "Le statut du CarnetPass n'a pas pu être vérifié. Actualisez la page avant de continuer."
+      );
+      return;
+    }
+
+    if (carnetPassStatus.exists) {
+      if (
+        carnetPassStatus.status === "active"
+        && carnetPassStatus.carnetPassId
+      ) {
+        navigate(
+          `/appareil/${encodeURIComponent(carnetPassStatus.carnetPassId)}`
+        );
+        return;
+      }
+
+      setEquipmentError(
+        carnetPassStatus.status === "blockchain_pending"
+          ? "La confirmation Polygon de ce CarnetPass est encore en cours. Ne relancez pas sa création."
+          : "Ce CarnetPass existe, mais il est momentanément indisponible. Réessayez plus tard."
+      );
+      return;
+    }
 
     const productReference = String(
       equipment?.product_reference || ""
@@ -407,9 +490,9 @@ export default function ProSpacePage() {
       const normalizedReference = productReference.replace(/\s+/g, "");
       const catalogEquipment = (result.results || []).find(
         (item) =>
-          item.resultType === "equipment" &&
-          String(item.manufacturerReference || "").replace(/\s+/g, "") ===
-          normalizedReference
+          item.resultType === "equipment"
+          && String(item.manufacturerReference || "").replace(/\s+/g, "")
+          === normalizedReference
       );
 
       if (!catalogEquipment) {
@@ -823,7 +906,7 @@ export default function ProSpacePage() {
           <small>Compte actif</small>
         </article>
       </section>
-     
+
       <section className="pro-dashboard-grid">
         <article className="pro-dashboard-card pro-equipment-card">
           <div>
@@ -871,7 +954,11 @@ export default function ProSpacePage() {
               {equipmentLoadError}
             </p>
           )}
-
+          {carnetPassStatusError && (
+            <p className="pro-form-error" role="alert">
+              {carnetPassStatusError}
+            </p>
+          )}
           {equipmentError && (
             <p className="pro-form-error" role="alert">
               {equipmentError}
@@ -975,33 +1062,67 @@ export default function ProSpacePage() {
 
           {equipments.length > 0 && (
             <ul className="pro-equipment-list">
-              {equipments.map((equipment) => (
-                <li key={equipment.id}>
-                  <button
-                    className="pro-equipment-open-button"
-                    type="button"
-                    onClick={() => handleOpenEquipment(equipment)}
-                    disabled={Boolean(openingEquipmentId)}
-                    aria-label={`Ouvrir ${equipment.brand} ${equipment.model}`}
-                  >
-                    <div>
-                      <strong>{equipment.brand} {equipment.model}</strong>
-                      <span>{getEquipmentTypeLabel(equipment.equipment_type)}</span>
-                      <span>N° de série : {equipment.serial_number}</span>
-                    </div>
-                    <div className="pro-equipment-open-action">
-                      {equipment.product_reference && (
-                        <small>Réf. {equipment.product_reference}</small>
-                      )}
-                      <strong>
-                        {openingEquipmentId === equipment.id
-                          ? "Vérification…"
-                          : "Créer le CarnetPass →"}
-                      </strong>
-                    </div>
-                  </button>
-                </li>
-              ))}
+              {equipments.map((equipment) => {
+                const carnetPassStatus = carnetPassStatuses[equipment.id];
+                const statusIsLoading =
+                  carnetPassStatusLoading && !carnetPassStatus;
+
+                let actionLabel = "Créer le CarnetPass →";
+
+                if (statusIsLoading) {
+                  actionLabel = "Vérification du CarnetPass…";
+                } else if (carnetPassStatus?.status === "active") {
+                  actionLabel = "Voir le CarnetPass →";
+                } else if (
+                  carnetPassStatus?.status === "blockchain_pending"
+                ) {
+                  actionLabel = "Confirmation Polygon…";
+                } else if (carnetPassStatus?.exists) {
+                  actionLabel = "CarnetPass indisponible";
+                }
+
+                return (
+                  <li key={equipment.id}>
+                    <button
+                      className="pro-equipment-open-button"
+                      type="button"
+                      onClick={() => handleOpenEquipment(equipment)}
+                      disabled={
+                        Boolean(openingEquipmentId)
+                        || statusIsLoading
+                        || carnetPassStatus?.status === "blockchain_pending"
+                        || (
+                          carnetPassStatus?.exists === true
+                          && carnetPassStatus.status !== "active"
+                        )
+                      }
+                      aria-label={`Ouvrir ${equipment.brand} ${equipment.model}`}
+                    >
+                      <div>
+                        <strong>
+                          {equipment.brand} {equipment.model}
+                        </strong>
+                        <span>
+                          {getEquipmentTypeLabel(equipment.equipment_type)}
+                        </span>
+                        <span>N° de série : {equipment.serial_number}</span>
+                      </div>
+
+                      <div className="pro-equipment-open-action">
+                        {equipment.product_reference && (
+                          <small>Réf. {equipment.product_reference}</small>
+                        )}
+
+                        <strong>
+                          {openingEquipmentId === equipment.id
+                            ? "Vérification…"
+                            : actionLabel}
+                        </strong>
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </article>
