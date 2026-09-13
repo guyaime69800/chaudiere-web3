@@ -279,6 +279,7 @@ export default function ProSpacePage() {
 
       try {
         const statuses = await getCompanyCarnetPassStatuses(
+          company.id,
           equipments.map((equipment) => equipment.serial_number)
         );
 

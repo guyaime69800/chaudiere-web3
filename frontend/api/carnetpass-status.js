@@ -6,6 +6,7 @@ import {
 } from "../server/lib/carnetpass-status.js";
 
 const MAX_SERIAL_NUMBERS = 100;
+const CARNETPASS_ID_PATTERN = /^CP-\d{4}-\d{6}$/;
 
 function getBearerToken(req) {
   const authorization = req.headers.authorization;
@@ -23,10 +24,13 @@ function getBearerToken(req) {
 }
 
 function getSupabaseAdmin() {
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const url =
+    process.env.SUPABASE_URL
+    || process.env.VITE_SUPABASE_URL;
+
   const serviceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_SECRET_KEY;
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+    || process.env.SUPABASE_SECRET_KEY;
 
   if (!url || !serviceRoleKey) {
     throw new Error("Configuration Supabase serveur absente.");
@@ -44,6 +48,7 @@ function getRedis() {
   const url =
     process.env.KV_REST_API_URL
     || process.env.UPSTASH_REDIS_REST_URL;
+
   const token =
     process.env.KV_REST_API_TOKEN
     || process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -70,18 +75,30 @@ async function getAuthenticatedUser(req, supabaseAdmin) {
   return user;
 }
 
-async function getCompanyMembership(supabaseAdmin, userId) {
+async function getCompanyMembership(
+  supabaseAdmin,
+  userId,
+  companyId
+) {
   const { data, error } = await supabaseAdmin
     .from("company_members")
-    .select("company_id, role")
+    .select("company_id")
     .eq("user_id", userId)
-    .maybeSingle();
+    .eq("company_id", companyId)
+    .limit(1);
 
   if (error) {
+    console.error("carnetpass-status membership query failed:", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
+
     throw new Error("Impossible de vérifier l’entreprise.");
   }
 
-  return data;
+  return Array.isArray(data) ? data[0] || null : null;
 }
 
 export default async function handler(req, res) {
@@ -89,6 +106,7 @@ export default async function handler(req, res) {
 
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
+
     return res.status(405).json({
       ok: false,
       code: "METHOD_NOT_ALLOWED",
@@ -108,16 +126,30 @@ export default async function handler(req, res) {
       });
     }
 
+    const companyId =
+      typeof req.body?.companyId === "string"
+        ? req.body.companyId.trim()
+        : "";
+
+    if (!companyId || companyId.length > 128) {
+      return res.status(400).json({
+        ok: false,
+        code: "INVALID_COMPANY_ID",
+        error: "Entreprise professionnelle invalide.",
+      });
+    }
+
     const membership = await getCompanyMembership(
       supabaseAdmin,
-      user.id
+      user.id,
+      companyId
     );
 
     if (!membership?.company_id) {
       return res.status(403).json({
         ok: false,
         code: "COMPANY_REQUIRED",
-        error: "Aucune entreprise professionnelle trouvée.",
+        error: "Accès à cette entreprise non autorisé.",
       });
     }
 
@@ -139,24 +171,44 @@ export default async function handler(req, res) {
       normalizeSerialNumber
     );
 
-    if (normalizedSerialNumbers.some((serialNumber) => !serialNumber)) {
+    if (
+      normalizedSerialNumbers.some(
+        (serialNumber) => !serialNumber
+      )
+    ) {
       return res.status(400).json({
         ok: false,
-        code: "INVALID_SERIAL_NUMBER",
-        error: "Un numéro de série est invalide.",
+        code: "INVALID_SERIAL_NUMBERS",
+        error: "Liste de numéros de série invalide.",
       });
     }
 
     const redis = getRedis();
 
-    const records = await Promise.all(
-      normalizedSerialNumbers.map((serialNumber) =>
-        redis.get(`carnetpass:serial:${serialNumber}`)
-      )
-    );
+    const statuses = await Promise.all(
+      normalizedSerialNumbers.map(async (serialNumber) => {
+        const storedCarnetPassId = await redis.get(
+          `carnetpass:serial:${serialNumber}`
+        );
 
-    const statuses = records.map((record) =>
-      toCompanyCarnetPassStatus(record, membership.company_id)
+        const carnetPassId =
+          typeof storedCarnetPassId === "string"
+            ? storedCarnetPassId.trim().toUpperCase()
+            : "";
+
+        if (!CARNETPASS_ID_PATTERN.test(carnetPassId)) {
+          return { exists: false };
+        }
+
+        const value = await redis.get(
+          `carnetpass:${carnetPassId}`
+        );
+
+        return toCompanyCarnetPassStatus(
+          value,
+          companyId
+        );
+      })
     );
 
     return res.status(200).json({
