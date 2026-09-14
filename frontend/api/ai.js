@@ -4,7 +4,7 @@ import { getEquipmentConfig } from "./lib/equipment-registry.js";
 
 import { searchRagContext } from "./lib/rag.js";
 
-import { aiRateLimit } from "./lib/rate-limit.js";
+import { aiRateLimit } from "../server/lib/rate-limit.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
