@@ -13,6 +13,7 @@ import {
   getCompanyEquipments,
 } from "../services/equipmentService";
 import { getCompanyCarnetPassStatuses } from "../services/carnetPassService";
+import InterventionForm from "../components/InterventionForm";
 import "./ProSpacePage.css";
 
 const EMPTY_FORM = {
@@ -160,7 +161,7 @@ function CompanySiretForm({ company, onEditing, onSaved }) {
 }
 
 export default function ProSpacePage() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const userId = user?.id;
   const navigate = useNavigate();
 
@@ -1114,7 +1115,12 @@ export default function ProSpacePage() {
           </ul>
         </article>
       </section>
-
+      <InterventionForm
+        session={session}
+        equipments={equipments}
+        carnetPassStatuses={carnetPassStatuses}
+        carnetPassStatusLoading={carnetPassStatusLoading}
+      />
       <footer className="pro-footer">
         <span>
           CarnetPass — La maintenance technique organisée
