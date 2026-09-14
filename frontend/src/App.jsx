@@ -22,6 +22,44 @@ function hasTechnicalDocumentation(equipmentId) {
     && equipmentId.length > 0
     && !equipmentId.startsWith(GENERIC_EQUIPMENT_ID_PREFIX);
 }
+
+function getInterventionTypeLabel(type) {
+  const labels = {
+    maintenance: "Entretien",
+    repair: "Dépannage",
+    installation: "Installation",
+    commissioning: "Mise en service",
+    inspection: "Contrôle",
+    other: "Autre",
+  };
+
+  return labels[type] || "Intervention";
+}
+
+function getInterventionResultLabel(status) {
+  const labels = {
+    resolved: "Résolu",
+    partially_resolved: "Partiellement résolu",
+    not_resolved: "Non résolu",
+    not_applicable: "Sans objet",
+  };
+
+  return labels[status] || "Résultat non renseigné";
+}
+
+function formatPublicInterventionDate(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Date non renseignée";
+  }
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
 function App({ initialMode = "public" }) {
   // Mode d'affichage : "public" (consultation, sans wallet) ou "pro" (technicien, avec wallet)
   const [mode, setMode] = useState(initialMode);
@@ -145,6 +183,9 @@ function App({ initialMode = "public" }) {
   const [maintenances, setMaintenances] = useState([]);
   const [isLoadingCarnet, setIsLoadingCarnet] = useState(false);
   const [carnetError, setCarnetError] = useState("");
+  const [publicInterventions, setPublicInterventions] = useState([]);
+  const [isLoadingPublicInterventions, setIsLoadingPublicInterventions] = useState(false);
+  const [publicInterventionsError, setPublicInterventionsError] = useState("");
 
   // Formulaire d'ajout d'intervention
   const [mType, setMType] = useState("");
@@ -912,6 +953,71 @@ function App({ initialMode = "public" }) {
     chargerCarnet(boiler.equipmentId);
   }, [boiler, mode]);
 
+  // Charge uniquement les interventions confirmées du CarnetPass public.
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    const carnetPassId = boiler?.carnetPassId;
+
+    async function chargerInterventionsPubliques() {
+      if (!carnetPassId) {
+        setPublicInterventions([]);
+        setPublicInterventionsError("");
+        setIsLoadingPublicInterventions(false);
+        return;
+      }
+
+      setIsLoadingPublicInterventions(true);
+      setPublicInterventionsError("");
+
+      try {
+        const response = await fetch(
+          `/api/interventions?carnetPassId=${encodeURIComponent(carnetPassId)}`,
+          {
+            cache: "no-store",
+            signal: controller.signal,
+          }
+        );
+
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok || result?.ok !== true) {
+          throw new Error(
+            result?.error ||
+              "L’historique du CarnetPass n’a pas pu être chargé."
+          );
+        }
+
+        if (!cancelled) {
+          setPublicInterventions(
+            Array.isArray(result.interventions)
+              ? result.interventions
+              : []
+          );
+        }
+      } catch (error) {
+        if (!cancelled && error?.name !== "AbortError") {
+          setPublicInterventions([]);
+          setPublicInterventionsError(
+            error?.message ||
+              "L’historique du CarnetPass n’a pas pu être chargé."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingPublicInterventions(false);
+        }
+      }
+    }
+
+    chargerInterventionsPubliques();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [boiler?.carnetPassId]);
+
   // NOUVEAU (QR/routeur) : arrivee via une URL directe (ou un QR scanne)
   // -> on ouvre la fiche de l'appareil automatiquement.
   useEffect(() => {
@@ -1599,7 +1705,73 @@ function App({ initialMode = "public" }) {
                 </span>
               </div>
             )}
-            {/* Historique masqué sur les fiches techniques publiques */}
+            {/* Historique public sécurisé du CarnetPass */}
+            {boiler.carnetPassId && (
+              <div className="carnet">
+                <p className="carnet-title">
+                  Historique d’entretien vérifié
+                </p>
+
+                <p className="muted">
+                  Seules les interventions dont la preuve Polygon est
+                  confirmée sont affichées publiquement.
+                </p>
+
+                {isLoadingPublicInterventions ? (
+                  <p className="muted">Chargement de l’historique…</p>
+                ) : publicInterventionsError ? (
+                  <p className="err">❌ {publicInterventionsError}</p>
+                ) : publicInterventions.length === 0 ? (
+                  <p className="muted">
+                    Aucune intervention confirmée pour cet appareil.
+                  </p>
+                ) : (
+                  <div className="timeline">
+                    {publicInterventions.map((intervention, index) => (
+                      <div className="tl-item" key={intervention.id}>
+                        <div className="tl-marker">
+                          <span className="tl-dot" />
+                          {index < publicInterventions.length - 1 && (
+                            <span className="tl-line" />
+                          )}
+                        </div>
+
+                        <div className="tl-body">
+                          <p className="tl-date">
+                            {formatPublicInterventionDate(
+                              intervention.interventionAt
+                            )}
+                          </p>
+                          <p className="tl-type">
+                            {getInterventionTypeLabel(
+                              intervention.interventionType
+                            )}{" "}
+                            ·{" "}
+                            {getInterventionResultLabel(
+                              intervention.resultStatus
+                            )}
+                          </p>
+                          <p className="tl-desc">
+                            {intervention.workPerformed ||
+                              "Travail effectué non renseigné."}
+                          </p>
+                          {intervention.partsReplaced && (
+                            <p className="tl-part">
+                              Pièces remplacées : {intervention.partsReplaced}
+                            </p>
+                          )}
+                          <p className="tl-part">
+                            ✓ Preuve Polygon confirmée
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Ancien historique Polygon réservé au prototype professionnel */}
             {mode === "pro" && boiler.publicTechnicalOnly !== true && (
               <div className="carnet">
                 <p className="carnet-title">Carnet d'entretien</p>
