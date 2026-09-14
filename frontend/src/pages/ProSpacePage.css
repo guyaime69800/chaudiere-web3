@@ -1000,7 +1000,8 @@
 .pro-equipment-card>.pro-form-success,
 .pro-equipment-card>.pro-form-error,
 .pro-equipment-card>.pro-equipment-form,
-.pro-equipment-card>.pro-equipment-list {
+.pro-equipment-card>.pro-equipment-list,
+.pro-equipment-card>.pro-intervention-history {
   grid-column: 1 / -1;
 }
 
@@ -1170,4 +1171,131 @@
   border-color: var(--pro-orange);
   background: #ffffff;
   box-shadow: 0 0 0 4px rgba(201, 54, 8, 0.1);
+}
+
+/* Historique des interventions */
+
+.pro-intervention-history {
+  margin-top: 28px;
+  padding-top: 26px;
+  border-top: 1px solid var(--pro-line);
+}
+
+.pro-intervention-history-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.pro-intervention-history-heading h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.pro-intervention-history-heading>span {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: var(--pro-muted);
+  background: #f7f2ef;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pro-intervention-history-empty {
+  max-width: none !important;
+  margin-top: 18px !important;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f9f6f4;
+}
+
+.pro-intervention-history-list {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pro-intervention-history-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  padding: 16px;
+  border: 1px solid var(--pro-line);
+  border-radius: 13px;
+  background: #fffdfc;
+}
+
+.pro-intervention-history-main,
+.pro-intervention-history-status {
+  min-width: 0;
+}
+
+.pro-intervention-history-main>strong,
+.pro-intervention-history-main>span,
+.pro-intervention-history-status>strong,
+.pro-intervention-history-status>span {
+  display: block;
+}
+
+.pro-intervention-history-main>span {
+  margin-top: 5px;
+  color: var(--pro-muted);
+  font-size: 12px;
+}
+
+.pro-intervention-history-main>p {
+  max-width: none;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+
+.pro-intervention-history-status {
+  display: grid;
+  align-content: start;
+  justify-items: end;
+  gap: 8px;
+  text-align: right;
+}
+
+.pro-intervention-history-status>strong {
+  font-size: 13px;
+}
+
+.pro-intervention-history-status>span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: #9a3412;
+  background: #fff1e8;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pro-intervention-history-status>span.is-confirmed {
+  color: #166534;
+  background: #f0fdf4;
+}
+
+@media (max-width: 720px) {
+  .pro-intervention-history-heading,
+  .pro-intervention-history-list li {
+    grid-template-columns: 1fr;
+  }
+
+  .pro-intervention-history-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pro-intervention-history-heading>span {
+    align-self: flex-start;
+  }
+
+  .pro-intervention-history-status {
+    justify-items: start;
+    text-align: left;
+  }
 }

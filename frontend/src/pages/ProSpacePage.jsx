@@ -189,6 +189,11 @@ export default function ProSpacePage() {
   const [carnetPassStatuses, setCarnetPassStatuses] = useState({});
   const [carnetPassStatusLoading, setCarnetPassStatusLoading] = useState(false);
   const [carnetPassStatusError, setCarnetPassStatusError] = useState("");
+  const [interventions, setInterventions] = useState([]);
+  const [interventionTotal, setInterventionTotal] = useState(0);
+  const [interventionLoading, setInterventionLoading] = useState(false);
+  const [interventionLoadError, setInterventionLoadError] = useState("");
+  const [interventionRefreshKey, setInterventionRefreshKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -313,6 +318,73 @@ export default function ProSpacePage() {
       cancelled = true;
     };
   }, [company?.id, equipmentLoading, equipments]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function loadInterventions() {
+      if (!company?.id || !session?.access_token) {
+        setInterventions([]);
+        setInterventionTotal(0);
+        setInterventionLoadError("");
+        setInterventionLoading(false);
+        return;
+      }
+
+      setInterventionLoading(true);
+      setInterventionLoadError("");
+
+      try {
+        const response = await fetch("/api/interventions", {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          signal: controller.signal,
+        });
+
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(
+            result?.error ||
+              "L’historique des interventions n’a pas pu être chargé."
+          );
+        }
+
+        if (!cancelled) {
+          setInterventions(
+            Array.isArray(result?.interventions)
+              ? result.interventions
+              : []
+          );
+          setInterventionTotal(
+            Number.isInteger(result?.total) ? result.total : 0
+          );
+        }
+      } catch (error) {
+        if (!cancelled && error?.name !== "AbortError") {
+          setInterventions([]);
+          setInterventionTotal(0);
+          setInterventionLoadError(
+            error?.message ||
+              "L’historique des interventions n’a pas pu être chargé."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setInterventionLoading(false);
+        }
+      }
+    }
+
+    loadInterventions();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [company?.id, session?.access_token, interventionRefreshKey]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -859,8 +931,14 @@ export default function ProSpacePage() {
 
         <article>
           <span>Interventions</span>
-          <strong>0</strong>
-          <small>L’historique apparaîtra ici</small>
+          <strong>{interventionLoading ? "…" : interventionTotal}</strong>
+          <small>
+            {interventionLoadError
+              ? "Historique momentanément indisponible"
+              : interventionTotal > 0
+                ? `${interventionTotal} intervention${interventionTotal > 1 ? "s" : ""} enregistrée${interventionTotal > 1 ? "s" : ""}`
+                : "Aucune intervention enregistrée"}
+          </small>
         </article>
 
         <article>
@@ -1120,6 +1198,12 @@ export default function ProSpacePage() {
         equipments={equipments}
         carnetPassStatuses={carnetPassStatuses}
         carnetPassStatusLoading={carnetPassStatusLoading}
+        interventions={interventions}
+        interventionLoading={interventionLoading}
+        interventionLoadError={interventionLoadError}
+        onInterventionCreated={() =>
+          setInterventionRefreshKey((currentKey) => currentKey + 1)
+        }
       />
       <footer className="pro-footer">
         <span>

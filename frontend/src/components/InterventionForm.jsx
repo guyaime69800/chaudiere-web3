@@ -11,11 +11,50 @@ function getEquipmentLabel(equipment) {
   return `${equipment.brand} ${equipment.model} — ${equipment.serial_number}`;
 }
 
+function getInterventionTypeLabel(type) {
+  const labels = {
+    maintenance: "Entretien",
+    repair: "Dépannage",
+    installation: "Installation",
+    commissioning: "Mise en service",
+    inspection: "Contrôle",
+    other: "Autre",
+  };
+
+  return labels[type] || "Intervention";
+}
+
+function getResultStatusLabel(status) {
+  const labels = {
+    resolved: "Résolu",
+    partially_resolved: "Partiellement résolu",
+    not_resolved: "Non résolu",
+    not_applicable: "Sans objet",
+  };
+
+  return labels[status] || "Résultat non renseigné";
+}
+
+function formatInterventionDate(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "Date non renseignée";
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
 export default function InterventionForm({
   session,
   equipments,
   carnetPassStatuses,
   carnetPassStatusLoading,
+  interventions = [],
+  interventionLoading,
+  interventionLoadError,
+  onInterventionCreated,
 }) {
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_INTERVENTION_FORM);
@@ -102,6 +141,8 @@ export default function InterventionForm({
           ? "Intervention enregistrée et preuve Polygon confirmée."
           : "Intervention enregistrée. La confirmation Polygon est en cours."
       );
+
+      onInterventionCreated?.();
 
       setForm(EMPTY_INTERVENTION_FORM);
       setFormOpen(false);
@@ -293,6 +334,104 @@ export default function InterventionForm({
             </button>
           </form>
         )}
+
+        <div
+          className="pro-intervention-history"
+          aria-labelledby="intervention-history-title"
+        >
+          <div className="pro-intervention-history-heading">
+            <div>
+              <h3 id="intervention-history-title">
+                Historique récent
+              </h3>
+              <p>
+                Interventions enregistrées par votre entreprise.
+              </p>
+            </div>
+
+            {!interventionLoading && !interventionLoadError && (
+              <span>
+                {interventions.length} affichée
+                {interventions.length > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+
+          {interventionLoading && (
+            <p className="pro-form-notice" role="status">
+              Chargement de l’historique…
+            </p>
+          )}
+
+          {!interventionLoading && interventionLoadError && (
+            <p className="pro-form-error" role="alert">
+              {interventionLoadError}
+            </p>
+          )}
+
+          {!interventionLoading &&
+            !interventionLoadError &&
+            interventions.length === 0 && (
+              <p className="pro-intervention-history-empty">
+                Aucune intervention enregistrée pour le moment.
+              </p>
+            )}
+
+          {!interventionLoading &&
+            !interventionLoadError &&
+            interventions.length > 0 && (
+              <ul className="pro-intervention-history-list">
+                {interventions.map((intervention) => {
+                  const equipment = equipments.find(
+                    (item) => item.id === intervention.equipmentId
+                  );
+
+                  return (
+                    <li key={intervention.id}>
+                      <div className="pro-intervention-history-main">
+                        <strong>
+                          {equipment
+                            ? `${equipment.brand} ${equipment.model}`
+                            : intervention.carnetPassId}
+                        </strong>
+                        <span>
+                          {getInterventionTypeLabel(
+                            intervention.interventionType
+                          )}{" "}
+                          ·{" "}
+                          <time dateTime={intervention.interventionAt}>
+                            {formatInterventionDate(
+                              intervention.interventionAt
+                            )}
+                          </time>
+                        </span>
+                        <p>{intervention.workPerformed}</p>
+                      </div>
+
+                      <div className="pro-intervention-history-status">
+                        <strong>
+                          {getResultStatusLabel(
+                            intervention.resultStatus
+                          )}
+                        </strong>
+                        <span
+                          className={
+                            intervention.polygonState === "confirmed"
+                              ? "is-confirmed"
+                              : ""
+                          }
+                        >
+                          {intervention.polygonState === "confirmed"
+                            ? "✓ Preuve Polygon confirmée"
+                            : "Confirmation Polygon en cours"}
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+        </div>
       </article>
     </section>
   );
