@@ -18,12 +18,20 @@ const REGISTRY_ABI = [
   "error InvalidHash()",
   "error EquipmentAlreadyExists()",
   "error SerialNumberAlreadyExists()",
+  "error EquipmentNotFound()",
+  "error MaintenanceProofAlreadyExists()",
+
   "function owner() view returns (address)",
   "function paused() view returns (bool)",
   "function writers(address) view returns (bool)",
+
   "function equipments(bytes32) view returns (bytes32 dataHash, bytes32 serialHash, uint256 registeredAt, bool exists)",
   "function registeredSerialHashes(bytes32) view returns (bool)",
+  "function registeredMaintenanceProofs(bytes32) view returns (bool)",
+
   "function registerEquipment(bytes32 equipmentKey, bytes32 dataHash, bytes32 serialHash)",
+  "function addMaintenance(bytes32 equipmentKey, bytes32 proofId, bytes32 dataHash)",
+  "function getMaintenanceCount(bytes32 equipmentKey) view returns (uint256)",
 ];
 
 function diagnosticError(code, cause) {
@@ -125,7 +133,63 @@ export function buildEquipmentProof({
     ),
   };
 }
+export function buildMaintenanceProof({
+  carnetPassId,
+  interventionId,
+  companyId,
+  technicianId,
+  data,
+}) {
+  if (
+    typeof carnetPassId !== "string"
+    || !/^CP-\d{4}-\d{6}$/.test(carnetPassId)
+  ) {
+    throw diagnosticError("CARNETPASS_ID_INVALID");
+  }
 
+  if (
+    typeof interventionId !== "string"
+    || !interventionId.trim()
+  ) {
+    throw diagnosticError("INTERVENTION_ID_INVALID");
+  }
+
+  if (typeof companyId !== "string" || !companyId.trim()) {
+    throw diagnosticError("COMPANY_ID_INVALID");
+  }
+
+  if (
+    typeof technicianId !== "string"
+    || !technicianId.trim()
+  ) {
+    throw diagnosticError("TECHNICIAN_ID_INVALID");
+  }
+
+  if (
+    !data
+    || typeof data !== "object"
+    || Array.isArray(data)
+  ) {
+    throw diagnosticError("MAINTENANCE_DATA_INVALID");
+  }
+
+  const canonicalData = canonicalizeEquipmentProofData({
+    proofVersion: 1,
+    carnetPassId,
+    interventionId,
+    companyId,
+    technicianId,
+    intervention: data,
+  });
+
+  return {
+    equipmentKey: ethers.id(`equipment:${carnetPassId}`),
+    proofId: ethers.id(`maintenance:${interventionId}`),
+    dataHash: ethers.keccak256(
+      ethers.toUtf8Bytes(canonicalData)
+    ),
+  };
+}
 async function createRegistryContext() {
   const rpcUrl = requiredEnvironmentVariable("POLYGON_RPC_URL");
   const privateKey = normalizePrivateKey(
@@ -258,6 +322,9 @@ function mapContractWriteError(error, contractInterface) {
     InvalidHash: "PROOF_INVALID",
     EquipmentAlreadyExists: "EQUIPMENT_ALREADY_EXISTS",
     SerialNumberAlreadyExists: "SERIAL_ALREADY_EXISTS",
+    EquipmentNotFound: "EQUIPMENT_NOT_FOUND",
+    MaintenanceProofAlreadyExists:
+      "MAINTENANCE_PROOF_ALREADY_EXISTS",
   };
 
   return diagnosticError(codes[name] ?? "CONTRACT_WRITE_FAILED", error);
@@ -503,6 +570,244 @@ export async function registerEquipmentProof({
 
   if (!receipt || receipt.status !== 1) {
     const error = diagnosticError("TRANSACTION_REVERTED");
+    error.transactionHash = transaction.hash;
+    throw error;
+  }
+
+  const transactionFeeWei =
+    typeof receipt.fee === "bigint"
+      ? receipt.fee
+      : receipt.gasUsed * receipt.gasPrice;
+
+  let balanceAfter = balance - transactionFeeWei;
+
+  try {
+    balanceAfter = await provider.getBalance(
+      serverWallet.address
+    );
+  } catch {
+    // La transaction est déjà confirmée.
+    // Le calcul local sert de solution de secours.
+  }
+
+  return {
+    ...submitted,
+    blockNumber: receipt.blockNumber,
+    transactionFeeWei: transactionFeeWei.toString(),
+    balanceAfterWei: balanceAfter.toString(),
+    balanceStatusAfter:
+      getPolygonBalanceStatus(balanceAfter),
+  };
+}
+
+export async function registerMaintenanceProof({
+  equipmentKey,
+  proofId,
+  dataHash,
+  onTransactionSent,
+}) {
+  validateBytes32(equipmentKey, "EQUIPMENT_KEY_INVALID");
+  validateBytes32(proofId, "MAINTENANCE_PROOF_ID_INVALID");
+  validateBytes32(dataHash, "DATA_HASH_INVALID");
+
+  const {
+    provider,
+    serverWallet,
+    contractAddress,
+    readContract,
+  } = await createRegistryContext();
+
+  let paused;
+  let serverAuthorized;
+  let balance;
+  let existingEquipment;
+  let existingProof;
+
+  try {
+    [
+      paused,
+      serverAuthorized,
+      balance,
+      existingEquipment,
+      existingProof,
+    ] = await Promise.all([
+      readContract.paused(),
+      readContract.writers(serverWallet.address),
+      provider.getBalance(serverWallet.address),
+      readContract.equipments(equipmentKey),
+      readContract.registeredMaintenanceProofs(proofId),
+    ]);
+  } catch (error) {
+    throw diagnosticError("CONTRACT_READ_FAILED", error);
+  }
+
+  if (paused) {
+    throw diagnosticError("CONTRACT_PAUSED");
+  }
+
+  if (!serverAuthorized) {
+    throw diagnosticError("SERVER_WALLET_NOT_AUTHORIZED");
+  }
+
+  if (!existingEquipment.exists) {
+    throw diagnosticError("EQUIPMENT_NOT_FOUND");
+  }
+
+  if (existingProof) {
+    throw diagnosticError(
+      "MAINTENANCE_PROOF_ALREADY_EXISTS"
+    );
+  }
+
+  if (balance <= POLYGON_MINIMUM_RESERVE_WEI) {
+    console.warn(
+      JSON.stringify({
+        level: "warn",
+        message: "polygon_wallet_balance_too_low",
+        balanceStatus: getPolygonBalanceStatus(balance),
+        balanceWei: balance.toString(),
+        requiredBalanceWei:
+          POLYGON_MINIMUM_RESERVE_WEI.toString(),
+      })
+    );
+
+    throw diagnosticError(
+      "SERVER_WALLET_BALANCE_TOO_LOW"
+    );
+  }
+
+  const writeContract = readContract.connect(serverWallet);
+  let gasBudget;
+  let transactionOverrides;
+
+  try {
+    const [estimatedGas, feeData] = await Promise.all([
+      writeContract.addMaintenance.estimateGas(
+        equipmentKey,
+        proofId,
+        dataHash
+      ),
+      provider.getFeeData(),
+    ]);
+
+    const feePerGas =
+      feeData.maxFeePerGas ?? feeData.gasPrice;
+
+    gasBudget = calculatePolygonTransactionBudget({
+      estimatedGas,
+      feePerGas,
+    });
+
+    transactionOverrides = {
+      gasLimit: gasBudget.gasLimit,
+    };
+
+    if (feeData.maxFeePerGas !== null) {
+      transactionOverrides.maxFeePerGas =
+        feeData.maxFeePerGas;
+
+      if (feeData.maxPriorityFeePerGas !== null) {
+        transactionOverrides.maxPriorityFeePerGas =
+          feeData.maxPriorityFeePerGas;
+      }
+    } else {
+      transactionOverrides.gasPrice = feeData.gasPrice;
+    }
+  } catch (error) {
+    if (
+      error?.code === "GAS_ESTIMATE_INVALID"
+      || error?.code === "GAS_PRICE_UNAVAILABLE"
+    ) {
+      throw error;
+    }
+
+    throw mapContractWriteError(
+      error,
+      writeContract.interface
+    );
+  }
+
+  if (balance < gasBudget.requiredBalanceWei) {
+    console.warn(
+      JSON.stringify({
+        level: "warn",
+        message: "polygon_wallet_balance_too_low",
+        balanceStatus: getPolygonBalanceStatus(balance),
+        balanceWei: balance.toString(),
+        requiredBalanceWei:
+          gasBudget.requiredBalanceWei.toString(),
+        estimatedMaximumFeeWei:
+          gasBudget.estimatedMaximumFeeWei.toString(),
+      })
+    );
+
+    throw diagnosticError(
+      "SERVER_WALLET_BALANCE_TOO_LOW"
+    );
+  }
+
+  let transaction;
+
+  try {
+    transaction = await writeContract.addMaintenance(
+      equipmentKey,
+      proofId,
+      dataHash,
+      transactionOverrides
+    );
+  } catch (error) {
+    const mapped = mapContractWriteError(
+      error,
+      writeContract.interface
+    );
+
+    const possibleHash =
+      error?.transactionHash
+      ?? error?.receipt?.hash
+      ?? error?.receipt?.transactionHash;
+
+    if (typeof possibleHash === "string") {
+      mapped.transactionHash = possibleHash;
+    }
+
+    throw mapped;
+  }
+
+  const submitted = {
+    chainId: Number(POLYGON_CHAIN_ID),
+    contractAddress,
+    transactionHash: transaction.hash,
+  };
+
+  if (typeof onTransactionSent === "function") {
+    try {
+      await onTransactionSent(submitted);
+    } catch {
+      console.error(
+        "État de transaction Polygon non enregistré immédiatement."
+      );
+    }
+  }
+
+  let receipt;
+
+  try {
+    receipt = await transaction.wait(1);
+  } catch (error) {
+    const code = error?.receipt?.status === 0
+      ? "TRANSACTION_REVERTED"
+      : "TRANSACTION_CONFIRMATION_FAILED";
+
+    const mapped = diagnosticError(code, error);
+    mapped.transactionHash = transaction.hash;
+    throw mapped;
+  }
+
+  if (!receipt || receipt.status !== 1) {
+    const error = diagnosticError(
+      "TRANSACTION_REVERTED"
+    );
+
     error.transactionHash = transaction.hash;
     throw error;
   }
