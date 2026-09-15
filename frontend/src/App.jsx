@@ -1721,11 +1721,13 @@ function App({ initialMode = "public" }) {
                             {intervention.workPerformed ||
                               "Travail effectué non renseigné."}
                           </p>
-                          {intervention.partsReplaced && (
-                            <p className="tl-part">
-                              Pièces remplacées : {intervention.partsReplaced}
-                            </p>
-                          )}
+                          {Array.isArray(intervention.partsReplaced) &&
+                            intervention.partsReplaced.length > 0 && (
+                              <p className="tl-part">
+                                Pièces remplacées :{" "}
+                                {intervention.partsReplaced.join(", ")}
+                              </p>
+                            )}
                           <p className="tl-part">
                             ✓ Preuve Polygon confirmée
                           </p>
