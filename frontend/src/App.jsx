@@ -8,10 +8,7 @@ import { ethers } from "ethers";
 import { RPC_URL, CONTRACT_ADDRESS } from "./blockchain/config";
 import EquipmentRegistryABI from "./blockchain/EquipmentRegistry.json";
 import { useWallet } from "./blockchain/useWallet";
-import {
-  findErrorCodeForEquipment,
-  loadEquipmentKnowledge,
-} from "./services/equipmentKnowledge";
+import { loadEquipmentKnowledge } from "./services/equipmentKnowledge";
 import ReactMarkdown from "react-markdown";
 import "./App.css";
 import { supabase } from "./services/supabaseClient";
@@ -84,18 +81,18 @@ function App({ initialMode = "public" }) {
   const [installPrompt, setInstallPrompt] = useState(null);
 
   // Permet de savoir si CarnetPass est déjà installé comme application.
-  const [isAppInstalled, setIsAppInstalled] = useState(false);
+  const [isAppInstalled, setIsAppInstalled] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true
+    );
+  });
   // Détecte si CarnetPass peut être installé comme application PWA.
   useEffect(() => {
-    // Si CarnetPass est déjà ouvert comme une application installée,
-    // inutile de proposer une nouvelle installation.
-    const alreadyInstalled =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      navigator.standalone === true;
-
-    if (alreadyInstalled) {
-      setIsAppInstalled(true);
-    }
 
     // Chrome/Android déclenche cet événement lorsque la PWA
     // peut être installée.
@@ -149,16 +146,14 @@ function App({ initialMode = "public" }) {
     }
   }
 
-  const [owner, setOwner] = useState("");
   const [boiler, setBoiler] = useState(null);
-  const [searchId, setSearchId] = useState("");
+  const [searchId, setSearchId] = useState(() => idDepuisURL ?? "");
   const [message, setMessage] = useState("");
 
   // Recherche universelle :
   // mémorise les équipements génériques trouvés par modèle,
   // gamme ou référence constructeur.
   const [searchResults, setSearchResults] = useState([]);
-  const [searchType, setSearchType] = useState("");
 
   // Équipement constructeur générique sélectionné.
   // Important : ce n'est PAS encore un CarnetPass physique.
@@ -194,15 +189,6 @@ function App({ initialMode = "public" }) {
   const [mPart, setMPart] = useState("");
   const [isAddingM, setIsAddingM] = useState(false);
   const [mMsg, setMMsg] = useState("");
-
-  // Au chargement : on lit l'administrateur (owner) du contrat
-  useEffect(() => {
-    async function lireOwner() {
-      const adresseOwner = await contract.owner();
-      setOwner(adresseOwner);
-    }
-    lireOwner();
-  }, []);
 
   // Transforme un timestamp blockchain (secondes) en date lisible FR
   function formatDate(timestampBigInt) {
@@ -456,18 +442,6 @@ function App({ initialMode = "public" }) {
       return;
     }
 
-    // On remet l'écran de recherche à zéro
-    // avant d'afficher le nouveau résultat.
-    setMessage("");
-    setBoiler(null);
-    setMaintenances([]);
-    setTechnicalResult(null);
-    setEquipmentKnowledge(null);
-    setSearchResults([]);
-    setSearchType("");
-    setSelectedEquipment(null);
-    setAiAnswer("");
-
     try {
       // ---------------------------------------------------
       // 1. RECHERCHE UNIVERSELLE
@@ -480,6 +454,16 @@ function App({ initialMode = "public" }) {
       );
 
       const result = await response.json();
+      // On remet l'écran de recherche à zéro
+      // après avoir reçu la réponse du serveur.
+      setMessage("");
+      setBoiler(null);
+      setMaintenances([]);
+      setTechnicalResult(null);
+      setEquipmentKnowledge(null);
+      setSearchResults([]);
+      setSelectedEquipment(null);
+      setAiAnswer("");
 
       if (!response.ok || !result.ok) {
         throw new Error(
@@ -493,10 +477,6 @@ function App({ initialMode = "public" }) {
       )
         ? result.results
         : [];
-
-      setSearchType(
-        result.searchType ?? ""
-      );
 
       // ---------------------------------------------------
       // 2. CARNETPASS PHYSIQUE
@@ -616,6 +596,9 @@ function App({ initialMode = "public" }) {
           setBoiler(
             polygonData
           );
+          if (mode === "pro") {
+            await chargerCarnet(polygonData.equipmentId);
+          }
 
           const knowledge =
             await loadEquipmentKnowledge(
@@ -624,10 +607,6 @@ function App({ initialMode = "public" }) {
 
           setEquipmentKnowledge(
             knowledge
-          );
-
-          setSearchType(
-            "polygon_legacy"
           );
 
           return;
@@ -938,20 +917,6 @@ function App({ initialMode = "public" }) {
     setScanOuvert(false);
     ouvrirRecherche(idScanne);
   }
-  // Dès qu'un appareil est affiche, on charge son carnet automatiquement
-  useEffect(() => {
-    // Une fiche publique donne uniquement accès aux informations techniques.
-    if (
-      !boiler?.equipmentId
-      || mode === "public"
-      || boiler.publicTechnicalOnly === true
-    ) {
-      setMaintenances([]);
-      return;
-    }
-
-    chargerCarnet(boiler.equipmentId);
-  }, [boiler, mode]);
 
   // Charge uniquement les interventions confirmées du CarnetPass public.
   useEffect(() => {
@@ -984,7 +949,7 @@ function App({ initialMode = "public" }) {
         if (!response.ok || result?.ok !== true) {
           throw new Error(
             result?.error ||
-              "L’historique du CarnetPass n’a pas pu être chargé."
+            "L’historique du CarnetPass n’a pas pu être chargé."
           );
         }
 
@@ -1000,7 +965,7 @@ function App({ initialMode = "public" }) {
           setPublicInterventions([]);
           setPublicInterventionsError(
             error?.message ||
-              "L’historique du CarnetPass n’a pas pu être chargé."
+            "L’historique du CarnetPass n’a pas pu être chargé."
           );
         }
       } finally {
@@ -1022,7 +987,8 @@ function App({ initialMode = "public" }) {
   // -> on ouvre la fiche de l'appareil automatiquement.
   useEffect(() => {
     if (idDepuisURL) {
-      setSearchId(idDepuisURL);       // le champ affiche l'ID scanne
+      // Le changement d'URL ou le QR déclenche une recherche externe.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       chercherChaudiere(idDepuisURL); // ID passe explicitement = pas de course d'etat (le piege du "await")
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
