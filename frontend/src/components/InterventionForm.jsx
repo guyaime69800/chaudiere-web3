@@ -3,7 +3,12 @@ import { downloadInterventionPdf } from "../services/interventionPdfService";
 const EMPTY_INTERVENTION_FORM = {
   equipmentId: "",
   interventionType: "maintenance",
+  symptoms: "",
+  faultCode: "",
+  diagnosis: "",
   workPerformed: "",
+  partsReplaced: "",
+  measurements: "",
   resultStatus: "resolved",
 };
 
@@ -45,7 +50,47 @@ function formatInterventionDate(value) {
     timeStyle: "short",
   }).format(date);
 }
+function parseMeasurements(value) {
+  const measurements = {};
 
+  const lines = value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  for (const [index, line] of lines.entries()) {
+    const separatorIndex = line.indexOf(":");
+
+    if (
+      separatorIndex <= 0 ||
+      separatorIndex === line.length - 1
+    ) {
+      throw new Error(
+        `Mesure ligne ${index + 1} : utilisez le format "Nom : valeur".`
+      );
+    }
+
+    const name = line.slice(0, separatorIndex).trim();
+    const measurement = line
+      .slice(separatorIndex + 1)
+      .trim();
+
+    if (
+      Object.prototype.hasOwnProperty.call(
+        measurements,
+        name
+      )
+    ) {
+      throw new Error(
+        `La mesure "${name}" est renseignée plusieurs fois.`
+      );
+    }
+
+    measurements[name] = measurement;
+  }
+
+  return measurements;
+}
 export default function InterventionForm({
   session,
   company,
@@ -122,7 +167,17 @@ export default function InterventionForm({
         body: JSON.stringify({
           equipmentId: form.equipmentId,
           interventionType: form.interventionType,
+          symptoms: form.symptoms.trim(),
+          faultCode: form.faultCode.trim(),
+          diagnosis: form.diagnosis.trim(),
           workPerformed: form.workPerformed.trim(),
+          partsReplaced: form.partsReplaced
+            .split(/\r?\n/)
+            .map((part) => part.trim())
+            .filter(Boolean),
+          measurements: parseMeasurements(
+            form.measurements
+          ),
           resultStatus: form.resultStatus,
           aiAssistanceUsed: false,
           aiTrainingAllowed: false,
@@ -325,6 +380,55 @@ export default function InterventionForm({
             </div>
 
             <label>
+              <span>Symptômes constatés</span>
+
+              <textarea
+                name="symptoms"
+                value={form.symptoms}
+                onChange={handleChange}
+                placeholder="Décrivez les symptômes signalés ou constatés."
+                maxLength={4000}
+                rows={4}
+                disabled={submitting}
+              />
+
+              <small>
+                {form.symptoms.length}/4000 caractères
+              </small>
+            </label>
+
+            <label>
+              <span>Code défaut</span>
+
+              <input
+                type="text"
+                name="faultCode"
+                value={form.faultCode}
+                onChange={handleChange}
+                placeholder="Exemple : F28"
+                maxLength={100}
+                disabled={submitting}
+              />
+            </label>
+
+            <label>
+              <span>Diagnostic</span>
+
+              <textarea
+                name="diagnosis"
+                value={form.diagnosis}
+                onChange={handleChange}
+                placeholder="Décrivez le diagnostic établi par le technicien."
+                maxLength={4000}
+                rows={4}
+                disabled={submitting}
+              />
+
+              <small>
+                {form.diagnosis.length}/4000 caractères
+              </small>
+            </label>
+            <label>
               <span>Travail effectué *</span>
 
               <textarea
@@ -332,17 +436,52 @@ export default function InterventionForm({
                 value={form.workPerformed}
                 onChange={handleChange}
                 placeholder="Décrivez précisément le contrôle, l’entretien ou la réparation effectuée."
-                maxLength={4000}
+                maxLength={8000}
                 rows={6}
                 disabled={submitting}
                 required
               />
 
               <small>
-                {form.workPerformed.length}/4000 caractères
+                {form.workPerformed.length}/8000 caractères
+              </small>
+            </label>
+            <label>
+              <span>Pièces remplacées</span>
+
+              <textarea
+                name="partsReplaced"
+                value={form.partsReplaced}
+                onChange={handleChange}
+                placeholder="Une pièce par ligne. Exemple : Sonde extérieure"
+                maxLength={4000}
+                rows={3}
+                disabled={submitting}
+              />
+
+              <small>
+                Une pièce par ligne. Laissez vide si aucune pièce
+                n'a été remplacée.
               </small>
             </label>
 
+            <label>
+              <span>Mesures relevées</span>
+
+              <textarea
+                name="measurements"
+                value={form.measurements}
+                onChange={handleChange}
+                placeholder="Une mesure par ligne. Exemple : Pression chauffage : 1,5 bar"
+                maxLength={6000}
+                rows={4}
+                disabled={submitting}
+              />
+
+              <small>
+                Format obligatoire : nom de la mesure : valeur
+              </small>
+            </label>
             <p className="pro-form-notice">
               Vérifiez les informations avant l’envoi : une preuve
               confirmée sur Polygon ne peut pas être effacée.
@@ -384,7 +523,7 @@ export default function InterventionForm({
 
           {interventionLoading && (
             <p className="pro-form-notice" role="status">
-              Chargement de l’historique…
+              Chargement de l'historique…
             </p>
           )}
 
