@@ -348,7 +348,7 @@ export default function ProSpacePage() {
         if (!response.ok) {
           throw new Error(
             result?.error ||
-              "L’historique des interventions n’a pas pu être chargé."
+            "L’historique des interventions n’a pas pu être chargé."
           );
         }
 
@@ -368,7 +368,7 @@ export default function ProSpacePage() {
           setInterventionTotal(0);
           setInterventionLoadError(
             error?.message ||
-              "L’historique des interventions n’a pas pu être chargé."
+            "L’historique des interventions n’a pas pu être chargé."
           );
         }
       } finally {
@@ -1206,6 +1206,72 @@ export default function ProSpacePage() {
           setInterventionRefreshKey((currentKey) => currentKey + 1)
         }
       />
+      <section
+        className="pro-regulatory-card"
+        aria-labelledby="regulatory-documents-title"
+      >
+        <div className="pro-regulatory-heading">
+          <div>
+            <span className="pro-dashboard-icon" aria-hidden="true">
+              📄
+            </span>
+
+            <h2 id="regulatory-documents-title">
+              Documents réglementaires
+            </h2>
+
+            <p>
+              Préparez et archivez le document adapté à chaque
+              équipement entretenu.
+            </p>
+          </div>
+
+          <span className="pro-regulatory-count">
+            {equipments.length} équipement
+            {equipments.length > 1 ? "s" : ""}
+          </span>
+        </div>
+
+        <div className="pro-regulatory-documents">
+          <article>
+            <span>Chaudière</span>
+            <strong>Attestation d’entretien</strong>
+            <small>
+              Une attestation distincte par chaudière entretenue.
+            </small>
+          </article>
+
+          <article>
+            <span>PAC et climatisation</span>
+            <strong>Attestation d’entretien</strong>
+            <small>
+              Une attestation distincte par système thermodynamique.
+            </small>
+          </article>
+
+          <article>
+            <span>Fluides frigorigènes</span>
+            <strong>Cerfa 15497*04</strong>
+            <small>
+              Seulement lorsqu’une manipulation de fluide est réalisée.
+            </small>
+          </article>
+
+          <article>
+            <span>VMC et autres équipements</span>
+            <strong>Rapport technique</strong>
+            <small>
+              Document adapté sans l’appeler automatiquement CERFA.
+            </small>
+          </article>
+        </div>
+
+        <p className="pro-regulatory-note">
+          Pour plusieurs appareils, CarnetPass préparera un lot de
+          documents tout en conservant un document distinct pour chaque
+          équipement.
+        </p>
+      </section>
       <footer className="pro-footer">
         <span>
           CarnetPass — La maintenance technique organisée
