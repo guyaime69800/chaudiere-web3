@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-
+import { downloadInterventionPdf } from "../services/interventionPdfService";
 const EMPTY_INTERVENTION_FORM = {
   equipmentId: "",
   interventionType: "maintenance",
@@ -48,6 +48,7 @@ function formatInterventionDate(value) {
 
 export default function InterventionForm({
   session,
+  company,
   equipments,
   carnetPassStatuses,
   carnetPassStatusLoading,
@@ -61,6 +62,7 @@ export default function InterventionForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [pdfGeneratingId, setPdfGeneratingId] = useState("");
 
   const activeEquipments = useMemo(
     () =>
@@ -132,7 +134,7 @@ export default function InterventionForm({
       if (!response.ok) {
         throw new Error(
           result?.error ||
-            "L’intervention n’a pas pu être enregistrée."
+          "L’intervention n’a pas pu être enregistrée."
         );
       }
 
@@ -149,13 +151,36 @@ export default function InterventionForm({
     } catch (submitError) {
       setError(
         submitError?.message ||
-          "L’intervention n’a pas pu être enregistrée."
+        "L’intervention n’a pas pu être enregistrée."
       );
     } finally {
       setSubmitting(false);
     }
   }
+  async function handleDownloadPdf(
+    intervention,
+    equipment
+  ) {
+    if (pdfGeneratingId) return;
 
+    setPdfGeneratingId(intervention.id);
+    setError("");
+
+    try {
+      await downloadInterventionPdf({
+        intervention,
+        equipment,
+        company,
+      });
+    } catch (pdfError) {
+      setError(
+        pdfError?.message ||
+        "Le rapport PDF n'a pas pu être créé."
+      );
+    } finally {
+      setPdfGeneratingId("");
+    }
+  }
   const noActiveEquipment =
     !carnetPassStatusLoading && activeEquipments.length === 0;
 
@@ -425,6 +450,33 @@ export default function InterventionForm({
                             ? "✓ Preuve Polygon confirmée"
                             : "Confirmation Polygon en cours"}
                         </span>
+                        {intervention.polygonState ===
+                          "confirmed" && (
+                            <button
+                              className="pro-primary-button"
+                              style={{
+                                minHeight: "36px",
+                                padding: "0 12px",
+                                borderRadius: "9px",
+                                boxShadow: "none",
+                                fontSize: "12px",
+                              }}
+                              type="button"
+                              disabled={
+                                pdfGeneratingId === intervention.id
+                              }
+                              onClick={() =>
+                                handleDownloadPdf(
+                                  intervention,
+                                  equipment
+                                )
+                              }
+                            >
+                              {pdfGeneratingId === intervention.id
+                                ? "Création du PDF…"
+                                : "📄 Rapport PDF"}
+                            </button>
+                          )}
                       </div>
                     </li>
                   );

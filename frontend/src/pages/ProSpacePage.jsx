@@ -1195,6 +1195,7 @@ export default function ProSpacePage() {
       </section>
       <InterventionForm
         session={session}
+        company={company}
         equipments={equipments}
         carnetPassStatuses={carnetPassStatuses}
         carnetPassStatusLoading={carnetPassStatusLoading}
