@@ -90,14 +90,14 @@ export async function downloadInterventionPdf({
   }
 
   function addSection(title) {
-    ensureSpace(14);
+    ensureSpace(18);
 
     doc.setFillColor(250, 242, 238);
     doc.roundedRect(
       left,
       y,
       width,
-      9,
+      7,
       1.5,
       1.5,
       "F"
@@ -105,10 +105,10 @@ export async function downloadInterventionPdf({
 
     doc.setTextColor(201, 54, 8);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10.5);
-    doc.text(title, left + 4, y + 6);
+    doc.setFontSize(9.5);
+    doc.text(title, left + 4, y + 4.8);
 
-    y += 11;
+    y += 9;
   }
 
   function addField(label, value) {
@@ -120,18 +120,18 @@ export async function downloadInterventionPdf({
       return;
     }
 
-    ensureSpace(10);
+    ensureSpace(8);
 
     doc.setTextColor(112, 93, 84);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     doc.text(label.toUpperCase(), left, y);
 
-    y += 4;
+    y += 3.2;
 
     doc.setTextColor(37, 28, 24);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
+    doc.setFontSize(9);
 
     const lines = doc.splitTextToSize(
       String(value),
@@ -139,12 +139,12 @@ export async function downloadInterventionPdf({
     );
 
     for (const line of lines) {
-      ensureSpace(6);
+      ensureSpace(4.5);
       doc.text(line, left, y);
-      y += 4;
+      y += 3.5;
     }
 
-    y += 1.5;
+    y += 1;
   }
 
   addHeader();
@@ -280,7 +280,7 @@ export async function downloadInterventionPdf({
       : ""
   );
 
-  ensureSpace(28);
+  ensureSpace(22);
 
   doc.setFillColor(255, 249, 229);
   doc.setDrawColor(229, 163, 0);
@@ -288,14 +288,14 @@ export async function downloadInterventionPdf({
     left,
     y,
     width,
-    24,
+    18,
     2,
     2,
     "FD"
   );
 
   doc.setTextColor(120, 76, 0);
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
 
   const legalNotice = doc.splitTextToSize(
     "Ce rapport CarnetPass ne remplace pas une attestation réglementaire ou un formulaire CERFA lorsqu'un tel document est obligatoire. Polygon conserve l'empreinte cryptographique de l'intervention, pas son contenu lisible.",
@@ -305,7 +305,7 @@ export async function downloadInterventionPdf({
   doc.text(
     legalNotice,
     left + 4,
-    y + 6
+    y + 5
   );
 
   const pageCount = doc.getNumberOfPages();
