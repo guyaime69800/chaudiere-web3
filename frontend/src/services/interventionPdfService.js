@@ -108,7 +108,7 @@ export async function downloadInterventionPdf({
     doc.setFontSize(10.5);
     doc.text(title, left + 4, y + 6);
 
-    y += 14;
+    y += 11;
   }
 
   function addField(label, value) {
@@ -120,14 +120,14 @@ export async function downloadInterventionPdf({
       return;
     }
 
-    ensureSpace(12);
+    ensureSpace(10);
 
     doc.setTextColor(112, 93, 84);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
     doc.text(label.toUpperCase(), left, y);
 
-    y += 5;
+    y += 4;
 
     doc.setTextColor(37, 28, 24);
     doc.setFont("helvetica", "normal");
@@ -141,10 +141,10 @@ export async function downloadInterventionPdf({
     for (const line of lines) {
       ensureSpace(6);
       doc.text(line, left, y);
-      y += 4.7;
+      y += 4;
     }
 
-    y += 3;
+    y += 1.5;
   }
 
   addHeader();
@@ -158,13 +158,13 @@ export async function downloadInterventionPdf({
     y
   );
 
-  y += 8;
+  y += 7;
 
   doc.setTextColor(22, 101, 52);
   doc.setFontSize(9.5);
   doc.text("Preuve Polygon confirmée", left, y);
 
-  y += 10;
+  y += 8;
 
   addSection("Entreprise intervenante");
   addField(
