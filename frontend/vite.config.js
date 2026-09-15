@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     // NOUVEAU (PWA) : transforme le site en appli installable
     VitePWA({
-      registerType: 'autoUpdate', // l'appli se met a jour toute seule quand tu redeploies
+      registerType: 'prompt', // propose la mise à jour avant de recharger l'application
       workbox: {
         navigateFallbackDenylist: [/^\/api\//],
       },

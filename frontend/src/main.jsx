@@ -12,6 +12,31 @@ import { AuthProvider } from "./context/AuthProvider";
 import AuthPage from "./pages/AuthPage.jsx";
 import ProSpacePage from "./pages/ProSpacePage.jsx";
 import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
+import { registerSW } from "virtual:pwa-register";
+const updateSW = registerSW({
+  immediate: true,
+
+  onNeedRefresh() {
+    const accepter = window.confirm(
+      "Une nouvelle version de CarnetPass est disponible. Voulez-vous la charger maintenant ?"
+    );
+
+    if (accepter) {
+      updateSW(true);
+    }
+  },
+
+  onOfflineReady() {
+    console.info("CarnetPass est prêt à fonctionner hors ligne.");
+  },
+
+  onRegisterError(error) {
+    console.error(
+      "Impossible d’enregistrer la mise à jour CarnetPass :",
+      error
+    );
+  },
+});
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider>
