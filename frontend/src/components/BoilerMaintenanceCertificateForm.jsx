@@ -489,7 +489,10 @@ export default function BoilerMaintenanceCertificateForm({
             className="pro-dashboard-grid"
             aria-labelledby="boiler-certificate-title"
         >
-            <article className="pro-dashboard-card pro-equipment-card">
+            <article
+                className="pro-dashboard-card pro-equipment-card"
+                style={{ gridColumn: "1 / -1" }}
+            >
                 <div>
                     <span
                         className="pro-dashboard-icon"
