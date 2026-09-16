@@ -1528,3 +1528,74 @@
 .pro-form .pro-controlled-points label span {
   flex: 1;
 }
+/* Encadré compact des informations réglementaires */
+.pro-compliance-card {
+  display: block;
+  padding: 24px 30px;
+}
+
+.pro-compliance-card .pro-action-card-heading {
+  align-items: flex-start;
+}
+
+.pro-compliance-card .pro-action-card-heading h2 {
+  margin-bottom: 4px;
+}
+
+.pro-compliance-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.pro-compliance-link {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px 16px;
+  color: inherit;
+  text-decoration: none;
+  background: #fffaf7;
+  border: 1px solid #f0d7cc;
+  border-radius: 14px;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.pro-compliance-link:hover {
+  border-color: #cf3207;
+  transform: translateY(-2px);
+}
+
+.pro-compliance-link strong {
+  color: #cf3207;
+  font-size: 15px;
+}
+
+.pro-compliance-link span {
+  color: #6f5147;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.pro-compliance-watch {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  color: #704638;
+  font-size: 13px;
+  line-height: 1.5;
+  background: #fff3ed;
+  border-radius: 12px;
+}
+
+@media (max-width: 700px) {
+  .pro-compliance-card {
+    padding: 20px;
+  }
+
+  .pro-compliance-links {
+    grid-template-columns: 1fr;
+  }
+}
