@@ -850,7 +850,7 @@ export default function BoilerMaintenanceCertificateForm({
                             />
                         </label>
 
-                        <fieldset>
+                        <fieldset className="pro-controlled-points">
                             <legend>Points contrôlés</legend>
 
                             {CONTROLLED_POINT_OPTIONS.map((point) => (

@@ -1492,3 +1492,39 @@
     grid-template-columns: 1fr;
   }
 }
+.pro-form .pro-controlled-points {
+  margin: 0;
+  padding: 20px;
+  border: 1px solid rgba(125, 78, 54, 0.35);
+  border-radius: 14px;
+}
+
+.pro-form .pro-controlled-points legend {
+  padding: 0 8px;
+  font-weight: 700;
+}
+
+.pro-form .pro-controlled-points label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.pro-form .pro-controlled-points input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 20px;
+  accent-color: #cf3207;
+  cursor: pointer;
+}
+
+.pro-form .pro-controlled-points label span {
+  flex: 1;
+}
