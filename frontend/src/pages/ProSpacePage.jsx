@@ -82,6 +82,7 @@ function CompanySiretForm({ company, onEditing, onSaved }) {
   const [siret, setSiret] = useState(company.siret || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [securityDetailsOpen, setSecurityDetailsOpen] = useState(false);
   const normalizedSiret = siret.replace(/\s/g, "");
   const unchanged = normalizedSiret === (company.siret || "");
   const canEdit = ["owner", "admin"].includes(company.role);
@@ -107,8 +108,8 @@ function CompanySiretForm({ company, onEditing, onSaved }) {
   }
 
   return (
-    <section className="pro-dashboard-grid" aria-labelledby="company-siret-title">
-      <article className="pro-dashboard-card" style={{ gridColumn: "1 / -1", minWidth: 0 }}>
+    <section className="pro-dashboard-grid pro-account-grid" aria-label="Paramètres du compte">
+      <article className="pro-dashboard-card pro-siret-card">
         <h2 id="company-siret-title">{company.siret ? "SIRET de l’entreprise" : "Renseigner mon SIRET"}</h2>
         {canEdit ? (
           <form className="pro-form" onSubmit={handleSave} aria-busy={busy}>
@@ -156,6 +157,57 @@ function CompanySiretForm({ company, onEditing, onSaved }) {
           </div>
         )}
       </article>
+      <article className="pro-action-card pro-security-card">
+        <div className="pro-action-card-heading">
+          <span className="pro-action-card-icon" aria-hidden="true">
+            🔐
+          </span>
+
+          <div>
+            <span className="pro-action-card-label">Sécurité</span>
+            <h2>Sécurité du compte</h2>
+            <p>2 protections actives sur 3</p>
+          </div>
+        </div>
+
+        <button
+          className="pro-action-card-button"
+          type="button"
+          aria-expanded={securityDetailsOpen}
+          aria-controls="account-security-details"
+          onClick={() =>
+            setSecurityDetailsOpen((isOpen) => !isOpen)
+          }
+        >
+          {securityDetailsOpen
+            ? "Masquer les détails"
+            : "Voir la sécurité"}
+        </button>
+
+        {securityDetailsOpen && (
+          <div
+            id="account-security-details"
+            className="pro-action-card-details"
+          >
+            <ul className="pro-status-list">
+              <li>
+                <span aria-hidden="true">✓</span>
+                Adresse e-mail confirmée
+              </li>
+
+              <li>
+                <span aria-hidden="true">✓</span>
+                Espace protégé par authentification
+              </li>
+
+              <li>
+                <span aria-hidden="true">○</span>
+                Double authentification à configurer
+              </li>
+            </ul>
+          </div>
+        )}
+      </article>
     </section>
   );
 }
@@ -194,6 +246,7 @@ export default function ProSpacePage() {
   const [interventionLoading, setInterventionLoading] = useState(false);
   const [interventionLoadError, setInterventionLoadError] = useState("");
   const [interventionRefreshKey, setInterventionRefreshKey] = useState(0);
+  const [regulatoryDetailsOpen, setRegulatoryDetailsOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -955,7 +1008,7 @@ export default function ProSpacePage() {
       </section>
 
       <section className="pro-dashboard-grid">
-        <article className="pro-dashboard-card pro-equipment-card">
+        <article className="pro-dashboard-card pro-equipment-card pro-equipment-card--full">
           <div>
             <span className="pro-dashboard-icon" aria-hidden="true">
               🔧
@@ -1174,23 +1227,69 @@ export default function ProSpacePage() {
           )}
         </article>
 
-        <article className="pro-dashboard-card">
-          <h2>Sécurité du compte</h2>
+        <article className="pro-action-card pro-documents-card">
+          <div className="pro-action-card-heading">
+            <span className="pro-action-card-icon" aria-hidden="true">
+              📄
+            </span>
 
-          <ul className="pro-status-list">
-            <li>
-              <span aria-hidden="true">✓</span>
-              Adresse e-mail confirmée
-            </li>
-            <li>
-              <span aria-hidden="true">✓</span>
-              Espace protégé par authentification
-            </li>
-            <li>
-              <span aria-hidden="true">○</span>
-              Double authentification à configurer
-            </li>
-          </ul>
+            <div>
+              <span className="pro-action-card-label">Conformité</span>
+              <h2>Documents réglementaires</h2>
+              <p>
+                4 catégories · {equipments.length} équipement
+                {equipments.length > 1 ? "s" : ""}
+              </p>
+            </div>
+          </div>
+
+          <button
+            className="pro-action-card-button"
+            type="button"
+            aria-expanded={regulatoryDetailsOpen}
+            aria-controls="regulatory-documents-details"
+            onClick={() =>
+              setRegulatoryDetailsOpen((isOpen) => !isOpen)
+            }
+          >
+            {regulatoryDetailsOpen
+              ? "Masquer les détails"
+              : "Voir les documents"}
+          </button>
+
+          {regulatoryDetailsOpen && (
+            <div
+              id="regulatory-documents-details"
+              className="pro-action-card-details"
+            >
+              <ul className="pro-regulatory-list">
+                <li>
+                  <span>Chaudière</span>
+                  <strong>Attestation d’entretien</strong>
+                </li>
+
+                <li>
+                  <span>PAC et climatisation</span>
+                  <strong>Attestation d’entretien</strong>
+                </li>
+
+                <li>
+                  <span>Fluides frigorigènes</span>
+                  <strong>Cerfa 15497*04</strong>
+                </li>
+
+                <li>
+                  <span>VMC et autres équipements</span>
+                  <strong>Rapport technique</strong>
+                </li>
+              </ul>
+
+              <p className="pro-action-card-note">
+                Un document distinct sera conservé pour chaque
+                équipement entretenu.
+              </p>
+            </div>
+          )}
         </article>
       </section>
       <InterventionForm
@@ -1206,72 +1305,6 @@ export default function ProSpacePage() {
           setInterventionRefreshKey((currentKey) => currentKey + 1)
         }
       />
-      <section
-        className="pro-regulatory-card"
-        aria-labelledby="regulatory-documents-title"
-      >
-        <div className="pro-regulatory-heading">
-          <div>
-            <span className="pro-dashboard-icon" aria-hidden="true">
-              📄
-            </span>
-
-            <h2 id="regulatory-documents-title">
-              Documents réglementaires
-            </h2>
-
-            <p>
-              Préparez et archivez le document adapté à chaque
-              équipement entretenu.
-            </p>
-          </div>
-
-          <span className="pro-regulatory-count">
-            {equipments.length} équipement
-            {equipments.length > 1 ? "s" : ""}
-          </span>
-        </div>
-
-        <div className="pro-regulatory-documents">
-          <article>
-            <span>Chaudière</span>
-            <strong>Attestation d’entretien</strong>
-            <small>
-              Une attestation distincte par chaudière entretenue.
-            </small>
-          </article>
-
-          <article>
-            <span>PAC et climatisation</span>
-            <strong>Attestation d’entretien</strong>
-            <small>
-              Une attestation distincte par système thermodynamique.
-            </small>
-          </article>
-
-          <article>
-            <span>Fluides frigorigènes</span>
-            <strong>Cerfa 15497*04</strong>
-            <small>
-              Seulement lorsqu’une manipulation de fluide est réalisée.
-            </small>
-          </article>
-
-          <article>
-            <span>VMC et autres équipements</span>
-            <strong>Rapport technique</strong>
-            <small>
-              Document adapté sans l’appeler automatiquement CERFA.
-            </small>
-          </article>
-        </div>
-
-        <p className="pro-regulatory-note">
-          Pour plusieurs appareils, CarnetPass préparera un lot de
-          documents tout en conservant un document distinct pour chaque
-          équipement.
-        </p>
-      </section>
       <footer className="pro-footer">
         <span>
           CarnetPass — La maintenance technique organisée
