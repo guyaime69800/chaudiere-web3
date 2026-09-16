@@ -184,11 +184,12 @@ export async function requireVerifiedCompany(req, res) {
       );
     }
 
-    return {
-      userId: user.id,
-      companyId: company.id,
-      role: membership.role,
-    };
+  return {
+  userId: user.id,
+  companyId: company.id,
+  role: membership.role,
+  email: user.email || null,
+};
   } catch {
     // Ne jamais afficher le jeton, les clés ou les erreurs brutes Supabase.
 
