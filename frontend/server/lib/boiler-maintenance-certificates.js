@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
+import { requireVerifiedCompany } from "./require-verified-company.js";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -421,7 +421,7 @@ async function createDraftCertificate(req, res) {
   });
 }
 
-export default async function handler(req, res) {
+export async function handleBoilerMaintenanceCertificates(req, res) {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("CDN-Cache-Control", "no-store");
   res.setHeader("Vercel-CDN-Cache-Control", "no-store");
