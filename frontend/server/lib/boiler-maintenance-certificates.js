@@ -313,6 +313,11 @@ async function createDraftCertificate(req, res) {
     equipmentResult.error ||
     profileResult.error
   ) {
+    console.error("SNAPSHOT_READ_FAILED", {
+      company: companyResult.error,
+      equipment: equipmentResult.error,
+      profile: profileResult.error,
+    });
     throw requestError(
       503,
       "SNAPSHOT_READ_FAILED",
