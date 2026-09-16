@@ -100,6 +100,7 @@ export default function InterventionForm({
   interventions = [],
   interventionLoading,
   interventionLoadError,
+  onOpenRegulatoryDocument,
   onInterventionCreated,
 }) {
   const [formOpen, setFormOpen] = useState(false);
@@ -550,6 +551,11 @@ export default function InterventionForm({
                     (item) => item.id === intervention.equipmentId
                   );
 
+                  const hasBoilerCertificate =
+                    equipment?.equipment_type === "boiler" &&
+                    intervention.interventionType === "maintenance" &&
+                    intervention.polygonState === "confirmed";
+
                   return (
                     <li key={intervention.id}>
                       <div className="pro-intervention-history-main">
@@ -616,6 +622,18 @@ export default function InterventionForm({
                                 : "📄 Rapport PDF"}
                             </button>
                           )}
+                          {hasBoilerCertificate && (
+                            <button
+                              className="pro-action-card-button"
+                              type="button"
+                              onClick={() =>
+                                onOpenRegulatoryDocument?.(intervention.id)
+                              }
+                            >
+                              Compléter l’attestation
+                            </button>
+                          )}
+
                       </div>
                     </li>
                   );

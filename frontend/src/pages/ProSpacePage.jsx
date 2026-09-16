@@ -248,7 +248,10 @@ export default function ProSpacePage() {
   const [interventionLoadError, setInterventionLoadError] = useState("");
   const [interventionRefreshKey, setInterventionRefreshKey] = useState(0);
   const [regulatoryDetailsOpen, setRegulatoryDetailsOpen] = useState(false);
-
+  const [
+    selectedRegulatoryInterventionId,
+    setSelectedRegulatoryInterventionId,
+  ] = useState("");
   useEffect(() => {
     let cancelled = false;
 
@@ -1302,6 +1305,9 @@ export default function ProSpacePage() {
         interventions={interventions}
         interventionLoading={interventionLoading}
         interventionLoadError={interventionLoadError}
+        onOpenRegulatoryDocument={(interventionId) =>
+          setSelectedRegulatoryInterventionId(interventionId)
+        }
         onInterventionCreated={() =>
           setInterventionRefreshKey((currentKey) => currentKey + 1)
         }
@@ -1310,6 +1316,12 @@ export default function ProSpacePage() {
         session={session}
         interventions={interventions}
         equipments={equipments}
+        requestedInterventionId={
+          selectedRegulatoryInterventionId
+        }
+        onRequestHandled={() =>
+          setSelectedRegulatoryInterventionId("")
+        }
       />
       <footer className="pro-footer">
         <span>

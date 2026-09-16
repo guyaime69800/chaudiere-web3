@@ -53,6 +53,8 @@ export default function BoilerMaintenanceCertificateForm({
     session,
     interventions = [],
     equipments = [],
+    requestedInterventionId = "",
+    onRequestHandled,
 }) {
     const [certificates, setCertificates] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -182,7 +184,62 @@ export default function BoilerMaintenanceCertificateForm({
             controller.abort();
         };
     }, [session?.access_token]);
+    useEffect(() => {
+        if (!requestedInterventionId || loading) {
+            return;
+        }
 
+        const intervention = eligibleInterventions.find(
+            (item) => item.id === requestedInterventionId
+        );
+
+        if (!intervention) {
+            setError(
+                "Cette intervention ne permet pas de créer une attestation chaudière."
+            );
+            onRequestHandled?.();
+            return;
+        }
+
+        const existingCertificate =
+            certificateByInterventionId[
+            requestedInterventionId
+            ];
+
+        if (existingCertificate?.status === "draft") {
+            openDetailsForm(existingCertificate);
+        } else if (existingCertificate) {
+            setSuccess("Cette attestation a déjà été émise.");
+        } else {
+            setForm({
+                ...EMPTY_FORM,
+                interventionId: requestedInterventionId,
+            });
+
+            setEditingCertificateId("");
+            setDetailsForm(EMPTY_DETAILS_FORM);
+            setError("");
+            setSuccess("");
+            setFormOpen(true);
+        }
+
+        window.requestAnimationFrame(() => {
+            document
+                .getElementById("boiler-certificate-title")
+                ?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                });
+        });
+
+        onRequestHandled?.();
+    }, [
+        requestedInterventionId,
+        loading,
+        eligibleInterventions,
+        certificateByInterventionId,
+        onRequestHandled,
+    ]);
     function handleChange(event) {
         const { name, value } = event.target;
 
