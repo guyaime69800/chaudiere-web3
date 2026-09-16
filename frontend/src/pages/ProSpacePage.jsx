@@ -14,6 +14,7 @@ import {
 } from "../services/equipmentService";
 import { getCompanyCarnetPassStatuses } from "../services/carnetPassService";
 import InterventionForm from "../components/InterventionForm";
+import BoilerMaintenanceCertificateForm from "../components/BoilerMaintenanceCertificateForm";
 import "./ProSpacePage.css";
 
 const EMPTY_FORM = {
@@ -1304,6 +1305,11 @@ export default function ProSpacePage() {
         onInterventionCreated={() =>
           setInterventionRefreshKey((currentKey) => currentKey + 1)
         }
+      />
+      <BoilerMaintenanceCertificateForm
+        session={session}
+        interventions={interventions}
+        equipments={equipments}
       />
       <footer className="pro-footer">
         <span>
