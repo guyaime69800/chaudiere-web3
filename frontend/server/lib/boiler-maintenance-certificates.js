@@ -20,6 +20,27 @@ const CERTIFICATE_READ_COLUMNS = [
   "customer_snapshot",
   "installation_snapshot",
   "technician_snapshot",
+  "boiler_energy",
+  "flue_exhaust_type",
+  "commissioning_date",
+  "nominal_power_kw",
+  "forced_air_burner",
+  "previous_maintenance_date",
+  "previous_chimney_sweeping_date",
+  "controlled_points",
+  "measuring_instruments",
+  "measurements",
+  "ambient_co_ppm",
+  "ambient_co_status",
+  "boiler_efficiency_percent",
+  "reference_efficiency_percent",
+  "pollutant_emissions",
+  "advice_good_use",
+  "advice_improvements",
+  "advice_replacement",
+  "boiler_energy_class",
+  "replacement_energy_classes",
+  "technician_signature",
   "created_at",
   "updated_at",
   "issued_at",
@@ -147,7 +168,196 @@ function validatePostBody(body) {
     ),
   };
 }
+function normalizeOptionalText(value, fieldName, maxLength = 2_000) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
 
+  if (typeof value !== "string") {
+    throw requestError(
+      400,
+      "FIELD_INVALID",
+      `${fieldName} est invalide.`
+    );
+  }
+
+  const normalized = value.trim();
+
+  if (normalized.length > maxLength) {
+    throw requestError(
+      400,
+      "FIELD_TOO_LONG",
+      `${fieldName} est trop long.`
+    );
+  }
+
+  return normalized || null;
+}
+
+function normalizeOptionalNumber(value, fieldName) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const normalized = Number(value);
+
+  if (!Number.isFinite(normalized) || normalized < 0) {
+    throw requestError(
+      400,
+      "NUMBER_INVALID",
+      `${fieldName} est invalide.`
+    );
+  }
+
+  return normalized;
+}
+
+function normalizeOptionalDate(value, fieldName) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+  ) {
+    throw requestError(
+      400,
+      "DATE_INVALID",
+      `${fieldName} est invalide.`
+    );
+  }
+
+  return value;
+}
+
+function normalizeStringArray(value, fieldName) {
+  if (value === undefined || value === null) {
+    return [];
+  }
+
+  if (!Array.isArray(value) || value.length > 50) {
+    throw requestError(
+      400,
+      "ARRAY_INVALID",
+      `${fieldName} est invalide.`
+    );
+  }
+
+  return value.map((item) => {
+    if (typeof item !== "string") {
+      throw requestError(
+        400,
+        "ARRAY_INVALID",
+        `${fieldName} est invalide.`
+      );
+    }
+
+    return item.trim().slice(0, 300);
+  }).filter(Boolean);
+}
+
+function validatePatchBody(body) {
+  if (!isPlainObject(body)) {
+    throw requestError(
+      400,
+      "BODY_INVALID",
+      "Les données du brouillon sont invalides."
+    );
+  }
+
+  if (
+    typeof body.certificateId !== "string" ||
+    !UUID_PATTERN.test(body.certificateId.trim())
+  ) {
+    throw requestError(
+      400,
+      "CERTIFICATE_ID_INVALID",
+      "Le brouillon sélectionné est invalide."
+    );
+  }
+
+  const ambientCoPpm = normalizeOptionalNumber(
+    body.ambientCoPpm,
+    "La mesure de monoxyde de carbone"
+  );
+
+  let ambientCoStatus = null;
+
+  if (ambientCoPpm !== null) {
+    ambientCoStatus =
+      ambientCoPpm < 10
+        ? "normal"
+        : ambientCoPpm < 50
+          ? "anomaly"
+          : "serious_immediate_danger";
+  }
+
+  return {
+    certificateId: body.certificateId.trim().toLowerCase(),
+    boilerEnergy: normalizeOptionalText(
+      body.boilerEnergy,
+      "L’énergie de la chaudière",
+      100
+    ),
+    flueExhaustType: normalizeOptionalText(
+      body.flueExhaustType,
+      "Le type d’évacuation",
+      100
+    ),
+    commissioningDate: normalizeOptionalDate(
+      body.commissioningDate,
+      "La date de mise en service"
+    ),
+    nominalPowerKw: normalizeOptionalNumber(
+      body.nominalPowerKw,
+      "La puissance nominale"
+    ),
+    previousMaintenanceDate: normalizeOptionalDate(
+      body.previousMaintenanceDate,
+      "La date du précédent entretien"
+    ),
+    previousChimneySweepingDate: normalizeOptionalDate(
+      body.previousChimneySweepingDate,
+      "La date du précédent ramonage"
+    ),
+    controlledPoints: normalizeStringArray(
+      body.controlledPoints,
+      "Les points contrôlés"
+    ),
+    measuringInstruments: normalizeStringArray(
+      body.measuringInstruments,
+      "Les appareils de mesure"
+    ),
+    ambientCoPpm,
+    ambientCoStatus,
+    boilerEfficiencyPercent: normalizeOptionalNumber(
+      body.boilerEfficiencyPercent,
+      "Le rendement de la chaudière"
+    ),
+    referenceEfficiencyPercent: normalizeOptionalNumber(
+      body.referenceEfficiencyPercent,
+      "Le rendement de référence"
+    ),
+    adviceGoodUse: normalizeOptionalText(
+      body.adviceGoodUse,
+      "Les conseils de bon usage"
+    ),
+    adviceImprovements: normalizeOptionalText(
+      body.adviceImprovements,
+      "Les conseils d’amélioration"
+    ),
+    adviceReplacement: normalizeOptionalText(
+      body.adviceReplacement,
+      "Les conseils de remplacement"
+    ),
+    boilerEnergyClass: normalizeOptionalText(
+      body.boilerEnergyClass,
+      "La classe énergétique",
+      20
+    ),
+  };
+}
 function serializeCertificate(certificate) {
   return {
     id: certificate.id,
@@ -163,6 +373,32 @@ function serializeCertificate(certificate) {
     customerSnapshot: certificate.customer_snapshot,
     installationSnapshot: certificate.installation_snapshot,
     technicianSnapshot: certificate.technician_snapshot,
+    boilerEnergy: certificate.boiler_energy,
+    flueExhaustType: certificate.flue_exhaust_type,
+    commissioningDate: certificate.commissioning_date,
+    nominalPowerKw: certificate.nominal_power_kw,
+    forcedAirBurner: certificate.forced_air_burner,
+    previousMaintenanceDate:
+      certificate.previous_maintenance_date,
+    previousChimneySweepingDate:
+      certificate.previous_chimney_sweeping_date,
+    controlledPoints: certificate.controlled_points,
+    measuringInstruments: certificate.measuring_instruments,
+    measurements: certificate.measurements,
+    ambientCoPpm: certificate.ambient_co_ppm,
+    ambientCoStatus: certificate.ambient_co_status,
+    boilerEfficiencyPercent:
+      certificate.boiler_efficiency_percent,
+    referenceEfficiencyPercent:
+      certificate.reference_efficiency_percent,
+    pollutantEmissions: certificate.pollutant_emissions,
+    adviceGoodUse: certificate.advice_good_use,
+    adviceImprovements: certificate.advice_improvements,
+    adviceReplacement: certificate.advice_replacement,
+    boilerEnergyClass: certificate.boiler_energy_class,
+    replacementEnergyClasses:
+      certificate.replacement_energy_classes,
+    technicianSignature: certificate.technician_signature,
     createdAt: certificate.created_at,
     updatedAt: certificate.updated_at,
     issuedAt: certificate.issued_at,
@@ -425,7 +661,141 @@ async function createDraftCertificate(req, res) {
     certificate: serializeCertificate(certificate),
   });
 }
+async function updateDraftCertificate(req, res) {
+  const contentType = req.headers?.["content-type"];
 
+  if (
+    typeof contentType !== "string" ||
+    !contentType.toLowerCase().startsWith("application/json")
+  ) {
+    throw requestError(
+      415,
+      "JSON_REQUIRED",
+      "La requête doit contenir des données JSON."
+    );
+  }
+
+  const creator = await requireVerifiedCompany(req, res);
+
+  if (!creator) return;
+
+  const input = validatePatchBody(req.body);
+
+  if (
+    input.boilerEfficiencyPercent !== null &&
+    input.boilerEfficiencyPercent > 100
+  ) {
+    throw requestError(
+      400,
+      "EFFICIENCY_INVALID",
+      "Le rendement de la chaudière doit être compris entre 0 et 100 %."
+    );
+  }
+
+  if (
+    input.referenceEfficiencyPercent !== null &&
+    input.referenceEfficiencyPercent > 100
+  ) {
+    throw requestError(
+      400,
+      "REFERENCE_EFFICIENCY_INVALID",
+      "Le rendement de référence doit être compris entre 0 et 100 %."
+    );
+  }
+
+  const supabase = createAdminSupabase();
+
+  const { data: existing, error: readError } =
+    await supabase
+      .from("boiler_maintenance_certificates")
+      .select(
+        "id, company_id, technician_id, status"
+      )
+      .eq("id", input.certificateId)
+      .eq("company_id", creator.companyId)
+      .maybeSingle();
+
+  if (readError) {
+    throw requestError(
+      503,
+      "CERTIFICATE_READ_FAILED",
+      "Le brouillon est momentanément indisponible."
+    );
+  }
+
+  if (!existing) {
+    throw requestError(
+      404,
+      "CERTIFICATE_NOT_FOUND",
+      "Le brouillon est introuvable."
+    );
+  }
+
+  if (existing.status !== "draft") {
+    throw requestError(
+      409,
+      "CERTIFICATE_ALREADY_ISSUED",
+      "Une attestation émise ne peut plus être modifiée."
+    );
+  }
+
+  if (existing.technician_id !== creator.userId) {
+    throw requestError(
+      403,
+      "TECHNICIAN_MISMATCH",
+      "Seul le technicien ayant créé l’attestation peut modifier ce brouillon."
+    );
+  }
+
+  const { data: certificate, error: updateError } =
+    await supabase
+      .from("boiler_maintenance_certificates")
+      .update({
+        boiler_energy: input.boilerEnergy,
+        flue_exhaust_type: input.flueExhaustType,
+        commissioning_date: input.commissioningDate,
+        nominal_power_kw: input.nominalPowerKw,
+        previous_maintenance_date:
+          input.previousMaintenanceDate,
+        previous_chimney_sweeping_date:
+          input.previousChimneySweepingDate,
+        controlled_points: input.controlledPoints,
+        measuring_instruments:
+          input.measuringInstruments,
+        ambient_co_ppm: input.ambientCoPpm,
+        ambient_co_status: input.ambientCoStatus,
+        boiler_efficiency_percent:
+          input.boilerEfficiencyPercent,
+        reference_efficiency_percent:
+          input.referenceEfficiencyPercent,
+        advice_good_use: input.adviceGoodUse,
+        advice_improvements: input.adviceImprovements,
+        advice_replacement: input.adviceReplacement,
+        boiler_energy_class: input.boilerEnergyClass,
+      })
+      .eq("id", existing.id)
+      .eq("status", "draft")
+      .select(CERTIFICATE_READ_COLUMNS)
+      .single();
+
+  if (updateError) {
+    console.error("CERTIFICATE_UPDATE_FAILED", {
+      code: updateError.code,
+      message: updateError.message,
+    });
+
+    throw requestError(
+      503,
+      "CERTIFICATE_UPDATE_FAILED",
+      "Le brouillon n’a pas pu être enregistré."
+    );
+  }
+
+  return res.status(200).json({
+    ok: true,
+    certificate: serializeCertificate(certificate),
+  });
+}
 export async function handleBoilerMaintenanceCertificates(req, res) {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("CDN-Cache-Control", "no-store");
@@ -439,8 +809,10 @@ export async function handleBoilerMaintenanceCertificates(req, res) {
     if (req.method === "POST") {
       return await createDraftCertificate(req, res);
     }
-
-    res.setHeader("Allow", "GET, POST");
+    if (req.method === "PATCH") {
+      return await updateDraftCertificate(req, res);
+    }
+    res.setHeader("Allow", "GET, POST, PATCH");
 
     return res.status(405).json({
       ok: false,

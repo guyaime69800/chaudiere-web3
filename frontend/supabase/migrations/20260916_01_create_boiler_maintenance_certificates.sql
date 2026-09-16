@@ -363,5 +363,8 @@ is 'Instantané des informations de l’entreprise au moment de la préparation 
 
 comment on column public.boiler_maintenance_certificates.equipment_snapshot
 is 'Instantané des informations de la chaudière au moment de la préparation de l’attestation.';
+grant select
+on public.companies, public.profiles
+to service_role;
 
 commit;
