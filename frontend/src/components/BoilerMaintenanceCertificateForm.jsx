@@ -57,7 +57,7 @@ export default function BoilerMaintenanceCertificateForm({
     onRequestHandled,
 }) {
     const [certificates, setCertificates] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [formOpen, setFormOpen] = useState(false);
     const [form, setForm] = useState(EMPTY_FORM);
     const [submitting, setSubmitting] = useState(false);

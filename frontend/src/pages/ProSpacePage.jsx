@@ -1233,113 +1233,116 @@ export default function ProSpacePage() {
             </ul>
           )}
         </article>
-              <article className="pro-action-card pro-compliance-card">
-                <div className="pro-action-card-heading">
-                  <span className="pro-action-card-icon" aria-hidden="true">
-                    ℹ️
-                  </span>
+        <article className="pro-action-card pro-compliance-card">
+          <div className="pro-action-card-heading">
+            <span className="pro-action-card-icon" aria-hidden="true">
+              ℹ️
+            </span>
 
-                  <div>
-                    <span className="pro-action-card-label">
-                      Informations conformité
-                    </span>
-                    <h2>Ressources réglementaires officielles</h2>
-                    <p>
-                      Consultez les formulaires et les règles applicables aux
-                      interventions techniques.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pro-compliance-links">
-                  <a
-                    href="https://entreprendre.service-public.gouv.fr/vosdroits/R43122"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="pro-compliance-link"
-                  >
-                    <strong>📄 Cerfa 15497*04</strong>
-                    <span>Fluides frigorigènes — formulaire officiel</span>
-                  </a>
-
-                  <a
-                    href="https://www.ecologie.gouv.fr/politiques-publiques/entretien-inspection-systemes-chauffage-climatisation"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="pro-compliance-link"
-                  >
-                    <strong>🔥 Entretien des équipements</strong>
-                    <span>Chaudières, PAC et climatisation</span>
-                  </a>
-
-                  <a
-                    href="https://faq.trackdechets.fr/fluides-frigorigenes/informations-generales"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="pro-compliance-link"
-                  >
-                    <strong>♻️ Trackdéchets et BSFF</strong>
-                    <span>Traçabilité des fluides frigorigènes usagés</span>
-                  </a>
-
-                  <a
-                    href="https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32024R0573"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="pro-compliance-link"
-                  >
-                    <strong>🇪🇺 Règlement européen F-Gas</strong>
-                    <span>Règlement européen UE 2024/573</span>
-                  </a>
-                </div>
-
-                <p className="pro-compliance-watch">
-                  <strong>À surveiller :</strong> Trackdéchets annonce une future
-                  dématérialisation gratuite de la fiche d’intervention, sans date
-                  officielle communiquée pour le moment.
-                </p>
-              </article>
-            </section>
-            <InterventionForm
-              session={session}
-              company={company}
-              equipments={equipments}
-              carnetPassStatuses={carnetPassStatuses}
-              carnetPassStatusLoading={carnetPassStatusLoading}
-              interventions={interventions}
-              interventionLoading={interventionLoading}
-              interventionLoadError={interventionLoadError}
-              onOpenRegulatoryDocument={(interventionId) => {
-                setSelectedRegulatoryInterventionId(interventionId);
-                setRegulatoryWorkspaceOpen(true);
-              }}
-              onInterventionCreated={() =>
-                setInterventionRefreshKey((currentKey) => currentKey + 1)
-              }
-            />
-            {regulatoryWorkspaceOpen && (
-              <BoilerMaintenanceCertificateForm
-                session={session}
-                interventions={interventions}
-                equipments={equipments}
-                requestedInterventionId={selectedRegulatoryInterventionId}
-                onRequestHandled={() =>
-                  setSelectedRegulatoryInterventionId("")
-                }
-                onClose={() => {
-                  setRegulatoryWorkspaceOpen(false);
-                  setSelectedRegulatoryInterventionId("");
-                }}
-              />
-            )}
-            <footer className="pro-footer">
-              <span>
-                CarnetPass — La maintenance technique organisée
-                simplement.
+            <div>
+              <span className="pro-action-card-label">
+                Informations conformité
               </span>
+              <h2>Ressources réglementaires officielles</h2>
+              <p>
+                Consultez les formulaires et les règles applicables aux
+                interventions techniques.
+              </p>
+            </div>
+          </div>
 
-              <Link to="/">Retour à la consultation publique</Link>
-            </footer>
-          </main>
-          );
+          <div className="pro-compliance-links">
+            <a
+              href="https://entreprendre.service-public.gouv.fr/vosdroits/R43122"
+              target="_blank"
+              rel="noreferrer"
+              className="pro-compliance-link"
+            >
+              <strong>📄 Cerfa 15497*04</strong>
+              <span>Fluides frigorigènes — formulaire officiel</span>
+            </a>
+
+            <a
+              href="https://www.ecologie.gouv.fr/politiques-publiques/entretien-inspection-systemes-chauffage-climatisation"
+              target="_blank"
+              rel="noreferrer"
+              className="pro-compliance-link"
+            >
+              <strong>🔥 Entretien des équipements</strong>
+              <span>Chaudières, PAC et climatisation</span>
+            </a>
+
+            <a
+              href="https://faq.trackdechets.fr/fluides-frigorigenes/informations-generales"
+              target="_blank"
+              rel="noreferrer"
+              className="pro-compliance-link"
+            >
+              <strong>♻️ Trackdéchets — BSFF en vigueur</strong>
+              <span>
+                Traçabilité numérique obligatoire des déchets de fluides frigorigènes
+              </span>
+            </a>
+
+            <a
+              href="https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32024R0573"
+              target="_blank"
+              rel="noreferrer"
+              className="pro-compliance-link"
+            >
+              <strong>🇪🇺 Règlement européen F-Gas</strong>
+              <span>Règlement européen UE 2024/573</span>
+            </a>
+          </div>
+
+          <p className="pro-compliance-watch">
+            <strong>Information :</strong> Trackdéchets et le BSFF sont déjà en
+            vigueur. La fiche d’intervention Cerfa 15497*04 reste un document
+            distinct. Un outil public gratuit pour la dématérialiser est annoncé,
+            sans date officielle communiquée.
+          </p>
+        </article>
+      </section>
+      <InterventionForm
+        session={session}
+        company={company}
+        equipments={equipments}
+        carnetPassStatuses={carnetPassStatuses}
+        carnetPassStatusLoading={carnetPassStatusLoading}
+        interventions={interventions}
+        interventionLoading={interventionLoading}
+        interventionLoadError={interventionLoadError}
+        onOpenRegulatoryDocument={(interventionId) => {
+          setSelectedRegulatoryInterventionId(interventionId);
+          setRegulatoryWorkspaceOpen(true);
+        }}
+        onInterventionCreated={() =>
+          setInterventionRefreshKey((currentKey) => currentKey + 1)
+        }
+      />
+      {regulatoryWorkspaceOpen && (
+        <BoilerMaintenanceCertificateForm
+          session={session}
+          interventions={interventions}
+          equipments={equipments}
+          requestedInterventionId={selectedRegulatoryInterventionId}
+          onRequestHandled={() =>
+            setSelectedRegulatoryInterventionId("")
+          }
+          onClose={() => {
+            setRegulatoryWorkspaceOpen(false);
+            setSelectedRegulatoryInterventionId("");
+          }}
+        />
+      )}
+      <footer className="pro-footer">
+        <span>
+          CarnetPass — La maintenance technique organisée
+          simplement.
+        </span>
+
+        <Link to="/">Retour à la consultation publique</Link>
+      </footer>
+    </main>
+  );
 }
