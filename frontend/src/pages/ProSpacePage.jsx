@@ -80,141 +80,24 @@ function getEquipmentTypeLabel(type) {
   return labels[type] || "Autre";
 }
 
-function CompanySiretForm({ company, onEditing, onSaved }) {
+function CompanyAccountCard({
+  company,
+  companyVerified,
+  verificationTitle,
+  verificationMessage,
+  verificationBusy,
+  onVerify,
+  onEditing,
+  onSiretSaved,
+  onContactSaved,
+}) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [siret, setSiret] = useState(company.siret || "");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [siretBusy, setSiretBusy] = useState(false);
+  const [siretError, setSiretError] = useState("");
   const [securityDetailsOpen, setSecurityDetailsOpen] = useState(false);
-  const normalizedSiret = siret.replace(/\s/g, "");
-  const unchanged = normalizedSiret === (company.siret || "");
-  const canEdit = ["owner", "admin"].includes(company.role);
-
-  async function handleSave(event) {
-    event.preventDefault();
-    if (busy || !canEdit || unchanged) return;
-    onEditing();
-    setError("");
-    if (!/^\d{14}$/.test(normalizedSiret)) {
-      setError("Le SIRET doit contenir exactement 14 chiffres. Les espaces sont acceptés.");
-      return;
-    }
-    setBusy(true);
-    try {
-      await updateCompanySiret(company.id, normalizedSiret);
-      onSaved();
-    } catch (saveError) {
-      setError(saveError.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <section className="pro-dashboard-grid pro-account-grid" aria-label="Paramètres du compte">
-      <article className="pro-dashboard-card pro-siret-card">
-        <h2 id="company-siret-title">{company.siret ? "SIRET de l’entreprise" : "Renseigner mon SIRET"}</h2>
-        {canEdit ? (
-          <form className="pro-form" onSubmit={handleSave} aria-busy={busy}>
-            <label htmlFor="company-siret">
-              <span>SIRET de {company.name}</span>
-              <input
-                id="company-siret"
-                name="companySiret"
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                maxLength={64}
-                required
-                value={siret}
-                onChange={(event) => {
-                  setSiret(event.target.value);
-                  setError("");
-                  onEditing();
-                }}
-                disabled={busy}
-                aria-describedby={`company-siret-help${error ? " company-siret-error" : ""}`}
-                aria-errormessage={error ? "company-siret-error" : undefined}
-                aria-invalid={Boolean(error)}
-                placeholder="14 chiffres"
-              />
-            </label>
-            <p id="company-siret-help" className="pro-form-notice">
-              L’enregistrement du SIRET ne valide pas automatiquement votre entreprise.
-              Toute modification nécessite une nouvelle validation avant de créer des carnets.
-              {company.verification?.status === "suspended" && " La suspension restera en place : contactez l’assistance."}
-            </p>
-            {error && (
-              <p id="company-siret-error" className="pro-form-error" role="alert">
-                {error}
-              </p>
-            )}
-            <button className="pro-primary-button" type="submit" disabled={busy || unchanged}>
-              {busy ? "Enregistrement…" : "Enregistrer le SIRET"}
-            </button>
-          </form>
-        ) : (
-          <div>
-            <p>SIRET : {company.siret || "Non renseigné"}</p>
-            <p>Seul le propriétaire ou un administrateur peut modifier le SIRET.</p>
-          </div>
-        )}
-      </article>
-      <article className="pro-action-card pro-security-card">
-        <div className="pro-action-card-heading">
-          <span className="pro-action-card-icon" aria-hidden="true">
-            🔐
-          </span>
-
-          <div>
-            <span className="pro-action-card-label">Sécurité</span>
-            <h2>Sécurité du compte</h2>
-            <p>2 protections actives sur 3</p>
-          </div>
-        </div>
-
-        <button
-          className="pro-action-card-button"
-          type="button"
-          aria-expanded={securityDetailsOpen}
-          aria-controls="account-security-details"
-          onClick={() =>
-            setSecurityDetailsOpen((isOpen) => !isOpen)
-          }
-        >
-          {securityDetailsOpen
-            ? "Masquer les détails"
-            : "Voir la sécurité"}
-        </button>
-
-        {securityDetailsOpen && (
-          <div
-            id="account-security-details"
-            className="pro-action-card-details"
-          >
-            <ul className="pro-status-list">
-              <li>
-                <span aria-hidden="true">✓</span>
-                Adresse e-mail confirmée
-              </li>
-
-              <li>
-                <span aria-hidden="true">✓</span>
-                Espace protégé par authentification
-              </li>
-
-              <li>
-                <span aria-hidden="true">○</span>
-                Double authentification à configurer
-              </li>
-            </ul>
-          </div>
-        )}
-      </article>
-    </section>
-  );
-}
-function CompanyContactForm({ company, onSaved }) {
-  const [form, setForm] = useState({
+  const [complianceDetailsOpen, setComplianceDetailsOpen] = useState(false);
+  const [contactForm, setContactForm] = useState({
     phone: company.phone || "",
     email: company.email || "",
     addressLine1: company.address_line1 || "",
@@ -223,189 +106,554 @@ function CompanyContactForm({ company, onSaved }) {
     city: company.city || "",
     country: company.country || "France",
   });
+  useEffect(() => {
+    if (!complianceDetailsOpen) return undefined;
 
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setComplianceDetailsOpen(false);
+      }
+    }
+
+    document.addEventListener("keydown", handleEscape);
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "";
+    };
+  }, [complianceDetailsOpen]);
+  const [contactBusy, setContactBusy] = useState(false);
+  const [contactError, setContactError] = useState("");
+
+  const normalizedSiret = siret.replace(/\s/g, "");
+  const unchanged = normalizedSiret === (company.siret || "");
   const canEdit = ["owner", "admin"].includes(company.role);
 
-  function handleChange(event) {
+  const addressSummary = [
+    company.address_line1,
+    company.postal_code,
+    company.city,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  async function handleSiretSave(event) {
+    event.preventDefault();
+
+    if (siretBusy || !canEdit || unchanged) return;
+
+    onEditing();
+    setSiretError("");
+
+    if (!/^\d{14}$/.test(normalizedSiret)) {
+      setSiretError(
+        "Le SIRET doit contenir exactement 14 chiffres. Les espaces sont acceptés."
+      );
+      return;
+    }
+
+    setSiretBusy(true);
+
+    try {
+      await updateCompanySiret(company.id, normalizedSiret);
+      onSiretSaved();
+    } catch (saveError) {
+      setSiretError(saveError.message);
+    } finally {
+      setSiretBusy(false);
+    }
+  }
+
+  function handleContactChange(event) {
     const { name, value } = event.target;
 
-    setForm((currentForm) => ({
+    setContactForm((currentForm) => ({
       ...currentForm,
       [name]: value,
     }));
 
-    setError("");
+    setContactError("");
   }
 
-  async function handleSubmit(event) {
+  async function handleContactSave(event) {
     event.preventDefault();
 
-    if (busy || !canEdit) return;
+    if (contactBusy || !canEdit) return;
 
-    setBusy(true);
-    setError("");
+    setContactBusy(true);
+    setContactError("");
 
     try {
-      await updateCompanyContactDetails(company.id, form);
-      onSaved();
+      await updateCompanyContactDetails(company.id, contactForm);
+      onContactSaved();
     } catch (saveError) {
-      setError(
+      setContactError(
         saveError?.message ||
         "Impossible d’enregistrer les coordonnées."
       );
     } finally {
-      setBusy(false);
+      setContactBusy(false);
     }
   }
 
   return (
     <section
-      className="pro-dashboard-grid"
-      aria-label="Coordonnées de l’entreprise"
+      className="pro-dashboard-grid pro-account-grid"
+      aria-label="Paramètres du compte"
     >
-      <article className="pro-dashboard-card pro-equipment-card pro-equipment-card--full">
-        <div>
-          <span className="pro-dashboard-icon" aria-hidden="true">
-            🏢
+      <article className="pro-action-card pro-company-card">
+        <div className="pro-company-card-topline">
+          <div className="pro-action-card-heading">
+            <span
+              className="pro-action-card-icon"
+              aria-hidden="true"
+            >
+              🏢
+            </span>
+
+            <div>
+              <span className="pro-action-card-label">
+                Compte professionnel
+              </span>
+
+              <h2>Mon entreprise</h2>
+              <p>{company.name}</p>
+            </div>
+          </div>
+
+          <span
+            className={`pro-company-status ${companyVerified
+              ? "pro-company-status--approved"
+              : ""
+              }`}
+          >
+            {verificationTitle}
           </span>
-
-          <h2>Coordonnées de l’entreprise</h2>
-
-          <p>
-            Ces informations seront utilisées dans les attestations
-            réglementaires et les documents PDF.
-          </p>
         </div>
 
-        {canEdit ? (
-          <form
-            className="pro-form"
-            onSubmit={handleSubmit}
-            aria-busy={busy}
-          >
-            <div className="pro-form-row">
-              <label>
-                <span>Téléphone professionnel</span>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleChange}
-                  autoComplete="tel"
-                  placeholder="04 00 00 00 00"
-                  disabled={busy}
-                />
-              </label>
+        <div className="pro-company-summary">
+          <div>
+            <span>SIRET</span>
+            <strong>{company.siret || "Non renseigné"}</strong>
+          </div>
 
-              <label>
-                <span>Adresse e-mail professionnelle</span>
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  autoComplete="email"
-                  placeholder="contact@entreprise.fr"
-                  disabled={busy}
-                />
-              </label>
-            </div>
+          <div>
+            <span>Adresse officielle</span>
+            <strong>{addressSummary || "À compléter"}</strong>
+          </div>
+        </div>
 
-            <label>
-              <span>Adresse *</span>
-              <input
-                type="text"
-                name="addressLine1"
-                value={form.addressLine1}
-                onChange={handleChange}
-                autoComplete="address-line1"
-                placeholder="Numéro et nom de la voie"
-                required
-                disabled={busy}
-              />
-            </label>
+        <p className="pro-company-verification-text">
+          {verificationMessage}
+        </p>
 
-            <label>
-              <span>Complément d’adresse</span>
-              <input
-                type="text"
-                name="addressLine2"
-                value={form.addressLine2}
-                onChange={handleChange}
-                autoComplete="address-line2"
-                placeholder="Bâtiment, étage, zone d’activité…"
-                disabled={busy}
-              />
-            </label>
-
-            <div className="pro-form-row">
-              <label>
-                <span>Code postal *</span>
-                <input
-                  type="text"
-                  name="postalCode"
-                  value={form.postalCode}
-                  onChange={handleChange}
-                  autoComplete="postal-code"
-                  placeholder="69800"
-                  required
-                  disabled={busy}
-                />
-              </label>
-
-              <label>
-                <span>Ville *</span>
-                <input
-                  type="text"
-                  name="city"
-                  value={form.city}
-                  onChange={handleChange}
-                  autoComplete="address-level2"
-                  placeholder="Saint-Priest"
-                  required
-                  disabled={busy}
-                />
-              </label>
-            </div>
-
-            <label>
-              <span>Pays *</span>
-              <input
-                type="text"
-                name="country"
-                value={form.country}
-                onChange={handleChange}
-                autoComplete="country-name"
-                required
-                disabled={busy}
-              />
-            </label>
-
-            {error && (
-              <p className="pro-form-error" role="alert">
-                {error}
-              </p>
-            )}
-
+        <div className="pro-company-card-actions">
+          {!companyVerified && company.is_demo !== true && (
             <button
+              type="button"
               className="pro-primary-button"
-              type="submit"
-              disabled={busy}
+              disabled={
+                verificationBusy ||
+                !company.siret ||
+                company.verification?.status === "suspended"
+              }
+              onClick={onVerify}
             >
-              {busy
-                ? "Enregistrement…"
-                : "Enregistrer les coordonnées"}
+              {verificationBusy
+                ? "Vérification…"
+                : "Vérifier mon entreprise"}
             </button>
-          </form>
-        ) : (
-          <p>
-            Seul le propriétaire ou un administrateur peut modifier
-            les coordonnées de l’entreprise.
-          </p>
+          )}
+
+          {canEdit && (
+            <button
+              className="pro-action-card-button"
+              type="button"
+              aria-expanded={detailsOpen}
+              aria-controls="company-account-details"
+              onClick={() =>
+                setDetailsOpen((isOpen) => !isOpen)
+              }
+            >
+              {detailsOpen ? "Fermer" : "Modifier"}
+            </button>
+          )}
+        </div>
+
+        {detailsOpen && canEdit && (
+          <div
+            id="company-account-details"
+            className="pro-action-card-details pro-company-details"
+          >
+            <form
+              className="pro-form"
+              onSubmit={handleSiretSave}
+              aria-busy={siretBusy}
+            >
+              <label htmlFor="company-siret">
+                <span>SIRET de l’entreprise</span>
+
+                <input
+                  id="company-siret"
+                  name="companySiret"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={64}
+                  required
+                  value={siret}
+                  onChange={(event) => {
+                    setSiret(event.target.value);
+                    setSiretError("");
+                    onEditing();
+                  }}
+                  disabled={siretBusy}
+                  aria-invalid={Boolean(siretError)}
+                  placeholder="14 chiffres"
+                />
+              </label>
+
+              {siretError && (
+                <p className="pro-form-error" role="alert">
+                  {siretError}
+                </p>
+              )}
+
+              <button
+                className="pro-primary-button"
+                type="submit"
+                disabled={siretBusy || unchanged}
+              >
+                {siretBusy
+                  ? "Enregistrement…"
+                  : "Enregistrer le SIRET"}
+              </button>
+            </form>
+
+            <div className="pro-company-form-separator" />
+
+            <form
+              className="pro-form"
+              onSubmit={handleContactSave}
+              aria-busy={contactBusy}
+            >
+              <div className="pro-form-row">
+                <label>
+                  <span>Téléphone professionnel</span>
+
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={contactForm.phone}
+                    onChange={handleContactChange}
+                    autoComplete="tel"
+                    placeholder="04 00 00 00 00"
+                    disabled={contactBusy}
+                  />
+                </label>
+
+                <label>
+                  <span>Adresse e-mail professionnelle</span>
+
+                  <input
+                    type="email"
+                    name="email"
+                    value={contactForm.email}
+                    onChange={handleContactChange}
+                    autoComplete="email"
+                    placeholder="contact@entreprise.fr"
+                    disabled={contactBusy}
+                  />
+                </label>
+              </div>
+
+              <label>
+                <span>Adresse *</span>
+
+                <input
+                  type="text"
+                  name="addressLine1"
+                  value={contactForm.addressLine1}
+                  onChange={handleContactChange}
+                  autoComplete="address-line1"
+                  placeholder="Numéro et nom de la voie"
+                  required
+                  disabled={contactBusy}
+                />
+              </label>
+
+              <label>
+                <span>Complément d’adresse</span>
+
+                <input
+                  type="text"
+                  name="addressLine2"
+                  value={contactForm.addressLine2}
+                  onChange={handleContactChange}
+                  autoComplete="address-line2"
+                  placeholder="Bâtiment, étage, zone d’activité…"
+                  disabled={contactBusy}
+                />
+              </label>
+
+              <div className="pro-form-row">
+                <label>
+                  <span>Code postal *</span>
+
+                  <input
+                    type="text"
+                    name="postalCode"
+                    value={contactForm.postalCode}
+                    onChange={handleContactChange}
+                    autoComplete="postal-code"
+                    placeholder="69800"
+                    required
+                    disabled={contactBusy}
+                  />
+                </label>
+
+                <label>
+                  <span>Ville *</span>
+
+                  <input
+                    type="text"
+                    name="city"
+                    value={contactForm.city}
+                    onChange={handleContactChange}
+                    autoComplete="address-level2"
+                    placeholder="Saint-Priest"
+                    required
+                    disabled={contactBusy}
+                  />
+                </label>
+              </div>
+
+              <label>
+                <span>Pays *</span>
+
+                <input
+                  type="text"
+                  name="country"
+                  value={contactForm.country}
+                  onChange={handleContactChange}
+                  autoComplete="country-name"
+                  required
+                  disabled={contactBusy}
+                />
+              </label>
+
+              {contactError && (
+                <p className="pro-form-error" role="alert">
+                  {contactError}
+                </p>
+              )}
+
+              <button
+                className="pro-primary-button"
+                type="submit"
+                disabled={contactBusy}
+              >
+                {contactBusy
+                  ? "Enregistrement…"
+                  : "Enregistrer les coordonnées"}
+              </button>
+            </form>
+          </div>
         )}
       </article>
+      <div className="pro-account-side-column">
+        <article className="pro-action-card pro-security-card">
+
+          <div className="pro-action-card-heading">
+            <span
+              className="pro-action-card-icon"
+              aria-hidden="true"
+            >
+              🔐
+            </span>
+
+            <div>
+              <span className="pro-action-card-label">
+                Sécurité
+              </span>
+
+              <h2>Sécurité du compte</h2>
+              <p>2 protections actives sur 3</p>
+            </div>
+          </div>
+
+          <button
+            className="pro-action-card-button"
+            type="button"
+            aria-expanded={securityDetailsOpen}
+            aria-controls="account-security-details"
+            onClick={() =>
+              setSecurityDetailsOpen((isOpen) => !isOpen)
+            }
+          >
+            {securityDetailsOpen
+              ? "Masquer les détails"
+              : "Voir la sécurité"}
+          </button>
+
+          {securityDetailsOpen && (
+            <div
+              id="account-security-details"
+              className="pro-action-card-details"
+            >
+              <ul className="pro-status-list">
+                <li>
+                  <span aria-hidden="true">✓</span>
+                  Adresse e-mail confirmée
+                </li>
+
+                <li>
+                  <span aria-hidden="true">✓</span>
+                  Espace protégé par authentification
+                </li>
+
+                <li>
+                  <span aria-hidden="true">○</span>
+                  Double authentification à configurer
+                </li>
+              </ul>
+            </div>
+          )}
+        </article>
+        <article className="pro-action-card pro-compliance-card">
+          <div className="pro-action-card-heading">
+            <span className="pro-action-card-icon" aria-hidden="true">
+              ℹ️
+            </span>
+
+            <div>
+              <span className="pro-action-card-label">
+                Informations conformité
+              </span>
+
+              <h2>Ressources réglementaires</h2>
+
+              <p>
+                CERFA, entretien, F-Gas et Trackdéchets
+              </p>
+            </div>
+          </div>
+
+          <button
+            className="pro-action-card-button"
+            type="button"
+            aria-expanded={complianceDetailsOpen}
+            aria-controls="compliance-details"
+            onClick={() =>
+              setComplianceDetailsOpen((isOpen) => !isOpen)
+            }
+          >
+            {complianceDetailsOpen
+              ? "Masquer les ressources"
+              : "Consulter les ressources"}
+          </button>
+          {complianceDetailsOpen && (
+            <div
+              className="pro-modal-overlay"
+              role="presentation"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) {
+                  setComplianceDetailsOpen(false);
+                }
+              }}
+            >
+              <section
+                className="pro-compliance-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="compliance-modal-title"
+              >
+                <div className="pro-modal-header">
+                  <div>
+                    <span className="pro-action-card-label">
+                      Informations conformité
+                    </span>
+
+                    <h2 id="compliance-modal-title">
+                      Ressources réglementaires officielles
+                    </h2>
+
+                    <p>
+                      Consultez les formulaires et les règles applicables aux
+                      interventions techniques.
+                    </p>
+                  </div>
+
+                  <button
+                    className="pro-modal-close"
+                    type="button"
+                    aria-label="Fermer les ressources réglementaires"
+                    onClick={() => setComplianceDetailsOpen(false)}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="pro-compliance-links">
+                  <a
+                    href="https://entreprendre.service-public.gouv.fr/vosdroits/R43122"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="pro-compliance-link"
+                  >
+                    <strong>📄 Cerfa 15497*04</strong>
+                    <span>Fluides frigorigènes — formulaire officiel</span>
+                  </a>
+
+                  <a
+                    href="https://www.ecologie.gouv.fr/politiques-publiques/entretien-inspection-systemes-chauffage-climatisation"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="pro-compliance-link"
+                  >
+                    <strong>🔥 Entretien des équipements</strong>
+                    <span>Chaudières, PAC et climatisation</span>
+                  </a>
+
+                  <a
+                    href="https://faq.trackdechets.fr/fluides-frigorigenes/informations-generales"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="pro-compliance-link"
+                  >
+                    <strong>♻️ Trackdéchets — BSFF</strong>
+                    <span>Traçabilité des déchets de fluides frigorigènes</span>
+                  </a>
+
+                  <a
+                    href="https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32024R0573"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="pro-compliance-link"
+                  >
+                    <strong>🇪🇺 Règlement F-Gas</strong>
+                    <span>Règlement européen UE 2024/573</span>
+                  </a>
+                </div>
+
+                <p className="pro-compliance-watch">
+                  <strong>Information :</strong> Trackdéchets et le BSFF sont déjà
+                  en vigueur. Le Cerfa 15497*04 reste un document distinct.
+                </p>
+
+                <button
+                  className="pro-primary-button pro-modal-footer-button"
+                  type="button"
+                  onClick={() => setComplianceDetailsOpen(false)}
+                >
+                  Fermer
+                </button>
+              </section>
+            </div>
+          )}
+        </article>
+      </div>
     </section>
   );
 }
@@ -1116,68 +1364,37 @@ export default function ProSpacePage() {
           </div>
         </div>
       </section>
-      <section
-        aria-labelledby="company-verification-title"
-        className={`pro-verification ${companyVerified ? "pro-verification--approved" : ""
-          }`}
-      >
-        <div className="pro-verification-content">
-          <h2 id="company-verification-title">
-            {verificationTitle}
-          </h2>
-
-          <p>{verificationMessage}</p>
-        </div>
-
-        <button
-          type="button"
-          className="pro-verification-button"
-          disabled={
-            verificationBusy
-            || (
-              !companyVerified
-              && company.is_demo !== true
-              && (
-                !company.siret
-                || verification?.status === "suspended"
-              )
-            )
-          }
-          onClick={() => {
-            if (companyVerified || company.is_demo === true) {
-              setRefreshKey((currentKey) => currentKey + 1);
-              return;
-            }
-
-            handleCompanyVerification();
+      {siretMessage && (
+        <p
+          className="pro-form-notice"
+          role="status"
+          style={{
+            padding: "0 24px",
+            textAlign: "center",
           }}
         >
-          {verificationBusy
-            ? "Vérification…"
-            : companyVerified || company.is_demo === true
-              ? "Actualiser le statut"
-              : "Vérifier mon entreprise"}
-        </button>
-      </section>
-      {siretMessage && (
-        <p className="pro-form-notice" role="status" style={{ padding: "0 24px", textAlign: "center" }}>
           {siretMessage}
         </p>
       )}
-      <CompanySiretForm
-        key={`${company.id}:${company.siret || ""}`}
+
+      <CompanyAccountCard
+        key={`${company.id}:${company.siret || ""}:${company.updated_at || ""
+          }`}
         company={company}
+        companyVerified={companyVerified}
+        verificationTitle={verificationTitle}
+        verificationMessage={verificationMessage}
+        verificationBusy={verificationBusy}
+        onVerify={handleCompanyVerification}
         onEditing={() => setSiretMessage("")}
-        onSaved={() => {
-          setSiretMessage("SIRET enregistré. Consultez le statut de validation affiché au-dessus.");
+        onSiretSaved={() => {
+          setSiretMessage(
+            "SIRET enregistré. Consultez le statut de validation affiché."
+          );
           setLoading(true);
           setRefreshKey((currentKey) => currentKey + 1);
         }}
-      />
-      <CompanyContactForm
-        key={`contact:${company.id}:${company.updated_at || ""}`}
-        company={company}
-        onSaved={() => {
+        onContactSaved={() => {
           setSiretMessage(
             "Coordonnées de l’entreprise enregistrées avec succès."
           );
@@ -1439,75 +1656,6 @@ export default function ProSpacePage() {
               })}
             </ul>
           )}
-        </article>
-        <article className="pro-action-card pro-compliance-card">
-          <div className="pro-action-card-heading">
-            <span className="pro-action-card-icon" aria-hidden="true">
-              ℹ️
-            </span>
-
-            <div>
-              <span className="pro-action-card-label">
-                Informations conformité
-              </span>
-              <h2>Ressources réglementaires officielles</h2>
-              <p>
-                Consultez les formulaires et les règles applicables aux
-                interventions techniques.
-              </p>
-            </div>
-          </div>
-
-          <div className="pro-compliance-links">
-            <a
-              href="https://entreprendre.service-public.gouv.fr/vosdroits/R43122"
-              target="_blank"
-              rel="noreferrer"
-              className="pro-compliance-link"
-            >
-              <strong>📄 Cerfa 15497*04</strong>
-              <span>Fluides frigorigènes — formulaire officiel</span>
-            </a>
-
-            <a
-              href="https://www.ecologie.gouv.fr/politiques-publiques/entretien-inspection-systemes-chauffage-climatisation"
-              target="_blank"
-              rel="noreferrer"
-              className="pro-compliance-link"
-            >
-              <strong>🔥 Entretien des équipements</strong>
-              <span>Chaudières, PAC et climatisation</span>
-            </a>
-
-            <a
-              href="https://faq.trackdechets.fr/fluides-frigorigenes/informations-generales"
-              target="_blank"
-              rel="noreferrer"
-              className="pro-compliance-link"
-            >
-              <strong>♻️ Trackdéchets — BSFF en vigueur</strong>
-              <span>
-                Traçabilité numérique obligatoire des déchets de fluides frigorigènes
-              </span>
-            </a>
-
-            <a
-              href="https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32024R0573"
-              target="_blank"
-              rel="noreferrer"
-              className="pro-compliance-link"
-            >
-              <strong>🇪🇺 Règlement européen F-Gas</strong>
-              <span>Règlement européen UE 2024/573</span>
-            </a>
-          </div>
-
-          <p className="pro-compliance-watch">
-            <strong>Information :</strong> Trackdéchets et le BSFF sont déjà en
-            vigueur. La fiche d’intervention Cerfa 15497*04 reste un document
-            distinct. Un outil public gratuit pour la dématérialiser est annoncé,
-            sans date officielle communiquée.
-          </p>
         </article>
       </section>
       <InterventionForm

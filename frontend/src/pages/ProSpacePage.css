@@ -1548,8 +1548,8 @@
 }
 /* Encadré compact des informations réglementaires */
 .pro-compliance-card {
-  display: block;
-  padding: 24px 30px;
+  align-self: start;
+  padding: 24px;
 }
 
 .pro-compliance-card .pro-action-card-heading {
@@ -1562,7 +1562,7 @@
 
 .pro-compliance-links {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
   margin-top: 20px;
 }
@@ -1615,5 +1615,219 @@
 
   .pro-compliance-links {
     grid-template-columns: 1fr;
+  }
+}
+/* Carte compacte « Mon entreprise » */
+
+.pro-company-card {
+  min-height: 0;
+}
+
+.pro-company-card-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.pro-company-status {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  color: #991b1b;
+  background: #fef2f2;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.pro-company-status--approved {
+  border-color: #86efac;
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.pro-company-summary {
+  display: grid;
+  grid-template-columns:
+    minmax(150px, 0.7fr)
+    minmax(0, 1.3fr);
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.pro-company-summary > div {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(91, 59, 46, 0.08);
+  border-radius: 12px;
+  background: #faf7f5;
+}
+
+.pro-company-summary span,
+.pro-company-summary strong {
+  display: block;
+}
+
+.pro-company-summary span {
+  margin-bottom: 4px;
+  color: var(--pro-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pro-company-summary strong {
+  overflow-wrap: anywhere;
+  color: var(--pro-ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.pro-company-card .pro-company-verification-text {
+  max-width: none;
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.pro-company-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.pro-company-card-actions .pro-primary-button,
+.pro-company-card-actions .pro-action-card-button {
+  width: auto;
+  max-width: none;
+  margin-top: 0;
+}
+
+.pro-company-details {
+  display: grid;
+  gap: 22px;
+}
+
+.pro-company-details .pro-form {
+  gap: 16px;
+}
+
+.pro-company-details .pro-primary-button {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.pro-company-form-separator {
+  height: 1px;
+  background: var(--pro-line);
+}
+
+@media (max-width: 720px) {
+  .pro-company-card-topline,
+  .pro-company-card-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pro-company-status {
+    align-self: flex-start;
+  }
+
+  .pro-company-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .pro-company-card-actions .pro-primary-button,
+  .pro-company-card-actions .pro-action-card-button,
+  .pro-company-details .pro-primary-button {
+    width: 100%;
+  }
+}
+.pro-account-side-column {
+  display: grid;
+  align-self: start;
+  gap: 24px;
+}
+.pro-modal-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(35, 20, 14, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.pro-compliance-modal {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 30px;
+  border: 1px solid rgba(125, 78, 54, 0.2);
+  border-radius: 22px;
+  background: #fffdfa;
+  box-shadow: 0 24px 70px rgba(35, 20, 14, 0.3);
+}
+
+.pro-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.pro-modal-header h2 {
+  margin: 6px 0;
+}
+
+.pro-modal-header p {
+  margin: 0;
+  color: #6f5147;
+}
+
+.pro-modal-close {
+  display: grid;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid #f0b7a3;
+  border-radius: 50%;
+  color: #c93400;
+  background: #fff4ef;
+  cursor: pointer;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.pro-compliance-modal .pro-compliance-links {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pro-modal-footer-button {
+  width: fit-content;
+  margin-top: 4px;
+}
+
+@media (max-width: 700px) {
+  .pro-modal-overlay {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .pro-compliance-modal {
+    max-height: calc(100vh - 24px);
+    padding: 22px;
+    border-radius: 20px;
+  }
+
+  .pro-compliance-modal .pro-compliance-links {
+    grid-template-columns: 1fr;
+  }
+
+  .pro-modal-footer-button {
+    width: 100%;
   }
 }
