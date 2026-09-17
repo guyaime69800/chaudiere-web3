@@ -574,7 +574,20 @@ async function createDraftCertificate(req, res) {
   ] = await Promise.all([
     supabase
       .from("companies")
-      .select("id, name, siret, phone")
+      .select(
+        [
+          "id",
+          "name",
+          "siret",
+          "phone",
+          "email",
+          "address_line1",
+          "address_line2",
+          "postal_code",
+          "city",
+          "country",
+        ].join(", ")
+      )
       .eq("id", creator.companyId)
       .single(),
 
@@ -628,6 +641,12 @@ async function createDraftCertificate(req, res) {
     name: company.name,
     siret: company.siret,
     phone: company.phone,
+    email: company.email,
+    addressLine1: company.address_line1,
+    addressLine2: company.address_line2,
+    postalCode: company.postal_code,
+    city: company.city,
+    country: company.country,
   };
 
   const equipmentSnapshot = {

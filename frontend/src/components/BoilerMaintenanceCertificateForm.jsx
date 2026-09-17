@@ -1062,7 +1062,7 @@ export default function BoilerMaintenanceCertificateForm({
 
                             {detailsForm.hasForcedAirBurner && (
                                 <>
-                                    <label>
+                                    <label className="pro-burner-detail">
                                         <span>Marque du brûleur *</span>
                                         <input
                                             type="text"
@@ -1077,7 +1077,7 @@ export default function BoilerMaintenanceCertificateForm({
                                         />
                                     </label>
 
-                                    <label>
+                                    <label className="pro-burner-detail">
                                         <span>Modèle du brûleur *</span>
                                         <input
                                             type="text"
@@ -1092,7 +1092,7 @@ export default function BoilerMaintenanceCertificateForm({
                                         />
                                     </label>
 
-                                    <label>
+                                    <label className="pro-burner-detail">
                                         <span>
                                             Date du brûleur, si disponible
                                         </span>

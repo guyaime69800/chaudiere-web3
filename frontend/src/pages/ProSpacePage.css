@@ -1528,6 +1528,24 @@
 .pro-form .pro-controlled-points label span {
   flex: 1;
 }
+.pro-form .pro-controlled-points .pro-burner-detail {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  cursor: default;
+}
+
+.pro-form .pro-controlled-points .pro-burner-detail > span {
+  flex: initial;
+}
+
+@media (max-width: 700px) {
+  .pro-form .pro-controlled-points .pro-burner-detail {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
 /* Encadré compact des informations réglementaires */
 .pro-compliance-card {
   display: block;
