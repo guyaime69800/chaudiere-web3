@@ -13,17 +13,25 @@ const EMPTY_DETAILS_FORM = {
     flueExhaustType: "",
     commissioningDate: "",
     nominalPowerKw: "",
+    hasForcedAirBurner: false,
+    forcedAirBurnerBrand: "",
+    forcedAirBurnerModel: "",
+    forcedAirBurnerDate: "",
     previousMaintenanceDate: "",
     previousChimneySweepingDate: "",
     ambientCoPpm: "",
     boilerEfficiencyPercent: "",
     referenceEfficiencyPercent: "",
     boilerEnergyClass: "",
+    replacementEnergyClasses: [],
     adviceGoodUse: "",
     adviceImprovements: "",
     adviceReplacement: "",
     controlledPoints: [],
     measuringInstruments: "",
+    measurementsText: "",
+    boilerSizingAssessment: "",
+    pollutantEmissionsText: "",
 };
 
 const CONTROLLED_POINT_OPTIONS = [
@@ -35,6 +43,18 @@ const CONTROLLED_POINT_OPTIONS = [
     "Réglage de la combustion",
     "Contrôle de l’étanchéité du circuit",
     "Contrôle du circulateur",
+];
+const ENERGY_CLASS_OPTIONS = [
+    "A+++",
+    "A++",
+    "A+",
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
 ];
 function formatDate(value) {
     const date = new Date(value);
@@ -48,7 +68,69 @@ function formatDate(value) {
         timeStyle: "short",
     }).format(date);
 }
+function objectToLines(value, excludedKeys = []) {
+    if (
+        !value ||
+        typeof value !== "object" ||
+        Array.isArray(value)
+    ) {
+        return "";
+    }
 
+    return Object.entries(value)
+        .filter(
+            ([key]) => !excludedKeys.includes(key)
+        )
+        .map(
+            ([name, measurement]) =>
+                `${name} : ${measurement ?? ""}`
+        )
+        .join("\n");
+}
+function linesToObject(value, fieldName) {
+    const result = {};
+
+    const lines = value
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+    for (const [index, line] of lines.entries()) {
+        const separatorIndex = line.indexOf(":");
+
+        if (
+            separatorIndex <= 0 ||
+            separatorIndex === line.length - 1
+        ) {
+            throw new Error(
+                `${fieldName}, ligne ${index + 1} : utilisez le format "Nom : valeur".`
+            );
+        }
+
+        const name = line
+            .slice(0, separatorIndex)
+            .trim();
+
+        const measurement = line
+            .slice(separatorIndex + 1)
+            .trim();
+
+        if (
+            Object.prototype.hasOwnProperty.call(
+                result,
+                name
+            )
+        ) {
+            throw new Error(
+                `${fieldName} : "${name}" est renseigné plusieurs fois.`
+            );
+        }
+
+        result[name] = measurement;
+    }
+
+    return result;
+}
 export default function BoilerMaintenanceCertificateForm({
     session,
     interventions = [],
@@ -296,7 +378,33 @@ export default function BoilerMaintenanceCertificateForm({
         setError("");
         setSuccess("");
     }
+    function toggleReplacementEnergyClass(
+        energyClass
+    ) {
+        setDetailsForm((currentForm) => {
+            const alreadySelected =
+                currentForm.replacementEnergyClasses.includes(
+                    energyClass
+                );
 
+            return {
+                ...currentForm,
+                replacementEnergyClasses:
+                    alreadySelected
+                        ? currentForm.replacementEnergyClasses.filter(
+                            (item) =>
+                                item !== energyClass
+                        )
+                        : [
+                            ...currentForm.replacementEnergyClasses,
+                            energyClass,
+                        ],
+            };
+        });
+
+        setError("");
+        setSuccess("");
+    }
     function openDetailsForm(certificate) {
         setDetailsForm({
             certificateId: certificate.id,
@@ -307,6 +415,14 @@ export default function BoilerMaintenanceCertificateForm({
                 certificate.commissioningDate || "",
             nominalPowerKw:
                 certificate.nominalPowerKw ?? "",
+            hasForcedAirBurner:
+                Boolean(certificate.forcedAirBurner),
+            forcedAirBurnerBrand:
+                certificate.forcedAirBurner?.brand || "",
+            forcedAirBurnerModel:
+                certificate.forcedAirBurner?.model || "",
+            forcedAirBurnerDate:
+                certificate.forcedAirBurner?.date || "",
             previousMaintenanceDate:
                 certificate.previousMaintenanceDate || "",
             previousChimneySweepingDate:
@@ -319,6 +435,11 @@ export default function BoilerMaintenanceCertificateForm({
                 certificate.referenceEfficiencyPercent ?? "",
             boilerEnergyClass:
                 certificate.boilerEnergyClass || "",
+            replacementEnergyClasses: Array.isArray(
+                certificate.replacementEnergyClasses
+            )
+                ? certificate.replacementEnergyClasses
+                : [],
             adviceGoodUse:
                 certificate.adviceGoodUse || "",
             adviceImprovements:
@@ -335,6 +456,15 @@ export default function BoilerMaintenanceCertificateForm({
             )
                 ? certificate.measuringInstruments.join("\n")
                 : "",
+            measurementsText: objectToLines(
+                certificate.measurements,
+                ["boilerSizingAssessment"]
+            ),
+            boilerSizingAssessment:
+                certificate.measurements?.boilerSizingAssessment || "",
+            pollutantEmissionsText: objectToLines(
+                certificate.pollutantEmissions
+            ),
         });
 
         setEditingCertificateId(certificate.id);
@@ -490,12 +620,71 @@ export default function BoilerMaintenanceCertificateForm({
                             `Bearer ${session.access_token}`,
                     },
                     body: JSON.stringify({
-                        ...detailsForm,
+                        certificateId: detailsForm.certificateId,
+                        boilerEnergy: detailsForm.boilerEnergy,
+                        flueExhaustType: detailsForm.flueExhaustType,
+                        commissioningDate: detailsForm.commissioningDate,
+                        nominalPowerKw: detailsForm.nominalPowerKw,
+
+                        forcedAirBurner:
+                            detailsForm.hasForcedAirBurner
+                                ? {
+                                    brand:
+                                        detailsForm.forcedAirBurnerBrand.trim(),
+                                    model:
+                                        detailsForm.forcedAirBurnerModel.trim(),
+                                    date:
+                                        detailsForm.forcedAirBurnerDate || null,
+                                }
+                                : null,
+
+                        previousMaintenanceDate:
+                            detailsForm.previousMaintenanceDate,
+                        previousChimneySweepingDate:
+                            detailsForm.previousChimneySweepingDate,
+
+                        controlledPoints:
+                            detailsForm.controlledPoints,
+
                         measuringInstruments:
                             detailsForm.measuringInstruments
                                 .split("\n")
                                 .map((item) => item.trim())
                                 .filter(Boolean),
+
+                        measurements: {
+                            ...linesToObject(
+                                detailsForm.measurementsText,
+                                "Mesures techniques"
+                            ),
+                            ...(detailsForm.boilerSizingAssessment.trim()
+                                ? {
+                                    boilerSizingAssessment:
+                                        detailsForm.boilerSizingAssessment.trim(),
+                                }
+                                : {}),
+                        },
+
+                        ambientCoPpm: detailsForm.ambientCoPpm,
+                        boilerEfficiencyPercent:
+                            detailsForm.boilerEfficiencyPercent,
+                        referenceEfficiencyPercent:
+                            detailsForm.referenceEfficiencyPercent,
+
+                        pollutantEmissions: linesToObject(
+                            detailsForm.pollutantEmissionsText,
+                            "Émissions polluantes"
+                        ),
+
+                        adviceGoodUse: detailsForm.adviceGoodUse,
+                        adviceImprovements:
+                            detailsForm.adviceImprovements,
+                        adviceReplacement:
+                            detailsForm.adviceReplacement,
+                        boilerEnergyClass:
+                            detailsForm.boilerEnergyClass,
+                        replacementEnergyClasses:
+                            detailsForm.replacementEnergyClasses,
                     }),
                 }
             );
@@ -829,7 +1018,97 @@ export default function BoilerMaintenanceCertificateForm({
                                 disabled={savingDetails}
                             />
                         </label>
+                        <fieldset className="pro-controlled-points">
+                            <legend>Brûleur à air soufflé</legend>
 
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    checked={
+                                        detailsForm.hasForcedAirBurner
+                                    }
+                                    onChange={(event) => {
+                                        const checked =
+                                            event.target.checked;
+
+                                        setDetailsForm(
+                                            (currentForm) => ({
+                                                ...currentForm,
+                                                hasForcedAirBurner:
+                                                    checked,
+                                                ...(checked
+                                                    ? {}
+                                                    : {
+                                                        forcedAirBurnerBrand:
+                                                            "",
+                                                        forcedAirBurnerModel:
+                                                            "",
+                                                        forcedAirBurnerDate:
+                                                            "",
+                                                    }),
+                                            })
+                                        );
+
+                                        setError("");
+                                        setSuccess("");
+                                    }}
+                                    disabled={savingDetails}
+                                />
+
+                                <span>
+                                    La chaudière possède un brûleur à air soufflé
+                                </span>
+                            </label>
+
+                            {detailsForm.hasForcedAirBurner && (
+                                <>
+                                    <label>
+                                        <span>Marque du brûleur *</span>
+                                        <input
+                                            type="text"
+                                            name="forcedAirBurnerBrand"
+                                            value={
+                                                detailsForm.forcedAirBurnerBrand
+                                            }
+                                            onChange={handleDetailsChange}
+                                            maxLength={200}
+                                            disabled={savingDetails}
+                                            required
+                                        />
+                                    </label>
+
+                                    <label>
+                                        <span>Modèle du brûleur *</span>
+                                        <input
+                                            type="text"
+                                            name="forcedAirBurnerModel"
+                                            value={
+                                                detailsForm.forcedAirBurnerModel
+                                            }
+                                            onChange={handleDetailsChange}
+                                            maxLength={200}
+                                            disabled={savingDetails}
+                                            required
+                                        />
+                                    </label>
+
+                                    <label>
+                                        <span>
+                                            Date du brûleur, si disponible
+                                        </span>
+                                        <input
+                                            type="date"
+                                            name="forcedAirBurnerDate"
+                                            value={
+                                                detailsForm.forcedAirBurnerDate
+                                            }
+                                            onChange={handleDetailsChange}
+                                            disabled={savingDetails}
+                                        />
+                                    </label>
+                                </>
+                            )}
+                        </fieldset>
                         <label>
                             <span>Date du précédent entretien</span>
                             <input
@@ -887,7 +1166,59 @@ export default function BoilerMaintenanceCertificateForm({
                                 disabled={savingDetails}
                             />
                         </label>
+                        <label>
+                            <span>
+                                Autres mesures techniques
+                                (une mesure par ligne)
+                            </span>
 
+                            <textarea
+                                name="measurementsText"
+                                value={detailsForm.measurementsText}
+                                onChange={handleDetailsChange}
+                                rows={5}
+                                maxLength={4_000}
+                                placeholder={
+                                    "Pression chauffage : 1,5 bar\nTempérature des fumées : 65 °C"
+                                }
+                                disabled={savingDetails}
+                            />
+
+                            <small>
+                                Format obligatoire : nom de la mesure : valeur
+                            </small>
+                        </label>
+
+                        <label>
+                            <span>
+                                Évaluation du dimensionnement de la chaudière
+                            </span>
+
+                            <select
+                                name="boilerSizingAssessment"
+                                value={
+                                    detailsForm.boilerSizingAssessment
+                                }
+                                onChange={handleDetailsChange}
+                                disabled={savingDetails}
+                            >
+                                <option value="">
+                                    Non évalué
+                                </option>
+                                <option value="appropriate">
+                                    Dimensionnement adapté
+                                </option>
+                                <option value="oversized">
+                                    Chaudière probablement surdimensionnée
+                                </option>
+                                <option value="undersized">
+                                    Chaudière probablement sous-dimensionnée
+                                </option>
+                                <option value="not_evaluable">
+                                    Impossible à évaluer pendant la visite
+                                </option>
+                            </select>
+                        </label>
                         <label>
                             <span>Monoxyde de carbone ambiant (ppm)</span>
                             <input
@@ -928,7 +1259,30 @@ export default function BoilerMaintenanceCertificateForm({
                                 disabled={savingDetails}
                             />
                         </label>
+                        <label>
+                            <span>
+                                Émissions polluantes mesurées
+                                (une mesure par ligne)
+                            </span>
 
+                            <textarea
+                                name="pollutantEmissionsText"
+                                value={
+                                    detailsForm.pollutantEmissionsText
+                                }
+                                onChange={handleDetailsChange}
+                                rows={4}
+                                maxLength={4_000}
+                                placeholder={
+                                    "NOx : 45 mg/kWh\nCO fumées : 12 ppm"
+                                }
+                                disabled={savingDetails}
+                            />
+
+                            <small>
+                                Format obligatoire : nom du polluant : valeur
+                            </small>
+                        </label>
                         <label>
                             <span>Classe énergétique de la chaudière</span>
                             <select
@@ -950,7 +1304,39 @@ export default function BoilerMaintenanceCertificateForm({
                                 <option value="G">G</option>
                             </select>
                         </label>
+                        <fieldset className="pro-controlled-points">
+                            <legend>
+                                Classes énergétiques conseillées en cas de remplacement
+                            </legend>
 
+                            <p className="pro-form-notice">
+                                Facultatif : sélectionnez uniquement les classes
+                                adaptées au conseil donné au client.
+                            </p>
+
+                            {ENERGY_CLASS_OPTIONS.map(
+                                (energyClass) => (
+                                    <label key={energyClass}>
+                                        <input
+                                            type="checkbox"
+                                            checked={
+                                                detailsForm.replacementEnergyClasses.includes(
+                                                    energyClass
+                                                )
+                                            }
+                                            onChange={() =>
+                                                toggleReplacementEnergyClass(
+                                                    energyClass
+                                                )
+                                            }
+                                            disabled={savingDetails}
+                                        />
+
+                                        <span>{energyClass}</span>
+                                    </label>
+                                )
+                            )}
+                        </fieldset>
                         <label>
                             <span>Conseils de bon usage</span>
                             <textarea

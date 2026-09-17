@@ -256,6 +256,39 @@ function normalizeStringArray(value, fieldName) {
     return item.trim().slice(0, 300);
   }).filter(Boolean);
 }
+function normalizeJsonObject(
+  value,
+  fieldName,
+  { nullable = false, maxLength = 8_000 } = {}
+) {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return nullable ? null : {};
+  }
+
+  if (!isPlainObject(value)) {
+    throw requestError(
+      400,
+      "OBJECT_INVALID",
+      `${fieldName} est invalide.`
+    );
+  }
+
+  const serialized = JSON.stringify(value);
+
+  if (serialized.length > maxLength) {
+    throw requestError(
+      400,
+      "OBJECT_TOO_LARGE",
+      `${fieldName} contient trop d’informations.`
+    );
+  }
+
+  return value;
+}
 
 function validatePatchBody(body) {
   if (!isPlainObject(body)) {
@@ -313,6 +346,11 @@ function validatePatchBody(body) {
       body.nominalPowerKw,
       "La puissance nominale"
     ),
+    forcedAirBurner: normalizeJsonObject(
+      body.forcedAirBurner,
+      "Les informations du brûleur à air soufflé",
+      { nullable: true }
+    ),
     previousMaintenanceDate: normalizeOptionalDate(
       body.previousMaintenanceDate,
       "La date du précédent entretien"
@@ -329,6 +367,10 @@ function validatePatchBody(body) {
       body.measuringInstruments,
       "Les appareils de mesure"
     ),
+    measurements: normalizeJsonObject(
+      body.measurements,
+      "Les mesures techniques"
+    ),
     ambientCoPpm,
     ambientCoStatus,
     boilerEfficiencyPercent: normalizeOptionalNumber(
@@ -338,6 +380,10 @@ function validatePatchBody(body) {
     referenceEfficiencyPercent: normalizeOptionalNumber(
       body.referenceEfficiencyPercent,
       "Le rendement de référence"
+    ),
+    pollutantEmissions: normalizeJsonObject(
+      body.pollutantEmissions,
+      "Les émissions polluantes"
     ),
     adviceGoodUse: normalizeOptionalText(
       body.adviceGoodUse,
@@ -355,6 +401,10 @@ function validatePatchBody(body) {
       body.boilerEnergyClass,
       "La classe énergétique",
       20
+    ),
+    replacementEnergyClasses: normalizeStringArray(
+      body.replacementEnergyClasses,
+      "Les classes énergétiques de remplacement"
     ),
   };
 }
@@ -755,6 +805,7 @@ async function updateDraftCertificate(req, res) {
         flue_exhaust_type: input.flueExhaustType,
         commissioning_date: input.commissioningDate,
         nominal_power_kw: input.nominalPowerKw,
+        forced_air_burner: input.forcedAirBurner,
         previous_maintenance_date:
           input.previousMaintenanceDate,
         previous_chimney_sweeping_date:
@@ -762,16 +813,20 @@ async function updateDraftCertificate(req, res) {
         controlled_points: input.controlledPoints,
         measuring_instruments:
           input.measuringInstruments,
+        measurements: input.measurements,
         ambient_co_ppm: input.ambientCoPpm,
         ambient_co_status: input.ambientCoStatus,
         boiler_efficiency_percent:
           input.boilerEfficiencyPercent,
         reference_efficiency_percent:
           input.referenceEfficiencyPercent,
+        pollutant_emissions: input.pollutantEmissions,
         advice_good_use: input.adviceGoodUse,
         advice_improvements: input.adviceImprovements,
         advice_replacement: input.adviceReplacement,
         boiler_energy_class: input.boilerEnergyClass,
+        replacement_energy_classes:
+          input.replacementEnergyClasses,
       })
       .eq("id", existing.id)
       .eq("status", "draft")
