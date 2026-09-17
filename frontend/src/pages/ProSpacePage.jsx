@@ -5,6 +5,7 @@ import { signOut } from "../services/authService";
 import {
   createCompany,
   getMyCompany,
+  updateCompanyContactDetails,
   updateCompanySiret,
   verifyMyCompany,
 } from "../services/companyService";
@@ -212,7 +213,202 @@ function CompanySiretForm({ company, onEditing, onSaved }) {
     </section>
   );
 }
+function CompanyContactForm({ company, onSaved }) {
+  const [form, setForm] = useState({
+    phone: company.phone || "",
+    email: company.email || "",
+    addressLine1: company.address_line1 || "",
+    addressLine2: company.address_line2 || "",
+    postalCode: company.postal_code || "",
+    city: company.city || "",
+    country: company.country || "France",
+  });
 
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const canEdit = ["owner", "admin"].includes(company.role);
+
+  function handleChange(event) {
+    const { name, value } = event.target;
+
+    setForm((currentForm) => ({
+      ...currentForm,
+      [name]: value,
+    }));
+
+    setError("");
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    if (busy || !canEdit) return;
+
+    setBusy(true);
+    setError("");
+
+    try {
+      await updateCompanyContactDetails(company.id, form);
+      onSaved();
+    } catch (saveError) {
+      setError(
+        saveError?.message ||
+        "Impossible d’enregistrer les coordonnées."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section
+      className="pro-dashboard-grid"
+      aria-label="Coordonnées de l’entreprise"
+    >
+      <article className="pro-dashboard-card pro-equipment-card pro-equipment-card--full">
+        <div>
+          <span className="pro-dashboard-icon" aria-hidden="true">
+            🏢
+          </span>
+
+          <h2>Coordonnées de l’entreprise</h2>
+
+          <p>
+            Ces informations seront utilisées dans les attestations
+            réglementaires et les documents PDF.
+          </p>
+        </div>
+
+        {canEdit ? (
+          <form
+            className="pro-form"
+            onSubmit={handleSubmit}
+            aria-busy={busy}
+          >
+            <div className="pro-form-row">
+              <label>
+                <span>Téléphone professionnel</span>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  autoComplete="tel"
+                  placeholder="04 00 00 00 00"
+                  disabled={busy}
+                />
+              </label>
+
+              <label>
+                <span>Adresse e-mail professionnelle</span>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  autoComplete="email"
+                  placeholder="contact@entreprise.fr"
+                  disabled={busy}
+                />
+              </label>
+            </div>
+
+            <label>
+              <span>Adresse *</span>
+              <input
+                type="text"
+                name="addressLine1"
+                value={form.addressLine1}
+                onChange={handleChange}
+                autoComplete="address-line1"
+                placeholder="Numéro et nom de la voie"
+                required
+                disabled={busy}
+              />
+            </label>
+
+            <label>
+              <span>Complément d’adresse</span>
+              <input
+                type="text"
+                name="addressLine2"
+                value={form.addressLine2}
+                onChange={handleChange}
+                autoComplete="address-line2"
+                placeholder="Bâtiment, étage, zone d’activité…"
+                disabled={busy}
+              />
+            </label>
+
+            <div className="pro-form-row">
+              <label>
+                <span>Code postal *</span>
+                <input
+                  type="text"
+                  name="postalCode"
+                  value={form.postalCode}
+                  onChange={handleChange}
+                  autoComplete="postal-code"
+                  placeholder="69800"
+                  required
+                  disabled={busy}
+                />
+              </label>
+
+              <label>
+                <span>Ville *</span>
+                <input
+                  type="text"
+                  name="city"
+                  value={form.city}
+                  onChange={handleChange}
+                  autoComplete="address-level2"
+                  placeholder="Saint-Priest"
+                  required
+                  disabled={busy}
+                />
+              </label>
+            </div>
+
+            <label>
+              <span>Pays *</span>
+              <input
+                type="text"
+                name="country"
+                value={form.country}
+                onChange={handleChange}
+                autoComplete="country-name"
+                required
+                disabled={busy}
+              />
+            </label>
+
+            {error && (
+              <p className="pro-form-error" role="alert">
+                {error}
+              </p>
+            )}
+
+            <button
+              className="pro-primary-button"
+              type="submit"
+              disabled={busy}
+            >
+              {busy
+                ? "Enregistrement…"
+                : "Enregistrer les coordonnées"}
+            </button>
+          </form>
+        ) : (
+          <p>
+            Seul le propriétaire ou un administrateur peut modifier
+            les coordonnées de l’entreprise.
+          </p>
+        )}
+      </article>
+    </section>
+  );
+}
 export default function ProSpacePage() {
   const { user, session } = useAuth();
   const userId = user?.id;
@@ -974,6 +1170,17 @@ export default function ProSpacePage() {
         onEditing={() => setSiretMessage("")}
         onSaved={() => {
           setSiretMessage("SIRET enregistré. Consultez le statut de validation affiché au-dessus.");
+          setLoading(true);
+          setRefreshKey((currentKey) => currentKey + 1);
+        }}
+      />
+      <CompanyContactForm
+        key={`contact:${company.id}:${company.updated_at || ""}`}
+        company={company}
+        onSaved={() => {
+          setSiretMessage(
+            "Coordonnées de l’entreprise enregistrées avec succès."
+          );
           setLoading(true);
           setRefreshKey((currentKey) => currentKey + 1);
         }}

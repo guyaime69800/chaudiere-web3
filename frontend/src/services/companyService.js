@@ -81,7 +81,20 @@ export async function getMyCompany(userId) {
     error: companyError,
   } = await supabase
     .from("companies")
-    .select("id, name, siret, phone, is_demo, created_at")
+    .select(`
+  id,
+  name,
+  siret,
+  phone,
+  email,
+  address_line1,
+  address_line2,
+  postal_code,
+  city,
+  country,
+  is_demo,
+  created_at
+`)
     .eq("id", membership.company_id)
     .single();
 
@@ -164,7 +177,59 @@ export async function updateCompanySiret(companyId, siret) {
     throw new Error("Impossible d’enregistrer le SIRET. Actualisez le statut avant de réessayer.");
   }
 }
+export async function updateCompanyContactDetails(
+  companyId,
+  {
+    phone,
+    email,
+    addressLine1,
+    addressLine2,
+    postalCode,
+    city,
+    country,
+  }
+) {
+  const normalizedEmail = email.trim().toLowerCase();
 
+  if (
+    normalizedEmail
+    && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
+  ) {
+    throw new Error("L’adresse e-mail est invalide.");
+  }
+
+  const { error } = await supabase.rpc(
+    "update_company_contact_details",
+    {
+      p_company_id: companyId,
+      p_phone: phone.trim() || null,
+      p_email: normalizedEmail || null,
+      p_address_line1: addressLine1.trim() || null,
+      p_address_line2: addressLine2.trim() || null,
+      p_postal_code: postalCode.trim() || null,
+      p_city: city.trim() || null,
+      p_country: country.trim() || "France",
+    }
+  );
+
+  if (error) {
+    if (error.code === "42501") {
+      throw new Error(
+        "Votre rôle ne permet pas de modifier les coordonnées de l’entreprise."
+      );
+    }
+
+    if (error.code === "22023") {
+      throw new Error(
+        error.message || "Certaines coordonnées sont invalides."
+      );
+    }
+
+    throw new Error(
+      "Impossible d’enregistrer les coordonnées de l’entreprise."
+    );
+  }
+}
 export async function verifyMyCompany() {
   const {
     data: sessionData,
