@@ -55,6 +55,7 @@ export default function BoilerMaintenanceCertificateForm({
     equipments = [],
     requestedInterventionId = "",
     onRequestHandled,
+    onClose,
 }) {
     const [certificates, setCertificates] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -725,6 +726,7 @@ export default function BoilerMaintenanceCertificateForm({
                                     setFormOpen(false);
                                     setForm(EMPTY_FORM);
                                     setError("");
+                                    onClose?.();
                                 }}
                             >
                                 Annuler
@@ -1009,6 +1011,7 @@ export default function BoilerMaintenanceCertificateForm({
                                     setEditingCertificateId("");
                                     setDetailsForm(EMPTY_DETAILS_FORM);
                                     setError("");
+                                    onClose?.();
                                 }}
                             >
                                 Annuler
