@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import AttestationModal from "./AttestationModal";
 
 const EMPTY_FORM = {
     interventionId: "",
@@ -152,6 +153,7 @@ export default function BoilerMaintenanceCertificateForm({
     const [editingCertificateId, setEditingCertificateId] =
         useState("");
     const [savingDetails, setSavingDetails] = useState(false);
+    const [previewCertificate, setPreviewCertificate] = useState(null);
     const equipmentById = useMemo(
         () =>
             Object.fromEntries(
@@ -938,6 +940,15 @@ export default function BoilerMaintenanceCertificateForm({
                                         ? "Attestation émise"
                                         : "Brouillon à compléter"}
                                 </strong>
+                                <button
+                                    className="pro-action-card-button"
+                                    type="button"
+                                    onClick={() =>
+                                        setPreviewCertificate(certificate)
+                                    }
+                                >
+                                    Voir l’attestation
+                                </button>
                                 {certificate.status === "draft" && (
                                     <button
                                         className="pro-action-card-button"
@@ -1406,6 +1417,10 @@ export default function BoilerMaintenanceCertificateForm({
                     </form>
                 )}
             </article>
+            <AttestationModal
+                certificate={previewCertificate}
+                onClose={() => setPreviewCertificate(null)}
+            />
         </section>
     );
 }
