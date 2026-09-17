@@ -1936,35 +1936,53 @@
 }
 
 @media print {
-  body * {
-    visibility: hidden;
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
   }
 
-  .pro-attestation-modal,
-  .pro-attestation-modal * {
-    visibility: visible;
-  }
-
-  .pro-modal-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: block;
-    width: 100%;
+  html,
+  body {
+    width: auto;
+    height: auto;
+    margin: 0;
     padding: 0;
-    background: transparent;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  body > #root {
+    display: none !important;
+  }
+
+  body > .pro-modal-overlay {
+    position: static !important;
+    display: block !important;
+    width: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
   }
 
   .pro-attestation-modal {
-    width: 100%;
-    max-height: none;
-    overflow: visible;
-    border: 0;
-    box-shadow: none;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
   }
 
   .pro-modal-close,
   .pro-attestation-actions {
-    display: none;
+    display: none !important;
+  }
+
+  .pro-attestation-summary,
+  .pro-attestation-section {
+    break-inside: avoid;
   }
 }
