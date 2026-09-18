@@ -573,9 +573,7 @@ export default function InterventionForm({
                     boilerCertificateByInterventionId[intervention.id];
 
                   const certificateButtonLabel =
-                    boilerCertificatesLoading
-                      ? "Vérification de l’attestation…"
-                      : boilerCertificate?.status === "issued"
+                    boilerCertificate?.status === "issued"
                       ? "Voir l’attestation"
                       : boilerCertificate?.status === "draft"
                         ? "Compléter le brouillon"
@@ -647,18 +645,17 @@ export default function InterventionForm({
                                 : "📄 Rapport PDF"}
                             </button>
                           )}
-                          {hasBoilerCertificate && (
-                            <button
-                              className="pro-action-card-button"
-                              type="button"
-                              disabled={boilerCertificatesLoading}
-                              onClick={() =>
-                                onOpenRegulatoryDocument?.(intervention.id)
-                              }
-                            >
-                              {certificateButtonLabel}
-                            </button>
-                          )}
+                        {hasBoilerCertificate && !boilerCertificatesLoading && (
+                          <button
+                            className="pro-action-card-button"
+                            type="button"
+                            onClick={() =>
+                              onOpenRegulatoryDocument?.(intervention.id)
+                            }
+                          >
+                            {certificateButtonLabel}
+                          </button>
+                        )}
 
                       </div>
                     </li>
