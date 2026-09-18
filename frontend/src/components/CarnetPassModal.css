@@ -1,0 +1,246 @@
+.carnetpass-modal-overlay {
+  position: fixed;
+  z-index: 1300;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(35, 20, 14, 0.68);
+  backdrop-filter: blur(5px);
+}
+
+.carnetpass-modal {
+  display: flex;
+  width: min(1380px, 100%);
+  height: min(900px, calc(100vh - 48px));
+  min-height: 520px;
+  overflow: hidden;
+  flex-direction: column;
+  border: 1px solid rgba(125, 78, 54, 0.24);
+  border-radius: 22px;
+  background: #fffdfa;
+  box-shadow: 0 28px 80px rgba(35, 20, 14, 0.36);
+}
+
+.carnetpass-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--pro-line);
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(226, 94, 36, 0.14),
+      transparent 18rem
+    ),
+    #ffffff;
+}
+
+.carnetpass-modal__eyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--pro-orange);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+}
+
+.carnetpass-modal__header h2 {
+  margin: 0 0 6px;
+  color: var(--pro-ink);
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.15;
+}
+
+.carnetpass-modal__header p {
+  margin: 0;
+  color: var(--pro-muted);
+  font-size: 13px;
+}
+
+.carnetpass-modal__close {
+  display: grid;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid #f0b7a3;
+  border-radius: 50%;
+  color: var(--pro-orange-dark);
+  background: #fff4ef;
+  font: inherit;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.carnetpass-modal__close:hover,
+.carnetpass-modal__close:focus-visible {
+  border-color: var(--pro-orange);
+  background: var(--pro-orange-light);
+}
+
+.carnetpass-modal__statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--pro-line);
+  color: var(--pro-muted);
+  background: #fffdfc;
+  font-size: 12px;
+}
+
+.carnetpass-modal__statusbar .equipment-workspace__status {
+  margin: 0;
+}
+
+.carnetpass-modal__statusbar strong {
+  color: var(--pro-ink);
+}
+
+.carnetpass-modal__viewer {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  flex: 1 1 auto;
+  background: #f4efec;
+}
+
+.carnetpass-modal__viewer iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #ffffff;
+}
+
+.carnetpass-modal__loading {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--pro-muted);
+  background: rgba(255, 253, 250, 0.94);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.carnetpass-modal__loading > span {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #f1c6b6;
+  border-top-color: var(--pro-orange);
+  border-radius: 50%;
+  animation: carnetpass-modal-spin 0.75s linear infinite;
+}
+
+@keyframes carnetpass-modal-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.carnetpass-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--pro-line);
+  background: #ffffff;
+}
+
+.carnetpass-modal__footer p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--pro-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.carnetpass-modal__footer > div {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.carnetpass-modal__footer .pro-action-card-button,
+.carnetpass-modal__footer .pro-primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 130px;
+  margin: 0;
+  text-decoration: none;
+}
+
+@media (max-width: 720px) {
+  .carnetpass-modal-overlay {
+    padding: 0;
+  }
+
+  .carnetpass-modal {
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .carnetpass-modal__header {
+    padding: 16px;
+  }
+
+  .carnetpass-modal__statusbar {
+    align-items: flex-start;
+    padding: 10px 16px;
+    flex-direction: column;
+  }
+
+  .carnetpass-modal__footer {
+    align-items: stretch;
+    padding: 12px 16px;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .carnetpass-modal__footer p {
+    display: none;
+  }
+
+  .carnetpass-modal__footer > div {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .carnetpass-modal__footer .pro-action-card-button,
+  .carnetpass-modal__footer .pro-primary-button {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .carnetpass-modal__header p,
+  .carnetpass-modal__statusbar > span:last-child {
+    display: none;
+  }
+
+  .carnetpass-modal__footer > div {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carnetpass-modal__loading > span {
+    animation-duration: 1.5s;
+  }
+}
