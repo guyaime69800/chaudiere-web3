@@ -1875,6 +1875,32 @@
   break-inside: avoid;
 }
 
+.pro-attestation-co {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-left: 4px solid #2f855a;
+  border-radius: 8px;
+  background: #edfdf4;
+}
+
+.pro-attestation-co-anomaly {
+  border-left-color: #b7791f;
+  background: #fffaf0;
+}
+
+.pro-attestation-co-serious_immediate_danger {
+  border-left-color: #c53030;
+  background: #fff5f5;
+}
+
+.pro-attestation-legal {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid #e7cfc5;
+  color: #6f554d;
+  font-size: 0.86rem;
+}
+
 .pro-attestation-modal {
   width: min(980px, 100%);
 }
@@ -2050,5 +2076,18 @@
     display: block !important;
     color: #7d210a !important;
     border-color: #7d210a !important;
+  }
+
+  .pro-attestation-legal {
+    break-inside: avoid !important;
+    margin-top: 3mm !important;
+    padding-top: 2mm !important;
+    font-size: 7.5pt !important;
+  }
+
+  .pro-attestation-co {
+    break-inside: avoid !important;
+    margin-top: 2mm !important;
+    padding: 2mm !important;
   }
 }

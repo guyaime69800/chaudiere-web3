@@ -48,6 +48,32 @@ const SIZING_LABELS = {
   not_evaluable: "Impossible à évaluer pendant la visite",
 };
 
+const FLUE_LABELS = {
+  chimney: "Conduit de cheminée",
+  sealed: "Ventouse / circuit étanche",
+  vmc_gas: "VMC gaz",
+  other: "Autre",
+};
+
+const CO_MESSAGES = {
+  normal: "La situation est normale.",
+  anomaly:
+    "Il y a anomalie de fonctionnement nécessitant impérativement des investigations complémentaires concernant le tirage du conduit de fumée et la ventilation du local.",
+  serious_immediate_danger:
+    "Il y a un danger grave et imminent nécessitant la mise à l’arrêt de la chaudière et la recherche du dysfonctionnement avant remise en service.",
+};
+
+function formatAddress(snapshot = {}) {
+  return [
+    snapshot.addressLine1,
+    snapshot.addressLine2,
+    [snapshot.postalCode, snapshot.city].filter(Boolean).join(" "),
+    snapshot.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
 export default function AttestationModal({ certificate, onClose }) {
   useEffect(() => {
     if (!certificate) return undefined;
@@ -69,6 +95,10 @@ export default function AttestationModal({ certificate, onClose }) {
   if (!certificate) return null;
 
   const equipment = certificate.equipmentSnapshot || {};
+  const company = certificate.companySnapshot || {};
+  const customer = certificate.customerSnapshot || {};
+  const installation = certificate.installationSnapshot || {};
+  const technician = certificate.technicianSnapshot || {};
   const measurements = formatObject(certificate.measurements).filter(
     ([name]) => name !== "boilerSizingAssessment"
   );
@@ -76,6 +106,16 @@ export default function AttestationModal({ certificate, onClose }) {
   const sizingAssessment =
     certificate.measurements?.boilerSizingAssessment;
   const isIssued = certificate.status === "issued";
+  const companyAddress = formatAddress(company);
+  const coMessage =
+    CO_MESSAGES[certificate.ambientCoStatus] ||
+    (certificate.ambientCoPpm != null
+      ? certificate.ambientCoPpm < 10
+        ? CO_MESSAGES.normal
+        : certificate.ambientCoPpm < 50
+          ? CO_MESSAGES.anomaly
+          : CO_MESSAGES.serious_immediate_danger
+      : "");
 
   return createPortal(
     (
@@ -132,6 +172,29 @@ export default function AttestationModal({ certificate, onClose }) {
 
         <div className="pro-attestation-summary">
           <section>
+            <h3>Professionnel ayant réalisé l’entretien</h3>
+            <dl>
+              <div><dt>Entreprise</dt><dd>{displayValue(company.name)}</dd></div>
+              <div><dt>SIRET</dt><dd>{displayValue(company.siret)}</dd></div>
+              <div><dt>Adresse</dt><dd>{displayValue(companyAddress)}</dd></div>
+              <div><dt>Contact</dt><dd>{displayValue(company.phone || company.email)}</dd></div>
+              <div><dt>Technicien</dt><dd>{displayValue(technician.fullName)}</dd></div>
+              <div><dt>Coordonnées</dt><dd>{displayValue(technician.email || technician.companyPhone)}</dd></div>
+              <div><dt>Date de la visite</dt><dd>{formatDate(certificate.visitDate || installation.visitDate)}</dd></div>
+            </dl>
+          </section>
+
+          <section>
+            <h3>Commanditaire et installation</h3>
+            <dl>
+              <div><dt>Commanditaire</dt><dd>{displayValue(customer.name)}</dd></div>
+              <div><dt>Adresse</dt><dd>{displayValue(customer.address)}</dd></div>
+              <div><dt>Installation</dt><dd>{displayValue(installation.address)}</dd></div>
+              <div><dt>Local chaudière</dt><dd>{displayValue(installation.boilerLocation)}</dd></div>
+            </dl>
+          </section>
+
+          <section>
             <h3>Équipement</h3>
             <dl>
               <div><dt>Marque</dt><dd>{displayValue(equipment.brand)}</dd></div>
@@ -148,11 +211,22 @@ export default function AttestationModal({ certificate, onClose }) {
               <div><dt>Date de mise en service</dt><dd>{formatDate(certificate.commissioningDate)}</dd></div>
               <div><dt>Entretien précédent</dt><dd>{formatDate(certificate.previousMaintenanceDate)}</dd></div>
               <div><dt>Ramonage précédent</dt><dd>{formatDate(certificate.previousChimneySweepingDate)}</dd></div>
-              <div><dt>Évacuation des fumées</dt><dd>{displayValue(certificate.flueExhaustType)}</dd></div>
+              <div><dt>Évacuation des fumées</dt><dd>{FLUE_LABELS[certificate.flueExhaustType] || displayValue(certificate.flueExhaustType)}</dd></div>
               <div><dt>Classe énergétique</dt><dd>{displayValue(certificate.boilerEnergyClass)}</dd></div>
             </dl>
           </section>
         </div>
+
+        {certificate.forcedAirBurner && (
+          <section className="pro-attestation-section">
+            <h3>Brûleur à air soufflé</h3>
+            <dl>
+              <div><dt>Marque</dt><dd>{displayValue(certificate.forcedAirBurner.brand)}</dd></div>
+              <div><dt>Modèle</dt><dd>{displayValue(certificate.forcedAirBurner.model)}</dd></div>
+              <div><dt>Date</dt><dd>{formatDate(certificate.forcedAirBurner.date)}</dd></div>
+            </dl>
+          </section>
+        )}
 
         {Array.isArray(certificate.controlledPoints) &&
           certificate.controlledPoints.length > 0 && (
@@ -161,6 +235,18 @@ export default function AttestationModal({ certificate, onClose }) {
               <ul>
                 {certificate.controlledPoints.map((point) => (
                   <li key={point}>✓ {point}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+        {Array.isArray(certificate.measuringInstruments) &&
+          certificate.measuringInstruments.length > 0 && (
+            <section className="pro-attestation-section">
+              <h3>Appareils de mesure utilisés</h3>
+              <ul>
+                {certificate.measuringInstruments.map((instrument) => (
+                  <li key={instrument}>{instrument}</li>
                 ))}
               </ul>
             </section>
@@ -212,6 +298,21 @@ export default function AttestationModal({ certificate, onClose }) {
                   <div><dt>Dimensionnement</dt><dd>{SIZING_LABELS[sizingAssessment] || sizingAssessment}</dd></div>
                 )}
               </dl>
+              {coMessage && (
+                <p className={`pro-attestation-co pro-attestation-co-${certificate.ambientCoStatus || "normal"}`}>
+                  <strong>Conclusion CO :</strong> {coMessage}
+                </p>
+              )}
+            </section>
+          )}
+
+        {Array.isArray(certificate.replacementEnergyClasses) &&
+          certificate.replacementEnergyClasses.length > 0 && (
+            <section className="pro-attestation-section">
+              <h3>Solutions de remplacement</h3>
+              <p>
+                Classes énergétiques indicatives : {certificate.replacementEnergyClasses.join(", ")}.
+              </p>
             </section>
           )}
 
@@ -240,6 +341,19 @@ export default function AttestationModal({ certificate, onClose }) {
             </p>
           </section>
         )}
+
+        <footer className="pro-attestation-legal">
+          <p>
+            Attestation établie conformément à l’arrêté du 15 septembre 2009
+            relatif à l’entretien annuel des chaudières de 4 à 400 kW,
+            notamment son annexe 5.
+          </p>
+          <p>
+            Les conseils et recommandations sont donnés à titre indicatif et
+            ont une valeur informative. Ils ne constituent pas une obligation
+            d’investissement, sauf mesure de sécurité liée au monoxyde de carbone.
+          </p>
+        </footer>
 
         <div className="pro-attestation-actions">
           <button

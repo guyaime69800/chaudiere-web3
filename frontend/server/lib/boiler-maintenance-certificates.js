@@ -46,7 +46,11 @@ const CERTIFICATE_READ_COLUMNS = [
   "issued_at",
 ].join(", ");
 
-function requestError(status, code, publicMessage) {
+function requestError(
+  status,
+  code,
+  publicMessage
+) {
   const error = new Error(code);
 
   error.status = status;
@@ -57,11 +61,13 @@ function requestError(status, code, publicMessage) {
 }
 
 function createAdminSupabase() {
-  const url = process.env.VITE_SUPABASE_URL;
+  const url =
+    process.env.VITE_SUPABASE_URL;
 
   const key =
     process.env.SUPABASE_SECRET_KEY ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY;
+    process.env
+      .SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
     throw requestError(
@@ -81,28 +87,52 @@ function createAdminSupabase() {
 }
 
 function isPlainObject(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
     return false;
   }
 
-  const prototype = Object.getPrototypeOf(value);
+  const prototype =
+    Object.getPrototypeOf(value);
 
-  return prototype === Object.prototype || prototype === null;
+  return (
+    prototype === Object.prototype ||
+    prototype === null
+  );
 }
 
-function normalizeSnapshot(value, code, publicMessage) {
-  if (value === undefined || value === null) {
+function normalizeSnapshot(
+  value,
+  code,
+  publicMessage
+) {
+  if (
+    value === undefined ||
+    value === null
+  ) {
     return {};
   }
 
   if (!isPlainObject(value)) {
-    throw requestError(400, code, publicMessage);
+    throw requestError(
+      400,
+      code,
+      publicMessage
+    );
   }
 
-  const serialized = JSON.stringify(value);
+  const serialized =
+    JSON.stringify(value);
 
   if (serialized.length > 8_000) {
-    throw requestError(400, code, publicMessage);
+    throw requestError(
+      400,
+      code,
+      publicMessage
+    );
   }
 
   return value;
@@ -117,9 +147,15 @@ function validatePostBody(body) {
     );
   }
 
-  const serialized = JSON.stringify(body);
+  const serialized =
+    JSON.stringify(body);
 
-  if (Buffer.byteLength(serialized, "utf8") > MAX_BODY_BYTES) {
+  if (
+    Buffer.byteLength(
+      serialized,
+      "utf8"
+    ) > MAX_BODY_BYTES
+  ) {
     throw requestError(
       413,
       "BODY_TOO_LARGE",
@@ -144,8 +180,11 @@ function validatePostBody(body) {
   }
 
   if (
-    typeof body.interventionId !== "string" ||
-    !UUID_PATTERN.test(body.interventionId.trim())
+    typeof body.interventionId !==
+      "string" ||
+    !UUID_PATTERN.test(
+      body.interventionId.trim()
+    )
   ) {
     throw requestError(
       400,
@@ -155,12 +194,17 @@ function validatePostBody(body) {
   }
 
   return {
-    interventionId: body.interventionId.trim().toLowerCase(),
+    interventionId:
+      body.interventionId
+        .trim()
+        .toLowerCase(),
+
     customer: normalizeSnapshot(
       body.customer,
       "CUSTOMER_INVALID",
       "Les informations du commanditaire sont invalides."
     ),
+
     installation: normalizeSnapshot(
       body.installation,
       "INSTALLATION_INVALID",
@@ -168,8 +212,17 @@ function validatePostBody(body) {
     ),
   };
 }
-function normalizeOptionalText(value, fieldName, maxLength = 2_000) {
-  if (value === undefined || value === null || value === "") {
+
+function normalizeOptionalText(
+  value,
+  fieldName,
+  maxLength = 2_000
+) {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
     return null;
   }
 
@@ -183,7 +236,9 @@ function normalizeOptionalText(value, fieldName, maxLength = 2_000) {
 
   const normalized = value.trim();
 
-  if (normalized.length > maxLength) {
+  if (
+    normalized.length > maxLength
+  ) {
     throw requestError(
       400,
       "FIELD_TOO_LONG",
@@ -194,14 +249,24 @@ function normalizeOptionalText(value, fieldName, maxLength = 2_000) {
   return normalized || null;
 }
 
-function normalizeOptionalNumber(value, fieldName) {
-  if (value === undefined || value === null || value === "") {
+function normalizeOptionalNumber(
+  value,
+  fieldName
+) {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
     return null;
   }
 
   const normalized = Number(value);
 
-  if (!Number.isFinite(normalized) || normalized < 0) {
+  if (
+    !Number.isFinite(normalized) ||
+    normalized < 0
+  ) {
     throw requestError(
       400,
       "NUMBER_INVALID",
@@ -212,14 +277,23 @@ function normalizeOptionalNumber(value, fieldName) {
   return normalized;
 }
 
-function normalizeOptionalDate(value, fieldName) {
-  if (value === undefined || value === null || value === "") {
+function normalizeOptionalDate(
+  value,
+  fieldName
+) {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
     return null;
   }
 
   if (
     typeof value !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+    !/^\d{4}-\d{2}-\d{2}$/.test(
+      value
+    )
   ) {
     throw requestError(
       400,
@@ -231,12 +305,21 @@ function normalizeOptionalDate(value, fieldName) {
   return value;
 }
 
-function normalizeStringArray(value, fieldName) {
-  if (value === undefined || value === null) {
+function normalizeStringArray(
+  value,
+  fieldName
+) {
+  if (
+    value === undefined ||
+    value === null
+  ) {
     return [];
   }
 
-  if (!Array.isArray(value) || value.length > 50) {
+  if (
+    !Array.isArray(value) ||
+    value.length > 50
+  ) {
     throw requestError(
       400,
       "ARRAY_INVALID",
@@ -244,22 +327,32 @@ function normalizeStringArray(value, fieldName) {
     );
   }
 
-  return value.map((item) => {
-    if (typeof item !== "string") {
-      throw requestError(
-        400,
-        "ARRAY_INVALID",
-        `${fieldName} est invalide.`
-      );
-    }
+  return value
+    .map((item) => {
+      if (
+        typeof item !== "string"
+      ) {
+        throw requestError(
+          400,
+          "ARRAY_INVALID",
+          `${fieldName} est invalide.`
+        );
+      }
 
-    return item.trim().slice(0, 300);
-  }).filter(Boolean);
+      return item
+        .trim()
+        .slice(0, 300);
+    })
+    .filter(Boolean);
 }
+
 function normalizeJsonObject(
   value,
   fieldName,
-  { nullable = false, maxLength = 8_000 } = {}
+  {
+    nullable = false,
+    maxLength = 8_000,
+  } = {}
 ) {
   if (
     value === undefined ||
@@ -277,9 +370,12 @@ function normalizeJsonObject(
     );
   }
 
-  const serialized = JSON.stringify(value);
+  const serialized =
+    JSON.stringify(value);
 
-  if (serialized.length > maxLength) {
+  if (
+    serialized.length > maxLength
+  ) {
     throw requestError(
       400,
       "OBJECT_TOO_LARGE",
@@ -300,8 +396,11 @@ function validatePatchBody(body) {
   }
 
   if (
-    typeof body.certificateId !== "string" ||
-    !UUID_PATTERN.test(body.certificateId.trim())
+    typeof body.certificateId !==
+      "string" ||
+    !UUID_PATTERN.test(
+      body.certificateId.trim()
+    )
   ) {
     throw requestError(
       400,
@@ -310,20 +409,28 @@ function validatePatchBody(body) {
     );
   }
 
-  const action = body.action === "issue" ? "issue" : "save";
+  const action =
+    body.action === "issue"
+      ? "issue"
+      : "save";
 
   if (
     body.action !== undefined &&
     body.action !== "save" &&
     body.action !== "issue"
   ) {
-    throw requestError(400, "ACTION_INVALID", "L’action demandée est invalide.");
+    throw requestError(
+      400,
+      "ACTION_INVALID",
+      "L’action demandée est invalide."
+    );
   }
 
-  const ambientCoPpm = normalizeOptionalNumber(
-    body.ambientCoPpm,
-    "La mesure de monoxyde de carbone"
-  );
+  const ambientCoPpm =
+    normalizeOptionalNumber(
+      body.ambientCoPpm,
+      "La mesure de monoxyde de carbone"
+    );
 
   let ambientCoStatus = null;
 
@@ -338,113 +445,266 @@ function validatePatchBody(body) {
 
   return {
     action,
-    issuanceAccepted: body.issuanceAccepted === true,
-    certificateId: body.certificateId.trim().toLowerCase(),
-    boilerEnergy: normalizeOptionalText(
-      body.boilerEnergy,
-      "L’énergie de la chaudière",
-      100
-    ),
-    flueExhaustType: normalizeOptionalText(
-      body.flueExhaustType,
-      "Le type d’évacuation",
-      100
-    ),
-    commissioningDate: normalizeOptionalDate(
-      body.commissioningDate,
-      "La date de mise en service"
-    ),
-    nominalPowerKw: normalizeOptionalNumber(
-      body.nominalPowerKw,
-      "La puissance nominale"
-    ),
-    forcedAirBurner: normalizeJsonObject(
-      body.forcedAirBurner,
-      "Les informations du brûleur à air soufflé",
-      { nullable: true }
-    ),
-    previousMaintenanceDate: normalizeOptionalDate(
-      body.previousMaintenanceDate,
-      "La date du précédent entretien"
-    ),
-    previousChimneySweepingDate: normalizeOptionalDate(
-      body.previousChimneySweepingDate,
-      "La date du précédent ramonage"
-    ),
-    controlledPoints: normalizeStringArray(
-      body.controlledPoints,
-      "Les points contrôlés"
-    ),
-    measuringInstruments: normalizeStringArray(
-      body.measuringInstruments,
-      "Les appareils de mesure"
-    ),
-    measurements: normalizeJsonObject(
-      body.measurements,
-      "Les mesures techniques"
-    ),
+
+    issuanceAccepted:
+      body.issuanceAccepted === true,
+
+    certificateId:
+      body.certificateId
+        .trim()
+        .toLowerCase(),
+
+    boilerEnergy:
+      normalizeOptionalText(
+        body.boilerEnergy,
+        "L’énergie de la chaudière",
+        100
+      ),
+
+    flueExhaustType:
+      normalizeOptionalText(
+        body.flueExhaustType,
+        "Le type d’évacuation",
+        100
+      ),
+
+    commissioningDate:
+      normalizeOptionalDate(
+        body.commissioningDate,
+        "La date de mise en service"
+      ),
+
+    nominalPowerKw:
+      normalizeOptionalNumber(
+        body.nominalPowerKw,
+        "La puissance nominale"
+      ),
+
+    forcedAirBurner:
+      normalizeJsonObject(
+        body.forcedAirBurner,
+        "Les informations du brûleur à air soufflé",
+        {
+          nullable: true,
+        }
+      ),
+
+    previousMaintenanceDate:
+      normalizeOptionalDate(
+        body.previousMaintenanceDate,
+        "La date du précédent entretien"
+      ),
+
+    previousChimneySweepingDate:
+      normalizeOptionalDate(
+        body.previousChimneySweepingDate,
+        "La date du précédent ramonage"
+      ),
+
+    controlledPoints:
+      normalizeStringArray(
+        body.controlledPoints,
+        "Les points contrôlés"
+      ),
+
+    measuringInstruments:
+      normalizeStringArray(
+        body.measuringInstruments,
+        "Les appareils de mesure"
+      ),
+
+    measurements:
+      normalizeJsonObject(
+        body.measurements,
+        "Les mesures techniques"
+      ),
+
     ambientCoPpm,
     ambientCoStatus,
-    boilerEfficiencyPercent: normalizeOptionalNumber(
-      body.boilerEfficiencyPercent,
-      "Le rendement de la chaudière"
-    ),
-    referenceEfficiencyPercent: normalizeOptionalNumber(
-      body.referenceEfficiencyPercent,
-      "Le rendement de référence"
-    ),
-    pollutantEmissions: normalizeJsonObject(
-      body.pollutantEmissions,
-      "Les émissions polluantes"
-    ),
-    adviceGoodUse: normalizeOptionalText(
-      body.adviceGoodUse,
-      "Les conseils de bon usage"
-    ),
-    adviceImprovements: normalizeOptionalText(
-      body.adviceImprovements,
-      "Les conseils d’amélioration"
-    ),
-    adviceReplacement: normalizeOptionalText(
-      body.adviceReplacement,
-      "Les conseils de remplacement"
-    ),
-    boilerEnergyClass: normalizeOptionalText(
-      body.boilerEnergyClass,
-      "La classe énergétique",
-      20
-    ),
-    replacementEnergyClasses: normalizeStringArray(
-      body.replacementEnergyClasses,
-      "Les classes énergétiques de remplacement"
-    ),
+
+    boilerEfficiencyPercent:
+      normalizeOptionalNumber(
+        body.boilerEfficiencyPercent,
+        "Le rendement de la chaudière"
+      ),
+
+    referenceEfficiencyPercent:
+      normalizeOptionalNumber(
+        body.referenceEfficiencyPercent,
+        "Le rendement de référence"
+      ),
+
+    pollutantEmissions:
+      normalizeJsonObject(
+        body.pollutantEmissions,
+        "Les émissions polluantes"
+      ),
+
+    adviceGoodUse:
+      normalizeOptionalText(
+        body.adviceGoodUse,
+        "Les conseils de bon usage"
+      ),
+
+    adviceImprovements:
+      normalizeOptionalText(
+        body.adviceImprovements,
+        "Les conseils d’amélioration"
+      ),
+
+    adviceReplacement:
+      normalizeOptionalText(
+        body.adviceReplacement,
+        "Les conseils de remplacement"
+      ),
+
+    boilerEnergyClass:
+      normalizeOptionalText(
+        body.boilerEnergyClass,
+        "La classe énergétique",
+        20
+      ),
+
+    replacementEnergyClasses:
+      normalizeStringArray(
+        body.replacementEnergyClasses,
+        "Les classes énergétiques de remplacement"
+      ),
   };
 }
 
-function validateIssuance(input, certificate) {
+function validateIssuance(
+  input,
+  certificate
+) {
   const missing = [];
 
-  if (!certificate.customer_snapshot?.name) missing.push("le nom du commanditaire");
-  if (!certificate.customer_snapshot?.address) missing.push("l’adresse du commanditaire");
-  if (!certificate.installation_snapshot?.address) missing.push("l’adresse de l’installation");
-  if (!certificate.installation_snapshot?.boilerLocation) missing.push("le local de la chaudière");
+  if (
+    !certificate.customer_snapshot
+      ?.name
+  ) {
+    missing.push(
+      "le nom du commanditaire"
+    );
+  }
 
-  if (!input.boilerEnergy) missing.push("l’énergie de la chaudière");
-  if (!input.flueExhaustType) missing.push("le type d’évacuation des fumées");
-  if (input.nominalPowerKw === null) missing.push("la puissance nominale");
-  if (input.controlledPoints.length === 0) missing.push("au moins un point contrôlé");
-  if (input.measuringInstruments.length === 0) missing.push("au moins un appareil de mesure");
-  if (input.ambientCoPpm === null) missing.push("la mesure de CO ambiant");
-  if (input.boilerEfficiencyPercent === null) missing.push("le rendement de la chaudière");
-  if (input.referenceEfficiencyPercent === null) missing.push("le rendement de référence");
-  if (Object.keys(input.measurements).length === 0) missing.push("les mesures techniques");
-  if (Object.keys(input.pollutantEmissions).length === 0) missing.push("les émissions polluantes");
+  if (
+    !certificate.customer_snapshot
+      ?.address
+  ) {
+    missing.push(
+      "l’adresse du commanditaire"
+    );
+  }
+
+  if (
+    !certificate.installation_snapshot
+      ?.address
+  ) {
+    missing.push(
+      "l’adresse de l’installation"
+    );
+  }
+
+  if (
+    !certificate.installation_snapshot
+      ?.boilerLocation
+  ) {
+    missing.push(
+      "le local de la chaudière"
+    );
+  }
+
+  if (!input.boilerEnergy) {
+    missing.push(
+      "l’énergie de la chaudière"
+    );
+  }
+
+  if (!input.flueExhaustType) {
+    missing.push(
+      "le type d’évacuation des fumées"
+    );
+  }
+
+  if (
+    input.nominalPowerKw === null
+  ) {
+    missing.push(
+      "la puissance nominale"
+    );
+  }
+
+  if (
+    input.controlledPoints.length ===
+    0
+  ) {
+    missing.push(
+      "au moins un point contrôlé"
+    );
+  }
+
+  if (
+    input.measuringInstruments
+      .length === 0
+  ) {
+    missing.push(
+      "au moins un appareil de mesure"
+    );
+  }
+
+  if (
+    input.ambientCoPpm === null
+  ) {
+    missing.push(
+      "la mesure de CO ambiant"
+    );
+  }
+
+  if (
+    input.boilerEfficiencyPercent ===
+    null
+  ) {
+    missing.push(
+      "le rendement de la chaudière"
+    );
+  }
+
+  if (
+    input.referenceEfficiencyPercent ===
+    null
+  ) {
+    missing.push(
+      "le rendement de référence"
+    );
+  }
+
+  if (
+    Object.keys(input.measurements)
+      .length === 0
+  ) {
+    missing.push(
+      "les mesures techniques"
+    );
+  }
+
+  if (
+    Object.keys(
+      input.pollutantEmissions
+    ).length === 0
+  ) {
+    missing.push(
+      "les émissions polluantes"
+    );
+  }
 
   if (missing.length > 0) {
     throw requestError(
       400,
       "CERTIFICATE_INCOMPLETE",
-      `Complétez avant l’émission : ${missing.join(", ")}.`
+      `Complétez avant l’émission : ${missing.join(
+        ", "
+      )}.`
     );
   }
 
@@ -457,73 +717,181 @@ function validateIssuance(input, certificate) {
   }
 }
 
-function buildCertificateNumber(certificateId, issuedAt) {
-  const year = issuedAt.getUTCFullYear();
-  const suffix = certificateId.replaceAll("-", "").slice(0, 12).toUpperCase();
+function buildCertificateNumber(
+  certificateId,
+  issuedAt
+) {
+  const year =
+    issuedAt.getUTCFullYear();
+
+  const suffix = certificateId
+    .replaceAll("-", "")
+    .slice(0, 12)
+    .toUpperCase();
 
   return `CP-CHA-${year}-${suffix}`;
 }
-function serializeCertificate(certificate) {
+
+function serializeCertificate(
+  certificate
+) {
   return {
     id: certificate.id,
-    interventionId: certificate.intervention_id,
-    companyId: certificate.company_id,
-    equipmentId: certificate.equipment_id,
-    technicianId: certificate.technician_id,
+
+    interventionId:
+      certificate.intervention_id,
+
+    companyId:
+      certificate.company_id,
+
+    equipmentId:
+      certificate.equipment_id,
+
+    technicianId:
+      certificate.technician_id,
+
     status: certificate.status,
-    documentVersion: certificate.document_version,
-    certificateNumber: certificate.certificate_number,
-    companySnapshot: certificate.company_snapshot,
-    equipmentSnapshot: certificate.equipment_snapshot,
-    customerSnapshot: certificate.customer_snapshot,
-    installationSnapshot: certificate.installation_snapshot,
-    technicianSnapshot: certificate.technician_snapshot,
-    boilerEnergy: certificate.boiler_energy,
-    flueExhaustType: certificate.flue_exhaust_type,
-    commissioningDate: certificate.commissioning_date,
-    nominalPowerKw: certificate.nominal_power_kw,
-    forcedAirBurner: certificate.forced_air_burner,
+
+    documentVersion:
+      certificate.document_version,
+
+    certificateNumber:
+      certificate.certificate_number,
+
+    companySnapshot:
+      certificate.company_snapshot,
+
+    equipmentSnapshot:
+      certificate.equipment_snapshot,
+
+    customerSnapshot:
+      certificate.customer_snapshot,
+
+    installationSnapshot:
+      certificate.installation_snapshot,
+
+    technicianSnapshot:
+      certificate.technician_snapshot,
+
+    boilerEnergy:
+      certificate.boiler_energy,
+
+    flueExhaustType:
+      certificate.flue_exhaust_type,
+
+    commissioningDate:
+      certificate.commissioning_date,
+
+    nominalPowerKw:
+      certificate.nominal_power_kw,
+
+    forcedAirBurner:
+      certificate.forced_air_burner,
+
     previousMaintenanceDate:
       certificate.previous_maintenance_date,
+
     previousChimneySweepingDate:
       certificate.previous_chimney_sweeping_date,
-    controlledPoints: certificate.controlled_points,
-    measuringInstruments: certificate.measuring_instruments,
-    measurements: certificate.measurements,
-    ambientCoPpm: certificate.ambient_co_ppm,
-    ambientCoStatus: certificate.ambient_co_status,
+
+    controlledPoints:
+      certificate.controlled_points,
+
+    measuringInstruments:
+      certificate.measuring_instruments,
+
+    measurements:
+      certificate.measurements,
+
+    ambientCoPpm:
+      certificate.ambient_co_ppm,
+
+    ambientCoStatus:
+      certificate.ambient_co_status,
+
     boilerEfficiencyPercent:
       certificate.boiler_efficiency_percent,
+
     referenceEfficiencyPercent:
       certificate.reference_efficiency_percent,
-    pollutantEmissions: certificate.pollutant_emissions,
-    adviceGoodUse: certificate.advice_good_use,
-    adviceImprovements: certificate.advice_improvements,
-    adviceReplacement: certificate.advice_replacement,
-    boilerEnergyClass: certificate.boiler_energy_class,
+
+    pollutantEmissions:
+      certificate.pollutant_emissions,
+
+    adviceGoodUse:
+      certificate.advice_good_use,
+
+    adviceImprovements:
+      certificate.advice_improvements,
+
+    adviceReplacement:
+      certificate.advice_replacement,
+
+    boilerEnergyClass:
+      certificate.boiler_energy_class,
+
     replacementEnergyClasses:
       certificate.replacement_energy_classes,
-    technicianSignature: certificate.technician_signature,
-    createdAt: certificate.created_at,
-    updatedAt: certificate.updated_at,
-    issuedAt: certificate.issued_at,
+
+    technicianSignature:
+      certificate.technician_signature,
+
+    visitDate:
+      certificate
+        .installation_snapshot
+        ?.visitDate ||
+      certificate
+        .installation_snapshot
+        ?.visit_date ||
+      null,
+
+    createdAt:
+      certificate.created_at,
+
+    updatedAt:
+      certificate.updated_at,
+
+    issuedAt:
+      certificate.issued_at,
   };
 }
 
-async function readCertificates(req, res) {
-  const creator = await requireVerifiedCompany(req, res);
+async function readCertificates(
+  req,
+  res
+) {
+  const creator =
+    await requireVerifiedCompany(
+      req,
+      res
+    );
 
   if (!creator) return;
 
-  const supabase = createAdminSupabase();
+  const supabase =
+    createAdminSupabase();
 
-  const { data, error, count } = await supabase
-    .from("boiler_maintenance_certificates")
-    .select(CERTIFICATE_READ_COLUMNS, {
-      count: "exact",
+  const {
+    data,
+    error,
+    count,
+  } = await supabase
+    .from(
+      "boiler_maintenance_certificates"
+    )
+    .select(
+      CERTIFICATE_READ_COLUMNS,
+      {
+        count: "exact",
+      }
+    )
+    .eq(
+      "company_id",
+      creator.companyId
+    )
+    .order("created_at", {
+      ascending: false,
     })
-    .eq("company_id", creator.companyId)
-    .order("created_at", { ascending: false })
     .limit(100);
 
   if (error) {
@@ -534,21 +902,36 @@ async function readCertificates(req, res) {
     );
   }
 
-  const certificates = Array.isArray(data) ? data : [];
+  const certificates =
+    Array.isArray(data) ? data : [];
 
   return res.status(200).json({
     ok: true,
-    total: count ?? certificates.length,
-    certificates: certificates.map(serializeCertificate),
+    total:
+      count ?? certificates.length,
+
+    certificates:
+      certificates.map(
+        serializeCertificate
+      ),
   });
 }
 
-async function createDraftCertificate(req, res) {
-  const contentType = req.headers?.["content-type"];
+async function createDraftCertificate(
+  req,
+  res
+) {
+  const contentType =
+    req.headers?.["content-type"];
 
   if (
-    typeof contentType !== "string" ||
-    !contentType.toLowerCase().startsWith("application/json")
+    typeof contentType !==
+      "string" ||
+    !contentType
+      .toLowerCase()
+      .startsWith(
+        "application/json"
+      )
   ) {
     throw requestError(
       415,
@@ -557,30 +940,45 @@ async function createDraftCertificate(req, res) {
     );
   }
 
-  const creator = await requireVerifiedCompany(req, res);
+  const creator =
+    await requireVerifiedCompany(
+      req,
+      res
+    );
 
   if (!creator) return;
 
-  const input = validatePostBody(req.body);
-  const supabase = createAdminSupabase();
+  const input =
+    validatePostBody(req.body);
 
-  const { data: intervention, error: interventionError } =
-    await supabase
-      .from("interventions")
-      .select(
-        [
-          "id",
-          "company_id",
-          "equipment_id",
-          "technician_id",
-          "intervention_type",
-          "intervention_at",
-          "polygon_state",
-        ].join(", ")
-      )
-      .eq("id", input.interventionId)
-      .eq("company_id", creator.companyId)
-      .maybeSingle();
+  const supabase =
+    createAdminSupabase();
+
+  const {
+    data: intervention,
+    error: interventionError,
+  } = await supabase
+    .from("interventions")
+    .select(
+      [
+        "id",
+        "company_id",
+        "equipment_id",
+        "technician_id",
+        "intervention_type",
+        "intervention_at",
+        "polygon_state",
+      ].join(", ")
+    )
+    .eq(
+      "id",
+      input.interventionId
+    )
+    .eq(
+      "company_id",
+      creator.companyId
+    )
+    .maybeSingle();
 
   if (interventionError) {
     throw requestError(
@@ -598,7 +996,10 @@ async function createDraftCertificate(req, res) {
     );
   }
 
-  if (intervention.intervention_type !== "maintenance") {
+  if (
+    intervention.intervention_type !==
+    "maintenance"
+  ) {
     throw requestError(
       409,
       "MAINTENANCE_REQUIRED",
@@ -606,7 +1007,10 @@ async function createDraftCertificate(req, res) {
     );
   }
 
-  if (intervention.polygon_state !== "confirmed") {
+  if (
+    intervention.polygon_state !==
+    "confirmed"
+  ) {
     throw requestError(
       409,
       "POLYGON_CONFIRMATION_REQUIRED",
@@ -614,7 +1018,10 @@ async function createDraftCertificate(req, res) {
     );
   }
 
-  if (intervention.technician_id !== creator.userId) {
+  if (
+    intervention.technician_id !==
+    creator.userId
+  ) {
     throw requestError(
       403,
       "TECHNICIAN_MISMATCH",
@@ -643,7 +1050,10 @@ async function createDraftCertificate(req, res) {
           "country",
         ].join(", ")
       )
-      .eq("id", creator.companyId)
+      .eq(
+        "id",
+        creator.companyId
+      )
       .single(),
 
     supabase
@@ -651,14 +1061,25 @@ async function createDraftCertificate(req, res) {
       .select(
         "id, company_id, equipment_type, brand, model, product_reference, serial_number"
       )
-      .eq("id", intervention.equipment_id)
-      .eq("company_id", creator.companyId)
+      .eq(
+        "id",
+        intervention.equipment_id
+      )
+      .eq(
+        "company_id",
+        creator.companyId
+      )
       .single(),
 
     supabase
       .from("profiles")
-      .select("id, full_name, job_title")
-      .eq("id", creator.userId)
+      .select(
+        "id, full_name, job_title"
+      )
+      .eq(
+        "id",
+        creator.userId
+      )
       .single(),
   ]);
 
@@ -667,11 +1088,20 @@ async function createDraftCertificate(req, res) {
     equipmentResult.error ||
     profileResult.error
   ) {
-    console.error("SNAPSHOT_READ_FAILED", {
-      company: companyResult.error,
-      equipment: equipmentResult.error,
-      profile: profileResult.error,
-    });
+    console.error(
+      "SNAPSHOT_READ_FAILED",
+      {
+        company:
+          companyResult.error,
+
+        equipment:
+          equipmentResult.error,
+
+        profile:
+          profileResult.error,
+      }
+    );
+
     throw requestError(
       503,
       "SNAPSHOT_READ_FAILED",
@@ -679,11 +1109,19 @@ async function createDraftCertificate(req, res) {
     );
   }
 
-  const company = companyResult.data;
-  const equipment = equipmentResult.data;
-  const profile = profileResult.data;
+  const company =
+    companyResult.data;
 
-  if (equipment.equipment_type !== "boiler") {
+  const equipment =
+    equipmentResult.data;
+
+  const profile =
+    profileResult.data;
+
+  if (
+    equipment.equipment_type !==
+    "boiler"
+  ) {
     throw requestError(
       409,
       "BOILER_REQUIRED",
@@ -697,37 +1135,68 @@ async function createDraftCertificate(req, res) {
     siret: company.siret,
     phone: company.phone,
     email: company.email,
-    addressLine1: company.address_line1,
-    addressLine2: company.address_line2,
-    postalCode: company.postal_code,
+
+    addressLine1:
+      company.address_line1,
+
+    addressLine2:
+      company.address_line2,
+
+    postalCode:
+      company.postal_code,
+
     city: company.city,
     country: company.country,
   };
 
   const equipmentSnapshot = {
     id: equipment.id,
-    equipmentType: equipment.equipment_type,
+
+    equipmentType:
+      equipment.equipment_type,
+
     brand: equipment.brand,
     model: equipment.model,
-    productReference: equipment.product_reference,
-    serialNumber: equipment.serial_number,
+
+    productReference:
+      equipment.product_reference,
+
+    serialNumber:
+      equipment.serial_number,
   };
 
   const technicianSnapshot = {
     id: profile.id,
-    fullName: profile.full_name,
-    jobTitle: profile.job_title,
+
+    fullName:
+      profile.full_name,
+
+    jobTitle:
+      profile.job_title,
+
     email: creator.email,
-    companyPhone: company.phone,
+
+    companyPhone:
+      company.phone,
+
     role: creator.role,
   };
 
-  const { data: existing, error: existingError } =
-    await supabase
-      .from("boiler_maintenance_certificates")
-      .select(CERTIFICATE_READ_COLUMNS)
-      .eq("intervention_id", intervention.id)
-      .maybeSingle();
+  const {
+    data: existing,
+    error: existingError,
+  } = await supabase
+    .from(
+      "boiler_maintenance_certificates"
+    )
+    .select(
+      CERTIFICATE_READ_COLUMNS
+    )
+    .eq(
+      "intervention_id",
+      intervention.id
+    )
+    .maybeSingle();
 
   if (existingError) {
     throw requestError(
@@ -741,31 +1210,65 @@ async function createDraftCertificate(req, res) {
     return res.status(200).json({
       ok: true,
       alreadyExists: true,
-      certificate: serializeCertificate(existing),
+
+      certificate:
+        serializeCertificate(
+          existing
+        ),
     });
   }
 
-  const { data: certificate, error: insertError } =
-    await supabase
-      .from("boiler_maintenance_certificates")
-      .insert({
-        intervention_id: intervention.id,
-        company_id: creator.companyId,
-        equipment_id: equipment.id,
-        technician_id: creator.userId,
-        status: "draft",
-        document_version: 1,
-        company_snapshot: companySnapshot,
-        equipment_snapshot: equipmentSnapshot,
-        customer_snapshot: input.customer,
-        installation_snapshot: input.installation,
-        technician_snapshot: technicianSnapshot,
-      })
-      .select(CERTIFICATE_READ_COLUMNS)
-      .single();
+  const {
+    data: certificate,
+    error: insertError,
+  } = await supabase
+    .from(
+      "boiler_maintenance_certificates"
+    )
+    .insert({
+      intervention_id:
+        intervention.id,
+
+      company_id:
+        creator.companyId,
+
+      equipment_id:
+        equipment.id,
+
+      technician_id:
+        creator.userId,
+
+      status: "draft",
+      document_version: 1,
+
+      company_snapshot:
+        companySnapshot,
+
+      equipment_snapshot:
+        equipmentSnapshot,
+
+      customer_snapshot:
+        input.customer,
+
+      installation_snapshot: {
+        ...input.installation,
+
+        visitDate:
+          intervention.intervention_at,
+      },
+
+      technician_snapshot:
+        technicianSnapshot,
+    })
+    .select(
+      CERTIFICATE_READ_COLUMNS
+    )
+    .single();
 
   if (insertError) {
-    if (insertError.code === "23505") {
+    if (
+      insertError.code === "23505"
+    ) {
       throw requestError(
         409,
         "CERTIFICATE_ALREADY_EXISTS",
@@ -782,15 +1285,29 @@ async function createDraftCertificate(req, res) {
 
   return res.status(201).json({
     ok: true,
-    certificate: serializeCertificate(certificate),
+
+    certificate:
+      serializeCertificate(
+        certificate
+      ),
   });
 }
-async function updateDraftCertificate(req, res) {
-  const contentType = req.headers?.["content-type"];
+
+async function updateDraftCertificate(
+  req,
+  res
+) {
+  const contentType =
+    req.headers?.["content-type"];
 
   if (
-    typeof contentType !== "string" ||
-    !contentType.toLowerCase().startsWith("application/json")
+    typeof contentType !==
+      "string" ||
+    !contentType
+      .toLowerCase()
+      .startsWith(
+        "application/json"
+      )
   ) {
     throw requestError(
       415,
@@ -799,15 +1316,22 @@ async function updateDraftCertificate(req, res) {
     );
   }
 
-  const creator = await requireVerifiedCompany(req, res);
+  const creator =
+    await requireVerifiedCompany(
+      req,
+      res
+    );
 
   if (!creator) return;
 
-  const input = validatePatchBody(req.body);
+  const input =
+    validatePatchBody(req.body);
 
   if (
-    input.boilerEfficiencyPercent !== null &&
-    input.boilerEfficiencyPercent > 100
+    input.boilerEfficiencyPercent !==
+      null &&
+    input.boilerEfficiencyPercent >
+      100
   ) {
     throw requestError(
       400,
@@ -817,8 +1341,10 @@ async function updateDraftCertificate(req, res) {
   }
 
   if (
-    input.referenceEfficiencyPercent !== null &&
-    input.referenceEfficiencyPercent > 100
+    input.referenceEfficiencyPercent !==
+      null &&
+    input.referenceEfficiencyPercent >
+      100
   ) {
     throw requestError(
       400,
@@ -827,25 +1353,36 @@ async function updateDraftCertificate(req, res) {
     );
   }
 
-  const supabase = createAdminSupabase();
+  const supabase =
+    createAdminSupabase();
 
-  const { data: existing, error: readError } =
-    await supabase
-      .from("boiler_maintenance_certificates")
-      .select(
-        [
-          "id",
-          "company_id",
-          "technician_id",
-          "status",
-          "customer_snapshot",
-          "installation_snapshot",
-          "technician_snapshot",
-        ].join(", ")
-      )
-      .eq("id", input.certificateId)
-      .eq("company_id", creator.companyId)
-      .maybeSingle();
+  const {
+    data: existing,
+    error: readError,
+  } = await supabase
+    .from(
+      "boiler_maintenance_certificates"
+    )
+    .select(
+      [
+        "id",
+        "company_id",
+        "technician_id",
+        "status",
+        "customer_snapshot",
+        "installation_snapshot",
+        "technician_snapshot",
+      ].join(", ")
+    )
+    .eq(
+      "id",
+      input.certificateId
+    )
+    .eq(
+      "company_id",
+      creator.companyId
+    )
+    .maybeSingle();
 
   if (readError) {
     throw requestError(
@@ -863,7 +1400,9 @@ async function updateDraftCertificate(req, res) {
     );
   }
 
-  if (existing.status !== "draft") {
+  if (
+    existing.status !== "draft"
+  ) {
     throw requestError(
       409,
       "CERTIFICATE_ALREADY_ISSUED",
@@ -871,7 +1410,10 @@ async function updateDraftCertificate(req, res) {
     );
   }
 
-  if (existing.technician_id !== creator.userId) {
+  if (
+    existing.technician_id !==
+    creator.userId
+  ) {
     throw requestError(
       403,
       "TECHNICIAN_MISMATCH",
@@ -880,73 +1422,152 @@ async function updateDraftCertificate(req, res) {
   }
 
   if (input.action === "issue") {
-    validateIssuance(input, existing);
+    validateIssuance(
+      input,
+      existing
+    );
   }
 
-  const issuedAt = input.action === "issue" ? new Date() : null;
-  const issuanceFields = issuedAt
-    ? {
-        status: "issued",
-        certificate_number: buildCertificateNumber(existing.id, issuedAt),
-        issued_at: issuedAt.toISOString(),
-        technician_signature: {
-          method: "electronic_acknowledgement",
-          signedAt: issuedAt.toISOString(),
-          userId: creator.userId,
-          fullName:
-            existing.technician_snapshot?.fullName ||
-            existing.technician_snapshot?.full_name ||
-            creator.email,
-        },
-      }
-    : {};
+  const issuedAt =
+    input.action === "issue"
+      ? new Date()
+      : null;
 
-  const { data: certificate, error: updateError } =
-    await supabase
-      .from("boiler_maintenance_certificates")
-      .update({
-        boiler_energy: input.boilerEnergy,
-        flue_exhaust_type: input.flueExhaustType,
-        commissioning_date: input.commissioningDate,
-        nominal_power_kw: input.nominalPowerKw,
-        forced_air_burner: input.forcedAirBurner,
-        previous_maintenance_date:
-          input.previousMaintenanceDate,
-        previous_chimney_sweeping_date:
-          input.previousChimneySweepingDate,
-        controlled_points: input.controlledPoints,
-        measuring_instruments:
-          input.measuringInstruments,
-        measurements: input.measurements,
-        ambient_co_ppm: input.ambientCoPpm,
-        ambient_co_status: input.ambientCoStatus,
-        boiler_efficiency_percent:
-          input.boilerEfficiencyPercent,
-        reference_efficiency_percent:
-          input.referenceEfficiencyPercent,
-        pollutant_emissions: input.pollutantEmissions,
-        advice_good_use: input.adviceGoodUse,
-        advice_improvements: input.adviceImprovements,
-        advice_replacement: input.adviceReplacement,
-        boiler_energy_class: input.boilerEnergyClass,
-        replacement_energy_classes:
-          input.replacementEnergyClasses,
-        ...issuanceFields,
-      })
-      .eq("id", existing.id)
-      .eq("status", "draft")
-      .select(CERTIFICATE_READ_COLUMNS)
-      .single();
+  const issuanceFields =
+    issuedAt
+      ? {
+          status: "issued",
+
+          certificate_number:
+            buildCertificateNumber(
+              existing.id,
+              issuedAt
+            ),
+
+          issued_at:
+            issuedAt.toISOString(),
+
+          technician_signature: {
+            method:
+              "electronic_acknowledgement",
+
+            signedAt:
+              issuedAt.toISOString(),
+
+            userId:
+              creator.userId,
+
+            fullName:
+              existing
+                .technician_snapshot
+                ?.fullName ||
+              existing
+                .technician_snapshot
+                ?.full_name ||
+              creator.email,
+          },
+        }
+      : {};
+
+  const {
+    data: certificate,
+    error: updateError,
+  } = await supabase
+    .from(
+      "boiler_maintenance_certificates"
+    )
+    .update({
+      boiler_energy:
+        input.boilerEnergy,
+
+      flue_exhaust_type:
+        input.flueExhaustType,
+
+      commissioning_date:
+        input.commissioningDate,
+
+      nominal_power_kw:
+        input.nominalPowerKw,
+
+      forced_air_burner:
+        input.forcedAirBurner,
+
+      previous_maintenance_date:
+        input.previousMaintenanceDate,
+
+      previous_chimney_sweeping_date:
+        input.previousChimneySweepingDate,
+
+      controlled_points:
+        input.controlledPoints,
+
+      measuring_instruments:
+        input.measuringInstruments,
+
+      measurements:
+        input.measurements,
+
+      ambient_co_ppm:
+        input.ambientCoPpm,
+
+      ambient_co_status:
+        input.ambientCoStatus,
+
+      boiler_efficiency_percent:
+        input.boilerEfficiencyPercent,
+
+      reference_efficiency_percent:
+        input.referenceEfficiencyPercent,
+
+      pollutant_emissions:
+        input.pollutantEmissions,
+
+      advice_good_use:
+        input.adviceGoodUse,
+
+      advice_improvements:
+        input.adviceImprovements,
+
+      advice_replacement:
+        input.adviceReplacement,
+
+      boiler_energy_class:
+        input.boilerEnergyClass,
+
+      replacement_energy_classes:
+        input.replacementEnergyClasses,
+
+      ...issuanceFields,
+    })
+    .eq(
+      "id",
+      existing.id
+    )
+    .eq(
+      "status",
+      "draft"
+    )
+    .select(
+      CERTIFICATE_READ_COLUMNS
+    )
+    .single();
 
   if (updateError) {
-    console.error("CERTIFICATE_UPDATE_FAILED", {
-      code: updateError.code,
-      message: updateError.message,
-    });
+    console.error(
+      "CERTIFICATE_UPDATE_FAILED",
+      {
+        code:
+          updateError.code,
+
+        message:
+          updateError.message,
+      }
+    );
 
     throw requestError(
       503,
       "CERTIFICATE_UPDATE_FAILED",
+
       input.action === "issue"
         ? "L’attestation n’a pas pu être émise."
         : "Le brouillon n’a pas pu être enregistré."
@@ -955,44 +1576,90 @@ async function updateDraftCertificate(req, res) {
 
   return res.status(200).json({
     ok: true,
-    issued: input.action === "issue",
-    certificate: serializeCertificate(certificate),
+
+    issued:
+      input.action === "issue",
+
+    certificate:
+      serializeCertificate(
+        certificate
+      ),
   });
 }
-export async function handleBoilerMaintenanceCertificates(req, res) {
-  res.setHeader("Cache-Control", "no-store");
-  res.setHeader("CDN-Cache-Control", "no-store");
-  res.setHeader("Vercel-CDN-Cache-Control", "no-store");
+
+export async function handleBoilerMaintenanceCertificates(
+  req,
+  res
+) {
+  res.setHeader(
+    "Cache-Control",
+    "no-store"
+  );
+
+  res.setHeader(
+    "CDN-Cache-Control",
+    "no-store"
+  );
+
+  res.setHeader(
+    "Vercel-CDN-Cache-Control",
+    "no-store"
+  );
 
   try {
     if (req.method === "GET") {
-      return await readCertificates(req, res);
+      return await readCertificates(
+        req,
+        res
+      );
     }
 
     if (req.method === "POST") {
-      return await createDraftCertificate(req, res);
+      return await createDraftCertificate(
+        req,
+        res
+      );
     }
+
     if (req.method === "PATCH") {
-      return await updateDraftCertificate(req, res);
+      return await updateDraftCertificate(
+        req,
+        res
+      );
     }
-    res.setHeader("Allow", "GET, POST, PATCH");
+
+    res.setHeader(
+      "Allow",
+      "GET, POST, PATCH"
+    );
 
     return res.status(405).json({
       ok: false,
       code: "METHOD_NOT_ALLOWED",
-      error: "Méthode non autorisée.",
+      error:
+        "Méthode non autorisée.",
     });
   } catch (error) {
     const status =
-      Number.isInteger(error?.status) ? error.status : 500;
+      Number.isInteger(
+        error?.status
+      )
+        ? error.status
+        : 500;
 
     if (status >= 500) {
-      console.error("Erreur interne API attestations chaudière.");
+      console.error(
+        "Erreur interne API attestations chaudière."
+      );
     }
 
     return res.status(status).json({
       ok: false,
-      code: error?.code || "INTERNAL_ERROR",
+
+      code:
+        error?.code ||
+        "INTERNAL_ERROR",
+
       error:
         error?.publicMessage ||
         "Erreur interne lors de la gestion de l’attestation.",
