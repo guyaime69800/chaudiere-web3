@@ -755,10 +755,9 @@ export default function BoilerMaintenanceCertificateForm({
 
             setSuccess(
                 action === "issue"
-                    ? `Attestation émise définitivement${
-                        certificate?.certificateNumber
-                            ? ` — ${certificate.certificateNumber}`
-                            : ""
+                    ? `Attestation émise définitivement${certificate?.certificateNumber
+                        ? ` — ${certificate.certificateNumber}`
+                        : ""
                     }.`
                     : "Brouillon enregistré."
             );
@@ -781,6 +780,10 @@ export default function BoilerMaintenanceCertificateForm({
         eligibleInterventions.length === 0 &&
         certificates.length === 0
     ) {
+        return null;
+    }
+
+    if (requestedInterventionId && loading) {
         return null;
     }
 
