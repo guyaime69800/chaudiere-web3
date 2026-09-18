@@ -139,6 +139,7 @@ export default function BoilerMaintenanceCertificateForm({
     equipments = [],
     requestedInterventionId = "",
     onRequestHandled,
+    onCertificatesChange,
     onClose,
 }) {
     const [certificates, setCertificates] = useState([]);
@@ -203,6 +204,10 @@ export default function BoilerMaintenanceCertificateForm({
             certificateByInterventionId,
         ]
     );
+
+    useEffect(() => {
+        onCertificatesChange?.(certificates);
+    }, [certificates, onCertificatesChange]);
 
     useEffect(() => {
         if (!session?.access_token) {
@@ -295,7 +300,11 @@ export default function BoilerMaintenanceCertificateForm({
         if (existingCertificate?.status === "draft") {
             openDetailsForm(existingCertificate);
         } else if (existingCertificate) {
-            setSuccess("Cette attestation a déjà été émise.");
+            setFormOpen(false);
+            setEditingCertificateId("");
+            setError("");
+            setSuccess("");
+            setPreviewCertificate(existingCertificate);
         } else {
             setForm({
                 ...EMPTY_FORM,
@@ -309,14 +318,16 @@ export default function BoilerMaintenanceCertificateForm({
             setFormOpen(true);
         }
 
-        window.requestAnimationFrame(() => {
-            document
-                .getElementById("boiler-certificate-title")
-                ?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                });
-        });
+        if (existingCertificate?.status !== "issued") {
+            window.requestAnimationFrame(() => {
+                document
+                    .getElementById("boiler-certificate-title")
+                    ?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                    });
+            });
+        }
 
         onRequestHandled?.();
     }, [

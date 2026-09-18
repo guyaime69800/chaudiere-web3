@@ -1875,7 +1875,177 @@
   break-inside: avoid;
 }
 
+.pro-attestation-modal {
+  width: min(980px, 100%);
+}
+
+.pro-attestation-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.pro-attestation-summary > section,
+.pro-attestation-section {
+  padding: 20px;
+  border: 1px solid #f0cdbf;
+  border-radius: 18px;
+  background: #fffaf7;
+}
+
+.pro-attestation-section {
+  margin-top: 18px;
+}
+
+.pro-attestation-modal h3 {
+  margin: 0 0 16px;
+}
+
+.pro-attestation-modal dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.pro-attestation-modal dl > div {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.85fr) minmax(0, 1.15fr);
+  gap: 14px;
+}
+
+.pro-attestation-modal dt {
+  color: #78564a;
+}
+
+.pro-attestation-modal dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.pro-attestation-modal ul {
+  margin: 0;
+  padding-left: 22px;
+}
+
+.pro-attestation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+@media (max-width: 700px) {
+  .pro-attestation-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .pro-attestation-modal dl > div {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 8mm;
+}
+
 @media print {
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .pro-modal-overlay,
+  .pro-modal-overlay * {
+    visibility: visible !important;
+  }
+
+  .pro-modal-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    padding: 0 !important;
+    background: #fff !important;
+    backdrop-filter: none !important;
+  }
+
+  .pro-attestation-modal {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    font-size: 8.5pt !important;
+    line-height: 1.25 !important;
+  }
+
+  .pro-modal-close,
+  .pro-attestation-actions {
+    display: none !important;
+  }
+
+  .pro-modal-header {
+    margin-bottom: 5mm !important;
+  }
+
+  .pro-modal-header h2 {
+    margin: 1mm 0 !important;
+    font-size: 16pt !important;
+  }
+
+  .pro-modal-header p {
+    font-size: 8.5pt !important;
+  }
+
+  .pro-attestation-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 3mm !important;
+    margin-top: 3mm !important;
+  }
+
+  .pro-attestation-summary > section,
+  .pro-attestation-section {
+    break-inside: avoid !important;
+    padding: 3mm !important;
+    border-radius: 3mm !important;
+  }
+
+  .pro-attestation-section {
+    margin-top: 3mm !important;
+  }
+
+  .pro-attestation-modal h3 {
+    margin: 0 0 2mm !important;
+    font-size: 10pt !important;
+  }
+
+  .pro-attestation-modal dl {
+    gap: 1.4mm !important;
+  }
+
+  .pro-attestation-modal dl > div {
+    grid-template-columns: minmax(28mm, 0.85fr) minmax(0, 1.15fr) !important;
+    gap: 2mm !important;
+  }
+
+  .pro-attestation-modal p,
+  .pro-attestation-modal li {
+    margin-top: 1mm !important;
+    margin-bottom: 1mm !important;
+  }
+
   .pro-attestation-draft-banner {
     display: block !important;
     color: #7d210a !important;

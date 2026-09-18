@@ -691,6 +691,7 @@ export default function ProSpacePage() {
   const [interventionLoading, setInterventionLoading] = useState(false);
   const [interventionLoadError, setInterventionLoadError] = useState("");
   const [interventionRefreshKey, setInterventionRefreshKey] = useState(0);
+  const [boilerCertificates, setBoilerCertificates] = useState([]);
   const [
     selectedRegulatoryInterventionId,
     setSelectedRegulatoryInterventionId,
@@ -889,6 +890,59 @@ export default function ProSpacePage() {
       controller.abort();
     };
   }, [company?.id, session?.access_token, interventionRefreshKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function loadBoilerCertificates() {
+      if (!company?.id || !session?.access_token) {
+        setBoilerCertificates([]);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          "/api/interventions?resource=boiler-certificates",
+          {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            signal: controller.signal,
+          }
+        );
+
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(
+            result?.error ||
+            "Les attestations chaudière n’ont pas pu être chargées."
+          );
+        }
+
+        if (!cancelled) {
+          setBoilerCertificates(
+            Array.isArray(result?.certificates)
+              ? result.certificates
+              : []
+          );
+        }
+      } catch (error) {
+        if (!cancelled && error?.name !== "AbortError") {
+          console.error("BOILER_CERTIFICATES_LOAD_FAILED");
+          setBoilerCertificates([]);
+        }
+      }
+    }
+
+    loadBoilerCertificates();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [company?.id, session?.access_token]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -1665,6 +1719,7 @@ export default function ProSpacePage() {
         carnetPassStatuses={carnetPassStatuses}
         carnetPassStatusLoading={carnetPassStatusLoading}
         interventions={interventions}
+        boilerCertificates={boilerCertificates}
         interventionLoading={interventionLoading}
         interventionLoadError={interventionLoadError}
         onOpenRegulatoryDocument={(interventionId) => {
@@ -1681,6 +1736,7 @@ export default function ProSpacePage() {
           interventions={interventions}
           equipments={equipments}
           requestedInterventionId={selectedRegulatoryInterventionId}
+          onCertificatesChange={setBoilerCertificates}
           onRequestHandled={() =>
             setSelectedRegulatoryInterventionId("")
           }

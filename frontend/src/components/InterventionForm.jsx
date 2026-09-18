@@ -98,6 +98,7 @@ export default function InterventionForm({
   carnetPassStatuses,
   carnetPassStatusLoading,
   interventions = [],
+  boilerCertificates = [],
   interventionLoading,
   interventionLoadError,
   onOpenRegulatoryDocument,
@@ -109,6 +110,17 @@ export default function InterventionForm({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [pdfGeneratingId, setPdfGeneratingId] = useState("");
+
+  const boilerCertificateByInterventionId = useMemo(
+    () =>
+      Object.fromEntries(
+        boilerCertificates.map((certificate) => [
+          certificate.interventionId,
+          certificate,
+        ])
+      ),
+    [boilerCertificates]
+  );
 
   const activeEquipments = useMemo(
     () =>
@@ -556,6 +568,16 @@ export default function InterventionForm({
                     intervention.interventionType === "maintenance" &&
                     intervention.polygonState === "confirmed";
 
+                  const boilerCertificate =
+                    boilerCertificateByInterventionId[intervention.id];
+
+                  const certificateButtonLabel =
+                    boilerCertificate?.status === "issued"
+                      ? "Voir l’attestation"
+                      : boilerCertificate?.status === "draft"
+                        ? "Compléter le brouillon"
+                        : "Compléter l’attestation";
+
                   return (
                     <li key={intervention.id}>
                       <div className="pro-intervention-history-main">
@@ -630,7 +652,7 @@ export default function InterventionForm({
                                 onOpenRegulatoryDocument?.(intervention.id)
                               }
                             >
-                              Compléter l’attestation
+                              {certificateButtonLabel}
                             </button>
                           )}
 
