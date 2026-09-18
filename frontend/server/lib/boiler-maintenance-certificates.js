@@ -310,6 +310,16 @@ function validatePatchBody(body) {
     );
   }
 
+  const action = body.action === "issue" ? "issue" : "save";
+
+  if (
+    body.action !== undefined &&
+    body.action !== "save" &&
+    body.action !== "issue"
+  ) {
+    throw requestError(400, "ACTION_INVALID", "L’action demandée est invalide.");
+  }
+
   const ambientCoPpm = normalizeOptionalNumber(
     body.ambientCoPpm,
     "La mesure de monoxyde de carbone"
@@ -327,6 +337,8 @@ function validatePatchBody(body) {
   }
 
   return {
+    action,
+    issuanceAccepted: body.issuanceAccepted === true,
     certificateId: body.certificateId.trim().toLowerCase(),
     boilerEnergy: normalizeOptionalText(
       body.boilerEnergy,
@@ -407,6 +419,49 @@ function validatePatchBody(body) {
       "Les classes énergétiques de remplacement"
     ),
   };
+}
+
+function validateIssuance(input, certificate) {
+  const missing = [];
+
+  if (!certificate.customer_snapshot?.name) missing.push("le nom du commanditaire");
+  if (!certificate.customer_snapshot?.address) missing.push("l’adresse du commanditaire");
+  if (!certificate.installation_snapshot?.address) missing.push("l’adresse de l’installation");
+  if (!certificate.installation_snapshot?.boilerLocation) missing.push("le local de la chaudière");
+
+  if (!input.boilerEnergy) missing.push("l’énergie de la chaudière");
+  if (!input.flueExhaustType) missing.push("le type d’évacuation des fumées");
+  if (input.nominalPowerKw === null) missing.push("la puissance nominale");
+  if (input.controlledPoints.length === 0) missing.push("au moins un point contrôlé");
+  if (input.measuringInstruments.length === 0) missing.push("au moins un appareil de mesure");
+  if (input.ambientCoPpm === null) missing.push("la mesure de CO ambiant");
+  if (input.boilerEfficiencyPercent === null) missing.push("le rendement de la chaudière");
+  if (input.referenceEfficiencyPercent === null) missing.push("le rendement de référence");
+  if (Object.keys(input.measurements).length === 0) missing.push("les mesures techniques");
+  if (Object.keys(input.pollutantEmissions).length === 0) missing.push("les émissions polluantes");
+
+  if (missing.length > 0) {
+    throw requestError(
+      400,
+      "CERTIFICATE_INCOMPLETE",
+      `Complétez avant l’émission : ${missing.join(", ")}.`
+    );
+  }
+
+  if (!input.issuanceAccepted) {
+    throw requestError(
+      400,
+      "ISSUANCE_CONFIRMATION_REQUIRED",
+      "Confirmez l’exactitude des informations avant l’émission définitive."
+    );
+  }
+}
+
+function buildCertificateNumber(certificateId, issuedAt) {
+  const year = issuedAt.getUTCFullYear();
+  const suffix = certificateId.replaceAll("-", "").slice(0, 12).toUpperCase();
+
+  return `CP-CHA-${year}-${suffix}`;
 }
 function serializeCertificate(certificate) {
   return {
@@ -778,7 +833,15 @@ async function updateDraftCertificate(req, res) {
     await supabase
       .from("boiler_maintenance_certificates")
       .select(
-        "id, company_id, technician_id, status"
+        [
+          "id",
+          "company_id",
+          "technician_id",
+          "status",
+          "customer_snapshot",
+          "installation_snapshot",
+          "technician_snapshot",
+        ].join(", ")
       )
       .eq("id", input.certificateId)
       .eq("company_id", creator.companyId)
@@ -816,6 +879,28 @@ async function updateDraftCertificate(req, res) {
     );
   }
 
+  if (input.action === "issue") {
+    validateIssuance(input, existing);
+  }
+
+  const issuedAt = input.action === "issue" ? new Date() : null;
+  const issuanceFields = issuedAt
+    ? {
+        status: "issued",
+        certificate_number: buildCertificateNumber(existing.id, issuedAt),
+        issued_at: issuedAt.toISOString(),
+        technician_signature: {
+          method: "electronic_acknowledgement",
+          signedAt: issuedAt.toISOString(),
+          userId: creator.userId,
+          fullName:
+            existing.technician_snapshot?.fullName ||
+            existing.technician_snapshot?.full_name ||
+            creator.email,
+        },
+      }
+    : {};
+
   const { data: certificate, error: updateError } =
     await supabase
       .from("boiler_maintenance_certificates")
@@ -846,6 +931,7 @@ async function updateDraftCertificate(req, res) {
         boiler_energy_class: input.boilerEnergyClass,
         replacement_energy_classes:
           input.replacementEnergyClasses,
+        ...issuanceFields,
       })
       .eq("id", existing.id)
       .eq("status", "draft")
@@ -861,12 +947,15 @@ async function updateDraftCertificate(req, res) {
     throw requestError(
       503,
       "CERTIFICATE_UPDATE_FAILED",
-      "Le brouillon n’a pas pu être enregistré."
+      input.action === "issue"
+        ? "L’attestation n’a pas pu être émise."
+        : "Le brouillon n’a pas pu être enregistré."
     );
   }
 
   return res.status(200).json({
     ok: true,
+    issued: input.action === "issue",
     certificate: serializeCertificate(certificate),
   });
 }

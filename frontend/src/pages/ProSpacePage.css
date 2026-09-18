@@ -1832,157 +1832,53 @@
   }
 }
 
-/* Aperçu d’une attestation d’entretien */
-.pro-attestation-modal {
-  width: min(900px, 100%);
-}
-
-.pro-attestation-summary {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 24px;
-}
-
-.pro-attestation-summary section,
-.pro-attestation-section {
-  padding: 18px;
-  border: 1px solid #f0d7cc;
-  border-radius: 16px;
-  background: #fffaf7;
-}
-
-.pro-attestation-section {
-  margin-top: 16px;
-}
-
-.pro-attestation-summary h3,
-.pro-attestation-section h3 {
-  margin: 0 0 14px;
-  color: #2a1711;
-  font-size: 17px;
-}
-
-.pro-attestation-summary dl,
-.pro-attestation-section dl {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-}
-
-.pro-attestation-summary dl > div,
-.pro-attestation-section dl > div {
-  display: grid;
-  grid-template-columns: minmax(130px, 0.8fr) minmax(0, 1.2fr);
-  gap: 12px;
-}
-
-.pro-attestation-summary dt,
-.pro-attestation-section dt {
-  color: #79594d;
-  font-size: 13px;
-}
-
-.pro-attestation-summary dd,
-.pro-attestation-section dd {
-  margin: 0;
-  color: #2a1711;
-  font-weight: 700;
-  overflow-wrap: anywhere;
-}
-
-.pro-attestation-section ul {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 16px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pro-attestation-section p {
-  margin: 10px 0 0;
-  color: #60453b;
-  line-height: 1.55;
-}
-
-.pro-attestation-actions {
+/* Émission définitive des attestations chaudière */
+.pro-issuance-confirmation {
   display: flex;
-  justify-content: flex-end;
+  align-items: flex-start;
   gap: 12px;
-  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid #f2cbbb;
+  border-radius: 14px;
+  background: #fff7f2;
 }
 
-@media (max-width: 700px) {
-  .pro-attestation-summary,
-  .pro-attestation-section ul {
-    grid-template-columns: 1fr;
-  }
+.pro-issuance-confirmation input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
 
-  .pro-attestation-summary dl > div,
-  .pro-attestation-section dl > div {
-    grid-template-columns: 1fr;
-    gap: 2px;
-  }
+.pro-issue-button {
+  background: #9f2608;
+}
 
-  .pro-attestation-actions {
-    align-items: stretch;
-    flex-direction: column-reverse;
-  }
+.pro-attestation-draft-banner {
+  margin: -6px 0 20px;
+  padding: 10px 14px;
+  border: 1px solid #efb6a3;
+  border-radius: 12px;
+  color: #8e260c;
+  background: #fff0e9;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
 
-  .pro-attestation-actions button {
-    width: 100%;
-  }
+.pro-attestation-number {
+  font-weight: 800;
+  color: #a52b0a;
+}
+
+.pro-attestation-signature {
+  break-inside: avoid;
 }
 
 @media print {
-  @page {
-    size: A4 portrait;
-    margin: 10mm;
-  }
-
-  html,
-  body {
-    width: auto;
-    height: auto;
-    margin: 0;
-    padding: 0;
-    overflow: visible !important;
-    background: #ffffff !important;
-  }
-
-  body > #root {
-    display: none !important;
-  }
-
-  body > .pro-modal-overlay {
-    position: static !important;
+  .pro-attestation-draft-banner {
     display: block !important;
-    width: auto !important;
-    min-height: 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
-    background: #ffffff !important;
-  }
-
-  .pro-attestation-modal {
-    width: 100% !important;
-    max-width: none !important;
-    max-height: none !important;
-    padding: 0 !important;
-    overflow: visible !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-  }
-
-  .pro-modal-close,
-  .pro-attestation-actions {
-    display: none !important;
-  }
-
-  .pro-attestation-summary,
-  .pro-attestation-section {
-    break-inside: avoid;
+    color: #7d210a !important;
+    border-color: #7d210a !important;
   }
 }

@@ -33,6 +33,7 @@ const EMPTY_DETAILS_FORM = {
     measurementsText: "",
     boilerSizingAssessment: "",
     pollutantEmissionsText: "",
+    issuanceAccepted: false,
 };
 
 const CONTROLLED_POINT_OPTIONS = [
@@ -351,11 +352,11 @@ export default function BoilerMaintenanceCertificateForm({
         setFormOpen(true);
     }
     function handleDetailsChange(event) {
-        const { name, value } = event.target;
+        const { name, value, type, checked } = event.target;
 
         setDetailsForm((currentForm) => ({
             ...currentForm,
-            [name]: value,
+            [name]: type === "checkbox" ? checked : value,
         }));
 
         setError("");
@@ -467,6 +468,7 @@ export default function BoilerMaintenanceCertificateForm({
             pollutantEmissionsText: objectToLines(
                 certificate.pollutantEmissions
             ),
+            issuanceAccepted: false,
         });
 
         setEditingCertificateId(certificate.id);
@@ -593,6 +595,11 @@ export default function BoilerMaintenanceCertificateForm({
     async function handleSaveDetails(event) {
         event.preventDefault();
 
+        const action =
+            event.nativeEvent?.submitter?.value === "issue"
+                ? "issue"
+                : "save";
+
         if (savingDetails) return;
 
         if (!session?.access_token) {
@@ -604,6 +611,25 @@ export default function BoilerMaintenanceCertificateForm({
 
         if (!detailsForm.certificateId) {
             setError("Le brouillon sélectionné est invalide.");
+            return;
+        }
+
+        if (
+            action === "issue" &&
+            !detailsForm.issuanceAccepted
+        ) {
+            setError(
+                "Cochez la confirmation avant l’émission définitive."
+            );
+            return;
+        }
+
+        if (
+            action === "issue" &&
+            !window.confirm(
+                "Émettre définitivement cette attestation ? Elle ne pourra plus être modifiée."
+            )
+        ) {
             return;
         }
 
@@ -622,6 +648,9 @@ export default function BoilerMaintenanceCertificateForm({
                             `Bearer ${session.access_token}`,
                     },
                     body: JSON.stringify({
+                        action,
+                        issuanceAccepted:
+                            detailsForm.issuanceAccepted,
                         certificateId: detailsForm.certificateId,
                         boilerEnergy: detailsForm.boilerEnergy,
                         flueExhaustType: detailsForm.flueExhaustType,
@@ -713,9 +742,20 @@ export default function BoilerMaintenanceCertificateForm({
                 );
             }
 
-            setSuccess("Brouillon enregistré.");
+            setSuccess(
+                action === "issue"
+                    ? `Attestation émise définitivement${
+                        certificate?.certificateNumber
+                            ? ` — ${certificate.certificateNumber}`
+                            : ""
+                    }.`
+                    : "Brouillon enregistré."
+            );
             setEditingCertificateId("");
             setDetailsForm(EMPTY_DETAILS_FORM);
+            if (action === "issue" && certificate) {
+                setPreviewCertificate(certificate);
+            }
         } catch (saveError) {
             setError(
                 saveError?.message ||
@@ -1389,15 +1429,47 @@ export default function BoilerMaintenanceCertificateForm({
                             calculé automatiquement à partir de la mesure saisie.
                         </p>
 
+                        <label className="pro-issuance-confirmation">
+                            <input
+                                name="issuanceAccepted"
+                                type="checkbox"
+                                checked={detailsForm.issuanceAccepted}
+                                onChange={handleDetailsChange}
+                                disabled={savingDetails}
+                            />
+                            <span>
+                                Je confirme l’exactitude des informations. Je
+                                comprends qu’après émission l’attestation sera
+                                définitive et non modifiable.
+                            </span>
+                        </label>
+
                         <div className="pro-form-row">
                             <button
                                 className="pro-primary-button"
                                 type="submit"
+                                name="certificateAction"
+                                value="save"
                                 disabled={savingDetails}
                             >
                                 {savingDetails
                                     ? "Enregistrement…"
                                     : "Enregistrer le brouillon"}
+                            </button>
+
+                            <button
+                                className="pro-primary-button pro-issue-button"
+                                type="submit"
+                                name="certificateAction"
+                                value="issue"
+                                disabled={
+                                    savingDetails ||
+                                    !detailsForm.issuanceAccepted
+                                }
+                            >
+                                {savingDetails
+                                    ? "Traitement…"
+                                    : "Émettre définitivement"}
                             </button>
 
                             <button
