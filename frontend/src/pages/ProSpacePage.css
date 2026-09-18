@@ -1979,36 +1979,52 @@
 }
 
 @media print {
-
   html,
   body {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
     background: #fff !important;
   }
 
-  body * {
-    visibility: hidden !important;
-  }
-
-  .pro-modal-overlay,
-  .pro-modal-overlay * {
-    visibility: visible !important;
+  /*
+   * Le modal est créé directement dans body avec createPortal.
+   * On supprime complètement les autres éléments afin qu'ils
+   * ne conservent aucune hauteur et ne créent aucune page blanche.
+   */
+  body > *:not(.pro-modal-overlay) {
+    display: none !important;
   }
 
   .pro-modal-overlay {
-    position: absolute !important;
-    inset: 0 !important;
+    position: static !important;
+    inset: auto !important;
+    z-index: auto !important;
     display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
     padding: 0 !important;
+    overflow: visible !important;
     background: #fff !important;
     backdrop-filter: none !important;
   }
 
   .pro-attestation-modal {
+    position: static !important;
+    display: block !important;
     width: 100% !important;
     max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
     max-height: none !important;
-    overflow: visible !important;
+    margin: 0 !important;
     padding: 0 !important;
+    overflow: visible !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: #fff !important;
@@ -2032,10 +2048,12 @@
   }
 
   .pro-modal-header p {
+    margin: 0 !important;
     font-size: 8.5pt !important;
   }
 
   .pro-attestation-summary {
+    display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 3mm !important;
     margin-top: 3mm !important;
@@ -2044,6 +2062,7 @@
   .pro-attestation-summary > section,
   .pro-attestation-section {
     break-inside: avoid !important;
+    page-break-inside: avoid !important;
     padding: 3mm !important;
     border-radius: 3mm !important;
   }
@@ -2062,7 +2081,9 @@
   }
 
   .pro-attestation-modal dl > div {
-    grid-template-columns: minmax(28mm, 0.85fr) minmax(0, 1.15fr) !important;
+    grid-template-columns:
+      minmax(28mm, 0.85fr)
+      minmax(0, 1.15fr) !important;
     gap: 2mm !important;
   }
 
@@ -2078,15 +2099,20 @@
     border-color: #7d210a !important;
   }
 
-  .pro-attestation-legal {
+  .pro-attestation-signature,
+  .pro-attestation-legal,
+  .pro-attestation-co {
     break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .pro-attestation-legal {
     margin-top: 3mm !important;
     padding-top: 2mm !important;
     font-size: 7.5pt !important;
   }
 
   .pro-attestation-co {
-    break-inside: avoid !important;
     margin-top: 2mm !important;
     padding: 2mm !important;
   }
