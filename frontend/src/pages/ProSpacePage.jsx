@@ -897,9 +897,15 @@ export default function ProSpacePage() {
     const controller = new AbortController();
 
     async function loadBoilerCertificates() {
-      if (!company?.id || !session?.access_token) {
+      if (!session?.access_token) {
         setBoilerCertificates([]);
         setBoilerCertificatesLoading(false);
+        return;
+      }
+
+      if (!company?.id) {
+        setBoilerCertificates([]);
+        setBoilerCertificatesLoading(true);
         return;
       }
 
