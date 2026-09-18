@@ -14,8 +14,7 @@ import {
   getCompanyEquipments,
 } from "../services/equipmentService";
 import { getCompanyCarnetPassStatuses } from "../services/carnetPassService";
-import InterventionForm from "../components/InterventionForm";
-import BoilerMaintenanceCertificateForm from "../components/BoilerMaintenanceCertificateForm";
+import EquipmentWorkspace from "../components/EquipmentWorkspace";
 import "./ProSpacePage.css";
 
 const EMPTY_FORM = {
@@ -148,7 +147,7 @@ function CompanyAccountCard({
 
     if (!/^\d{14}$/.test(normalizedSiret)) {
       setSiretError(
-        "Le SIRET doit contenir exactement 14 chiffres. Les espaces sont acceptés."
+        "Le SIRET doit contenir exactement 14 chiffres. Les espaces sont acceptés.",
       );
       return;
     }
@@ -189,8 +188,7 @@ function CompanyAccountCard({
       onContactSaved();
     } catch (saveError) {
       setContactError(
-        saveError?.message ||
-        "Impossible d’enregistrer les coordonnées."
+        saveError?.message || "Impossible d’enregistrer les coordonnées.",
       );
     } finally {
       setContactBusy(false);
@@ -205,10 +203,7 @@ function CompanyAccountCard({
       <article className="pro-action-card pro-company-card">
         <div className="pro-company-card-topline">
           <div className="pro-action-card-heading">
-            <span
-              className="pro-action-card-icon"
-              aria-hidden="true"
-            >
+            <span className="pro-action-card-icon" aria-hidden="true">
               🏢
             </span>
 
@@ -223,10 +218,9 @@ function CompanyAccountCard({
           </div>
 
           <span
-            className={`pro-company-status ${companyVerified
-              ? "pro-company-status--approved"
-              : ""
-              }`}
+            className={`pro-company-status ${
+              companyVerified ? "pro-company-status--approved" : ""
+            }`}
           >
             {verificationTitle}
           </span>
@@ -244,9 +238,7 @@ function CompanyAccountCard({
           </div>
         </div>
 
-        <p className="pro-company-verification-text">
-          {verificationMessage}
-        </p>
+        <p className="pro-company-verification-text">{verificationMessage}</p>
 
         <div className="pro-company-card-actions">
           {!companyVerified && company.is_demo !== true && (
@@ -260,9 +252,7 @@ function CompanyAccountCard({
               }
               onClick={onVerify}
             >
-              {verificationBusy
-                ? "Vérification…"
-                : "Vérifier mon entreprise"}
+              {verificationBusy ? "Vérification…" : "Vérifier mon entreprise"}
             </button>
           )}
 
@@ -272,9 +262,7 @@ function CompanyAccountCard({
               type="button"
               aria-expanded={detailsOpen}
               aria-controls="company-account-details"
-              onClick={() =>
-                setDetailsOpen((isOpen) => !isOpen)
-              }
+              onClick={() => setDetailsOpen((isOpen) => !isOpen)}
             >
               {detailsOpen ? "Fermer" : "Modifier"}
             </button>
@@ -325,9 +313,7 @@ function CompanyAccountCard({
                 type="submit"
                 disabled={siretBusy || unchanged}
               >
-                {siretBusy
-                  ? "Enregistrement…"
-                  : "Enregistrer le SIRET"}
+                {siretBusy ? "Enregistrement…" : "Enregistrer le SIRET"}
               </button>
             </form>
 
@@ -464,19 +450,13 @@ function CompanyAccountCard({
       </article>
       <div className="pro-account-side-column">
         <article className="pro-action-card pro-security-card">
-
           <div className="pro-action-card-heading">
-            <span
-              className="pro-action-card-icon"
-              aria-hidden="true"
-            >
+            <span className="pro-action-card-icon" aria-hidden="true">
               🔐
             </span>
 
             <div>
-              <span className="pro-action-card-label">
-                Sécurité
-              </span>
+              <span className="pro-action-card-label">Sécurité</span>
 
               <h2>Sécurité du compte</h2>
               <p>2 protections actives sur 3</p>
@@ -488,13 +468,9 @@ function CompanyAccountCard({
             type="button"
             aria-expanded={securityDetailsOpen}
             aria-controls="account-security-details"
-            onClick={() =>
-              setSecurityDetailsOpen((isOpen) => !isOpen)
-            }
+            onClick={() => setSecurityDetailsOpen((isOpen) => !isOpen)}
           >
-            {securityDetailsOpen
-              ? "Masquer les détails"
-              : "Voir la sécurité"}
+            {securityDetailsOpen ? "Masquer les détails" : "Voir la sécurité"}
           </button>
 
           {securityDetailsOpen && (
@@ -534,9 +510,7 @@ function CompanyAccountCard({
 
               <h2>Ressources réglementaires</h2>
 
-              <p>
-                CERFA, entretien, F-Gas et Trackdéchets
-              </p>
+              <p>CERFA, entretien, F-Gas et Trackdéchets</p>
             </div>
           </div>
 
@@ -545,9 +519,7 @@ function CompanyAccountCard({
             type="button"
             aria-expanded={complianceDetailsOpen}
             aria-controls="compliance-details"
-            onClick={() =>
-              setComplianceDetailsOpen((isOpen) => !isOpen)
-            }
+            onClick={() => setComplianceDetailsOpen((isOpen) => !isOpen)}
           >
             {complianceDetailsOpen
               ? "Masquer les ressources"
@@ -638,8 +610,8 @@ function CompanyAccountCard({
                 </div>
 
                 <p className="pro-compliance-watch">
-                  <strong>Information :</strong> Trackdéchets et le BSFF sont déjà
-                  en vigueur. Le Cerfa 15497*04 reste un document distinct.
+                  <strong>Information :</strong> Trackdéchets et le BSFF sont
+                  déjà en vigueur. Le Cerfa 15497*04 reste un document distinct.
                 </p>
 
                 <button
@@ -676,9 +648,7 @@ export default function ProSpacePage() {
   const [equipmentLoading, setEquipmentLoading] = useState(false);
   const [equipmentLoadError, setEquipmentLoadError] = useState("");
   const [equipmentFormOpen, setEquipmentFormOpen] = useState(false);
-  const [equipmentForm, setEquipmentForm] = useState(
-    EMPTY_EQUIPMENT_FORM
-  );
+  const [equipmentForm, setEquipmentForm] = useState(EMPTY_EQUIPMENT_FORM);
   const [equipmentError, setEquipmentError] = useState("");
   const [equipmentMessage, setEquipmentMessage] = useState("");
   const [equipmentSubmitting, setEquipmentSubmitting] = useState(false);
@@ -692,15 +662,9 @@ export default function ProSpacePage() {
   const [interventionLoadError, setInterventionLoadError] = useState("");
   const [interventionRefreshKey, setInterventionRefreshKey] = useState(0);
   const [boilerCertificates, setBoilerCertificates] = useState([]);
-  const [boilerCertificatesLoading, setBoilerCertificatesLoading] = useState(true);
-  const [
-    selectedRegulatoryInterventionId,
-    setSelectedRegulatoryInterventionId,
-  ] = useState("");
-  const [
-    regulatoryWorkspaceOpen,
-    setRegulatoryWorkspaceOpen,
-  ] = useState(false);
+  const [boilerCertificatesLoading, setBoilerCertificatesLoading] =
+    useState(true);
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
   useEffect(() => {
     let cancelled = false;
 
@@ -772,6 +736,18 @@ export default function ProSpacePage() {
       cancelled = true;
     };
   }, [company?.id, equipmentRefreshKey]);
+
+  useEffect(() => {
+    if (
+      selectedEquipmentId &&
+      !equipments.some(
+        (equipment) => String(equipment.id) === String(selectedEquipmentId),
+      )
+    ) {
+      setSelectedEquipmentId("");
+    }
+  }, [equipments, selectedEquipmentId]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -791,7 +767,7 @@ export default function ProSpacePage() {
       try {
         const statuses = await getCompanyCarnetPassStatuses(
           company.id,
-          equipments.map((equipment) => equipment.serial_number)
+          equipments.map((equipment) => equipment.serial_number),
         );
 
         if (!cancelled) {
@@ -800,15 +776,15 @@ export default function ProSpacePage() {
               equipments.map((equipment, index) => [
                 equipment.id,
                 statuses[index] || { exists: false },
-              ])
-            )
+              ]),
+            ),
           );
         }
       } catch (error) {
         if (!cancelled) {
           setCarnetPassStatuses({});
           setCarnetPassStatusError(
-            error?.message || "Impossible de vérifier les CarnetPass."
+            error?.message || "Impossible de vérifier les CarnetPass.",
           );
         }
       } finally {
@@ -854,18 +830,16 @@ export default function ProSpacePage() {
         if (!response.ok) {
           throw new Error(
             result?.error ||
-            "L’historique des interventions n’a pas pu être chargé."
+              "L’historique des interventions n’a pas pu être chargé.",
           );
         }
 
         if (!cancelled) {
           setInterventions(
-            Array.isArray(result?.interventions)
-              ? result.interventions
-              : []
+            Array.isArray(result?.interventions) ? result.interventions : [],
           );
           setInterventionTotal(
-            Number.isInteger(result?.total) ? result.total : 0
+            Number.isInteger(result?.total) ? result.total : 0,
           );
         }
       } catch (error) {
@@ -874,7 +848,7 @@ export default function ProSpacePage() {
           setInterventionTotal(0);
           setInterventionLoadError(
             error?.message ||
-            "L’historique des interventions n’a pas pu être chargé."
+              "L’historique des interventions n’a pas pu être chargé.",
           );
         }
       } finally {
@@ -919,7 +893,7 @@ export default function ProSpacePage() {
               Authorization: `Bearer ${session.access_token}`,
             },
             signal: controller.signal,
-          }
+          },
         );
 
         const result = await response.json().catch(() => null);
@@ -927,15 +901,13 @@ export default function ProSpacePage() {
         if (!response.ok) {
           throw new Error(
             result?.error ||
-            "Les attestations chaudière n’ont pas pu être chargées."
+              "Les attestations chaudière n’ont pas pu être chargées.",
           );
         }
 
         if (!cancelled) {
           setBoilerCertificates(
-            Array.isArray(result?.certificates)
-              ? result.certificates
-              : []
+            Array.isArray(result?.certificates) ? result.certificates : [],
           );
         }
       } catch (error) {
@@ -979,9 +951,7 @@ export default function ProSpacePage() {
     const siretDigits = form.siret.replace(/\D/g, "");
 
     if (form.siret.trim() && siretDigits.length !== 14) {
-      setFormError(
-        "Le SIRET doit contenir exactement 14 chiffres."
-      );
+      setFormError("Le SIRET doit contenir exactement 14 chiffres.");
       return;
     }
 
@@ -1007,9 +977,7 @@ export default function ProSpacePage() {
     try {
       const result = await verifyMyCompany();
 
-      setSiretMessage(
-        result.message || "Vérification terminée."
-      );
+      setSiretMessage(result.message || "Vérification terminée.");
 
       setRefreshKey((currentKey) => currentKey + 1);
     } catch (error) {
@@ -1074,25 +1042,32 @@ export default function ProSpacePage() {
     }
   }
 
-  function handleOpenEquipment(equipment) {
+  function handleSelectEquipment(equipment) {
+    setSelectedEquipmentId(equipment.id);
+    setEquipmentFormOpen(false);
+    setEquipmentError("");
+    setEquipmentMessage("");
+  }
+
+  function handleOpenCarnetPass(equipment) {
     if (carnetPassStatusLoading) return;
 
     const carnetPassStatus = carnetPassStatuses[equipment.id];
 
     if (carnetPassStatusError || !carnetPassStatus) {
       setEquipmentError(
-        "Le statut du CarnetPass n'a pas pu être vérifié. Actualisez la page avant de continuer."
+        "Le statut du CarnetPass n'a pas pu être vérifié. Actualisez la page avant de continuer.",
       );
       return;
     }
 
     if (carnetPassStatus.exists) {
       if (
-        carnetPassStatus.status === "active"
-        && carnetPassStatus.carnetPassId
+        carnetPassStatus.status === "active" &&
+        carnetPassStatus.carnetPassId
       ) {
         navigate(
-          `/appareil/${encodeURIComponent(carnetPassStatus.carnetPassId)}`
+          `/appareil/${encodeURIComponent(carnetPassStatus.carnetPassId)}`,
         );
         return;
       }
@@ -1100,18 +1075,16 @@ export default function ProSpacePage() {
       setEquipmentError(
         carnetPassStatus.status === "blockchain_pending"
           ? "La confirmation Polygon de ce CarnetPass est encore en cours. Ne relancez pas sa création."
-          : "Ce CarnetPass existe, mais il est momentanément indisponible. Réessayez plus tard."
+          : "Ce CarnetPass existe, mais il est momentanément indisponible. Réessayez plus tard.",
       );
       return;
     }
 
-    const productReference = String(
-      equipment?.product_reference || ""
-    ).trim();
+    const productReference = String(equipment?.product_reference || "").trim();
 
     if (!productReference) {
       setEquipmentError(
-        "Ajoutez une référence produit avant de créer le CarnetPass."
+        "Ajoutez une référence produit avant de créer le CarnetPass.",
       );
       return;
     }
@@ -1158,9 +1131,7 @@ export default function ProSpacePage() {
           <button
             className="pro-primary-button"
             type="button"
-            onClick={() =>
-              setRefreshKey((currentKey) => currentKey + 1)
-            }
+            onClick={() => setRefreshKey((currentKey) => currentKey + 1)}
           >
             Réessayer
           </button>
@@ -1198,9 +1169,7 @@ export default function ProSpacePage() {
 
         <section className="pro-onboarding">
           <div className="pro-onboarding-intro">
-            <span className="pro-eyebrow">
-              CONFIGURATION DE VOTRE ESPACE
-            </span>
+            <span className="pro-eyebrow">CONFIGURATION DE VOTRE ESPACE</span>
 
             <h1>
               Votre entreprise,
@@ -1209,9 +1178,8 @@ export default function ProSpacePage() {
             </h1>
 
             <p>
-              Configurez votre espace CarnetPass pour centraliser
-              les équipements, les interventions et la
-              documentation technique.
+              Configurez votre espace CarnetPass pour centraliser les
+              équipements, les interventions et la documentation technique.
             </p>
 
             <div className="pro-benefits">
@@ -1220,8 +1188,8 @@ export default function ProSpacePage() {
                 <div>
                   <strong>Un espace professionnel sécurisé</strong>
                   <p>
-                    Les données restent accessibles uniquement aux
-                    membres autorisés.
+                    Les données restent accessibles uniquement aux membres
+                    autorisés.
                   </p>
                 </div>
               </article>
@@ -1230,10 +1198,7 @@ export default function ProSpacePage() {
                 <span aria-hidden="true">02</span>
                 <div>
                   <strong>Une équipe organisée</strong>
-                  <p>
-                    Ajoutez ensuite vos administrateurs et vos
-                    techniciens.
-                  </p>
+                  <p>Ajoutez ensuite vos administrateurs et vos techniciens.</p>
                 </div>
               </article>
 
@@ -1242,8 +1207,7 @@ export default function ProSpacePage() {
                 <div>
                   <strong>Une formule découverte</strong>
                   <p>
-                    Votre espace démarre avec l’abonnement gratuit
-                    CarnetPass.
+                    Votre espace démarre avec l’abonnement gratuit CarnetPass.
                   </p>
                 </div>
               </article>
@@ -1264,8 +1228,8 @@ export default function ProSpacePage() {
               <div>
                 <h2>Parlez-nous de votre activité</h2>
                 <p>
-                  Ces informations permettront de personnaliser
-                  votre tableau de bord.
+                  Ces informations permettront de personnaliser votre tableau de
+                  bord.
                 </p>
               </div>
             </div>
@@ -1340,8 +1304,8 @@ export default function ProSpacePage() {
               </button>
 
               <p className="pro-form-notice">
-                🔒 Vos données sont protégées par les règles de
-                sécurité CarnetPass.
+                🔒 Vos données sont protégées par les règles de sécurité
+                CarnetPass.
               </p>
             </form>
           </section>
@@ -1351,6 +1315,10 @@ export default function ProSpacePage() {
   }
 
   const plan = company.subscription?.plan || "free";
+  const selectedEquipment =
+    equipments.find(
+      (equipment) => String(equipment.id) === String(selectedEquipmentId),
+    ) || null;
   const verification = company.verification;
   const companyVerified =
     verification?.status === "approved" &&
@@ -1358,8 +1326,7 @@ export default function ProSpacePage() {
     verification.verified_siret === company.siret &&
     Boolean(verification.verified_at);
 
-  const companyCanCreateEquipment =
-    companyVerified || company.is_demo === true;
+  const companyCanCreateEquipment = companyVerified || company.is_demo === true;
 
   let verificationTitle = "Entreprise en attente de validation";
   let verificationMessage =
@@ -1397,9 +1364,7 @@ export default function ProSpacePage() {
         <Brand />
 
         <div className="pro-header-actions">
-          <span className="pro-plan-badge">
-            Formule {getPlanLabel(plan)}
-          </span>
+          <span className="pro-plan-badge">Formule {getPlanLabel(plan)}</span>
 
           <button
             className="pro-logout-button"
@@ -1416,9 +1381,7 @@ export default function ProSpacePage() {
         <div>
           <span className="pro-eyebrow">ESPACE PROFESSIONNEL</span>
           <h1>Bienvenue chez {company.name}</h1>
-          <p>
-            Votre tableau de bord CarnetPass est maintenant prêt.
-          </p>
+          <p>Votre tableau de bord CarnetPass est maintenant prêt.</p>
         </div>
 
         <div className="pro-company-identity">
@@ -1446,8 +1409,7 @@ export default function ProSpacePage() {
       )}
 
       <CompanyAccountCard
-        key={`${company.id}:${company.siret || ""}:${company.updated_at || ""
-          }`}
+        key={`${company.id}:${company.siret || ""}:${company.updated_at || ""}`}
         company={company}
         companyVerified={companyVerified}
         verificationTitle={verificationTitle}
@@ -1457,14 +1419,14 @@ export default function ProSpacePage() {
         onEditing={() => setSiretMessage("")}
         onSiretSaved={() => {
           setSiretMessage(
-            "SIRET enregistré. Consultez le statut de validation affiché."
+            "SIRET enregistré. Consultez le statut de validation affiché.",
           );
           setLoading(true);
           setRefreshKey((currentKey) => currentKey + 1);
         }}
         onContactSaved={() => {
           setSiretMessage(
-            "Coordonnées de l’entreprise enregistrées avec succès."
+            "Coordonnées de l’entreprise enregistrées avec succès.",
           );
           setLoading(true);
           setRefreshKey((currentKey) => currentKey + 1);
@@ -1514,8 +1476,8 @@ export default function ProSpacePage() {
             </span>
             <h2>Équipements de l’entreprise</h2>
             <p>
-              Ajoutez les chaudières, pompes à chaleur, climatisations
-              et autres équipements suivis par votre entreprise.
+              Ajoutez les chaudières, pompes à chaleur, climatisations et autres
+              équipements suivis par votre entreprise.
             </p>
           </div>
 
@@ -1538,7 +1500,8 @@ export default function ProSpacePage() {
 
           {!companyCanCreateEquipment && (
             <p className="pro-equipment-lock">
-              L’ajout sera disponible après la validation du SIRET de l’entreprise.
+              L’ajout sera disponible après la validation du SIRET de
+              l’entreprise.
             </p>
           )}
 
@@ -1665,36 +1628,39 @@ export default function ProSpacePage() {
                 const carnetPassStatus = carnetPassStatuses[equipment.id];
                 const statusIsLoading =
                   carnetPassStatusLoading && !carnetPassStatus;
+                const isSelected =
+                  String(selectedEquipmentId) === String(equipment.id);
 
-                let actionLabel = "Créer le CarnetPass →";
+                let carnetPassLabel = "CarnetPass à créer";
+                let carnetPassTone = "neutral";
 
                 if (statusIsLoading) {
-                  actionLabel = "Vérification du CarnetPass…";
+                  carnetPassLabel = "Vérification…";
                 } else if (carnetPassStatus?.status === "active") {
-                  actionLabel = "Voir le CarnetPass →";
-                } else if (
-                  carnetPassStatus?.status === "blockchain_pending"
-                ) {
-                  actionLabel = "Confirmation Polygon…";
+                  carnetPassLabel = "CarnetPass actif";
+                  carnetPassTone = "active";
+                } else if (carnetPassStatus?.status === "blockchain_pending") {
+                  carnetPassLabel = "Polygon en cours";
+                  carnetPassTone = "pending";
                 } else if (carnetPassStatus?.exists) {
-                  actionLabel = "CarnetPass indisponible";
+                  carnetPassLabel = "CarnetPass indisponible";
+                  carnetPassTone = "warning";
+                } else if (carnetPassStatusError || !carnetPassStatus) {
+                  carnetPassLabel = "Statut indisponible";
+                  carnetPassTone = "warning";
                 }
 
                 return (
-                  <li key={equipment.id}>
+                  <li
+                    key={equipment.id}
+                    className={isSelected ? "is-selected" : ""}
+                  >
                     <button
                       className="pro-equipment-open-button"
                       type="button"
-                      onClick={() => handleOpenEquipment(equipment)}
-                      disabled={
-                        statusIsLoading
-                        || carnetPassStatus?.status === "blockchain_pending"
-                        || (
-                          carnetPassStatus?.exists === true
-                          && carnetPassStatus.status !== "active"
-                        )
-                      }
-                      aria-label={`Ouvrir ${equipment.brand} ${equipment.model}`}
+                      onClick={() => handleSelectEquipment(equipment)}
+                      aria-current={isSelected ? "true" : undefined}
+                      aria-label={`Ouvrir le dossier de ${equipment.brand} ${equipment.model}`}
                     >
                       <div>
                         <strong>
@@ -1706,17 +1672,22 @@ export default function ProSpacePage() {
                         <span>N° de série : {equipment.serial_number}</span>
                       </div>
 
-                      <div
-                        className={`pro-equipment-open-action${carnetPassStatus?.status === "active"
-                          ? " pro-equipment-open-action--view"
-                          : ""
-                          }`}
-                      >
+                      <div className="pro-equipment-open-action">
                         {equipment.product_reference && (
                           <small>Réf. {equipment.product_reference}</small>
                         )}
 
-                        <strong>{actionLabel}</strong>
+                        <span
+                          className={`pro-equipment-status pro-equipment-status--${carnetPassTone}`}
+                        >
+                          {carnetPassLabel}
+                        </span>
+
+                        <strong>
+                          {isSelected
+                            ? "Dossier ouvert"
+                            : "Ouvrir le dossier →"}
+                        </strong>
                       </div>
                     </button>
                   </li>
@@ -1726,49 +1697,33 @@ export default function ProSpacePage() {
           )}
         </article>
       </section>
-      <InterventionForm
-        session={session}
-        company={company}
-        equipments={equipments}
-        carnetPassStatuses={carnetPassStatuses}
-        carnetPassStatusLoading={carnetPassStatusLoading}
-        interventions={interventions}
-        boilerCertificates={boilerCertificates}
-        boilerCertificatesLoading={boilerCertificatesLoading}
-        interventionLoading={interventionLoading}
-        interventionLoadError={interventionLoadError}
-        onOpenRegulatoryDocument={(interventionId) => {
-          setSelectedRegulatoryInterventionId(interventionId);
-          setRegulatoryWorkspaceOpen(true);
-        }}
-        onInterventionCreated={() =>
-          setInterventionRefreshKey((currentKey) => currentKey + 1)
-        }
-      />
-      {regulatoryWorkspaceOpen && (
-        <BoilerMaintenanceCertificateForm
+      {selectedEquipment && (
+        <EquipmentWorkspace
+          key={selectedEquipment.id}
           session={session}
+          company={company}
+          equipment={selectedEquipment}
+          carnetPassStatus={carnetPassStatuses[selectedEquipment.id]}
+          carnetPassStatusLoading={carnetPassStatusLoading}
+          carnetPassStatusError={carnetPassStatusError}
           interventions={interventions}
-          equipments={equipments}
-          requestedInterventionId={selectedRegulatoryInterventionId}
+          interventionLoading={interventionLoading}
+          interventionLoadError={interventionLoadError}
+          boilerCertificates={boilerCertificates}
+          boilerCertificatesLoading={boilerCertificatesLoading}
+          onOpenCarnetPass={() => handleOpenCarnetPass(selectedEquipment)}
+          onClose={() => setSelectedEquipmentId("")}
+          onInterventionCreated={() =>
+            setInterventionRefreshKey((currentKey) => currentKey + 1)
+          }
           onCertificatesChange={(certificates) => {
             setBoilerCertificates(certificates);
             setBoilerCertificatesLoading(false);
           }}
-          onRequestHandled={() =>
-            setSelectedRegulatoryInterventionId("")
-          }
-          onClose={() => {
-            setRegulatoryWorkspaceOpen(false);
-            setSelectedRegulatoryInterventionId("");
-          }}
         />
       )}
       <footer className="pro-footer">
-        <span>
-          CarnetPass — La maintenance technique organisée
-          simplement.
-        </span>
+        <span>CarnetPass — La maintenance technique organisée simplement.</span>
 
         <Link to="/">Retour à la consultation publique</Link>
       </footer>

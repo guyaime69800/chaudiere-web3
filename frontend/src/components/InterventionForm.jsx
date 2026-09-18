@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { downloadInterventionPdf } from "../services/interventionPdfService";
 const EMPTY_INTERVENTION_FORM = {
   equipmentId: "",
@@ -61,29 +61,17 @@ function parseMeasurements(value) {
   for (const [index, line] of lines.entries()) {
     const separatorIndex = line.indexOf(":");
 
-    if (
-      separatorIndex <= 0 ||
-      separatorIndex === line.length - 1
-    ) {
+    if (separatorIndex <= 0 || separatorIndex === line.length - 1) {
       throw new Error(
-        `Mesure ligne ${index + 1} : utilisez le format "Nom : valeur".`
+        `Mesure ligne ${index + 1} : utilisez le format "Nom : valeur".`,
       );
     }
 
     const name = line.slice(0, separatorIndex).trim();
-    const measurement = line
-      .slice(separatorIndex + 1)
-      .trim();
+    const measurement = line.slice(separatorIndex + 1).trim();
 
-    if (
-      Object.prototype.hasOwnProperty.call(
-        measurements,
-        name
-      )
-    ) {
-      throw new Error(
-        `La mesure "${name}" est renseignée plusieurs fois.`
-      );
+    if (Object.prototype.hasOwnProperty.call(measurements, name)) {
+      throw new Error(`La mesure "${name}" est renseignée plusieurs fois.`);
     }
 
     measurements[name] = measurement;
@@ -97,6 +85,8 @@ export default function InterventionForm({
   equipments,
   carnetPassStatuses,
   carnetPassStatusLoading,
+  selectedEquipmentId = "",
+  embedded = false,
   interventions = [],
   boilerCertificates = [],
   boilerCertificatesLoading = false,
@@ -106,7 +96,10 @@ export default function InterventionForm({
   onInterventionCreated,
 }) {
   const [formOpen, setFormOpen] = useState(false);
-  const [form, setForm] = useState(EMPTY_INTERVENTION_FORM);
+  const [form, setForm] = useState(() => ({
+    ...EMPTY_INTERVENTION_FORM,
+    equipmentId: selectedEquipmentId || "",
+  }));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -118,19 +111,39 @@ export default function InterventionForm({
         boilerCertificates.map((certificate) => [
           certificate.interventionId,
           certificate,
-        ])
+        ]),
       ),
-    [boilerCertificates]
+    [boilerCertificates],
+  );
+
+  const selectedEquipment = useMemo(
+    () =>
+      equipments.find(
+        (equipment) => String(equipment.id) === String(selectedEquipmentId),
+      ) || null,
+    [equipments, selectedEquipmentId],
   );
 
   const activeEquipments = useMemo(
     () =>
       equipments.filter(
         (equipment) =>
-          carnetPassStatuses[equipment.id]?.status === "active"
+          carnetPassStatuses[equipment.id]?.status === "active" &&
+          (!selectedEquipmentId ||
+            String(equipment.id) === String(selectedEquipmentId)),
       ),
-    [equipments, carnetPassStatuses]
+    [equipments, carnetPassStatuses, selectedEquipmentId],
   );
+
+  useEffect(() => {
+    setForm({
+      ...EMPTY_INTERVENTION_FORM,
+      equipmentId: selectedEquipmentId || "",
+    });
+    setFormOpen(false);
+    setError("");
+    setSuccess("");
+  }, [selectedEquipmentId]);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -158,9 +171,7 @@ export default function InterventionForm({
     }
 
     if (!form.equipmentId) {
-      setError(
-        "Sélectionnez un équipement possédant un CarnetPass actif."
-      );
+      setError("Sélectionnez un équipement possédant un CarnetPass actif.");
       return;
     }
 
@@ -189,9 +200,7 @@ export default function InterventionForm({
             .split(/\r?\n/)
             .map((part) => part.trim())
             .filter(Boolean),
-          measurements: parseMeasurements(
-            form.measurements
-          ),
+          measurements: parseMeasurements(form.measurements),
           resultStatus: form.resultStatus,
           aiAssistanceUsed: false,
           aiTrainingAllowed: false,
@@ -202,34 +211,32 @@ export default function InterventionForm({
 
       if (!response.ok) {
         throw new Error(
-          result?.error ||
-          "L’intervention n’a pas pu être enregistrée."
+          result?.error || "L’intervention n’a pas pu être enregistrée.",
         );
       }
 
       setSuccess(
         result?.intervention?.polygonState === "confirmed"
           ? "Intervention enregistrée et preuve Polygon confirmée."
-          : "Intervention enregistrée. La confirmation Polygon est en cours."
+          : "Intervention enregistrée. La confirmation Polygon est en cours.",
       );
 
       onInterventionCreated?.();
 
-      setForm(EMPTY_INTERVENTION_FORM);
+      setForm({
+        ...EMPTY_INTERVENTION_FORM,
+        equipmentId: selectedEquipmentId || "",
+      });
       setFormOpen(false);
     } catch (submitError) {
       setError(
-        submitError?.message ||
-        "L’intervention n’a pas pu être enregistrée."
+        submitError?.message || "L’intervention n’a pas pu être enregistrée.",
       );
     } finally {
       setSubmitting(false);
     }
   }
-  async function handleDownloadPdf(
-    intervention,
-    equipment
-  ) {
+  async function handleDownloadPdf(intervention, equipment) {
     if (pdfGeneratingId) return;
 
     setPdfGeneratingId(intervention.id);
@@ -242,10 +249,7 @@ export default function InterventionForm({
         company,
       });
     } catch (pdfError) {
-      setError(
-        pdfError?.message ||
-        "Le rapport PDF n'a pas pu être créé."
-      );
+      setError(pdfError?.message || "Le rapport PDF n'a pas pu être créé.");
     } finally {
       setPdfGeneratingId("");
     }
@@ -255,34 +259,38 @@ export default function InterventionForm({
 
   return (
     <section
-      className="pro-dashboard-grid"
+      className={
+        embedded ? "pro-equipment-workspace-module" : "pro-dashboard-grid"
+      }
       aria-labelledby="intervention-form-title"
     >
-      <article className="pro-dashboard-card pro-equipment-card">
+      <article
+        className={`pro-dashboard-card pro-equipment-card${
+          embedded ? " pro-dashboard-card--embedded" : ""
+        }`}
+      >
         <div>
           <span className="pro-dashboard-icon" aria-hidden="true">
             🧰
           </span>
 
           <h2 id="intervention-form-title">
-            Interventions techniques
+            {selectedEquipment
+              ? "Interventions de l’équipement"
+              : "Interventions techniques"}
           </h2>
 
           <p>
-            Enregistrez une intervention sur un équipement
-            possédant un CarnetPass actif. Seule une empreinte
-            cryptographique sera publiée sur Polygon.
+            {selectedEquipment
+              ? "Ajoutez une intervention et consultez tout l’historique de cet équipement. Seule une empreinte cryptographique sera publiée sur Polygon."
+              : "Enregistrez une intervention sur un équipement possédant un CarnetPass actif. Seule une empreinte cryptographique sera publiée sur Polygon."}
           </p>
         </div>
 
         <button
           className="pro-primary-button"
           type="button"
-          disabled={
-            carnetPassStatusLoading ||
-            noActiveEquipment ||
-            submitting
-          }
+          disabled={carnetPassStatusLoading || noActiveEquipment || submitting}
           onClick={() => {
             setFormOpen((isOpen) => !isOpen);
             setError("");
@@ -322,30 +330,32 @@ export default function InterventionForm({
             onSubmit={handleSubmit}
             aria-busy={submitting}
           >
-            <label>
-              <span>Équipement *</span>
+            {selectedEquipment ? (
+              <div className="pro-selected-equipment-field">
+                <span>Équipement sélectionné</span>
+                <strong>{getEquipmentLabel(selectedEquipment)}</strong>
+              </div>
+            ) : (
+              <label>
+                <span>Équipement *</span>
 
-              <select
-                name="equipmentId"
-                value={form.equipmentId}
-                onChange={handleChange}
-                disabled={submitting}
-                required
-              >
-                <option value="">
-                  Sélectionner un équipement
-                </option>
+                <select
+                  name="equipmentId"
+                  value={form.equipmentId}
+                  onChange={handleChange}
+                  disabled={submitting}
+                  required
+                >
+                  <option value="">Sélectionner un équipement</option>
 
-                {activeEquipments.map((equipment) => (
-                  <option
-                    key={equipment.id}
-                    value={equipment.id}
-                  >
-                    {getEquipmentLabel(equipment)}
-                  </option>
-                ))}
-              </select>
-            </label>
+                  {activeEquipments.map((equipment) => (
+                    <option key={equipment.id} value={equipment.id}>
+                      {getEquipmentLabel(equipment)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
 
             <div className="pro-form-row">
               <label>
@@ -361,9 +371,7 @@ export default function InterventionForm({
                   <option value="maintenance">Entretien</option>
                   <option value="repair">Dépannage</option>
                   <option value="installation">Installation</option>
-                  <option value="commissioning">
-                    Mise en service
-                  </option>
+                  <option value="commissioning">Mise en service</option>
                   <option value="inspection">Contrôle</option>
                   <option value="other">Autre</option>
                 </select>
@@ -383,12 +391,8 @@ export default function InterventionForm({
                   <option value="partially_resolved">
                     Partiellement résolu
                   </option>
-                  <option value="not_resolved">
-                    Non résolu
-                  </option>
-                  <option value="not_applicable">
-                    Sans objet
-                  </option>
+                  <option value="not_resolved">Non résolu</option>
+                  <option value="not_applicable">Sans objet</option>
                 </select>
               </label>
             </div>
@@ -406,9 +410,7 @@ export default function InterventionForm({
                 disabled={submitting}
               />
 
-              <small>
-                {form.symptoms.length}/4000 caractères
-              </small>
+              <small>{form.symptoms.length}/4000 caractères</small>
             </label>
 
             <label>
@@ -438,9 +440,7 @@ export default function InterventionForm({
                 disabled={submitting}
               />
 
-              <small>
-                {form.diagnosis.length}/4000 caractères
-              </small>
+              <small>{form.diagnosis.length}/4000 caractères</small>
             </label>
             <label>
               <span>Travail effectué *</span>
@@ -456,9 +456,7 @@ export default function InterventionForm({
                 required
               />
 
-              <small>
-                {form.workPerformed.length}/8000 caractères
-              </small>
+              <small>{form.workPerformed.length}/8000 caractères</small>
             </label>
             <label>
               <span>Pièces remplacées</span>
@@ -474,8 +472,8 @@ export default function InterventionForm({
               />
 
               <small>
-                Une pièce par ligne. Laissez vide si aucune pièce
-                n'a été remplacée.
+                Une pièce par ligne. Laissez vide si aucune pièce n'a été
+                remplacée.
               </small>
             </label>
 
@@ -492,13 +490,11 @@ export default function InterventionForm({
                 disabled={submitting}
               />
 
-              <small>
-                Format obligatoire : nom de la mesure : valeur
-              </small>
+              <small>Format obligatoire : nom de la mesure : valeur</small>
             </label>
             <p className="pro-form-notice">
-              Vérifiez les informations avant l’envoi : une preuve
-              confirmée sur Polygon ne peut pas être effacée.
+              Vérifiez les informations avant l’envoi : une preuve confirmée sur
+              Polygon ne peut pas être effacée.
             </p>
 
             <button
@@ -520,10 +516,14 @@ export default function InterventionForm({
           <div className="pro-intervention-history-heading">
             <div>
               <h3 id="intervention-history-title">
-                Historique récent
+                {selectedEquipment
+                  ? "Historique de l’équipement"
+                  : "Historique récent"}
               </h3>
               <p>
-                Interventions enregistrées par votre entreprise.
+                {selectedEquipment
+                  ? "Toutes les interventions chargées pour cet équipement."
+                  : "Interventions enregistrées par votre entreprise."}
               </p>
             </div>
 
@@ -561,7 +561,8 @@ export default function InterventionForm({
               <ul className="pro-intervention-history-list">
                 {interventions.map((intervention) => {
                   const equipment = equipments.find(
-                    (item) => item.id === intervention.equipmentId
+                    (item) =>
+                      String(item.id) === String(intervention.equipmentId),
                   );
 
                   const hasBoilerCertificate =
@@ -587,14 +588,17 @@ export default function InterventionForm({
                             ? `${equipment.brand} ${equipment.model}`
                             : intervention.carnetPassId}
                         </strong>
+                        {equipment?.serial_number && (
+                          <span>N° de série : {equipment.serial_number}</span>
+                        )}
                         <span>
                           {getInterventionTypeLabel(
-                            intervention.interventionType
+                            intervention.interventionType,
                           )}{" "}
                           ·{" "}
                           <time dateTime={intervention.interventionAt}>
                             {formatInterventionDate(
-                              intervention.interventionAt
+                              intervention.interventionAt,
                             )}
                           </time>
                         </span>
@@ -603,9 +607,7 @@ export default function InterventionForm({
 
                       <div className="pro-intervention-history-status">
                         <strong>
-                          {getResultStatusLabel(
-                            intervention.resultStatus
-                          )}
+                          {getResultStatusLabel(intervention.resultStatus)}
                         </strong>
                         <span
                           className={
@@ -618,33 +620,27 @@ export default function InterventionForm({
                             ? "✓ Preuve Polygon confirmée"
                             : "Confirmation Polygon en cours"}
                         </span>
-                        {intervention.polygonState ===
-                          "confirmed" && (
-                            <button
-                              className="pro-primary-button"
-                              style={{
-                                minHeight: "36px",
-                                padding: "0 12px",
-                                borderRadius: "9px",
-                                boxShadow: "none",
-                                fontSize: "12px",
-                              }}
-                              type="button"
-                              disabled={
-                                pdfGeneratingId === intervention.id
-                              }
-                              onClick={() =>
-                                handleDownloadPdf(
-                                  intervention,
-                                  equipment
-                                )
-                              }
-                            >
-                              {pdfGeneratingId === intervention.id
-                                ? "Création du PDF…"
-                                : "📄 Rapport PDF"}
-                            </button>
-                          )}
+                        {intervention.polygonState === "confirmed" && (
+                          <button
+                            className="pro-primary-button"
+                            style={{
+                              minHeight: "36px",
+                              padding: "0 12px",
+                              borderRadius: "9px",
+                              boxShadow: "none",
+                              fontSize: "12px",
+                            }}
+                            type="button"
+                            disabled={pdfGeneratingId === intervention.id}
+                            onClick={() =>
+                              handleDownloadPdf(intervention, equipment)
+                            }
+                          >
+                            {pdfGeneratingId === intervention.id
+                              ? "Création du PDF…"
+                              : "📄 Rapport PDF"}
+                          </button>
+                        )}
                         {hasBoilerCertificate && !boilerCertificatesLoading && (
                           <button
                             className="pro-action-card-button"
@@ -656,7 +652,11 @@ export default function InterventionForm({
                             {certificateButtonLabel}
                           </button>
                         )}
-
+                        {hasBoilerCertificate && boilerCertificatesLoading && (
+                          <span className="is-loading">
+                            Chargement de l’attestation…
+                          </span>
+                        )}
                       </div>
                     </li>
                   );
