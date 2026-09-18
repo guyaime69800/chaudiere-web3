@@ -33,15 +33,24 @@ function formatPart(part) {
 
   return [
     part.name,
-    part.reference && `réf. ${part.reference}`,
-    Number.isInteger(part.quantity) &&
-      `quantité ${part.quantity}`,
+    part.reference && "réf. " + part.reference,
+    Number.isInteger(part.quantity) && "quantité " + part.quantity,
   ]
     .filter(Boolean)
     .join(" - ");
 }
 
-export async function downloadInterventionPdf({
+function createFileName(intervention, equipment) {
+  const safeCarnet = String(
+    intervention.carnetPassId || equipment?.serial_number || "intervention",
+  ).replace(/[^a-zA-Z0-9_-]+/g, "-");
+
+  const date = String(intervention.interventionAt || "").slice(0, 10) || "date";
+
+  return "CarnetPass-intervention-" + safeCarnet + "-" + date + ".pdf";
+}
+
+export async function createInterventionPdf({
   intervention,
   equipment,
   company,
@@ -73,12 +82,7 @@ export async function downloadInterventionPdf({
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.text(
-      "Rapport d'intervention",
-      192,
-      14.5,
-      { align: "right" }
-    );
+    doc.text("Rapport d'intervention", 192, 14.5, { align: "right" });
   }
 
   function ensureSpace(height = 8) {
@@ -93,15 +97,7 @@ export async function downloadInterventionPdf({
     ensureSpace(18);
 
     doc.setFillColor(250, 242, 238);
-    doc.roundedRect(
-      left,
-      y,
-      width,
-      7,
-      1.5,
-      1.5,
-      "F"
-    );
+    doc.roundedRect(left, y, width, 7, 1.5, 1.5, "F");
 
     doc.setTextColor(201, 54, 8);
     doc.setFont("helvetica", "bold");
@@ -112,11 +108,7 @@ export async function downloadInterventionPdf({
   }
 
   function addField(label, value) {
-    if (
-      value === undefined ||
-      value === null ||
-      value === ""
-    ) {
+    if (value === undefined || value === null || value === "") {
       return;
     }
 
@@ -133,10 +125,7 @@ export async function downloadInterventionPdf({
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
 
-    const lines = doc.splitTextToSize(
-      String(value),
-      width
-    );
+    const lines = doc.splitTextToSize(String(value), width);
 
     for (const line of lines) {
       ensureSpace(4.5);
@@ -152,11 +141,7 @@ export async function downloadInterventionPdf({
   doc.setTextColor(37, 28, 24);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
-  doc.text(
-    "Rapport d'intervention technique",
-    left,
-    y
-  );
+  doc.text("Rapport d'intervention technique", left, y);
 
   y += 7;
 
@@ -167,154 +152,81 @@ export async function downloadInterventionPdf({
   y += 8;
 
   addSection("Entreprise intervenante");
-  addField(
-    "Raison sociale",
-    company?.name || "Non renseignée"
-  );
-  addField(
-    "SIRET",
-    company?.siret || "Non renseigné"
-  );
+  addField("Raison sociale", company?.name || "Non renseignée");
+  addField("SIRET", company?.siret || "Non renseigné");
 
   addSection("Équipement");
-  addField(
-    "CarnetPass",
-    intervention.carnetPassId
-  );
+  addField("CarnetPass", intervention.carnetPassId);
   addField("Marque", equipment?.brand);
   addField("Modèle", equipment?.model);
-  addField(
-    "Référence produit",
-    equipment?.product_reference
-  );
-  addField(
-    "Numéro de série",
-    equipment?.serial_number
-  );
+  addField("Référence produit", equipment?.product_reference);
+  addField("Numéro de série", equipment?.serial_number);
 
   addSection("Intervention");
-  addField(
-    "Date",
-    formatDate(intervention.interventionAt)
-  );
+  addField("Date", formatDate(intervention.interventionAt));
   addField(
     "Type",
-    TYPE_LABELS[intervention.interventionType] ||
-      "Intervention"
+    TYPE_LABELS[intervention.interventionType] || "Intervention",
   );
   addField(
     "Résultat",
-    RESULT_LABELS[intervention.resultStatus] ||
-      "Non renseigné"
+    RESULT_LABELS[intervention.resultStatus] || "Non renseigné",
   );
-  addField(
-    "Symptômes",
-    intervention.symptoms
-  );
-  addField(
-    "Code défaut",
-    intervention.faultCode
-  );
-  addField(
-    "Diagnostic",
-    intervention.diagnosis
-  );
-  addField(
-    "Travail effectué",
-    intervention.workPerformed
-  );
+  addField("Symptômes", intervention.symptoms);
+  addField("Code défaut", intervention.faultCode);
+  addField("Diagnostic", intervention.diagnosis);
+  addField("Travail effectué", intervention.workPerformed);
 
-  const parts = Array.isArray(
-    intervention.partsReplaced
-  )
-    ? intervention.partsReplaced
-        .map(formatPart)
-        .filter(Boolean)
+  const parts = Array.isArray(intervention.partsReplaced)
+    ? intervention.partsReplaced.map(formatPart).filter(Boolean)
     : [];
 
-  addField(
-    "Pièces remplacées",
-    parts.join("\n")
-  );
+  addField("Pièces remplacées", parts.join("\n"));
 
   const measurements =
     intervention.measurements &&
     typeof intervention.measurements === "object" &&
     !Array.isArray(intervention.measurements)
       ? Object.entries(intervention.measurements)
-          .map(
-            ([name, value]) =>
-              `${name} : ${String(value)}`
-          )
+          .map(([name, value]) => name + " : " + String(value))
           .join("\n")
       : "";
 
-  addField(
-    "Mesures relevées",
-    measurements
-  );
+  addField("Mesures relevées", measurements);
 
   addSection("Traçabilité Polygon");
-  addField(
-    "Identifiant de l'intervention",
-    intervention.id
-  );
-  addField(
-    "Réseau",
-    "Polygon PoS - Chain ID 137"
-  );
-  addField(
-    "Transaction",
-    intervention.polygonTransactionHash
-  );
-  addField(
-    "Bloc",
-    intervention.polygonBlockNumber
-  );
+  addField("Identifiant de l'intervention", intervention.id);
+  addField("Réseau", "Polygon PoS - Chain ID 137");
+  addField("Transaction", intervention.polygonTransactionHash);
+  addField("Bloc", intervention.polygonBlockNumber);
   addField(
     "Confirmation",
     intervention.polygonConfirmedAt
-      ? formatDate(
-          intervention.polygonConfirmedAt
-        )
-      : ""
+      ? formatDate(intervention.polygonConfirmedAt)
+      : "",
   );
 
-  ensureSpace(22);
-
-  doc.setFillColor(255, 249, 229);
-  doc.setDrawColor(229, 163, 0);
-  doc.roundedRect(
-    left,
-    y,
-    width,
-    18,
-    2,
-    2,
-    "FD"
-  );
-
-  doc.setTextColor(120, 76, 0);
-  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
 
   const legalNotice = doc.splitTextToSize(
     "Ce rapport CarnetPass ne remplace pas une attestation réglementaire ou un formulaire CERFA lorsqu'un tel document est obligatoire. Polygon conserve l'empreinte cryptographique de l'intervention, pas son contenu lisible.",
-    width - 8
+    width - 8,
   );
+  const legalBoxHeight = Math.max(12, 6 + legalNotice.length * 3);
 
-  doc.text(
-    legalNotice,
-    left + 4,
-    y + 5
-  );
+  ensureSpace(legalBoxHeight + 2);
+
+  doc.setFillColor(255, 249, 229);
+  doc.setDrawColor(229, 163, 0);
+  doc.roundedRect(left, y, width, legalBoxHeight, 2, 2, "FD");
+
+  doc.setTextColor(120, 76, 0);
+  doc.text(legalNotice, left + 4, y + 4.5);
 
   const pageCount = doc.getNumberOfPages();
 
-  for (
-    let page = 1;
-    page <= pageCount;
-    page += 1
-  ) {
+  for (let page = 1; page <= pageCount; page += 1) {
     doc.setPage(page);
 
     doc.setDrawColor(224, 213, 207);
@@ -323,34 +235,32 @@ export async function downloadInterventionPdf({
     doc.setTextColor(112, 93, 84);
     doc.setFontSize(7.5);
 
-    doc.text(
-      `Généré par CarnetPass le ${formatDate(
-        new Date()
-      )}`,
-      left,
-      290
-    );
+    doc.text("Généré par CarnetPass le " + formatDate(new Date()), left, 290);
 
-    doc.text(
-      `Page ${page}/${pageCount}`,
-      192,
-      290,
-      { align: "right" }
-    );
+    doc.text("Page " + page + "/" + pageCount, 192, 290, {
+      align: "right",
+    });
   }
 
-  const safeCarnet = String(
-    intervention.carnetPassId ||
-      equipment?.serial_number ||
-      "intervention"
-  ).replace(/[^a-zA-Z0-9_-]+/g, "-");
+  return {
+    blob: doc.output("blob"),
+    fileName: createFileName(intervention, equipment),
+  };
+}
 
-  const date =
-    String(
-      intervention.interventionAt || ""
-    ).slice(0, 10) || "date";
+export async function downloadInterventionPdf(options) {
+  const { blob, fileName } = await createInterventionPdf(options);
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
 
-  doc.save(
-    `CarnetPass-intervention-${safeCarnet}-${date}.pdf`
-  );
+  link.href = objectUrl;
+  link.download = fileName;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  window.setTimeout(() => {
+    URL.revokeObjectURL(objectUrl);
+  }, 1000);
 }
