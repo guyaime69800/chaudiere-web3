@@ -692,6 +692,7 @@ export default function ProSpacePage() {
   const [interventionLoadError, setInterventionLoadError] = useState("");
   const [interventionRefreshKey, setInterventionRefreshKey] = useState(0);
   const [boilerCertificates, setBoilerCertificates] = useState([]);
+  const [boilerCertificatesLoading, setBoilerCertificatesLoading] = useState(true);
   const [
     selectedRegulatoryInterventionId,
     setSelectedRegulatoryInterventionId,
@@ -898,8 +899,11 @@ export default function ProSpacePage() {
     async function loadBoilerCertificates() {
       if (!company?.id || !session?.access_token) {
         setBoilerCertificates([]);
+        setBoilerCertificatesLoading(false);
         return;
       }
+
+      setBoilerCertificatesLoading(true);
 
       try {
         const response = await fetch(
@@ -932,6 +936,10 @@ export default function ProSpacePage() {
         if (!cancelled && error?.name !== "AbortError") {
           console.error("BOILER_CERTIFICATES_LOAD_FAILED");
           setBoilerCertificates([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setBoilerCertificatesLoading(false);
         }
       }
     }
@@ -1720,6 +1728,7 @@ export default function ProSpacePage() {
         carnetPassStatusLoading={carnetPassStatusLoading}
         interventions={interventions}
         boilerCertificates={boilerCertificates}
+        boilerCertificatesLoading={boilerCertificatesLoading}
         interventionLoading={interventionLoading}
         interventionLoadError={interventionLoadError}
         onOpenRegulatoryDocument={(interventionId) => {
@@ -1736,7 +1745,10 @@ export default function ProSpacePage() {
           interventions={interventions}
           equipments={equipments}
           requestedInterventionId={selectedRegulatoryInterventionId}
-          onCertificatesChange={setBoilerCertificates}
+          onCertificatesChange={(certificates) => {
+            setBoilerCertificates(certificates);
+            setBoilerCertificatesLoading(false);
+          }}
           onRequestHandled={() =>
             setSelectedRegulatoryInterventionId("")
           }

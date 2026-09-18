@@ -99,6 +99,7 @@ export default function InterventionForm({
   carnetPassStatusLoading,
   interventions = [],
   boilerCertificates = [],
+  boilerCertificatesLoading = false,
   interventionLoading,
   interventionLoadError,
   onOpenRegulatoryDocument,
@@ -572,7 +573,9 @@ export default function InterventionForm({
                     boilerCertificateByInterventionId[intervention.id];
 
                   const certificateButtonLabel =
-                    boilerCertificate?.status === "issued"
+                    boilerCertificatesLoading
+                      ? "Vérification de l’attestation…"
+                      : boilerCertificate?.status === "issued"
                       ? "Voir l’attestation"
                       : boilerCertificate?.status === "draft"
                         ? "Compléter le brouillon"
@@ -648,6 +651,7 @@ export default function InterventionForm({
                             <button
                               className="pro-action-card-button"
                               type="button"
+                              disabled={boilerCertificatesLoading}
                               onClick={() =>
                                 onOpenRegulatoryDocument?.(intervention.id)
                               }
