@@ -270,75 +270,6 @@
   line-height: 1.65;
 }
 
-.equipment-workspace__documents {
-  display: grid;
-  gap: 12px;
-}
-
-.equipment-workspace__documents article {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 18px;
-  padding: 20px;
-  border: 1px solid var(--pro-line);
-  border-radius: 15px;
-  background: #ffffff;
-}
-
-.equipment-workspace__documents article > span {
-  display: grid;
-  width: 46px;
-  height: 46px;
-  place-items: center;
-  border-radius: 13px;
-  background: var(--pro-orange-light);
-  font-size: 20px;
-}
-
-.equipment-workspace__documents h3 {
-  margin: 0 0 5px;
-  font-size: 16px;
-}
-
-.equipment-workspace__documents p {
-  margin: 0;
-  color: var(--pro-muted);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.equipment-workspace__documents button {
-  min-height: 40px;
-  padding: 0 14px;
-  border: 1px solid #f1b39c;
-  border-radius: 10px;
-  color: var(--pro-orange-dark);
-  background: #fff8f5;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.equipment-workspace__documents button:hover,
-.equipment-workspace__documents button:focus-visible {
-  border-color: var(--pro-orange);
-  background: var(--pro-orange-light);
-}
-
-.equipment-workspace__documents article.is-upcoming {
-  border-style: dashed;
-}
-
-.equipment-workspace__documents article.is-upcoming > small {
-  padding: 6px 9px;
-  border-radius: 999px;
-  color: #765f56;
-  background: #f3eeeb;
-  font-weight: 750;
-}
-
 .equipment-workspace__traceability {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -463,17 +394,6 @@
 
   .equipment-workspace__tabs {
     padding: 0 12px;
-  }
-
-  .equipment-workspace__documents article {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .equipment-workspace__documents article > button,
-  .equipment-workspace__documents article > small {
-    grid-column: 1 / -1;
-    justify-self: stretch;
-    text-align: center;
   }
 
   .equipment-workspace__traceability {

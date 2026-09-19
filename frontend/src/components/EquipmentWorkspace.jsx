@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import BoilerMaintenanceCertificateForm from "./BoilerMaintenanceCertificateForm";
 import CarnetPassModal from "./CarnetPassModal";
+import EquipmentDocumentCenter from "./EquipmentDocumentCenter";
 import InterventionForm from "./InterventionForm";
 import "./EquipmentWorkspace.css";
 
@@ -142,6 +143,7 @@ export default function EquipmentWorkspace({
     const [activeTab, setActiveTab] = useState("summary");
     const [requestedInterventionId, setRequestedInterventionId] = useState("");
     const [carnetPassModalOpen, setCarnetPassModalOpen] = useState(false);
+    const [technicalDocumentCount, setTechnicalDocumentCount] = useState(0);
     const workspaceRef = useRef(null);
 
     const equipmentInterventions = useMemo(
@@ -191,6 +193,11 @@ export default function EquipmentWorkspace({
         (certificate) => certificate.status === "draft",
     ).length;
 
+    const totalDocumentCount =
+        technicalDocumentCount +
+        confirmedInterventionCount +
+        equipmentCertificates.length;
+
     const carnetPassPresentation = getCarnetPassPresentation(
         carnetPassStatus,
         carnetPassStatusLoading,
@@ -204,6 +211,7 @@ export default function EquipmentWorkspace({
         setActiveTab("summary");
         setRequestedInterventionId("");
         setCarnetPassModalOpen(false);
+        setTechnicalDocumentCount(0);
 
         window.requestAnimationFrame(() => {
             workspaceRef.current?.scrollIntoView({
@@ -212,6 +220,7 @@ export default function EquipmentWorkspace({
             });
         });
     }, [equipment.id]);
+
     function handleCarnetPassAction() {
         if (activeCarnetPassId) {
             setCarnetPassModalOpen(true);
@@ -233,6 +242,10 @@ export default function EquipmentWorkspace({
 
         if (tab.id === "regulatory" && equipmentCertificates.length > 0) {
             return `${tab.label} (${equipmentCertificates.length})`;
+        }
+
+        if (tab.id === "documents" && totalDocumentCount > 0) {
+            return `${tab.label} (${totalDocumentCount})`;
         }
 
         return tab.label;
@@ -454,55 +467,16 @@ export default function EquipmentWorkspace({
                     ))}
 
                 {activeTab === "documents" && (
-                    <div className="equipment-workspace__documents">
-                        <article>
-                            <span aria-hidden="true">📄</span>
-                            <div>
-                                <h3>Rapports d’intervention</h3>
-                                <p>
-                                    {confirmedInterventionCount} rapport
-                                    {confirmedInterventionCount > 1 ? "s" : ""} PDF disponible
-                                    {confirmedInterventionCount > 1 ? "s" : ""} depuis
-                                    l’historique.
-                                </p>
-                            </div>
-                            <button type="button" onClick={() => setActiveTab("history")}>
-                                Voir les rapports
-                            </button>
-                        </article>
-
-                        <article>
-                            <span aria-hidden="true">✅</span>
-                            <div>
-                                <h3>Attestations et CERFA</h3>
-                                <p>
-                                    {equipmentCertificates.length} document
-                                    {equipmentCertificates.length > 1 ? "s" : ""}
-                                    réglementaire
-                                    {equipmentCertificates.length > 1 ? "s" : ""} lié
-                                    {equipmentCertificates.length > 1 ? "s" : ""} à cet
-                                    équipement.
-                                </p>
-                            </div>
-                            <button type="button" onClick={() => setActiveTab("regulatory")}>
-                                Voir les documents
-                            </button>
-                        </article>
-
-                        <article className="is-upcoming">
-                            <span aria-hidden="true">📎</span>
-                            <div>
-                                <h3>Pièces jointes privées</h3>
-                                <p>
-                                    Photos, factures, devis, notices et autres justificatifs
-                                    seront déposés ici lors de l’étape multi-documents.
-                                </p>
-                            </div>
-                            <small>Prochaine étape</small>
-                        </article>
-                    </div>
+                    <EquipmentDocumentCenter
+                        equipment={equipment}
+                        carnetPassId={carnetPassStatus?.carnetPassId || ""}
+                        reportCount={confirmedInterventionCount}
+                        certificateCount={equipmentCertificates.length}
+                        onOpenHistory={() => setActiveTab("history")}
+                        onOpenRegulatory={() => setActiveTab("regulatory")}
+                        onTechnicalDocumentCountChange={setTechnicalDocumentCount}
+                    />
                 )}
-
                 {activeTab === "traceability" && (
                     <div className="equipment-workspace__traceability">
                         <article>
@@ -553,6 +527,7 @@ export default function EquipmentWorkspace({
                 statusLabel={carnetPassPresentation.label}
                 statusTone={carnetPassPresentation.tone}
             />
+
         </section>
     );
 }
