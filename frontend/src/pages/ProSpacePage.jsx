@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { signOut } from "../services/authService";
@@ -79,8 +79,180 @@ function getEquipmentTypeLabel(type) {
   return labels[type] || "Autre";
 }
 
+const MODAL_FOCUSABLE_ELEMENTS = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
+
+function formatAccountDate(value) {
+  if (!value) return "Non disponible";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "Non disponible";
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    dateStyle: "long",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function ModalShell({
+  open,
+  onClose,
+  dialogId,
+  titleId,
+  eyebrow,
+  title,
+  description,
+  className = "",
+  initialFocusRef,
+  children,
+}) {
+  const dialogRef = useRef(null);
+  const closeCallbackRef = useRef(onClose);
+
+  useEffect(() => {
+    closeCallbackRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const previouslyFocusedElement = document.activeElement;
+    const previousBodyOverflow = document.body.style.overflow;
+
+    function getFocusableElements() {
+      if (!dialogRef.current) return [];
+
+      return Array.from(
+        dialogRef.current.querySelectorAll(MODAL_FOCUSABLE_ELEMENTS),
+      ).filter(
+        (element) =>
+          element.getAttribute("aria-hidden") !== "true" &&
+          element.getClientRects().length > 0,
+      );
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeCallbackRef.current?.();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusableElements = getFocusableElements();
+
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        dialogRef.current?.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (!dialogRef.current?.contains(activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? lastElement : firstElement).focus();
+        return;
+      }
+
+      if (event.shiftKey && activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    }
+
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
+
+    const focusFrame = window.requestAnimationFrame(() => {
+      const preferredElement = initialFocusRef?.current;
+      const firstFocusableElement = getFocusableElements()[0];
+
+      (preferredElement || firstFocusableElement || dialogRef.current)?.focus();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousBodyOverflow;
+
+      if (
+        previouslyFocusedElement instanceof HTMLElement &&
+        previouslyFocusedElement.isConnected
+      ) {
+        previouslyFocusedElement.focus();
+      }
+    };
+  }, [initialFocusRef, open]);
+
+  if (!open) return null;
+
+  const descriptionId = description ? `${titleId}-description` : undefined;
+
+  return (
+    <div
+      className="pro-modal-overlay"
+      role="presentation"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <section
+        ref={dialogRef}
+        id={dialogId}
+        className={`pro-modal ${className}`.trim()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        tabIndex={-1}
+      >
+        <div className="pro-modal-header">
+          <div>
+            {eyebrow && (
+              <span className="pro-action-card-label">{eyebrow}</span>
+            )}
+
+            <h2 id={titleId}>{title}</h2>
+
+            {description && <p id={descriptionId}>{description}</p>}
+          </div>
+
+          <button
+            className="pro-modal-close"
+            type="button"
+            aria-label={`Fermer — ${title}`}
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </div>
+
+        {children}
+      </section>
+    </div>
+  );
+}
+
 function CompanyAccountCard({
   company,
+  user,
+  session,
   companyVerified,
   verificationTitle,
   verificationMessage,
@@ -90,12 +262,11 @@ function CompanyAccountCard({
   onSiretSaved,
   onContactSaved,
 }) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [activeModal, setActiveModal] = useState(null);
   const [siret, setSiret] = useState(company.siret || "");
   const [siretBusy, setSiretBusy] = useState(false);
   const [siretError, setSiretError] = useState("");
-  const [securityDetailsOpen, setSecurityDetailsOpen] = useState(false);
-  const [complianceDetailsOpen, setComplianceDetailsOpen] = useState(false);
+  const siretInputRef = useRef(null);
   const [contactForm, setContactForm] = useState({
     phone: company.phone || "",
     email: company.email || "",
@@ -105,29 +276,28 @@ function CompanyAccountCard({
     city: company.city || "",
     country: company.country || "France",
   });
-  useEffect(() => {
-    if (!complianceDetailsOpen) return undefined;
-
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        setComplianceDetailsOpen(false);
-      }
-    }
-
-    document.addEventListener("keydown", handleEscape);
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
-    };
-  }, [complianceDetailsOpen]);
   const [contactBusy, setContactBusy] = useState(false);
   const [contactError, setContactError] = useState("");
 
   const normalizedSiret = siret.replace(/\s/g, "");
   const unchanged = normalizedSiret === (company.siret || "");
   const canEdit = ["owner", "admin"].includes(company.role);
+  const emailConfirmed = Boolean(
+    user?.email_confirmed_at || user?.confirmed_at,
+  );
+  const authenticatedSession = Boolean(session?.access_token);
+  const mfaConfigured = Boolean(
+    Array.isArray(user?.factors) &&
+    user.factors.some((factor) => factor?.status === "verified"),
+  );
+  const activeProtectionCount = [
+    emailConfirmed,
+    authenticatedSession,
+    mfaConfigured,
+  ].filter(Boolean).length;
+  const activeProtectionLabel = `${activeProtectionCount} protection${
+    activeProtectionCount === 1 ? "" : "s"
+  } active${activeProtectionCount === 1 ? "" : "s"} sur 3`;
 
   const addressSummary = [
     company.address_line1,
@@ -196,25 +366,157 @@ function CompanyAccountCard({
   }
 
   return (
-    <section
-      className="pro-dashboard-grid pro-account-grid"
-      aria-label="Paramètres du compte"
-    >
-      <article className="pro-action-card pro-company-card">
-        <div className="pro-company-card-topline">
-          <div className="pro-action-card-heading">
-            <span className="pro-action-card-icon" aria-hidden="true">
-              🏢
-            </span>
-
-            <div>
-              <span className="pro-action-card-label">
-                Compte professionnel
+    <>
+      <section
+        className="pro-dashboard-grid pro-account-grid"
+        aria-label="Paramètres du compte"
+      >
+        <article className="pro-action-card pro-company-card">
+          <div className="pro-company-card-topline">
+            <div className="pro-action-card-heading">
+              <span className="pro-action-card-icon" aria-hidden="true">
+                🏢
               </span>
 
-              <h2>Mon entreprise</h2>
-              <p>{company.name}</p>
+              <div>
+                <span className="pro-action-card-label">
+                  Compte professionnel
+                </span>
+
+                <h2>Mon entreprise</h2>
+                <p>{company.name}</p>
+              </div>
             </div>
+
+            <span
+              className={`pro-company-status ${
+                companyVerified ? "pro-company-status--approved" : ""
+              }`}
+            >
+              {verificationTitle}
+            </span>
+          </div>
+
+          <div className="pro-company-summary">
+            <div>
+              <span>SIRET</span>
+              <strong>{company.siret || "Non renseigné"}</strong>
+            </div>
+
+            <div>
+              <span>Adresse officielle</span>
+              <strong>{addressSummary || "À compléter"}</strong>
+            </div>
+          </div>
+
+          <p className="pro-company-verification-text">{verificationMessage}</p>
+
+          <div className="pro-company-card-actions">
+            {!companyVerified && company.is_demo !== true && (
+              <button
+                type="button"
+                className="pro-primary-button"
+                disabled={
+                  verificationBusy ||
+                  !company.siret ||
+                  company.verification?.status === "suspended"
+                }
+                onClick={onVerify}
+              >
+                {verificationBusy ? "Vérification…" : "Vérifier mon entreprise"}
+              </button>
+            )}
+
+            {canEdit && (
+              <button
+                className="pro-action-card-button"
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded={activeModal === "company"}
+                aria-controls="company-account-modal"
+                onClick={() => setActiveModal("company")}
+              >
+                Modifier
+              </button>
+            )}
+          </div>
+        </article>
+        <div className="pro-account-side-column">
+          <article className="pro-action-card pro-security-card">
+            <div className="pro-action-card-heading">
+              <span className="pro-action-card-icon" aria-hidden="true">
+                🔐
+              </span>
+
+              <div>
+                <span className="pro-action-card-label">Sécurité</span>
+
+                <h2>Sécurité du compte</h2>
+                <p>{activeProtectionLabel}</p>
+              </div>
+            </div>
+
+            <button
+              className="pro-action-card-button"
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={activeModal === "security"}
+              aria-controls="account-security-modal"
+              onClick={() => setActiveModal("security")}
+            >
+              Voir la sécurité
+            </button>
+          </article>
+          <article className="pro-action-card pro-compliance-card">
+            <div className="pro-action-card-heading">
+              <span className="pro-action-card-icon" aria-hidden="true">
+                ℹ️
+              </span>
+
+              <div>
+                <span className="pro-action-card-label">
+                  Informations conformité
+                </span>
+
+                <h2>Ressources réglementaires</h2>
+
+                <p>CERFA, entretien, F-Gas et Trackdéchets</p>
+              </div>
+            </div>
+
+            <button
+              className="pro-action-card-button"
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={activeModal === "compliance"}
+              aria-controls="compliance-modal"
+              onClick={() => setActiveModal("compliance")}
+            >
+              Consulter les ressources
+            </button>
+          </article>
+        </div>
+      </section>
+
+      <ModalShell
+        open={activeModal === "company" && canEdit}
+        onClose={() => setActiveModal(null)}
+        dialogId="company-account-modal"
+        titleId="company-account-modal-title"
+        eyebrow="Compte professionnel"
+        title="Informations de l’entreprise"
+        description="Mettez à jour le SIRET et les coordonnées utilisées dans vos dossiers CarnetPass."
+        className="pro-account-modal"
+        initialFocusRef={siretInputRef}
+      >
+        <div className="pro-modal-status-bar">
+          <div>
+            <strong>{company.name}</strong>
+            <span>
+              {company.is_demo === true
+                ? "Espace de démonstration"
+                : "Compte professionnel"}
+            </span>
           </div>
 
           <span
@@ -226,54 +528,21 @@ function CompanyAccountCard({
           </span>
         </div>
 
-        <div className="pro-company-summary">
-          <div>
-            <span>SIRET</span>
-            <strong>{company.siret || "Non renseigné"}</strong>
-          </div>
+        <div className="pro-company-modal-grid">
+          <section className="pro-modal-section">
+            <div className="pro-modal-section-heading">
+              <span className="pro-modal-section-icon" aria-hidden="true">
+                🏢
+              </span>
 
-          <div>
-            <span>Adresse officielle</span>
-            <strong>{addressSummary || "À compléter"}</strong>
-          </div>
-        </div>
+              <div>
+                <h3>Identité de l’entreprise</h3>
+                <p>
+                  Le SIRET contient 14 chiffres et sert à vérifier l’entreprise.
+                </p>
+              </div>
+            </div>
 
-        <p className="pro-company-verification-text">{verificationMessage}</p>
-
-        <div className="pro-company-card-actions">
-          {!companyVerified && company.is_demo !== true && (
-            <button
-              type="button"
-              className="pro-primary-button"
-              disabled={
-                verificationBusy ||
-                !company.siret ||
-                company.verification?.status === "suspended"
-              }
-              onClick={onVerify}
-            >
-              {verificationBusy ? "Vérification…" : "Vérifier mon entreprise"}
-            </button>
-          )}
-
-          {canEdit && (
-            <button
-              className="pro-action-card-button"
-              type="button"
-              aria-expanded={detailsOpen}
-              aria-controls="company-account-details"
-              onClick={() => setDetailsOpen((isOpen) => !isOpen)}
-            >
-              {detailsOpen ? "Fermer" : "Modifier"}
-            </button>
-          )}
-        </div>
-
-        {detailsOpen && canEdit && (
-          <div
-            id="company-account-details"
-            className="pro-action-card-details pro-company-details"
-          >
             <form
               className="pro-form"
               onSubmit={handleSiretSave}
@@ -283,12 +552,13 @@ function CompanyAccountCard({
                 <span>SIRET de l’entreprise</span>
 
                 <input
+                  ref={siretInputRef}
                   id="company-siret"
                   name="companySiret"
                   type="text"
                   inputMode="numeric"
                   autoComplete="off"
-                  maxLength={64}
+                  maxLength={18}
                   required
                   value={siret}
                   onChange={(event) => {
@@ -298,12 +568,24 @@ function CompanyAccountCard({
                   }}
                   disabled={siretBusy}
                   aria-invalid={Boolean(siretError)}
-                  placeholder="14 chiffres"
+                  aria-describedby={
+                    siretError ? "company-siret-error" : "company-siret-help"
+                  }
+                  placeholder="123 456 789 00012"
                 />
+
+                <small id="company-siret-help">
+                  Les espaces sont acceptés et seront retirés lors de
+                  l’enregistrement.
+                </small>
               </label>
 
               {siretError && (
-                <p className="pro-form-error" role="alert">
+                <p
+                  id="company-siret-error"
+                  className="pro-form-error"
+                  role="alert"
+                >
                   {siretError}
                 </p>
               )}
@@ -317,7 +599,23 @@ function CompanyAccountCard({
               </button>
             </form>
 
-            <div className="pro-company-form-separator" />
+            <p className="pro-modal-inline-note">{verificationMessage}</p>
+          </section>
+
+          <section className="pro-modal-section">
+            <div className="pro-modal-section-heading">
+              <span className="pro-modal-section-icon" aria-hidden="true">
+                📍
+              </span>
+
+              <div>
+                <h3>Coordonnées professionnelles</h3>
+                <p>
+                  Ces informations apparaissent dans les documents générés par
+                  l’entreprise.
+                </p>
+              </div>
+            </div>
 
             <form
               className="pro-form"
@@ -445,188 +743,202 @@ function CompanyAccountCard({
                   : "Enregistrer les coordonnées"}
               </button>
             </form>
+          </section>
+        </div>
+
+        <div className="pro-modal-actions">
+          <button
+            className="pro-primary-button"
+            type="button"
+            onClick={() => setActiveModal(null)}
+          >
+            Fermer
+          </button>
+        </div>
+      </ModalShell>
+
+      <ModalShell
+        open={activeModal === "security"}
+        onClose={() => setActiveModal(null)}
+        dialogId="account-security-modal"
+        titleId="account-security-modal-title"
+        eyebrow="Sécurité"
+        title="Sécurité du compte"
+        description="Vérifiez en un coup d’œil les protections réellement actives sur votre compte."
+        className="pro-security-modal"
+      >
+        <div className="pro-security-overview">
+          <span className="pro-security-overview-icon" aria-hidden="true">
+            🔐
+          </span>
+
+          <div>
+            <strong>{activeProtectionLabel}</strong>
+            <p>
+              Les statuts ci-dessous proviennent de votre compte et de votre
+              session actuelle.
+            </p>
           </div>
+        </div>
+
+        <ul className="pro-security-list">
+          <li className={emailConfirmed ? "is-active" : "is-pending"}>
+            <span className="pro-security-list-icon" aria-hidden="true">
+              {emailConfirmed ? "✓" : "!"}
+            </span>
+
+            <div>
+              <strong>Adresse e-mail</strong>
+              <p>
+                {emailConfirmed
+                  ? "Votre adresse e-mail est confirmée."
+                  : "Votre adresse e-mail doit encore être confirmée."}
+              </p>
+            </div>
+
+            <span className="pro-security-state">
+              {emailConfirmed ? "Active" : "À vérifier"}
+            </span>
+          </li>
+
+          <li className={authenticatedSession ? "is-active" : "is-pending"}>
+            <span className="pro-security-list-icon" aria-hidden="true">
+              {authenticatedSession ? "✓" : "!"}
+            </span>
+
+            <div>
+              <strong>Session authentifiée</strong>
+              <p>
+                {authenticatedSession
+                  ? "Votre espace professionnel est protégé par une session active."
+                  : "Aucune session active n’a été détectée."}
+              </p>
+            </div>
+
+            <span className="pro-security-state">
+              {authenticatedSession ? "Active" : "Inactive"}
+            </span>
+          </li>
+
+          <li className={mfaConfigured ? "is-active" : "is-pending"}>
+            <span className="pro-security-list-icon" aria-hidden="true">
+              {mfaConfigured ? "✓" : "○"}
+            </span>
+
+            <div>
+              <strong>Double authentification</strong>
+              <p>
+                {mfaConfigured
+                  ? "Une méthode de double authentification est vérifiée."
+                  : "Aucune méthode de double authentification vérifiée."}
+              </p>
+            </div>
+
+            <span className="pro-security-state">
+              {mfaConfigured ? "Active" : "À venir"}
+            </span>
+          </li>
+        </ul>
+
+        <dl className="pro-security-account-details">
+          <div>
+            <dt>Compte connecté</dt>
+            <dd>{user?.email || company.email || "Non disponible"}</dd>
+          </div>
+
+          <div>
+            <dt>Dernière connexion</dt>
+            <dd>{formatAccountDate(user?.last_sign_in_at)}</dd>
+          </div>
+        </dl>
+
+        {!mfaConfigured && (
+          <p className="pro-security-note">
+            <strong>À prévoir avant la production :</strong> l’activation de la
+            double authentification fera partie du renforcement final de la
+            sécurité CarnetPass.
+          </p>
         )}
-      </article>
-      <div className="pro-account-side-column">
-        <article className="pro-action-card pro-security-card">
-          <div className="pro-action-card-heading">
-            <span className="pro-action-card-icon" aria-hidden="true">
-              🔐
-            </span>
 
-            <div>
-              <span className="pro-action-card-label">Sécurité</span>
-
-              <h2>Sécurité du compte</h2>
-              <p>2 protections actives sur 3</p>
-            </div>
-          </div>
-
+        <div className="pro-modal-actions">
           <button
-            className="pro-action-card-button"
+            className="pro-primary-button"
             type="button"
-            aria-expanded={securityDetailsOpen}
-            aria-controls="account-security-details"
-            onClick={() => setSecurityDetailsOpen((isOpen) => !isOpen)}
+            onClick={() => setActiveModal(null)}
           >
-            {securityDetailsOpen ? "Masquer les détails" : "Voir la sécurité"}
+            Fermer
           </button>
+        </div>
+      </ModalShell>
 
-          {securityDetailsOpen && (
-            <div
-              id="account-security-details"
-              className="pro-action-card-details"
-            >
-              <ul className="pro-status-list">
-                <li>
-                  <span aria-hidden="true">✓</span>
-                  Adresse e-mail confirmée
-                </li>
+      <ModalShell
+        open={activeModal === "compliance"}
+        onClose={() => setActiveModal(null)}
+        dialogId="compliance-modal"
+        titleId="compliance-modal-title"
+        eyebrow="Informations conformité"
+        title="Ressources réglementaires officielles"
+        description="Consultez les formulaires et les règles applicables aux interventions techniques."
+        className="pro-compliance-modal"
+      >
+        <div className="pro-compliance-links">
+          <a
+            href="https://entreprendre.service-public.gouv.fr/vosdroits/R43122"
+            target="_blank"
+            rel="noreferrer"
+            className="pro-compliance-link"
+          >
+            <strong>📄 Cerfa 15497*04</strong>
+            <span>Fluides frigorigènes — formulaire officiel</span>
+          </a>
 
-                <li>
-                  <span aria-hidden="true">✓</span>
-                  Espace protégé par authentification
-                </li>
+          <a
+            href="https://www.ecologie.gouv.fr/politiques-publiques/entretien-inspection-systemes-chauffage-climatisation"
+            target="_blank"
+            rel="noreferrer"
+            className="pro-compliance-link"
+          >
+            <strong>🔥 Entretien des équipements</strong>
+            <span>Chaudières, PAC et climatisation</span>
+          </a>
 
-                <li>
-                  <span aria-hidden="true">○</span>
-                  Double authentification à configurer
-                </li>
-              </ul>
-            </div>
-          )}
-        </article>
-        <article className="pro-action-card pro-compliance-card">
-          <div className="pro-action-card-heading">
-            <span className="pro-action-card-icon" aria-hidden="true">
-              ℹ️
-            </span>
+          <a
+            href="https://faq.trackdechets.fr/fluides-frigorigenes/informations-generales"
+            target="_blank"
+            rel="noreferrer"
+            className="pro-compliance-link"
+          >
+            <strong>♻️ Trackdéchets — BSFF</strong>
+            <span>Traçabilité des déchets de fluides frigorigènes</span>
+          </a>
 
-            <div>
-              <span className="pro-action-card-label">
-                Informations conformité
-              </span>
+          <a
+            href="https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32024R0573"
+            target="_blank"
+            rel="noreferrer"
+            className="pro-compliance-link"
+          >
+            <strong>🇪🇺 Règlement F-Gas</strong>
+            <span>Règlement européen UE 2024/573</span>
+          </a>
+        </div>
 
-              <h2>Ressources réglementaires</h2>
+        <p className="pro-compliance-watch">
+          <strong>Information :</strong> Trackdéchets et le BSFF sont déjà en
+          vigueur. Le Cerfa 15497*04 reste un document distinct.
+        </p>
 
-              <p>CERFA, entretien, F-Gas et Trackdéchets</p>
-            </div>
-          </div>
-
+        <div className="pro-modal-actions">
           <button
-            className="pro-action-card-button"
+            className="pro-primary-button"
             type="button"
-            aria-expanded={complianceDetailsOpen}
-            aria-controls="compliance-details"
-            onClick={() => setComplianceDetailsOpen((isOpen) => !isOpen)}
+            onClick={() => setActiveModal(null)}
           >
-            {complianceDetailsOpen
-              ? "Masquer les ressources"
-              : "Consulter les ressources"}
+            Fermer
           </button>
-          {complianceDetailsOpen && (
-            <div
-              className="pro-modal-overlay"
-              role="presentation"
-              onMouseDown={(event) => {
-                if (event.target === event.currentTarget) {
-                  setComplianceDetailsOpen(false);
-                }
-              }}
-            >
-              <section
-                className="pro-compliance-modal"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="compliance-modal-title"
-              >
-                <div className="pro-modal-header">
-                  <div>
-                    <span className="pro-action-card-label">
-                      Informations conformité
-                    </span>
-
-                    <h2 id="compliance-modal-title">
-                      Ressources réglementaires officielles
-                    </h2>
-
-                    <p>
-                      Consultez les formulaires et les règles applicables aux
-                      interventions techniques.
-                    </p>
-                  </div>
-
-                  <button
-                    className="pro-modal-close"
-                    type="button"
-                    aria-label="Fermer les ressources réglementaires"
-                    onClick={() => setComplianceDetailsOpen(false)}
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <div className="pro-compliance-links">
-                  <a
-                    href="https://entreprendre.service-public.gouv.fr/vosdroits/R43122"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="pro-compliance-link"
-                  >
-                    <strong>📄 Cerfa 15497*04</strong>
-                    <span>Fluides frigorigènes — formulaire officiel</span>
-                  </a>
-
-                  <a
-                    href="https://www.ecologie.gouv.fr/politiques-publiques/entretien-inspection-systemes-chauffage-climatisation"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="pro-compliance-link"
-                  >
-                    <strong>🔥 Entretien des équipements</strong>
-                    <span>Chaudières, PAC et climatisation</span>
-                  </a>
-
-                  <a
-                    href="https://faq.trackdechets.fr/fluides-frigorigenes/informations-generales"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="pro-compliance-link"
-                  >
-                    <strong>♻️ Trackdéchets — BSFF</strong>
-                    <span>Traçabilité des déchets de fluides frigorigènes</span>
-                  </a>
-
-                  <a
-                    href="https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32024R0573"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="pro-compliance-link"
-                  >
-                    <strong>🇪🇺 Règlement F-Gas</strong>
-                    <span>Règlement européen UE 2024/573</span>
-                  </a>
-                </div>
-
-                <p className="pro-compliance-watch">
-                  <strong>Information :</strong> Trackdéchets et le BSFF sont
-                  déjà en vigueur. Le Cerfa 15497*04 reste un document distinct.
-                </p>
-
-                <button
-                  className="pro-primary-button pro-modal-footer-button"
-                  type="button"
-                  onClick={() => setComplianceDetailsOpen(false)}
-                >
-                  Fermer
-                </button>
-              </section>
-            </div>
-          )}
-        </article>
-      </div>
-    </section>
+        </div>
+      </ModalShell>
+    </>
   );
 }
 export default function ProSpacePage() {
@@ -1411,6 +1723,8 @@ export default function ProSpacePage() {
       <CompanyAccountCard
         key={`${company.id}:${company.siret || ""}:${company.updated_at || ""}`}
         company={company}
+        user={user}
+        session={session}
         companyVerified={companyVerified}
         verificationTitle={verificationTitle}
         verificationMessage={verificationMessage}
