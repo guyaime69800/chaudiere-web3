@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { getEquipmentDocumentLibrary } from "../services/equipmentKnowledge";
+import {
+  deleteEquipmentAttachment,
+  downloadEquipmentAttachment,
+  getEquipmentAttachments,
+  openEquipmentAttachment,
+  uploadEquipmentAttachment,
+} from "../services/equipmentAttachmentsService";
 import DocumentPreviewModal from "./DocumentPreviewModal";
 import "./EquipmentDocumentCenter.css";
 
@@ -55,6 +62,35 @@ const DOCUMENT_TYPE_PRESENTATIONS = {
   },
 };
 
+const ATTACHMENT_KINDS = [
+  { id: "photo", label: "Photo" },
+  { id: "invoice", label: "Facture" },
+  { id: "quote", label: "Devis" },
+  { id: "proof", label: "Justificatif" },
+  { id: "other", label: "Autre" },
+];
+
+function attachmentKindLabel(kind) {
+  return ATTACHMENT_KINDS.find((item) => item.id === kind)?.label || "Document";
+}
+
+function formatFileSize(value) {
+  const bytes = Number(value);
+  if (!Number.isFinite(bytes) || bytes <= 0) return "Taille inconnue";
+  if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} Ko`;
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace(".", ",")} Mo`;
+}
+
+function formatAttachmentDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date inconnue";
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
 function getDocumentPresentation(documentType) {
   return (
     DOCUMENT_TYPE_PRESENTATIONS[documentType] || {
@@ -109,6 +145,16 @@ export default function EquipmentDocumentCenter({
   const [loadError, setLoadError] = useState("");
   const [documentFilter, setDocumentFilter] = useState("all");
   const [selectedDocument, setSelectedDocument] = useState(null);
+  const [attachments, setAttachments] = useState([]);
+  const [attachmentsLoading, setAttachmentsLoading] = useState(true);
+  const [attachmentError, setAttachmentError] = useState("");
+  const [showAttachmentForm, setShowAttachmentForm] = useState(false);
+  const [attachmentFile, setAttachmentFile] = useState(null);
+  const [attachmentKind, setAttachmentKind] = useState("photo");
+  const [attachmentTitle, setAttachmentTitle] = useState("");
+  const [attachmentDescription, setAttachmentDescription] = useState("");
+  const [attachmentBusy, setAttachmentBusy] = useState(false);
+  const [attachmentActionId, setAttachmentActionId] = useState("");
 
   const availableDocumentFilters = useMemo(
     () =>
@@ -184,6 +230,98 @@ export default function EquipmentDocumentCenter({
     equipment.product_reference,
     onTechnicalDocumentCountChange,
   ]);
+
+  async function loadAttachments({ quiet = false } = {}) {
+    if (!equipment?.id) return;
+
+    if (!quiet) setAttachmentsLoading(true);
+    setAttachmentError("");
+
+    try {
+      const rows = await getEquipmentAttachments(equipment.id);
+      setAttachments(rows);
+    } catch (error) {
+      console.error("Chargement des pièces jointes impossible :", error);
+      setAttachmentError(error.message || "Chargement des pièces jointes impossible.");
+    } finally {
+      if (!quiet) setAttachmentsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    setAttachments([]);
+    setShowAttachmentForm(false);
+    setAttachmentFile(null);
+    setAttachmentTitle("");
+    setAttachmentDescription("");
+    loadAttachments();
+  }, [equipment.id]);
+
+  async function handleAttachmentUpload(event) {
+    event.preventDefault();
+
+    if (!attachmentFile || !attachmentTitle.trim()) {
+      setAttachmentError("Choisis un fichier et indique un titre.");
+      return;
+    }
+
+    setAttachmentBusy(true);
+    setAttachmentError("");
+
+    try {
+      await uploadEquipmentAttachment({
+        file: attachmentFile,
+        equipmentId: equipment.id,
+        documentKind: attachmentKind,
+        title: attachmentTitle.trim(),
+        description: attachmentDescription.trim(),
+      });
+
+      setAttachmentFile(null);
+      setAttachmentTitle("");
+      setAttachmentDescription("");
+      setShowAttachmentForm(false);
+
+      // Le webhook Blob peut enregistrer les métadonnées quelques instants
+      // après la fin de l'envoi. Deux actualisations couvrent ce court délai.
+      await loadAttachments({ quiet: true });
+      window.setTimeout(() => loadAttachments({ quiet: true }), 1200);
+    } catch (error) {
+      setAttachmentError(error.message || "Envoi du document impossible.");
+    } finally {
+      setAttachmentBusy(false);
+    }
+  }
+
+  async function handleAttachmentAction(attachment, action) {
+    setAttachmentActionId(attachment.id);
+    setAttachmentError("");
+
+    try {
+      if (action === "view") await openEquipmentAttachment(attachment.id);
+      if (action === "download") await downloadEquipmentAttachment(attachment);
+    } catch (error) {
+      setAttachmentError(error.message || "Document inaccessible.");
+    } finally {
+      setAttachmentActionId("");
+    }
+  }
+
+  async function handleAttachmentDelete(attachment) {
+    if (!window.confirm(`Supprimer définitivement « ${attachment.title} » ?`)) return;
+
+    setAttachmentActionId(attachment.id);
+    setAttachmentError("");
+
+    try {
+      await deleteEquipmentAttachment(attachment.id);
+      setAttachments((current) => current.filter((item) => item.id !== attachment.id));
+    } catch (error) {
+      setAttachmentError(error.message || "Suppression impossible.");
+    } finally {
+      setAttachmentActionId("");
+    }
+  }
 
   return (
     <div className="equipment-workspace__documents">
@@ -395,17 +533,143 @@ export default function EquipmentDocumentCenter({
             </button>
           </article>
 
-          <article className="is-upcoming">
+          <article>
             <span aria-hidden="true">📎</span>
             <div>
               <h4>Pièces jointes privées</h4>
               <p>
-                Photos, factures, devis et justificatifs seront ajoutés lors de
-                la prochaine étape multi-documents.
+                {attachmentsLoading
+                  ? "Chargement des documents…"
+                  : `${attachments.length} fichier${attachments.length > 1 ? "s" : ""} privé${attachments.length > 1 ? "s" : ""} lié${attachments.length > 1 ? "s" : ""} à cet équipement.`}
               </p>
             </div>
-            <small>À venir</small>
+            <button
+              type="button"
+              onClick={() => setShowAttachmentForm((current) => !current)}
+            >
+              {showAttachmentForm ? "Fermer" : "Ajouter un document"}
+            </button>
           </article>
+        </div>
+
+        <div className="equipment-workspace__attachments">
+          {showAttachmentForm && (
+            <form
+              className="equipment-workspace__attachment-form"
+              onSubmit={handleAttachmentUpload}
+            >
+              <div className="equipment-workspace__attachment-form-heading">
+                <div>
+                  <h4>Ajouter une pièce jointe privée</h4>
+                  <p>PDF, JPEG, PNG ou WebP — 10 Mo maximum.</p>
+                </div>
+              </div>
+
+              <div className="equipment-workspace__attachment-fields">
+                <label>
+                  <span>Type de document</span>
+                  <select
+                    value={attachmentKind}
+                    onChange={(event) => setAttachmentKind(event.target.value)}
+                    disabled={attachmentBusy}
+                  >
+                    {ATTACHMENT_KINDS.map((kind) => (
+                      <option key={kind.id} value={kind.id}>{kind.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span>Titre</span>
+                  <input
+                    type="text"
+                    value={attachmentTitle}
+                    maxLength={160}
+                    placeholder="Ex. Facture de remplacement"
+                    onChange={(event) => setAttachmentTitle(event.target.value)}
+                    disabled={attachmentBusy}
+                    required
+                  />
+                </label>
+
+                <label className="is-wide">
+                  <span>Description (facultative)</span>
+                  <textarea
+                    value={attachmentDescription}
+                    maxLength={1000}
+                    rows={3}
+                    placeholder="Informations utiles sur ce document"
+                    onChange={(event) => setAttachmentDescription(event.target.value)}
+                    disabled={attachmentBusy}
+                  />
+                </label>
+
+                <label className="is-wide">
+                  <span>Fichier</span>
+                  <input
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/png,image/webp"
+                    onChange={(event) => setAttachmentFile(event.target.files?.[0] || null)}
+                    disabled={attachmentBusy}
+                    required
+                  />
+                </label>
+              </div>
+
+              <div className="equipment-workspace__attachment-form-actions">
+                <button
+                  type="button"
+                  className="is-secondary"
+                  onClick={() => setShowAttachmentForm(false)}
+                  disabled={attachmentBusy}
+                >
+                  Annuler
+                </button>
+                <button type="submit" disabled={attachmentBusy}>
+                  {attachmentBusy ? "Envoi en cours…" : "Envoyer le document"}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {attachmentError && (
+            <div className="equipment-workspace__attachment-error" role="alert">
+              ⚠️ {attachmentError}
+            </div>
+          )}
+
+          {!attachmentsLoading && attachments.length > 0 && (
+            <div className="equipment-workspace__attachment-list">
+              {attachments.map((attachment) => {
+                const busy = attachmentActionId === attachment.id;
+
+                return (
+                  <article key={attachment.id}>
+                    <div className="equipment-workspace__attachment-main">
+                      <span aria-hidden="true">
+                        {attachment.mimeType === "application/pdf" ? "📄" : "🖼️"}
+                      </span>
+                      <div>
+                        <small>{attachmentKindLabel(attachment.documentKind)}</small>
+                        <h4>{attachment.title}</h4>
+                        <p>
+                          {attachment.originalFilename} · {formatFileSize(attachment.sizeBytes)} · {formatAttachmentDate(attachment.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="equipment-workspace__attachment-actions">
+                      <button type="button" disabled={busy} onClick={() => handleAttachmentAction(attachment, "view")}>Voir</button>
+                      <button type="button" disabled={busy} onClick={() => handleAttachmentAction(attachment, "download")}>Télécharger</button>
+                      {attachment.canDelete && (
+                        <button type="button" className="is-danger" disabled={busy} onClick={() => handleAttachmentDelete(attachment)}>Supprimer</button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
