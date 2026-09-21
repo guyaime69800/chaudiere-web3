@@ -1,11 +1,11 @@
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
-import { generatedEquipmentRegistry } from "./lib/equipment-registry.generated.js";
+import { generatedEquipmentRegistry } from "../server/lib/equipment-registry.generated.js";
 import {
   isQrToken,
   qrTokenRedisKey,
   toPublicCarnetPass,
-} from "./lib/carnetpass-access.js";
+} from "../server/lib/carnetpass-access.js";
 
 // RECHERCHE PUBLIQUE : GET /api/search?q=...
 // Accepte un jeton QR, un numéro CarnetPass, une référence constructeur,

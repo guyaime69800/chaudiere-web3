@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 
-import { getEquipmentConfig } from "./lib/equipment-registry.js";
+import { getEquipmentConfig } from "../server/lib/equipment-registry.js";
 
-import { searchRagContext } from "./lib/rag.js";
+import { searchRagContext } from "../server/lib/rag.js";
 
 import { aiRateLimit } from "../server/lib/rate-limit.js";
 

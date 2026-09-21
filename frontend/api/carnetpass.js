@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
-import { generatedEquipmentRegistry } from "./lib/equipment-registry.generated.js";
+import { generatedEquipmentRegistry } from "../server/lib/equipment-registry.generated.js";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import {
   buildEquipmentProof,
@@ -12,7 +12,7 @@ import {
   isQrToken,
   qrTokenRedisKey,
   toPublicCarnetPass,
-} from "./lib/carnetpass-access.js";
+} from "../server/lib/carnetpass-access.js";
 
 // POST : crée un carnet et remet son jeton QR une seule fois.
 // GET ?token=... : lit la fiche technique à partir d'un nouveau QR.
