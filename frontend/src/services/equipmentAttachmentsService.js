@@ -64,7 +64,7 @@ export async function uploadEquipmentAttachment({
   if (!file) throw new Error("Fichier manquant.");
 
   const headers = await getAuthHeaders();
-
+  const accessToken = headers.Authorization.replace(/^Bearer\s+/i, "");
   const pathname = `equipment-attachments/${equipmentId}/${crypto.randomUUID()}.${getFileExtension(file)}`;
   const clientPayload = JSON.stringify({
     equipmentId,
@@ -74,31 +74,21 @@ export async function uploadEquipmentAttachment({
     description,
     mimeType: file.type,
     originalFilename: file.name,
+    accessToken,
   });
 
   return upload(pathname, file, {
     access: "private",
     clientPayload,
-    handleUpload: async (body) => {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-      });
-
-      return readApiResponse(response, "Autorisation d’envoi refusée.");
-    },
+    handleUploadUrl: API_URL,
   });
 }
 
 export async function getAttachmentFile(attachmentId, action = "view") {
   const headers = await getAuthHeaders();
-
   const response = await fetch(
-    `${API_URL}?attachmentId=${encodeURIComponent(
-      attachmentId
-    )}&action=${action}`,
-    { headers }
+    `${API_URL}?attachmentId=${encodeURIComponent(attachmentId)}&action=${action}`,
+    { headers },
   );
 
   if (!response.ok) {
@@ -118,7 +108,7 @@ export async function openEquipmentAttachment(attachmentId) {
 
     if (!previewWindow) {
       URL.revokeObjectURL(objectUrl);
-      throw new Error("Autorise l’ouverture des fenêtres pour consulter ce document.");
+      throw new Error("Autorise l'ouverture des fenêtres pour consulter ce document.");
     }
 
     previewWindow.opener = null;
@@ -145,13 +135,9 @@ export async function downloadEquipmentAttachment(attachment) {
 
 export async function deleteEquipmentAttachment(attachmentId) {
   const headers = await getAuthHeaders();
-
   const response = await fetch(
     `${API_URL}?attachmentId=${encodeURIComponent(attachmentId)}`,
-    {
-      method: "DELETE",
-      headers,
-    }
+    { method: "DELETE", headers },
   );
 
   return readApiResponse(response, "Suppression impossible.");

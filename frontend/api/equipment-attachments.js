@@ -480,6 +480,7 @@ function parseClientPayload(clientPayload) {
         "description",
         "originalFilename",
         "mimeType",
+        "accessToken",
     ]);
 
     for (const field of Object.keys(value)) {
@@ -515,6 +516,23 @@ function parseClientPayload(clientPayload) {
         );
     }
 
+    const accessToken =
+        typeof value.accessToken === "string"
+            ? value.accessToken.trim()
+            : "";
+
+    if (
+        !accessToken ||
+        accessToken.length > 4_096 ||
+        hasForbiddenControlCharacter(accessToken)
+    ) {
+        throw requestError(
+            401,
+            "AUTH_TOKEN_INVALID",
+            "La session utilisateur est invalide. Reconnecte-toi."
+        );
+    }
+
     return {
         equipmentId,
         interventionId,
@@ -530,6 +548,7 @@ function parseClientPayload(clientPayload) {
         }),
         originalFilename: normalizeOriginalFilename(value.originalFilename),
         mimeType: normalizeMimeType(value.mimeType),
+        accessToken,
     };
 }
 
@@ -857,6 +876,23 @@ async function completeUpload(payload) {
 }
 
 async function issueUploadAuthorization(req, res, body) {
+    const requested = body?.payload;
+
+    if (!isPlainObject(requested)) {
+        throw requestError(
+            400,
+            "UPLOAD_REQUEST_INVALID",
+            "La demande d'envoi du fichier est invalide."
+        );
+    }
+
+    const input = parseClientPayload(requested.clientPayload);
+
+    // Le SDK Blob appelle directement handleUploadUrl et ne permet pas
+    // d'ajouter l'en-tête Supabase. Le jeton de session voyage donc dans
+    // clientPayload, sous HTTPS, puis il est contrôlé ici avant tout accès.
+    req.headers.authorization = `Bearer ${input.accessToken}`;
+
     const creator = await requireVerifiedCompany(req, res);
     if (!creator) return null;
 
@@ -880,17 +916,6 @@ async function issueUploadAuthorization(req, res, body) {
         return null;
     }
 
-    const requested = body?.payload;
-
-    if (!isPlainObject(requested)) {
-        throw requestError(
-            400,
-            "UPLOAD_REQUEST_INVALID",
-            "La demande d'envoi du fichier est invalide."
-        );
-    }
-
-    const input = parseClientPayload(requested.clientPayload);
     const pathname = validateRequestedPathname(
         requested.pathname,
         input.equipmentId,
