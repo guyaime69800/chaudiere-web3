@@ -1385,7 +1385,7 @@ export default async function handler(req, res) {
             });
         }
 
-        console.error("Erreur interne API pièces jointes privées.", error);
+        console.error("Erreur interne API pièces jointes privées.");
 
         return res.status(500).json({
             ok: false,
