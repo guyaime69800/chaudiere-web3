@@ -255,3 +255,10 @@
     animation-duration: 1.5s;
   }
 }
+.document-preview-modal__viewer img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #2f2b29;
+}

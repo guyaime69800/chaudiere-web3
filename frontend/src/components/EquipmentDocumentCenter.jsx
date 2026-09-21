@@ -3,8 +3,8 @@ import { getEquipmentDocumentLibrary } from "../services/equipmentKnowledge";
 import {
   deleteEquipmentAttachment,
   downloadEquipmentAttachment,
+  getAttachmentFile,
   getEquipmentAttachments,
-  openEquipmentAttachment,
   uploadEquipmentAttachment,
 } from "../services/equipmentAttachmentsService";
 import DocumentPreviewModal from "./DocumentPreviewModal";
@@ -155,7 +155,15 @@ export default function EquipmentDocumentCenter({
   const [attachmentDescription, setAttachmentDescription] = useState("");
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [attachmentActionId, setAttachmentActionId] = useState("");
+  const [attachmentPreview, setAttachmentPreview] = useState(null);
 
+  useEffect(() => {
+    return () => {
+      if (attachmentPreview?.objectUrl) {
+        URL.revokeObjectURL(attachmentPreview.objectUrl);
+      }
+    };
+  }, [attachmentPreview]);
   const availableDocumentFilters = useMemo(
     () =>
       DOCUMENT_FILTERS.map((filter) => ({
@@ -164,10 +172,10 @@ export default function EquipmentDocumentCenter({
           filter.id === "all"
             ? technicalDocuments.length
             : technicalDocuments.filter(
-                (technicalDocument) =>
-                  getDocumentPresentation(technicalDocument.documentType)
-                    .category === filter.id,
-              ).length,
+              (technicalDocument) =>
+                getDocumentPresentation(technicalDocument.documentType)
+                  .category === filter.id,
+            ).length,
       })).filter((filter) => filter.id === "all" || filter.count > 0),
     [technicalDocuments],
   );
@@ -298,8 +306,20 @@ export default function EquipmentDocumentCenter({
     setAttachmentError("");
 
     try {
-      if (action === "view") await openEquipmentAttachment(attachment.id);
-      if (action === "download") await downloadEquipmentAttachment(attachment);
+      if (action === "view") {
+        const blob = await getAttachmentFile(attachment.id, "view");
+        const objectUrl = URL.createObjectURL(blob);
+
+        setAttachmentPreview({
+          attachment,
+          objectUrl,
+          mimeType: blob.type || attachment.mimeType,
+        });
+      }
+
+      if (action === "download") {
+        await downloadEquipmentAttachment(attachment);
+      }
     } catch (error) {
       setAttachmentError(error.message || "Document inaccessible.");
     } finally {
@@ -344,9 +364,8 @@ export default function EquipmentDocumentCenter({
           <strong aria-live="polite">
             {loading
               ? "Chargement…"
-              : `${technicalDocuments.length} document${
-                  technicalDocuments.length > 1 ? "s" : ""
-                }`}
+              : `${technicalDocuments.length} document${technicalDocuments.length > 1 ? "s" : ""
+              }`}
           </strong>
         </header>
 
@@ -699,6 +718,36 @@ export default function EquipmentDocumentCenter({
             ? createDocumentFileName(selectedDocument, equipment)
             : "document-carnetpass.pdf"
         }
+        downloadLabel="Télécharger le document"
+      />
+      <DocumentPreviewModal
+        open={Boolean(attachmentPreview)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAttachmentPreview(null);
+          }
+        }}
+        eyebrow="PIÈCE JOINTE PRIVÉE"
+        title={attachmentPreview?.attachment?.title || "Document"}
+        subtitle={[
+          attachmentPreview?.attachment
+            ? attachmentKindLabel(
+              attachmentPreview.attachment.documentKind,
+            )
+            : null,
+          attachmentPreview?.attachment?.originalFilename,
+          attachmentPreview?.attachment
+            ? formatFileSize(attachmentPreview.attachment.sizeBytes)
+            : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+        documentUrl={attachmentPreview?.objectUrl || ""}
+        fileName={
+          attachmentPreview?.attachment?.originalFilename ||
+          "document-carnetpass"
+        }
+        mimeType={attachmentPreview?.mimeType || ""}
         downloadLabel="Télécharger le document"
       />
     </div>

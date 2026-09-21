@@ -9,6 +9,7 @@ export default function DocumentPreviewModal({
   subtitle,
   documentUrl,
   fileName,
+  mimeType = "application/pdf",
   eyebrow = "APERÇU DU DOCUMENT",
   downloadLabel = "Télécharger le PDF",
 }) {
@@ -20,9 +21,12 @@ export default function DocumentPreviewModal({
   const titleId = useId();
   const descriptionId = useId();
 
-  const viewerUrl = documentUrl
-    ? documentUrl + "#toolbar=1&navpanes=0&view=FitH"
-    : "";
+  const isImage = String(mimeType).startsWith("image/");
+
+  const viewerUrl =
+    documentUrl && !isImage
+      ? documentUrl + "#toolbar=1&navpanes=0&view=FitH"
+      : documentUrl;
 
   useEffect(() => {
     onOpenChangeRef.current = onOpenChange;
@@ -138,11 +142,20 @@ export default function DocumentPreviewModal({
             </div>
           ) : null}
 
-          <iframe
-            src={viewerUrl}
-            title={title || "Aperçu du document PDF"}
-            onLoad={() => setLoading(false)}
-          />
+          {isImage ? (
+            <img
+              src={viewerUrl}
+              alt={title || "Aperçu du document"}
+              onLoad={() => setLoading(false)}
+              onError={() => setLoading(false)}
+            />
+          ) : (
+            <iframe
+              src={viewerUrl}
+              title={title || "Aperçu du document PDF"}
+              onLoad={() => setLoading(false)}
+            />
+          )}
         </div>
 
         <footer className="document-preview-modal__footer">
