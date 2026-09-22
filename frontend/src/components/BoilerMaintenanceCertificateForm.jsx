@@ -179,10 +179,10 @@ export default function BoilerMaintenanceCertificateForm({
     () =>
       selectedEquipmentId
         ? equipmentById[selectedEquipmentId] ||
-          equipments.find(
-            (equipment) => String(equipment.id) === String(selectedEquipmentId),
-          ) ||
-          null
+        equipments.find(
+          (equipment) => String(equipment.id) === String(selectedEquipmentId),
+        ) ||
+        null
         : null,
     [equipmentById, equipments, selectedEquipmentId],
   );
@@ -295,7 +295,7 @@ export default function BoilerMaintenanceCertificateForm({
         if (!cancelled && loadError?.name !== "AbortError") {
           setError(
             loadError?.message ||
-              "Les attestations n’ont pas pu être chargées.",
+            "Les attestations n’ont pas pu être chargées.",
           );
         }
       } finally {
@@ -430,8 +430,8 @@ export default function BoilerMaintenanceCertificateForm({
         ...currentForm,
         replacementEnergyClasses: alreadySelected
           ? currentForm.replacementEnergyClasses.filter(
-              (item) => item !== energyClass,
-            )
+            (item) => item !== energyClass,
+          )
           : [...currentForm.replacementEnergyClasses, energyClass],
       };
     });
@@ -579,6 +579,87 @@ export default function BoilerMaintenanceCertificateForm({
       setSubmitting(false);
     }
   }
+  async function handleCancelCertificate(certificate) {
+    if (savingDetails) return;
+
+    if (!session?.access_token) {
+      setError("Votre session a expiré. Reconnectez-vous.");
+      return;
+    }
+
+    const cancellationReason = window.prompt(
+      "Indiquez le motif de l’annulation de cette attestation :",
+    );
+
+    if (cancellationReason === null) return;
+
+    const normalizedReason = cancellationReason.trim();
+
+    if (normalizedReason.length < 5) {
+      setError("Le motif d’annulation doit contenir au moins 5 caractères.");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "Confirmer l’annulation définitive de cette attestation ?",
+      )
+    ) {
+      return;
+    }
+
+    setSavingDetails(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch(
+        "/api/interventions?resource=boiler-certificates",
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            action: "cancel",
+            certificateId: certificate.id,
+            cancellationReason: normalizedReason,
+          }),
+        },
+      );
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          result?.error || "L’attestation n’a pas pu être annulée.",
+        );
+      }
+
+      const cancelledCertificate = result?.certificate;
+
+      if (cancelledCertificate?.id) {
+        setCertificates((currentCertificates) =>
+          currentCertificates.map((item) =>
+            item.id === cancelledCertificate.id
+              ? cancelledCertificate
+              : item,
+          ),
+        );
+      }
+
+      setPreviewCertificate(null);
+      setSuccess("L’attestation a été annulée définitivement.");
+    } catch (cancellationError) {
+      setError(
+        cancellationError?.message ||
+        "L’attestation n’a pas pu être annulée.",
+      );
+    } finally {
+      setSavingDetails(false);
+    }
+  }
   async function handleSaveDetails(event) {
     event.preventDefault();
 
@@ -635,10 +716,10 @@ export default function BoilerMaintenanceCertificateForm({
 
             forcedAirBurner: detailsForm.hasForcedAirBurner
               ? {
-                  brand: detailsForm.forcedAirBurnerBrand.trim(),
-                  model: detailsForm.forcedAirBurnerModel.trim(),
-                  date: detailsForm.forcedAirBurnerDate || null,
-                }
+                brand: detailsForm.forcedAirBurnerBrand.trim(),
+                model: detailsForm.forcedAirBurnerModel.trim(),
+                date: detailsForm.forcedAirBurnerDate || null,
+              }
               : null,
 
             previousMaintenanceDate: detailsForm.previousMaintenanceDate,
@@ -659,9 +740,9 @@ export default function BoilerMaintenanceCertificateForm({
               ),
               ...(detailsForm.boilerSizingAssessment.trim()
                 ? {
-                    boilerSizingAssessment:
-                      detailsForm.boilerSizingAssessment.trim(),
-                  }
+                  boilerSizingAssessment:
+                    detailsForm.boilerSizingAssessment.trim(),
+                }
                 : {}),
             },
 
@@ -703,11 +784,10 @@ export default function BoilerMaintenanceCertificateForm({
 
       setSuccess(
         action === "issue"
-          ? `Attestation émise définitivement${
-              certificate?.certificateNumber
-                ? ` — ${certificate.certificateNumber}`
-                : ""
-            }.`
+          ? `Attestation émise définitivement${certificate?.certificateNumber
+            ? ` — ${certificate.certificateNumber}`
+            : ""
+          }.`
           : "Brouillon enregistré.",
       );
       setEditingCertificateId("");
@@ -740,9 +820,8 @@ export default function BoilerMaintenanceCertificateForm({
       aria-labelledby="boiler-certificate-title"
     >
       <article
-        className={`pro-dashboard-card pro-equipment-card${
-          embedded ? " pro-dashboard-card--embedded" : ""
-        }`}
+        className={`pro-dashboard-card pro-equipment-card${embedded ? " pro-dashboard-card--embedded" : ""
+          }`}
         style={{ gridColumn: "1 / -1" }}
       >
         <div>
@@ -933,7 +1012,9 @@ export default function BoilerMaintenanceCertificateForm({
                 <strong>
                   {certificate.status === "issued"
                     ? "Attestation émise"
-                    : "Brouillon à compléter"}
+                    : certificate.status === "cancelled"
+                      ? "Attestation annulée"
+                      : "Brouillon à compléter"}
                 </strong>
                 <button
                   className="pro-action-card-button"
@@ -952,6 +1033,22 @@ export default function BoilerMaintenanceCertificateForm({
                     Compléter le brouillon
                   </button>
                 )}
+                {certificate.status === "issued" && (
+                  <button
+                    className="pro-action-card-button"
+                    type="button"
+                    onClick={() => handleCancelCertificate(certificate)}
+                    disabled={savingDetails}
+                  >
+                    Annuler l’attestation
+                  </button>
+                )}
+                {certificate.status === "cancelled" &&
+                  certificate.cancellationReason && (
+                    <small>
+                      Motif : {certificate.cancellationReason}
+                    </small>
+                  )}
               </li>
             ))}
           </ul>
@@ -1036,10 +1133,10 @@ export default function BoilerMaintenanceCertificateForm({
                       ...(checked
                         ? {}
                         : {
-                            forcedAirBurnerBrand: "",
-                            forcedAirBurnerModel: "",
-                            forcedAirBurnerDate: "",
-                          }),
+                          forcedAirBurnerBrand: "",
+                          forcedAirBurnerModel: "",
+                          forcedAirBurnerDate: "",
+                        }),
                     }));
 
                     setError("");

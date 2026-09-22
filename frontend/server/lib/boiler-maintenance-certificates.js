@@ -44,6 +44,9 @@ const CERTIFICATE_READ_COLUMNS = [
   "created_at",
   "updated_at",
   "issued_at",
+  "cancelled_at",
+  "cancelled_by",
+  "cancellation_reason",
 ].join(", ");
 
 function requestError(
@@ -181,7 +184,7 @@ function validatePostBody(body) {
 
   if (
     typeof body.interventionId !==
-      "string" ||
+    "string" ||
     !UUID_PATTERN.test(
       body.interventionId.trim()
     )
@@ -397,7 +400,7 @@ function validatePatchBody(body) {
 
   if (
     typeof body.certificateId !==
-      "string" ||
+    "string" ||
     !UUID_PATTERN.test(
       body.certificateId.trim()
     )
@@ -412,12 +415,15 @@ function validatePatchBody(body) {
   const action =
     body.action === "issue"
       ? "issue"
-      : "save";
+      : body.action === "cancel"
+        ? "cancel"
+        : "save";
 
   if (
     body.action !== undefined &&
     body.action !== "save" &&
-    body.action !== "issue"
+    body.action !== "issue" &&
+    body.action !== "cancel"
   ) {
     throw requestError(
       400,
@@ -425,7 +431,28 @@ function validatePatchBody(body) {
       "L’action demandée est invalide."
     );
   }
+  const cancellationReason =
+    action === "cancel"
+      ? normalizeOptionalText(
+        body.cancellationReason,
+        "Le motif d’annulation",
+        500
+      )
+      : null;
 
+  if (
+    action === "cancel" &&
+    (
+      !cancellationReason ||
+      cancellationReason.length < 5
+    )
+  ) {
+    throw requestError(
+      400,
+      "CANCELLATION_REASON_REQUIRED",
+      "Le motif d’annulation doit contenir au moins 5 caractères."
+    );
+  }
   const ambientCoPpm =
     normalizeOptionalNumber(
       body.ambientCoPpm,
@@ -445,6 +472,7 @@ function validatePatchBody(body) {
 
   return {
     action,
+    cancellationReason,
 
     issuanceAccepted:
       body.issuanceAccepted === true,
@@ -853,6 +881,14 @@ function serializeCertificate(
 
     issuedAt:
       certificate.issued_at,
+    cancelledAt:
+      certificate.cancelled_at,
+
+    cancelledBy:
+      certificate.cancelled_by,
+
+    cancellationReason:
+      certificate.cancellation_reason,
   };
 }
 
@@ -926,7 +962,7 @@ async function createDraftCertificate(
 
   if (
     typeof contentType !==
-      "string" ||
+    "string" ||
     !contentType
       .toLowerCase()
       .startsWith(
@@ -1302,7 +1338,7 @@ async function updateDraftCertificate(
 
   if (
     typeof contentType !==
-      "string" ||
+    "string" ||
     !contentType
       .toLowerCase()
       .startsWith(
@@ -1329,9 +1365,9 @@ async function updateDraftCertificate(
 
   if (
     input.boilerEfficiencyPercent !==
-      null &&
+    null &&
     input.boilerEfficiencyPercent >
-      100
+    100
   ) {
     throw requestError(
       400,
@@ -1342,9 +1378,9 @@ async function updateDraftCertificate(
 
   if (
     input.referenceEfficiencyPercent !==
-      null &&
+    null &&
     input.referenceEfficiencyPercent >
-      100
+    100
   ) {
     throw requestError(
       400,
@@ -1401,23 +1437,84 @@ async function updateDraftCertificate(
   }
 
   if (
-    existing.status !== "draft"
-  ) {
-    throw requestError(
-      409,
-      "CERTIFICATE_ALREADY_ISSUED",
-      "Une attestation émise ne peut plus être modifiée."
-    );
-  }
-
-  if (
     existing.technician_id !==
     creator.userId
   ) {
     throw requestError(
       403,
       "TECHNICIAN_MISMATCH",
-      "Seul le technicien ayant créé l’attestation peut modifier ce brouillon."
+      "Seul le technicien ayant créé l’attestation peut effectuer cette action."
+    );
+  }
+
+  if (input.action === "cancel") {
+    if (existing.status !== "issued") {
+      throw requestError(
+        409,
+        "CERTIFICATE_NOT_CANCELLABLE",
+        existing.status === "cancelled"
+          ? "Cette attestation est déjà annulée."
+          : "Seule une attestation émise peut être annulée."
+      );
+    }
+
+    const cancelledAt =
+      new Date().toISOString();
+
+    const {
+      data: cancelledCertificate,
+      error: cancellationError,
+    } = await supabase
+      .from(
+        "boiler_maintenance_certificates"
+      )
+      .update({
+        status: "cancelled",
+        cancelled_at: cancelledAt,
+        cancelled_by: creator.userId,
+        cancellation_reason:
+          input.cancellationReason,
+      })
+      .eq("id", existing.id)
+      .eq("status", "issued")
+      .select(CERTIFICATE_READ_COLUMNS)
+      .maybeSingle();
+
+    if (
+      cancellationError ||
+      !cancelledCertificate
+    ) {
+      console.error(
+        "CERTIFICATE_CANCELLATION_FAILED",
+        {
+          code: cancellationError?.code,
+          message:
+            cancellationError?.message,
+        }
+      );
+
+      throw requestError(
+        503,
+        "CERTIFICATE_CANCELLATION_FAILED",
+        "L’attestation n’a pas pu être annulée."
+      );
+    }
+
+    return res.status(200).json({
+      ok: true,
+      cancelled: true,
+      certificate:
+        serializeCertificate(
+          cancelledCertificate
+        ),
+    });
+  }
+
+  if (existing.status !== "draft") {
+    throw requestError(
+      409,
+      "CERTIFICATE_ALREADY_ISSUED",
+      "Une attestation émise ou annulée ne peut plus être modifiée."
     );
   }
 
@@ -1436,37 +1533,37 @@ async function updateDraftCertificate(
   const issuanceFields =
     issuedAt
       ? {
-          status: "issued",
+        status: "issued",
 
-          certificate_number:
-            buildCertificateNumber(
-              existing.id,
-              issuedAt
-            ),
+        certificate_number:
+          buildCertificateNumber(
+            existing.id,
+            issuedAt
+          ),
 
-          issued_at:
+        issued_at:
+          issuedAt.toISOString(),
+
+        technician_signature: {
+          method:
+            "electronic_acknowledgement",
+
+          signedAt:
             issuedAt.toISOString(),
 
-          technician_signature: {
-            method:
-              "electronic_acknowledgement",
+          userId:
+            creator.userId,
 
-            signedAt:
-              issuedAt.toISOString(),
-
-            userId:
-              creator.userId,
-
-            fullName:
-              existing
-                .technician_snapshot
-                ?.fullName ||
-              existing
-                .technician_snapshot
-                ?.full_name ||
-              creator.email,
-          },
-        }
+          fullName:
+            existing
+              .technician_snapshot
+              ?.fullName ||
+            existing
+              .technician_snapshot
+              ?.full_name ||
+            creator.email,
+        },
+      }
       : {};
 
   const {
