@@ -295,9 +295,8 @@ function CompanyAccountCard({
     authenticatedSession,
     mfaConfigured,
   ].filter(Boolean).length;
-  const activeProtectionLabel = `${activeProtectionCount} protection${
-    activeProtectionCount === 1 ? "" : "s"
-  } active${activeProtectionCount === 1 ? "" : "s"} sur 3`;
+  const activeProtectionLabel = `${activeProtectionCount} protection${activeProtectionCount === 1 ? "" : "s"
+    } active${activeProtectionCount === 1 ? "" : "s"} sur 3`;
 
   const addressSummary = [
     company.address_line1,
@@ -389,9 +388,8 @@ function CompanyAccountCard({
             </div>
 
             <span
-              className={`pro-company-status ${
-                companyVerified ? "pro-company-status--approved" : ""
-              }`}
+              className={`pro-company-status ${companyVerified ? "pro-company-status--approved" : ""
+                }`}
             >
               {verificationTitle}
             </span>
@@ -520,9 +518,8 @@ function CompanyAccountCard({
           </div>
 
           <span
-            className={`pro-company-status ${
-              companyVerified ? "pro-company-status--approved" : ""
-            }`}
+            className={`pro-company-status ${companyVerified ? "pro-company-status--approved" : ""
+              }`}
           >
             {verificationTitle}
           </span>
@@ -977,6 +974,7 @@ export default function ProSpacePage() {
   const [boilerCertificatesLoading, setBoilerCertificatesLoading] =
     useState(true);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
+  const [carnetPassPreview, setCarnetPassPreview] = useState(null);
   useEffect(() => {
     let cancelled = false;
 
@@ -1142,7 +1140,7 @@ export default function ProSpacePage() {
         if (!response.ok) {
           throw new Error(
             result?.error ||
-              "L’historique des interventions n’a pas pu être chargé.",
+            "L’historique des interventions n’a pas pu être chargé.",
           );
         }
 
@@ -1160,7 +1158,7 @@ export default function ProSpacePage() {
           setInterventionTotal(0);
           setInterventionLoadError(
             error?.message ||
-              "L’historique des interventions n’a pas pu être chargé.",
+            "L’historique des interventions n’a pas pu être chargé.",
           );
         }
       } finally {
@@ -1213,7 +1211,7 @@ export default function ProSpacePage() {
         if (!response.ok) {
           throw new Error(
             result?.error ||
-              "Les attestations chaudière n’ont pas pu être chargées.",
+            "Les attestations chaudière n’ont pas pu être chargées.",
           );
         }
 
@@ -1378,9 +1376,10 @@ export default function ProSpacePage() {
         carnetPassStatus.status === "active" &&
         carnetPassStatus.carnetPassId
       ) {
-        navigate(
-          `/appareil/${encodeURIComponent(carnetPassStatus.carnetPassId)}`,
-        );
+        setCarnetPassPreview({
+          id: carnetPassStatus.carnetPassId,
+          name: `${equipment.brand} ${equipment.model}`,
+        });
         return;
       }
 
@@ -2036,6 +2035,24 @@ export default function ProSpacePage() {
           }}
         />
       )}
+      <ModalShell
+        open={Boolean(carnetPassPreview?.id)}
+        onClose={() => setCarnetPassPreview(null)}
+        dialogId="carnetpass-preview-modal"
+        titleId="carnetpass-preview-modal-title"
+        eyebrow="Traçabilité"
+        title={`CarnetPass — ${carnetPassPreview?.name || "Équipement"}`}
+        description="Consultation de la fiche publique et de son historique vérifié."
+        className="pro-carnetpass-modal"
+      >
+        {carnetPassPreview?.id && (
+          <iframe
+            className="pro-carnetpass-frame"
+            src={`/appareil/${encodeURIComponent(carnetPassPreview.id)}`}
+            title={`CarnetPass de ${carnetPassPreview.name}`}
+          />
+        )}
+      </ModalShell>
       <footer className="pro-footer">
         <span>CarnetPass — La maintenance technique organisée simplement.</span>
 

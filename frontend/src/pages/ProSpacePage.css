@@ -2351,7 +2351,33 @@
     gap: 3px;
   }
 }
+.pro-carnetpass-modal {
+  width: min(1180px, 100%);
+  height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
+.pro-carnetpass-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 1px solid var(--pro-line);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+@media (max-width: 700px) {
+  .pro-carnetpass-modal {
+    width: 100%;
+    height: calc(100dvh - 24px);
+  }
+
+  .pro-carnetpass-frame {
+    border-radius: 12px;
+  }
+}
 @page {
   size: A4 portrait;
   margin: 8mm;
