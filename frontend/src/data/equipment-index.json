@@ -29,6 +29,14 @@
       "manufacturerReference": "8000044523",
       "dataFile": "equipment/vaillant-8000044523.json",
       "status": "pilot"
+    },
+    {
+      "equipmentId": "sd-themaplus-condens-25-a-0010021497",
+      "brand": "Saunier Duval",
+      "model": "ThemaPlus Condens 25-A",
+      "manufacturerReference": "0010021497",
+      "dataFile": "equipment/saunier-duval-0010021497.json",
+      "status": "pilot"
     }
   ]
 }
