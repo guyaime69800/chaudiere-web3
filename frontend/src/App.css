@@ -193,6 +193,20 @@ body {
   border-radius: 10px;
   font-size: 14px;
 }
+.public-fault-assistant {
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid #f2c8b4;
+  border-radius: 16px;
+  background: #fff8f4;
+}
+.public-fault-assistant__heading { display: flex; align-items: center; gap: 12px; }
+.public-fault-assistant__heading img { width: 64px; height: 70px; object-fit: contain; }
+.public-fault-assistant__heading p { margin: 4px 0; }
+.public-fault-assistant form { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0; }
+.public-fault-assistant form label { font-weight: 700; }
+.public-fault-assistant form input { flex: 1 1 150px; min-width: 0; padding: 10px; border: 1px solid #e6c7ba; border-radius: 8px; }
+.public-fault-assistant > p { line-height: 1.5; }
 .claim-card {
   margin-top: 26px; padding: clamp(20px, 4vw, 30px); border: 1px solid #fed7c3;
   border-radius: 18px; background: linear-gradient(135deg, #fff8f4 0%, #fff 75%);

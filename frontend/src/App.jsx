@@ -10,6 +10,7 @@ import EquipmentRegistryABI from "./blockchain/EquipmentRegistry.json";
 import { useWallet } from "./blockchain/useWallet";
 import { loadEquipmentKnowledge } from "./services/equipmentKnowledge";
 import CarnetPassCreatedModal from "./components/CarnetPassCreatedModal";
+import shibaTechnicien from "./assets/carnetpass-shiba-technicien.png";
 import ReactMarkdown from "react-markdown";
 import "./App.css";
 import { supabase } from "./services/supabaseClient";
@@ -58,6 +59,20 @@ function formatPublicInterventionDate(value) {
   }).format(date);
 }
 
+// La fiche publique ne consulte jamais l'API IA professionnelle ni les PDF privés.
+// Les explications publiées ici doivent être validées pour chaque référence constructeur.
+function publicFaultAnswer(question, manufacturerReference) {
+  const codeMatch = question.trim().toUpperCase().match(/^F\s*\.?\s*0*(\d{1,3})$/);
+  if (!codeMatch) {
+    return "Indiquez un seul code défaut affiché sur l’appareil, par exemple F.28.";
+  }
+  const code = `F.${Number(codeMatch[1])}`;
+  if (manufacturerReference === "0010021497" && code === "F.28") {
+    return "F.28 : échec de l’allumage au démarrage. Cette indication ne suffit pas à identifier la cause. Source : notice d’installation Saunier Duval ThemaPlus Condens 25-A, tableau des codes défaut, page 33.";
+  }
+  return `${code} : ce code n’est pas encore documenté publiquement pour cette référence. Un professionnel pourra vérifier la notice du modèle exact.`;
+}
+
 function App({ initialMode = "public" }) {
   // Mode d'affichage : "public" (consultation, sans wallet) ou "pro" (technicien, avec wallet)
   const [mode, setMode] = useState(initialMode);
@@ -65,6 +80,8 @@ function App({ initialMode = "public" }) {
   const [equipmentKnowledge, setEquipmentKnowledge] = useState(null);
   const [aiQuestion, setAiQuestion] = useState("");
   const [aiAnswer, setAiAnswer] = useState("");
+  const [publicFaultQuestion, setPublicFaultQuestion] = useState("");
+  const [publicFaultResponse, setPublicFaultResponse] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
 
 
@@ -1593,7 +1610,7 @@ function App({ initialMode = "public" }) {
                 ) : null}
               </div>
               {/* ---------- DOCUMENTATION TECHNIQUE ---------- */}
-              {equipmentKnowledge?.data?.documents?.length > 0 && (
+              {!boiler.carnetPassId && equipmentKnowledge?.data?.documents?.length > 0 && (
                 <div className="technical-docs">
                   <h3>📚 Documentation technique</h3>
 
@@ -1639,7 +1656,7 @@ function App({ initialMode = "public" }) {
               )}
             </div>
             {/* ASSISTANT IA CARNETPASS */}
-            {equipmentKnowledge?.data?.documents?.length > 0 && !hasPrivateDocumentation ? (
+            {!boiler.carnetPassId && equipmentKnowledge?.data?.documents?.length > 0 && !hasPrivateDocumentation ? (
               <div className="ai-assistant">
                 <p className="ai-title">
                   🤖 Assistant technique CarnetPass
@@ -1676,6 +1693,32 @@ function App({ initialMode = "public" }) {
                   </div>
                 )}
               </div>
+            ) : boiler.carnetPassId ? (
+              <>
+                <div className="documentation-optional-notice" role="note">
+                  <strong>Historique vérifiable de cet appareil.</strong>
+                  <span>Les interventions confirmées ci-dessous disposent d’une empreinte enregistrée sur Polygon. Elle permet de vérifier qu’une preuve existe et que son empreinte n’a pas été modifiée après validation ; elle ne certifie pas à elle seule la qualité des travaux.</span>
+                </div>
+                <div className="public-fault-assistant">
+                  <div className="public-fault-assistant__heading">
+                    <img src={shibaTechnicien} alt="Shiba Inu chauffagiste CarnetPass" width="64" height="70" />
+                    <div><strong>Le Shiba CarnetPass · codes défaut</strong><p>Entrez le code affiché sur votre appareil pour en connaître la signification, si elle est référencée.</p></div>
+                  </div>
+                  <form onSubmit={(event) => {
+                    event.preventDefault();
+                    setPublicFaultResponse(publicFaultAnswer(publicFaultQuestion, boiler.manufacturerReference));
+                  }}>
+                    <label htmlFor="public-fault-code">Code défaut affiché</label>
+                    <input id="public-fault-code" value={publicFaultQuestion} maxLength={80} onChange={(event) => {
+                      setPublicFaultQuestion(event.target.value);
+                      setPublicFaultResponse("");
+                    }} placeholder="Ex. F.28" />
+                    <button className="btn" type="submit">Comprendre ce code</button>
+                  </form>
+                  {publicFaultResponse && <p role="status">{publicFaultResponse}</p>}
+                  <p><strong>Toute intervention sur cet appareil doit être réalisée par un professionnel qualifié.</strong> En cas d’odeur de gaz, éloignez-vous et contactez les services d’urgence.</p>
+                </div>
+              </>
             ) : hasPrivateDocumentation ? (
               <div className="documentation-optional-notice" role="status">
                 <strong>Documentation technique associée à ce modèle.</strong>

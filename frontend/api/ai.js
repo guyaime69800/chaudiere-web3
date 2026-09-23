@@ -773,6 +773,12 @@ Réponds en français simple, technique et structuré.
     // 13. APPEL DE L'ASSISTANT IA
     // -----------------------------------------------------
 
+    aiInstructions += `
+Commence par une réponse directe, puis donne au maximum trois vérifications utiles documentées.
+Reste concis (environ 150 mots), sauf si la sécurité exige davantage de précisions.
+Ne supprime jamais une réserve importante, une consigne de sécurité ou la source et sa page lorsqu'elles sont connues.
+`;
+
     const aiResponse =
       await openai.responses.create({
         model: "gpt-5.6-luna",

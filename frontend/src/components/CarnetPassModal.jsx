@@ -5,6 +5,7 @@ import "./CarnetPassModal.css";
 export default function CarnetPassModal({
   open,
   onOpenChange,
+  onOpenDocuments,
   carnetPassId,
   equipment,
   statusLabel,
@@ -161,11 +162,18 @@ export default function CarnetPassModal({
 
         <footer className="carnetpass-modal__footer">
           <p>
-            La fiche publique s’affiche sans quitter l’espace professionnel. Les
-            données privées de l’entreprise ne sont pas publiées.
+            Aperçu de la fiche visible après le scan du QR code. Les notices et
+            l’assistant technique sont dans l’onglet Documents du dossier professionnel.
           </p>
 
           <div>
+            <button
+              className="pro-action-card-button"
+              type="button"
+              onClick={onOpenDocuments}
+            >
+              Documents professionnels
+            </button>
             <a
               className="pro-action-card-button"
               href={publicPath}

@@ -83,9 +83,18 @@
   padding: 16px;
   border: 1px solid var(--pro-line);
   border-radius: 12px;
+  max-height: 360px;
+  overflow-y: auto;
   overflow-wrap: anywhere;
+  line-height: 1.5;
 }
 .equipment-workspace__ai-answer p { margin: 0 0 8px; color: var(--pro-ink); }
+.equipment-workspace__ai-answer h1,
+.equipment-workspace__ai-answer h2,
+.equipment-workspace__ai-answer h3 { margin: 14px 0 6px; font-size: 15px; }
+.equipment-workspace__ai-answer ul,
+.equipment-workspace__ai-answer ol { padding-left: 20px; margin: 6px 0 12px; }
+.equipment-workspace__ai-answer li { margin-bottom: 5px; }
 
 .equipment-workspace__document-heading {
   display: flex;

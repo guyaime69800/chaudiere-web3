@@ -522,6 +522,10 @@ export default function EquipmentWorkspace({
             <CarnetPassModal
                 open={carnetPassModalOpen}
                 onOpenChange={setCarnetPassModalOpen}
+                onOpenDocuments={() => {
+                    setCarnetPassModalOpen(false);
+                    setActiveTab("documents");
+                }}
                 carnetPassId={activeCarnetPassId}
                 equipment={equipment}
                 statusLabel={carnetPassPresentation.label}
