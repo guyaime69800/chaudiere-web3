@@ -40,9 +40,10 @@
 }
 
 .equipment-workspace__ai-mascot {
-  width: 76px;
-  height: 88px;
+  width: 92px;
+  height: 100px;
   flex: 0 0 auto;
+  object-fit: contain;
 }
 
 .equipment-workspace__ai-intro span {
