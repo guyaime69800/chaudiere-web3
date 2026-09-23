@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { getEquipmentDocumentLibrary } from "../services/equipmentKnowledge";
 import {
   deleteEquipmentAttachment,
@@ -143,6 +144,12 @@ export default function EquipmentDocumentCenter({
 }) {
   const { session } = useAuth();
   const [technicalDocuments, setTechnicalDocuments] = useState([]);
+  const [technicalEquipmentId, setTechnicalEquipmentId] = useState("");
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [aiError, setAiError] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const aiRequestId = useRef(0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [documentFilter, setDocumentFilter] = useState("all");
@@ -200,10 +207,16 @@ export default function EquipmentDocumentCenter({
 
   useEffect(() => {
     let active = true;
+    aiRequestId.current += 1;
 
     setLoading(true);
     setLoadError("");
     setTechnicalDocuments([]);
+    setTechnicalEquipmentId("");
+    setAiQuestion("");
+    setAiAnswer("");
+    setAiError("");
+    setAiBusy(false);
     setDocumentFilter("all");
     setSelectedDocument(null);
     onTechnicalDocumentCountChange?.(0);
@@ -218,6 +231,7 @@ export default function EquipmentDocumentCenter({
         if (!active) return;
 
         setTechnicalDocuments(library.documents);
+        setTechnicalEquipmentId(library.catalogueEquipment?.equipmentId || "");
         onTechnicalDocumentCountChange?.(library.documents.length);
       })
       .catch((error) => {
@@ -237,6 +251,7 @@ export default function EquipmentDocumentCenter({
 
     return () => {
       active = false;
+      aiRequestId.current += 1;
     };
   }, [
     carnetPassId,
@@ -342,6 +357,48 @@ export default function EquipmentDocumentCenter({
       });
     } catch (error) {
       window.alert(error.message || "Document inaccessible.");
+    }
+  }
+  async function handleAskAi(event) {
+    event.preventDefault();
+    if (aiBusy || !technicalEquipmentId || !aiQuestion.trim()) return;
+
+    const requestId = ++aiRequestId.current;
+    setAiBusy(true);
+    setAiError("");
+    setAiAnswer("");
+
+    try {
+      if (!session?.access_token) {
+        throw new Error("Connecte-toi à ton compte professionnel pour interroger l’IA.");
+      }
+
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          equipmentId: technicalEquipmentId,
+          question: aiQuestion.trim(),
+        }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result?.ok) {
+        throw new Error(result?.message || result?.error || "Réponse IA indisponible.");
+      }
+
+      if (requestId === aiRequestId.current) {
+        setAiAnswer(result.answer || "Aucune réponse reçue.");
+      }
+    } catch (error) {
+      if (requestId === aiRequestId.current) {
+        setAiError(error?.message || "Réponse IA indisponible.");
+      }
+    } finally {
+      if (requestId === aiRequestId.current) setAiBusy(false);
     }
   }
   async function handleAttachmentAction(attachment, action) {
@@ -553,6 +610,41 @@ export default function EquipmentDocumentCenter({
           </>
         )}
       </section>
+
+      {!loading && !loadError && technicalDocuments.length > 0 && (
+        <section className="equipment-workspace__ai" aria-labelledby="equipment-ai-title">
+          <span>ASSISTANT TECHNIQUE</span>
+          <h3 id="equipment-ai-title">Interroger la documentation du modèle</h3>
+          <p>Posez une question sur les notices et la vue éclatée. Vérifiez la page citée avant toute intervention.</p>
+          <form onSubmit={handleAskAi}>
+            <label htmlFor="equipment-ai-question">Votre question</label>
+            <textarea
+              id="equipment-ai-question"
+              value={aiQuestion}
+              onChange={(event) => {
+                setAiQuestion(event.target.value);
+                setAiAnswer("");
+                setAiError("");
+              }}
+              rows={3}
+              maxLength={1000}
+              placeholder="Ex. Quelle est la référence du capteur de pression dans la vue éclatée ?"
+            />
+            <button type="submit" disabled={aiBusy || !technicalEquipmentId || !aiQuestion.trim()}>
+              {aiBusy ? "Recherche en cours…" : "Demander à l’IA"}
+            </button>
+          </form>
+          {!technicalEquipmentId && (
+            <p role="alert">L’identifiant technique du modèle est introuvable.</p>
+          )}
+          {aiError && <p className="equipment-workspace__ai-error" role="alert">{aiError}</p>}
+          {aiAnswer && (
+            <div className="equipment-workspace__ai-answer" aria-live="polite">
+              <ReactMarkdown>{aiAnswer}</ReactMarkdown>
+            </div>
+          )}
+        </section>
+      )}
 
       <section
         className="equipment-workspace__related-documents"

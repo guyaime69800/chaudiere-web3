@@ -5,6 +5,7 @@ import { getEquipmentConfig } from "../server/lib/equipment-registry.js";
 import { searchRagContext } from "../server/lib/rag.js";
 
 import { aiRateLimit } from "../server/lib/rate-limit.js";
+import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -157,6 +158,15 @@ export default async function handler(
         error:
           "Équipement documentaire introuvable",
       });
+    }
+
+    // Les passages RAG des PDF privés ne doivent être accessibles qu'aux
+    // professionnels autorisés, au même titre que les PDF eux-mêmes.
+    if (equipmentConfig.equipmentData.documents?.some(
+      (document) => document.storage === "private"
+    )) {
+      const professional = await requireVerifiedCompany(request, response);
+      if (!professional) return;
     }
 
     // Récupère les données techniques

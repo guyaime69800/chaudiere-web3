@@ -31,7 +31,8 @@
       "status": "pilot"
     },
     {
-      "equipmentId": "sd-themaplus-condens-25-a-0010021497",
+      "equipmentId": "sd-themaplus-condens-25-a-h-fr-0010021497",
+      "variant": "H-FR",
       "brand": "Saunier Duval",
       "model": "ThemaPlus Condens 25-A",
       "manufacturerReference": "0010021497",

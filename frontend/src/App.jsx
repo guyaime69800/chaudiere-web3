@@ -9,6 +9,7 @@ import { RPC_URL, CONTRACT_ADDRESS } from "./blockchain/config";
 import EquipmentRegistryABI from "./blockchain/EquipmentRegistry.json";
 import { useWallet } from "./blockchain/useWallet";
 import { loadEquipmentKnowledge } from "./services/equipmentKnowledge";
+import CarnetPassCreatedModal from "./components/CarnetPassCreatedModal";
 import ReactMarkdown from "react-markdown";
 import "./App.css";
 import { supabase } from "./services/supabaseClient";
@@ -161,6 +162,10 @@ function App({ initialMode = "public" }) {
   const [personalSerialNumber, setPersonalSerialNumber] = useState("");
   const [isCreatingCarnetPass, setIsCreatingCarnetPass] = useState(false);
   const [carnetPassCreationMessage, setCarnetPassCreationMessage] = useState("");
+  const [createdCarnetPass, setCreatedCarnetPass] = useState(null);
+  const hasPrivateDocumentation = equipmentKnowledge?.data?.documents?.some(
+    (document) => document.storage === "private"
+  ) ?? false;
   // NOUVEAU (perf) : useMemo = "fabrique-le UNE fois, puis reutilise".
   // Sans ca, la connexion blockchain etait recreee a chaque lettre tapee dans un champ.
   const provider = useMemo(() => new ethers.JsonRpcProvider(RPC_URL), []);
@@ -876,17 +881,14 @@ function App({ initialMode = "public" }) {
         );
       }
 
-      setCarnetPassCreationMessage(
-        `CarnetPass ${carnetPassId} créé avec succès.`
-      );
       setPersonalSerialNumber("");
-      setSearchId(qrToken);
-
-      // On conserve exactement les majuscules et minuscules du jeton.
-      navigate(`/appareil/${encodeURIComponent(qrToken)}`);
-
-      // L'effet qui surveille idDepuisURL chargera la fiche automatiquement.
-      // Il ne faut pas relancer chercherChaudiere ici : cela ferait deux lectures.
+      setCreatedCarnetPass({
+        carnetPassId,
+        qrToken,
+        brand: selectedEquipment?.brand || "Équipement",
+        model: selectedEquipment?.model || "",
+        serialNumber,
+      });
     } catch (error) {
       console.error("Erreur création CarnetPass personnel.");
       setCarnetPassCreationMessage(
@@ -1367,7 +1369,7 @@ function App({ initialMode = "public" }) {
                         </p>
                       )}
 
-                      {document.documentUrl && (
+                      {document.documentUrl && document.storage !== "private" && (
                         <a
                           className="btn btn-ghost"
                           href={document.documentUrl}
@@ -1377,6 +1379,9 @@ function App({ initialMode = "public" }) {
                           Ouvrir le document
                         </a>
                       )}
+                      {document.storage === "private" && (
+                        <p className="muted">PDF privé : à consulter dans le dossier professionnel.</p>
+                      )}
                     </div>
                   )
                 )}
@@ -1385,7 +1390,7 @@ function App({ initialMode = "public" }) {
           </div>
 
           {/* ---------- ASSISTANT IA ---------- */}
-          {equipmentKnowledge?.data?.documents?.length > 0 && (
+          {equipmentKnowledge?.data?.documents?.length > 0 && !hasPrivateDocumentation && (
             <div className="ai-assistant">
               <p className="ai-title">
                 🤖 Assistant technique CarnetPass
@@ -1423,6 +1428,12 @@ function App({ initialMode = "public" }) {
                   </ReactMarkdown>
                 </div>
               )}
+            </div>
+          )}
+          {hasPrivateDocumentation && (
+            <div className="documentation-optional-notice" role="status">
+              <strong>Assistant technique disponible dans l’espace professionnel.</strong>
+              <span>Ouvrez l’onglet Documents du dossier équipement pour interroger les notices privées.</span>
             </div>
           )}
 
@@ -1607,7 +1618,7 @@ function App({ initialMode = "public" }) {
                       <p>
                         Nombre de pages : <strong>{document.pageCount}</strong>
                       </p>
-                      {document.documentUrl && (
+                      {document.documentUrl && document.storage !== "private" && (
                         <a
                           className="btn btn-ghost"
                           href={document.documentUrl}
@@ -1619,13 +1630,16 @@ function App({ initialMode = "public" }) {
                             : "📘 Ouvrir la notice"}
                         </a>
                       )}
+                      {document.storage === "private" && (
+                        <p className="muted">PDF privé : à consulter dans le dossier professionnel.</p>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
             </div>
             {/* ASSISTANT IA CARNETPASS */}
-            {equipmentKnowledge?.data?.documents?.length > 0 ? (
+            {equipmentKnowledge?.data?.documents?.length > 0 && !hasPrivateDocumentation ? (
               <div className="ai-assistant">
                 <p className="ai-title">
                   🤖 Assistant technique CarnetPass
@@ -1661,6 +1675,11 @@ function App({ initialMode = "public" }) {
                     <ReactMarkdown>{aiAnswer}</ReactMarkdown>
                   </div>
                 )}
+              </div>
+            ) : hasPrivateDocumentation ? (
+              <div className="documentation-optional-notice" role="status">
+                <strong>Documentation technique associée à ce modèle.</strong>
+                <span>L’assistant IA et les PDF privés sont disponibles dans l’onglet Documents de l’espace professionnel.</span>
               </div>
             ) : (
               <div className="documentation-optional-notice" role="status">
@@ -1836,6 +1855,13 @@ function App({ initialMode = "public" }) {
           </Suspense>
         )
       }
+      <CarnetPassCreatedModal
+        carnetPass={createdCarnetPass}
+        onClose={() => {
+          setCreatedCarnetPass(null);
+          navigate("/espace-pro");
+        }}
+      />
     </div >
   );
 }

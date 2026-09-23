@@ -137,7 +137,7 @@ export const generatedEquipmentRegistry = [
       {
         documentId: "sd-0010021497-vue-eclatee",
         documentType: "exploded_view",
-        title: "Vue ?clat?e - ThemaPlus Condens 25-A",
+        title: "Vue éclatée - ThemaPlus Condens 25-A",
         ragEmbeddingData: rag2_2,
       },
     ],
