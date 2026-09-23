@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import { get } from "@vercel/blob";
 
 // ---------------------------------------------------------
 // PARAMÈTRES D'IMPORT
@@ -65,15 +66,26 @@ console.log("");
 // Téléchargement du PDF.
 console.log("Téléchargement du document...");
 
-const pdfResponse = await fetch(documentData.documentUrl);
+let pdfBuffer;
 
-if (!pdfResponse.ok) {
-  throw new Error(
-    `Impossible de télécharger le PDF : ${pdfResponse.status}`
-  );
+if (documentData.storage === "private") {
+  const pathname = new URL(documentData.documentUrl).pathname.slice(1);
+  const result = await get(pathname, { access: "private" });
+
+  if (result?.statusCode !== 200 || !result.stream) {
+    throw new Error(`Impossible de lire le PDF privé : ${pathname}`);
+  }
+
+  pdfBuffer = await new Response(result.stream).arrayBuffer();
+} else {
+  const pdfResponse = await fetch(documentData.documentUrl);
+
+  if (!pdfResponse.ok) {
+    throw new Error(`Impossible de télécharger le PDF : ${pdfResponse.status}`);
+  }
+
+  pdfBuffer = await pdfResponse.arrayBuffer();
 }
-
-const pdfBuffer = await pdfResponse.arrayBuffer();
 
 console.log(
   "PDF téléchargé :",
@@ -155,8 +167,8 @@ const brandSlug = createSlug(
 
 const documentSlug = createSlug(
   documentData.documentCode ||
-    documentData.documentId ||
-    documentData.title
+  documentData.documentId ||
+  documentData.title
 );
 
 const outputPath = path.resolve(

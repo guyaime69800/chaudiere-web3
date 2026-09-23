@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "equipmentId": "sd-themaplus-condens-25-a-h-fr-0010021497",
+  "identity": {
+    "brand": "Saunier Duval",
+    "productType": "chaudiere_gaz_condensation",
+    "range": "ThemaPlus Condens",
+    "model": "ThemaPlus Condens 25-A",
+    "variant": "H-FR",
+    "manufacturerReference": "0010021497"
+  },
+  "carnetPass": {
+    "linkedIds": []
+  },
+  "documents": [
+    {
+      "documentId": "sd-0010021497-installation",
+      "title": "Notice d'installation technique - ThemaPlus Condens 25-A",
+      "documentType": "installation_maintenance",
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/saunier-duval/0010021497/03-Notice-d-installation-technique-THEMAPLUS-CONDENS-25-A.pdf",
+      "language": "fr",
+      "sourceName": "Saunier Duval",
+      "manufacturerReference": "0010021497",
+      "storage": "private"
+    },
+    {
+      "documentId": "sd-0010021497-utilisation",
+      "title": "Notice d'utilisation - ThemaPlus Condens 25-A",
+      "documentType": "user_manual",
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/saunier-duval/0010021497/04-Notice-d-utilisation-THEMAPLUS-CONDENS-25-A.pdf",
+      "language": "fr",
+      "sourceName": "Saunier Duval",
+      "manufacturerReference": "0010021497",
+      "storage": "private"
+    },
+    {
+      "documentId": "sd-0010021497-vue-eclatee",
+      "title": "Vue ?clat?e - ThemaPlus Condens 25-A",
+      "documentType": "exploded_view",
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/saunier-duval/0010021497/02-Vue-clat-e-THEMAPLUS-CONDENS-25-A.pdf",
+      "language": "fr",
+      "sourceName": "Saunier Duval",
+      "manufacturerReference": "0010021497",
+      "storage": "private"
+    }
+  ],
+  "errorCodes": [],
+  "diagnosticRules": [],
+  "metadata": {
+    "status": "pilot",
+    "verificationStatus": "documents_to_index",
+    "notes": "Fiche 25-A ; codes d?faut dans la notice installation."
+  }
+}

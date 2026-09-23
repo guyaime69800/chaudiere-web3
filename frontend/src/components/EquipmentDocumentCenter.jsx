@@ -9,6 +9,7 @@ import {
 } from "../services/equipmentAttachmentsService";
 import DocumentPreviewModal from "./DocumentPreviewModal";
 import "./EquipmentDocumentCenter.css";
+import { useAuth } from "../hooks/useAuth";
 
 const DOCUMENT_FILTERS = [
   { id: "all", label: "Tous" },
@@ -140,11 +141,18 @@ export default function EquipmentDocumentCenter({
   onOpenRegulatory,
   onTechnicalDocumentCountChange,
 }) {
+  const { session } = useAuth();
   const [technicalDocuments, setTechnicalDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [documentFilter, setDocumentFilter] = useState("all");
   const [selectedDocument, setSelectedDocument] = useState(null);
+  useEffect(() => {
+  const url = selectedDocument?.documentUrl;
+  return () => {
+    if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+  };
+}, [selectedDocument]);
   const [attachments, setAttachments] = useState([]);
   const [attachmentsLoading, setAttachmentsLoading] = useState(true);
   const [attachmentError, setAttachmentError] = useState("");
@@ -300,7 +308,42 @@ export default function EquipmentDocumentCenter({
       setAttachmentBusy(false);
     }
   }
+  async function handleTechnicalDocumentOpen(technicalDocument) {
+    if (technicalDocument.storage !== "private") {
+      setSelectedDocument(technicalDocument);
+      return;
+    }
 
+    try {
+      if (!session?.access_token) {
+        throw new Error("Connecte-toi pour consulter ce document.");
+      }
+
+      const pathname = new URL(technicalDocument.documentUrl).pathname.slice(1);
+      const response = await fetch(
+        `/api/technical-document?pathname=${encodeURIComponent(pathname)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Impossible d’ouvrir ce document technique.");
+      }
+
+      const pdf = await response.blob();
+      const objectUrl = URL.createObjectURL(pdf);
+
+      setSelectedDocument({
+        ...technicalDocument,
+        documentUrl: objectUrl,
+      });
+    } catch (error) {
+      window.alert(error.message || "Document inaccessible.");
+    }
+  }
   async function handleAttachmentAction(attachment, action) {
     setAttachmentActionId(attachment.id);
     setAttachmentError("");
@@ -498,7 +541,7 @@ export default function EquipmentDocumentCenter({
                       </span>
                       <button
                         type="button"
-                        onClick={() => setSelectedDocument(technicalDocument)}
+                        onClick={() => handleTechnicalDocumentOpen(technicalDocument)}
                       >
                         Consulter
                       </button>

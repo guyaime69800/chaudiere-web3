@@ -40,7 +40,7 @@ const ragDir = path.resolve(
 );
 
 const outputPath = path.resolve(
-  "api/lib/equipment-registry.generated.js"
+  "server/lib/equipment-registry.generated.js"
 );
 
 const outputDir = path.dirname(

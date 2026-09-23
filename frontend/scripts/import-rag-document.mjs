@@ -192,7 +192,7 @@ if (
 const generatedRegistryPath =
   path.resolve(
     frontendRoot,
-    "api/lib/equipment-registry.generated.js"
+    "server/lib/equipment-registry.generated.js"
   );
 
 // ---------------------------------------------------------
