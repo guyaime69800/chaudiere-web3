@@ -445,6 +445,7 @@ export default function EquipmentDocumentCenter({
 
   return (
     <div className="equipment-workspace__documents">
+      <div className={`equipment-workspace__top ${!loading && !loadError && technicalDocuments.length > 0 ? "has-assistant" : ""}`}>
       <section
         className="equipment-workspace__document-library"
         aria-labelledby="equipment-technical-documents-title"
@@ -613,8 +614,23 @@ export default function EquipmentDocumentCenter({
 
       {!loading && !loadError && technicalDocuments.length > 0 && (
         <section className="equipment-workspace__ai" aria-labelledby="equipment-ai-title">
-          <span>ASSISTANT TECHNIQUE</span>
-          <h3 id="equipment-ai-title">Interroger la documentation du modèle</h3>
+          <div className="equipment-workspace__ai-intro">
+            <svg className="equipment-workspace__ai-mascot" viewBox="0 0 96 112" role="img" aria-label="Mascotte technicien CarnetPass" xmlns="http://www.w3.org/2000/svg">
+              <rect x="15" y="49" width="66" height="52" rx="16" fill="#e54310" />
+              <path d="M25 52v-8a23 23 0 0 1 46 0v8" fill="#f39b35" stroke="#863d19" strokeWidth="3" />
+              <path d="M20 48h56a6 6 0 0 1 0 12H20a6 6 0 0 1 0-12Z" fill="#f39b35" stroke="#863d19" strokeWidth="3" />
+              <rect x="22" y="57" width="52" height="33" rx="12" fill="#fff9f3" stroke="#863d19" strokeWidth="3" />
+              <circle cx="38" cy="70" r="3" fill="#29211e" /><circle cx="58" cy="70" r="3" fill="#29211e" />
+              <path d="M42 80q6 5 12 0" fill="none" stroke="#863d19" strokeWidth="3" strokeLinecap="round" />
+              <path d="M39 94v-8m18 8v-8" stroke="#fff9f3" strokeWidth="4" strokeLinecap="round" />
+              <path d="M77 83l7-7m-2-2 7-7-2-4-5 3-4-2-3 5 3 4-5 6" fill="none" stroke="#60778a" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="48" cy="45" r="5" fill="#fff9f3" />
+            </svg>
+            <div>
+              <span>ASSISTANT IA CARNETPASS</span>
+              <h3 id="equipment-ai-title">Votre compagnon technique</h3>
+            </div>
+          </div>
           <p>Posez une question sur les notices et la vue éclatée. Vérifiez la page citée avant toute intervention.</p>
           <form onSubmit={handleAskAi}>
             <label htmlFor="equipment-ai-question">Votre question</label>
@@ -645,6 +661,7 @@ export default function EquipmentDocumentCenter({
           )}
         </section>
       )}
+      </div>
 
       <section
         className="equipment-workspace__related-documents"
