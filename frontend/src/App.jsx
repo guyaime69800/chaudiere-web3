@@ -62,15 +62,34 @@ function formatPublicInterventionDate(value) {
 // La fiche publique ne consulte jamais l'API IA professionnelle ni les PDF privés.
 // Les explications publiées ici doivent être validées pour chaque référence constructeur.
 function publicFaultAnswer(question, manufacturerReference) {
-  const codeMatch = question.trim().toUpperCase().match(/^F\s*\.?\s*0*(\d{1,3})$/);
+  const codeMatch = question.trim().toUpperCase().match(/^(?:F\s*\.?\s*)?0*(\d{1,3})$/);
   if (!codeMatch) {
-    return "Indiquez un seul code défaut affiché sur l’appareil, par exemple F.28.";
+    return "Indiquez uniquement le code affiché, par exemple F.28 ou 28.";
   }
-  const code = `F.${Number(codeMatch[1])}`;
-  if (manufacturerReference === "0010021497" && code === "F.28") {
-    return "F.28 : échec de l’allumage au démarrage. Cette indication ne suffit pas à identifier la cause. Source : notice d’installation Saunier Duval ThemaPlus Condens 25-A, tableau des codes défaut, page 33.";
+  const code = `F.${String(Number(codeMatch[1])).padStart(2, "0")}`;
+  if (manufacturerReference === "0010021497") {
+    // Résumés validés sur la notice constructeur 0020238207_05.
+    // Aucun geste de dépannage réservé au professionnel n'est publié ici.
+    const knownCodes = {
+      "F.00": ["sonde de température du départ de chauffage non raccordée ou défectueuse", 32],
+      "F.01": ["sonde de température de retour non raccordée ou défectueuse", 32],
+      "F.20": ["mise en sécurité liée à une température trop élevée", 32],
+      "F.22": ["mise en sécurité liée à un manque d’eau ou à une pression trop basse", 32],
+      "F.23": ["mise en sécurité liée à un écart de température trop élevé et à une circulation d’eau insuffisante", 33],
+      "F.24": ["mise en sécurité liée à une montée en température trop rapide", 33],
+      "F.27": ["mise en sécurité liée à un signal de flamme anormal", 33],
+      "F.28": ["échec de l’allumage au démarrage", 33],
+      "F.29": ["échec du rallumage après une interruption temporaire de l’alimentation en gaz", 33],
+      "F.32": ["défaut du ventilateur", 33],
+      "F.73": ["signal trop faible du capteur de pression d’eau", 34],
+      "F.74": ["signal trop fort du capteur de pression d’eau", 34],
+    };
+    const entry = knownCodes[code];
+    if (entry) {
+      return `${code} : ${entry[0]}. Le code ne permet pas de déterminer seul la cause. Source : notice d’installation et de maintenance Saunier Duval ThemaPlus Condens, tableau des codes défaut, page ${entry[1]}. Contactez un professionnel si le défaut persiste.`;
+    }
   }
-  return `${code} : ce code n’est pas encore documenté publiquement pour cette référence. Un professionnel pourra vérifier la notice du modèle exact.`;
+  return `${code} : explication publique non vérifiée pour ce modèle. Relevez le code exact et contactez un professionnel ; ne démontez pas l’appareil.`;
 }
 
 function App({ initialMode = "public" }) {
@@ -1702,21 +1721,33 @@ function App({ initialMode = "public" }) {
                 <div className="public-fault-assistant">
                   <div className="public-fault-assistant__heading">
                     <img src={shibaTechnicien} alt="Shiba Inu chauffagiste CarnetPass" width="64" height="70" />
-                    <div><strong>Le Shiba CarnetPass · codes défaut</strong><p>Entrez le code affiché sur votre appareil pour en connaître la signification, si elle est référencée.</p></div>
+                    <div><strong>Le Shiba CarnetPass · codes défaut</strong><p>Entrez le code affiché sur votre appareil pour en connaître la signification, si elle est référencée. Exemples : F.22, F.28 ou F.29.</p></div>
                   </div>
                   <form onSubmit={(event) => {
                     event.preventDefault();
                     setPublicFaultResponse(publicFaultAnswer(publicFaultQuestion, boiler.manufacturerReference));
                   }}>
                     <label htmlFor="public-fault-code">Code défaut affiché</label>
-                    <input id="public-fault-code" value={publicFaultQuestion} maxLength={80} onChange={(event) => {
+                    <input id="public-fault-code" value={publicFaultQuestion} maxLength={8} onChange={(event) => {
                       setPublicFaultQuestion(event.target.value);
                       setPublicFaultResponse("");
                     }} placeholder="Ex. F.28" />
                     <button className="btn" type="submit">Comprendre ce code</button>
                   </form>
                   {publicFaultResponse && <p role="status">{publicFaultResponse}</p>}
-                  <p><strong>Toute intervention sur cet appareil doit être réalisée par un professionnel qualifié.</strong> En cas d’odeur de gaz, éloignez-vous et contactez les services d’urgence.</p>
+                  {boiler.manufacturerReference === "0010021497" && (
+                    <div className="public-fault-assistant__tips">
+                      <strong>Vérifications accessibles à l’utilisateur · ThemaPlus Condens 25-A</strong>
+                      <ul>
+                        <li>Vérifiez la pression une fois par mois, sans demande de chauffage ni d’eau chaude. La notice recommande 1 à 1,5 bar (notice d’emploi, p. 9).</li>
+                        <li>Si elle est trop basse, faites un appoint uniquement si votre installateur vous a montré le robinet et confirmé que l’eau convient à l’installation. Ouvrez-le lentement, surveillez l’écran et refermez-le dès que la pression atteint 1 à 1,5 bar (notice d’emploi, p. 10).</li>
+                        <li>Si le chauffage ou l’eau chaude ne fonctionne pas, vérifiez le mode choisi, les températures réglées et la programmation du régulateur. La notice évoque aussi la purge des radiateurs en présence d’air ; faites-la uniquement si vous savez utiliser vos purgeurs (notice d’emploi, p. 15).</li>
+                        <li>Si l’écran affiche un défaut, la notice indique d’appuyer sur la touche de réinitialisation et d’attendre cinq secondes. Si le défaut ne disparaît pas ou revient, contactez un professionnel (notice d’emploi, p. 16).</li>
+                        <li>Si la pression clignote à 2,5 bar ou plus, si le défaut revient ou en cas de fuite, contactez un professionnel (notice d’emploi, p. 15–16).</li>
+                      </ul>
+                    </div>
+                  )}
+                  <p><strong>Les réparations et interventions techniques sur cet appareil doivent être réalisées par un professionnel qualifié.</strong> En cas d’odeur de gaz, éloignez-vous et contactez les services d’urgence.</p>
                 </div>
               </>
             ) : hasPrivateDocumentation ? (
