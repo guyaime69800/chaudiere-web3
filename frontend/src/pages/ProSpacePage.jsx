@@ -13,8 +13,13 @@ import {
   createCompanyEquipment,
   getCompanyEquipments,
 } from "../services/equipmentService";
-import { getCompanyCarnetPassStatuses } from "../services/carnetPassService";
+import {
+  createCompanyCarnetPass,
+  getCompanyCarnetPassStatuses,
+} from "../services/carnetPassService";
 import EquipmentWorkspace from "../components/EquipmentWorkspace";
+import CarnetPassCreatedModal from "../components/CarnetPassCreatedModal";
+import equipmentIndex from "../data/equipment-index.json";
 import "./ProSpacePage.css";
 
 const EMPTY_FORM = {
@@ -31,6 +36,18 @@ const EMPTY_EQUIPMENT_FORM = {
   productReference: "",
   serialNumber: "",
 };
+
+function matchesCatalogModel(value, catalog) {
+  const model = String(value).trim().replace(/\s+/g, " ").toLowerCase();
+  const expected = catalog.model.toLowerCase();
+  const variant = String(catalog.variant || "").toLowerCase();
+
+  return model === expected
+    || Boolean(variant && (
+      model === `${expected} ${variant}`
+      || model === `${expected} (${variant})`
+    ));
+}
 
 function Brand() {
   return (
@@ -975,6 +992,7 @@ export default function ProSpacePage() {
     useState(true);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
   const [carnetPassPreview, setCarnetPassPreview] = useState(null);
+  const [createdCarnetPass, setCreatedCarnetPass] = useState(null);
   useEffect(() => {
     let cancelled = false;
 
@@ -1308,10 +1326,18 @@ export default function ProSpacePage() {
 
   function handleEquipmentChange(event) {
     const { name, value } = event.target;
+    const matchingModel = name === "productReference"
+      ? equipmentIndex.equipments.find(
+        (item) => item.manufacturerReference === value.trim().replace(/\s+/g, ""),
+      )
+      : null;
 
     setEquipmentForm((currentForm) => ({
       ...currentForm,
       [name]: value,
+      ...(matchingModel
+        ? { brand: matchingModel.brand, model: matchingModel.model }
+        : {}),
     }));
     setEquipmentError("");
     setEquipmentMessage("");
@@ -1337,14 +1363,64 @@ export default function ProSpacePage() {
       return;
     }
 
+    const reference = equipmentForm.productReference.trim().replace(/\s+/g, "");
+    const catalogModel = equipmentIndex.equipments.find(
+      (item) => item.manufacturerReference === reference,
+    );
+    if (
+      catalogModel &&
+      (equipmentForm.brand.trim().replace(/\s+/g, " ").toLowerCase()
+          !== catalogModel.brand.toLowerCase()
+        || !matchesCatalogModel(equipmentForm.model, catalogModel))
+    ) {
+      setEquipmentError(
+        `La référence ${reference} correspond à ${catalogModel.brand} ${catalogModel.model}. Corrigez le modèle avant d’enregistrer.`,
+      );
+      return;
+    }
+
+    if (reference && equipmentForm.serialNumber.trim().length > 128) {
+      setEquipmentError("Le numéro de série doit contenir au plus 128 caractères pour créer un CarnetPass.");
+      return;
+    }
+
     setEquipmentSubmitting(true);
 
     try {
-      await createCompanyEquipment(company.id, equipmentForm);
+      await createCompanyEquipment(company.id, {
+        ...equipmentForm,
+        productReference: reference,
+      });
       setEquipmentForm(EMPTY_EQUIPMENT_FORM);
       setEquipmentFormOpen(false);
-      setEquipmentMessage("Équipement ajouté avec succès.");
       setEquipmentRefreshKey((currentKey) => currentKey + 1);
+
+      if (!reference) {
+        setEquipmentMessage("Équipement enregistré. Ajoutez une référence produit pour créer son CarnetPass.");
+        return;
+      }
+
+      try {
+        const result = await createCompanyCarnetPass({
+          ...equipmentForm,
+          productReference: reference,
+          productType: getEquipmentTypeLabel(equipmentForm.equipmentType),
+        });
+        setCreatedCarnetPass({
+          carnetPassId: result.carnetPassId,
+          qrToken: result.qrToken,
+          brand: result.equipment?.brand || equipmentForm.brand.trim(),
+          model: result.equipment?.model || equipmentForm.model.trim(),
+          serialNumber: equipmentForm.serialNumber.trim(),
+        });
+        setEquipmentMessage(`Équipement et CarnetPass ${result.carnetPassId} créés avec succès.`);
+        setEquipmentRefreshKey((currentKey) => currentKey + 1);
+      } catch (error) {
+        setEquipmentMessage("Équipement enregistré, mais le CarnetPass n’a pas été confirmé.");
+        setEquipmentError(
+          `${error.message} Vérifiez le statut du dossier avant de relancer sa création.`,
+        );
+      }
     } catch (error) {
       setEquipmentError(error.message);
     } finally {
@@ -1923,14 +1999,21 @@ export default function ProSpacePage() {
                 </label>
               </div>
 
+              <p>
+                Avec une référence produit, l’enregistrement crée aussi l’identifiant
+                CarnetPass et son QR après confirmation sur Polygon.
+              </p>
+
               <button
                 className="pro-primary-button"
                 type="submit"
                 disabled={equipmentSubmitting}
               >
                 {equipmentSubmitting
-                  ? "Enregistrement…"
-                  : "Enregistrer l’équipement"}
+                  ? "Enregistrement et création…"
+                  : equipmentForm.productReference.trim()
+                    ? "Enregistrer et créer le CarnetPass"
+                    : "Enregistrer l’équipement"}
               </button>
             </form>
           )}
@@ -2053,6 +2136,10 @@ export default function ProSpacePage() {
           />
         )}
       </ModalShell>
+      <CarnetPassCreatedModal
+        carnetPass={createdCarnetPass}
+        onClose={() => setCreatedCarnetPass(null)}
+      />
       <footer className="pro-footer">
         <span>CarnetPass — La maintenance technique organisée simplement.</span>
 

@@ -290,6 +290,29 @@ async function createCarnetPass(req, res) {
 
   if (entry) {
     equipmentData = entry.equipmentData;
+
+    // Une référence connue ne doit pas associer les documents d'un autre modèle.
+    const matchesIdentity = (value, expected) =>
+      normalizeIdentityText(value).toLowerCase()
+      === normalizeIdentityText(expected).toLowerCase();
+    const requestedModel = normalizeIdentityText(body.model).toLowerCase();
+    const expectedModel = normalizeIdentityText(equipmentData.identity?.model).toLowerCase();
+    const variant = normalizeIdentityText(equipmentData.identity?.variant).toLowerCase();
+    const matchesModel = requestedModel === expectedModel
+      || Boolean(variant && (
+        requestedModel === `${expectedModel} ${variant}`
+        || requestedModel === `${expectedModel} (${variant})`
+      ));
+
+    if (
+      (body.brand && !matchesIdentity(body.brand, equipmentData.identity?.brand))
+      || (body.model && !matchesModel)
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error: `La référence ${manufacturerReference} correspond à ${equipmentData.identity?.brand} ${equipmentData.identity?.model}. Corrigez le modèle avant de créer le CarnetPass.`,
+      });
+    }
   } else {
     if (
       !validText(body.brand, 100)

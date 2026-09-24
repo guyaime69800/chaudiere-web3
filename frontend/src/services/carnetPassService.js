@@ -102,3 +102,43 @@ export async function getCompanyCarnetPassStatuses(
 
   return result.statuses.map(sanitizeStatus);
 }
+
+export async function createCompanyCarnetPass(equipment) {
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error || !data?.session?.access_token) {
+    throw new Error("Reconnectez-vous avant de créer le CarnetPass.");
+  }
+
+  const response = await fetch("/api/carnetpass", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${data.session.access_token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      manufacturerReference: equipment.productReference.trim(),
+      serialNumber: equipment.serialNumber.trim(),
+      brand: equipment.brand.trim(),
+      model: equipment.model.trim(),
+      productType: equipment.productType,
+    }),
+  });
+
+  const result = await response.json().catch(() => null);
+
+  if (!response.ok || result?.ok !== true) {
+    throw new Error(result?.error || "Création du CarnetPass indisponible.");
+  }
+
+  if (
+    !/^CP-\d{4}-\d{6}$/.test(result.carnetPassId || "")
+    || !/^cp_qr_[A-Za-z0-9_-]{43}$/.test(result.qrToken || "")
+  ) {
+    throw new Error(
+      "Réponse de création incomplète. Vérifiez le statut de l’équipement avant de réessayer.",
+    );
+  }
+
+  return result;
+}
