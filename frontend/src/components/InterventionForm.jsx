@@ -14,7 +14,7 @@ const EMPTY_INTERVENTION_FORM = {
 };
 
 function getEquipmentLabel(equipment) {
-  return `${equipment.brand} ${equipment.model} — ${equipment.serial_number}`;
+  return `${equipment.brand} ${equipment.model} — ${equipment.serial_number || `CarnetPass ${equipment.id.slice(0, 8)}`}`;
 }
 
 function getInterventionTypeLabel(type) {

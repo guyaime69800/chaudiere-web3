@@ -724,14 +724,6 @@ async function loadEquipment(
         data.serial_number
     );
 
-    if (!serialNumber) {
-        throw requestError(
-            409,
-            "EQUIPMENT_SERIAL_REQUIRED",
-            "Cet équipement doit posséder un numéro de série valide."
-        );
-    }
-
     return {
         ...data,
         serialNumber,
@@ -887,16 +879,18 @@ async function readInterventions(req, res) {
     });
 }
 async function loadActiveCarnetPass(
-
-    serialNumber,
+    equipment,
     companyId
 ) {
+    const serialNumber = equipment.serialNumber;
     let mappedCarnetPassId;
     let rawCarnetPass;
 
     try {
         mappedCarnetPassId = await redis.get(
-            `carnetpass:serial:${serialNumber}`
+            serialNumber
+                ? `carnetpass:serial:${serialNumber}`
+                : `carnetpass:equipment-id:${equipment.id}`
         );
 
         if (
@@ -930,7 +924,9 @@ async function loadActiveCarnetPass(
         carnetPass.carnetPassId !== mappedCarnetPassId ||
         carnetPass.createdByCompanyId !== companyId ||
         carnetPass.status !== "active" ||
-        recordSerialNumber !== serialNumber ||
+        (serialNumber
+            ? recordSerialNumber !== serialNumber
+            : carnetPass.equipmentRecordId !== equipment.id) ||
         blockchain?.state !== "confirmed" ||
         Number(blockchain?.chainId) !== 137 ||
         !BYTES32_PATTERN.test(blockchain?.equipmentKey || "")
@@ -1277,7 +1273,7 @@ async function createIntervention(req, res) {
     );
 
     const carnetPass = await loadActiveCarnetPass(
-        equipment.serialNumber,
+        equipment,
         creator.companyId
     );
 

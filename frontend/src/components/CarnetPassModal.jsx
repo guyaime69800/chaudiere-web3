@@ -112,7 +112,7 @@ export default function CarnetPassModal({
             </h2>
 
             <p id="carnetpass-modal-description">
-              Carnet public vérifiable · N° de série : {equipment.serial_number}
+              Carnet public vérifiable · N° de série : {equipment.serial_number || "non lisible"}
             </p>
           </div>
 

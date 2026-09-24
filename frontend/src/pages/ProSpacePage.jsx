@@ -1095,7 +1095,7 @@ export default function ProSpacePage() {
       try {
         const statuses = await getCompanyCarnetPassStatuses(
           company.id,
-          equipments.map((equipment) => equipment.serial_number),
+          equipments,
         );
 
         if (!cancelled) {
@@ -1358,11 +1358,6 @@ export default function ProSpacePage() {
       return;
     }
 
-    if (!equipmentForm.serialNumber.trim()) {
-      setEquipmentError("Indiquez le numéro de série de l’équipement.");
-      return;
-    }
-
     const reference = equipmentForm.productReference.trim().replace(/\s+/g, "");
     const catalogModel = equipmentIndex.equipments.find(
       (item) => item.manufacturerReference === reference,
@@ -1387,10 +1382,16 @@ export default function ProSpacePage() {
     setEquipmentSubmitting(true);
 
     try {
-      await createCompanyEquipment(company.id, {
+      const savedEquipmentResult = await createCompanyEquipment(company.id, {
         ...equipmentForm,
         productReference: reference,
       });
+      const savedEquipment = Array.isArray(savedEquipmentResult)
+        ? savedEquipmentResult[0]
+        : savedEquipmentResult;
+      if (!savedEquipment?.id) {
+        throw new Error("Équipement enregistré, mais son identifiant est indisponible. Vérifiez votre liste avant de réessayer.");
+      }
       setEquipmentForm(EMPTY_EQUIPMENT_FORM);
       setEquipmentFormOpen(false);
       setEquipmentRefreshKey((currentKey) => currentKey + 1);
@@ -1404,6 +1405,7 @@ export default function ProSpacePage() {
         const result = await createCompanyCarnetPass({
           ...equipmentForm,
           productReference: reference,
+          equipmentRecordId: savedEquipment.id,
           productType: getEquipmentTypeLabel(equipmentForm.equipmentType),
         });
         setCreatedCarnetPass({
@@ -1435,8 +1437,8 @@ export default function ProSpacePage() {
     setEquipmentMessage("");
   }
 
-  function handleOpenCarnetPass(equipment) {
-    if (carnetPassStatusLoading) return;
+  async function handleOpenCarnetPass(equipment) {
+    if (carnetPassStatusLoading || equipmentSubmitting) return;
 
     const carnetPassStatus = carnetPassStatuses[equipment.id];
 
@@ -1478,6 +1480,34 @@ export default function ProSpacePage() {
 
     setEquipmentError("");
     setEquipmentMessage("");
+
+    if (!equipment.serial_number) {
+      setEquipmentSubmitting(true);
+      try {
+        const result = await createCompanyCarnetPass({
+          productReference,
+          equipmentRecordId: equipment.id,
+          serialNumber: "",
+          brand: equipment.brand,
+          model: equipment.model,
+          productType: getEquipmentTypeLabel(equipment.equipment_type),
+        });
+        setCreatedCarnetPass({
+          carnetPassId: result.carnetPassId,
+          qrToken: result.qrToken,
+          brand: equipment.brand,
+          model: equipment.model,
+          serialNumber: null,
+        });
+        setEquipmentRefreshKey((currentKey) => currentKey + 1);
+      } catch (error) {
+        setEquipmentError(`${error.message} Vérifiez le statut avant de réessayer.`);
+        setEquipmentRefreshKey((currentKey) => currentKey + 1);
+      } finally {
+        setEquipmentSubmitting(false);
+      }
+      return;
+    }
 
     navigate("/", {
       state: {
@@ -1985,7 +2015,7 @@ export default function ProSpacePage() {
                 </label>
 
                 <label>
-                  <span>Numéro de série *</span>
+                  <span>Numéro de série (facultatif)</span>
                   <input
                     name="serialNumber"
                     type="text"
@@ -1994,10 +2024,15 @@ export default function ProSpacePage() {
                     placeholder="Numéro indiqué sur l’appareil"
                     maxLength={150}
                     disabled={equipmentSubmitting}
-                    required
                   />
                 </label>
               </div>
+
+              <p>
+                Si le numéro est effacé, laissez ce champ vide. Ne recopiez pas la référence
+                produit : elle désigne le modèle, pas cet appareil. Chaque appareil recevra
+                son propre identifiant CarnetPass.
+              </p>
 
               <p>
                 Avec une référence produit, l’enregistrement crée aussi l’identifiant
@@ -2065,7 +2100,7 @@ export default function ProSpacePage() {
                         <span>
                           {getEquipmentTypeLabel(equipment.equipment_type)}
                         </span>
-                        <span>N° de série : {equipment.serial_number}</span>
+                        <span>N° de série : {equipment.serial_number || "non lisible"}</span>
                       </div>
 
                       <div className="pro-equipment-open-action">

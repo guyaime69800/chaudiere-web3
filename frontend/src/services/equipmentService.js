@@ -55,7 +55,7 @@ export async function createCompanyEquipment(companyId, equipment) {
       p_model: equipment.model.trim(),
       p_product_reference:
         equipment.productReference.trim() || null,
-      p_serial_number: equipment.serialNumber.trim(),
+      p_serial_number: equipment.serialNumber.trim() || null,
     }
   );
 

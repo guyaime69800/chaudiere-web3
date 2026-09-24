@@ -78,7 +78,7 @@ export default function CarnetPassCreatedModal({ carnetPass, onClose }) {
         <span className="created-carnetpass__check" aria-hidden="true">✓</span>
         <h2 id="created-carnetpass-title">CarnetPass créé avec succès</h2>
         <p id="created-carnetpass-description">
-          {carnetPass.brand} {carnetPass.model} · N° de série : {carnetPass.serialNumber}
+          {carnetPass.brand} {carnetPass.model} · N° de série : {carnetPass.serialNumber || "non lisible"}
         </p>
         <p className="created-carnetpass__id">Identifiant : <strong>{carnetPass.carnetPassId}</strong></p>
         <div className="created-carnetpass__qr">

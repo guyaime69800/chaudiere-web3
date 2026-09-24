@@ -155,12 +155,12 @@ export default async function handler(req, res) {
             });
         }
 
-        const serialNumbers = req.body?.serialNumbers;
+        const equipments = req.body?.equipments;
 
         if (
-            !Array.isArray(serialNumbers)
-            || serialNumbers.length === 0
-            || serialNumbers.length > MAX_SERIAL_NUMBERS
+            !Array.isArray(equipments)
+            || equipments.length === 0
+            || equipments.length > MAX_SERIAL_NUMBERS
         ) {
             return res.status(400).json({
                 ok: false,
@@ -169,28 +169,45 @@ export default async function handler(req, res) {
             });
         }
 
-        const normalizedSerialNumbers = serialNumbers.map(
-            normalizeSerialNumber
-        );
+        const equipmentIds = equipments.map((equipment) => equipment?.id);
 
         if (
-            normalizedSerialNumbers.some(
-                (serialNumber) => !serialNumber
-            )
+            equipmentIds.some((id) => typeof id !== "string" ||
+                !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))
         ) {
             return res.status(400).json({
                 ok: false,
-                code: "INVALID_SERIAL_NUMBERS",
-                error: "Liste de numéros de série invalide.",
+                code: "INVALID_EQUIPMENTS",
+                error: "Liste d’équipements invalide.",
             });
         }
+
+        // L'identité doit venir de la base, jamais du numéro fourni par le client.
+        const { data: companyEquipments, error: equipmentError } = await supabaseAdmin
+            .from("equipments")
+            .select("id, serial_number")
+            .eq("company_id", companyId)
+            .in("id", equipmentIds);
+
+        if (equipmentError || companyEquipments?.length !== new Set(equipmentIds).size) {
+            return res.status(403).json({
+                ok: false,
+                code: "EQUIPMENT_ACCESS_DENIED",
+                error: "Équipement inaccessible pour cette entreprise.",
+            });
+        }
+
+        const byId = new Map(companyEquipments.map((equipment) => [equipment.id, equipment]));
 
         const redis = getRedis();
 
         const statuses = await Promise.all(
-            normalizedSerialNumbers.map(async (serialNumber) => {
+            equipments.map(async ({ id }) => {
+                const serialNumber = normalizeSerialNumber(byId.get(id)?.serial_number);
                 const storedCarnetPassId = await redis.get(
-                    `carnetpass:serial:${serialNumber}`
+                    serialNumber
+                        ? `carnetpass:serial:${serialNumber}`
+                        : `carnetpass:equipment-id:${id}`
                 );
 
                 const carnetPassId =

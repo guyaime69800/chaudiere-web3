@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
+import { createClient } from "@supabase/supabase-js";
 import { generatedEquipmentRegistry } from "../server/lib/equipment-registry.generated.js";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import {
@@ -273,11 +274,39 @@ async function createCarnetPass(req, res) {
     .toUpperCase()
     .replace(/\s+/g, "");
 
-  if (!serialNumber) {
+  const equipmentRecordId = typeof body.equipmentRecordId === "string"
+    ? body.equipmentRecordId.trim().toLowerCase()
+    : "";
+
+  if (!serialNumber && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(equipmentRecordId)) {
     return res.status(400).json({
       ok: false,
-      error: "Le numéro de série est obligatoire.",
+      error: "Enregistrez d’abord l’équipement pour obtenir son identifiant unique.",
     });
+  }
+
+  if (equipmentRecordId) {
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+    if (!url || !key) {
+      return res.status(503).json({ ok: false, error: "Vérification de l’équipement indisponible." });
+    }
+    const db = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data: registered, error } = await db.from("equipments")
+      .select("id, brand, model, product_reference, serial_number")
+      .eq("id", equipmentRecordId)
+      .eq("company_id", creator.companyId)
+      .maybeSingle();
+    if (error) {
+      return res.status(503).json({ ok: false, error: "Vérification de l’équipement indisponible." });
+    }
+    if (!registered ||
+      normalizeReference(registered.product_reference) !== manufacturerReference ||
+      normalizeIdentityText(registered.brand).toLowerCase() !== normalizeIdentityText(body.brand).toLowerCase() ||
+      normalizeIdentityText(registered.model).toLowerCase() !== normalizeIdentityText(body.model).toLowerCase() ||
+      String(registered.serial_number || "").trim().toUpperCase().replace(/\s+/g, "") !== serialNumber) {
+      return res.status(400).json({ ok: false, error: "Les informations ne correspondent pas à l’équipement enregistré." });
+    }
   }
 
   const entry = generatedEquipmentRegistry.find((item) =>
@@ -412,12 +441,14 @@ async function createCarnetPass(req, res) {
         carnetPassId,
         companyId: creator.companyId,
         serialNumber,
+        equipmentRecordId: equipmentRecordId || null,
         data: {
           schema: "carnetpass.equipment.v1",
           carnetPassId,
           equipmentId,
           manufacturerReference,
           serialNumber,
+          equipmentRecordId: equipmentRecordId || null,
           identity: equipmentIdentity,
           createdByCompanyId: creator.companyId,
           createdByUserId: creator.userId,
@@ -435,6 +466,7 @@ async function createCarnetPass(req, res) {
         equipmentId,
         manufacturerReference,
         serialNumber,
+        equipmentRecordId: equipmentRecordId || null,
         identity: equipmentIdentity,
         access: {
           type: "public_technical",
@@ -454,7 +486,9 @@ async function createCarnetPass(req, res) {
 
       const carnetPassKey = `carnetpass:${carnetPassId}`;
       const qrKey = qrTokenRedisKey(qrToken);
-      const serialKey = `carnetpass:serial:${serialNumber}`;
+      const serialKey = serialNumber
+        ? `carnetpass:serial:${serialNumber}`
+        : `carnetpass:equipment-id:${equipmentRecordId}`;
       const manufacturerKey =
         `carnetpass:manufacturer:${manufacturerReference}`;
       const equipmentKey = `carnetpass:equipment:${equipmentId}`;
@@ -477,7 +511,7 @@ async function createCarnetPass(req, res) {
         // Un numéro de série ne donne pas droit au carnet ni à son jeton QR.
         return res.status(409).json({
           ok: false,
-          error: "Un CarnetPass existe déjà pour ce numéro de série. Utilise le QR déjà associé à l'appareil.",
+          error: "Un CarnetPass existe déjà pour cet appareil. Utilise le QR déjà associé à l'appareil.",
         });
       }
 

@@ -36,7 +36,7 @@ function sanitizeStatus(value) {
 
 export async function getCompanyCarnetPassStatuses(
   companyId,
-  serialNumbers
+  equipments
 ) {
   const normalizedCompanyId =
     typeof companyId === "string"
@@ -50,8 +50,8 @@ export async function getCompanyCarnetPassStatuses(
   }
 
   if (
-    !Array.isArray(serialNumbers)
-    || serialNumbers.length === 0
+    !Array.isArray(equipments)
+    || equipments.length === 0
   ) {
     return [];
   }
@@ -77,7 +77,10 @@ export async function getCompanyCarnetPassStatuses(
       cache: "no-store",
       body: JSON.stringify({
         companyId: normalizedCompanyId,
-        serialNumbers,
+        equipments: equipments.map((equipment) => ({
+          id: equipment.id,
+          serialNumber: equipment.serial_number || null,
+        })),
       }),
     }
   );
@@ -93,7 +96,7 @@ export async function getCompanyCarnetPassStatuses(
 
   if (
     !Array.isArray(result.statuses)
-    || result.statuses.length !== serialNumbers.length
+    || result.statuses.length !== equipments.length
   ) {
     throw new Error(
       "Réponse de vérification CarnetPass invalide."
@@ -118,7 +121,8 @@ export async function createCompanyCarnetPass(equipment) {
     },
     body: JSON.stringify({
       manufacturerReference: equipment.productReference.trim(),
-      serialNumber: equipment.serialNumber.trim(),
+      serialNumber: equipment.serialNumber.trim() || null,
+      equipmentRecordId: equipment.equipmentRecordId || null,
       brand: equipment.brand.trim(),
       model: equipment.model.trim(),
       productType: equipment.productType,

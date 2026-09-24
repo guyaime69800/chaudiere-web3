@@ -296,7 +296,7 @@ export default function EquipmentWorkspace({
                     </h2>
                     <div className="equipment-workspace__metadata">
                         <span>{getEquipmentTypeLabel(equipment.equipment_type)}</span>
-                        <span>N° de série : {equipment.serial_number}</span>
+                        <span>N° de série : {equipment.serial_number || "non lisible"}</span>
                         {equipment.product_reference && (
                             <span>Réf. produit : {equipment.product_reference}</span>
                         )}

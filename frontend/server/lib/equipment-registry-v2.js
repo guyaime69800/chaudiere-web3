@@ -106,6 +106,7 @@ export function buildEquipmentProof({
   carnetPassId,
   companyId,
   serialNumber,
+  equipmentRecordId,
   data,
 }) {
   if (
@@ -119,7 +120,7 @@ export function buildEquipmentProof({
     throw diagnosticError("COMPANY_ID_INVALID");
   }
 
-  if (typeof serialNumber !== "string" || !serialNumber) {
+  if (!serialNumber && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(equipmentRecordId || "")) {
     throw diagnosticError("SERIAL_NUMBER_INVALID");
   }
 
@@ -129,7 +130,9 @@ export function buildEquipmentProof({
     equipmentKey: ethers.id(`equipment:${carnetPassId}`),
     dataHash: ethers.keccak256(ethers.toUtf8Bytes(canonicalData)),
     serialHash: ethers.id(
-      `company:${companyId}|serial:${serialNumber}`
+      serialNumber
+        ? `company:${companyId}|serial:${serialNumber}`
+        : `company:${companyId}|equipment:${equipmentRecordId}`
     ),
   };
 }
