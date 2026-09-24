@@ -134,7 +134,20 @@ function createDocumentFileName(technicalDocument, equipment) {
   return `${safeName || "document-carnetpass"}.pdf`;
 }
 
-export default function EquipmentDocumentCenter({
+export default function EquipmentDocumentCenter(props) {
+  const { equipment, carnetPassId } = props;
+  const equipmentKey = JSON.stringify([
+    equipment.id,
+    equipment.brand,
+    equipment.model,
+    equipment.product_reference,
+    carnetPassId,
+  ]);
+
+  return <EquipmentDocumentCenterContent key={equipmentKey} {...props} />;
+}
+
+function EquipmentDocumentCenterContent({
   equipment,
   carnetPassId = "",
   reportCount = 0,
@@ -156,11 +169,11 @@ export default function EquipmentDocumentCenter({
   const [documentFilter, setDocumentFilter] = useState("all");
   const [selectedDocument, setSelectedDocument] = useState(null);
   useEffect(() => {
-  const url = selectedDocument?.documentUrl;
-  return () => {
-    if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
-  };
-}, [selectedDocument]);
+    const url = selectedDocument?.documentUrl;
+    return () => {
+      if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+    };
+  }, [selectedDocument]);
   const [attachments, setAttachments] = useState([]);
   const [attachmentsLoading, setAttachmentsLoading] = useState(true);
   const [attachmentError, setAttachmentError] = useState("");
@@ -210,16 +223,6 @@ export default function EquipmentDocumentCenter({
     let active = true;
     aiRequestId.current += 1;
 
-    setLoading(true);
-    setLoadError("");
-    setTechnicalDocuments([]);
-    setTechnicalEquipmentId("");
-    setAiQuestion("");
-    setAiAnswer("");
-    setAiError("");
-    setAiBusy(false);
-    setDocumentFilter("all");
-    setSelectedDocument(null);
     onTechnicalDocumentCountChange?.(0);
 
     getEquipmentDocumentLibrary({
@@ -281,12 +284,33 @@ export default function EquipmentDocumentCenter({
   }
 
   useEffect(() => {
-    setAttachments([]);
-    setShowAttachmentForm(false);
-    setAttachmentFile(null);
-    setAttachmentTitle("");
-    setAttachmentDescription("");
-    loadAttachments();
+    let active = true;
+
+    if (!equipment.id) {
+      return () => {
+        active = false;
+      };
+    }
+
+    getEquipmentAttachments(equipment.id)
+      .then((rows) => {
+        if (active) setAttachments(rows);
+      })
+      .catch((error) => {
+        console.error("Chargement des pièces jointes impossible :", error);
+        if (active) {
+          setAttachmentError(
+            error.message || "Chargement des pièces jointes impossible.",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setAttachmentsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [equipment.id]);
 
   async function handleAttachmentUpload(event) {
@@ -619,7 +643,7 @@ export default function EquipmentDocumentCenter({
             <img className="equipment-workspace__ai-mascot" src={shibaTechnicien} alt="Shiba Inu chauffagiste CarnetPass avec une clé à molette" width="92" height="100" />
             <div>
               <span>ASSISTANT IA CARNETPASS</span>
-              <h3 id="equipment-ai-title">Votre compagnon technique</h3>
+              <h3 id="equipment-ai-title">Shiba Bot</h3>
             </div>
           </div>
           <p>Posez une question sur les notices et la vue éclatée. Vérifiez la page citée avant toute intervention.</p>
@@ -638,7 +662,7 @@ export default function EquipmentDocumentCenter({
               placeholder="Ex. Quelle est la référence du capteur de pression dans la vue éclatée ?"
             />
             <button type="submit" disabled={aiBusy || !technicalEquipmentId || !aiQuestion.trim()}>
-              {aiBusy ? "Recherche en cours…" : "Demander à l’IA"}
+              {aiBusy ? "Shiba recherche…" : "Demander à Shiba Bot"}
             </button>
           </form>
           {!technicalEquipmentId && (
