@@ -2030,13 +2030,14 @@ export default function ProSpacePage() {
 
               <p>
                 Si le numéro est effacé, laissez ce champ vide. Ne recopiez pas la référence
-                produit : elle désigne le modèle, pas cet appareil. Chaque appareil recevra
-                son propre identifiant CarnetPass.
+                produit : elle désigne le modèle, pas cet appareil. Un CarnetPass créé
+                pour cet appareil recevra son propre identifiant et son propre QR.
               </p>
 
               <p>
-                Avec une référence produit, l’enregistrement crée aussi l’identifiant
-                CarnetPass et son QR après confirmation sur Polygon.
+                {equipmentForm.productReference.trim()
+                  ? "Avec cette référence produit, l’enregistrement crée le dossier de l’appareil, puis son CarnetPass et son QR une fois la preuve confirmée sur Polygon."
+                  : "Sans référence produit, seul le dossier de l’appareil est enregistré. Renseignez-la pour créer aussi son CarnetPass et son QR."}
               </p>
 
               <button
