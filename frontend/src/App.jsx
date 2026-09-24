@@ -89,6 +89,28 @@ function publicFaultAnswer(question, manufacturerReference) {
       return `${code} : ${entry[0]}. Le code ne permet pas de déterminer seul la cause. Source : notice d’installation et de maintenance Saunier Duval ThemaPlus Condens, tableau des codes défaut, page ${entry[1]}. Contactez un professionnel si le défaut persiste.`;
     }
   }
+  if (manufacturerReference === "0010017417") {
+    // Notice d'installation et de maintenance ThemaFast Condens 0020238209_04,
+    // pages 32 à 34. Les causes et réparations restent du ressort du professionnel.
+    const knownCodes = {
+      "F.00": ["sonde de température du départ de chauffage défectueuse ou non raccordée", 32],
+      "F.01": ["sonde de température de retour défectueuse ou non raccordée", 32],
+      "F.20": ["mise en sécurité liée à une température trop élevée", 32],
+      "F.22": ["mise en sécurité liée à un manque d’eau ou à une pression trop basse", 32],
+      "F.23": ["mise en sécurité liée à un écart de température trop élevé et à une circulation d’eau insuffisante", 33],
+      "F.24": ["mise en sécurité liée à une montée en température trop rapide", 33],
+      "F.27": ["mise en sécurité liée à un signal de flamme anormal", 33],
+      "F.28": ["échec de l’allumage au démarrage", 33],
+      "F.29": ["échec du rallumage après une interruption temporaire de l’alimentation en gaz", 33],
+      "F.32": ["défaut du ventilateur", 33],
+      "F.73": ["signal du capteur de pression d’eau indiquant une pression insuffisante", 34],
+      "F.74": ["pression d’eau trop élevée signalée par le capteur", 34],
+    };
+    const entry = knownCodes[code];
+    if (entry) {
+      return `${code} : ${entry[0]}. Le code ne permet pas de déterminer seul la cause. Source : notice d’installation et de maintenance Saunier Duval ThemaFast Condens 0020238209_04, tableau des codes défaut, page ${entry[1]}. Contactez un professionnel si le défaut persiste.`;
+    }
+  }
   return `${code} : explication publique non vérifiée pour ce modèle. Relevez le code exact et contactez un professionnel ; ne démontez pas l’appareil.`;
 }
 
@@ -1744,6 +1766,18 @@ function App({ initialMode = "public" }) {
                         <li>Si le chauffage ou l’eau chaude ne fonctionne pas, vérifiez le mode choisi, les températures réglées et la programmation du régulateur. La notice évoque aussi la purge des radiateurs en présence d’air ; faites-la uniquement si vous savez utiliser vos purgeurs (notice d’emploi, p. 15).</li>
                         <li>Si l’écran affiche un défaut, la notice indique d’appuyer sur la touche de réinitialisation et d’attendre cinq secondes. Si le défaut ne disparaît pas ou revient, contactez un professionnel (notice d’emploi, p. 16).</li>
                         <li>Si la pression clignote à 2,5 bar ou plus, si le défaut revient ou en cas de fuite, contactez un professionnel (notice d’emploi, p. 15–16).</li>
+                      </ul>
+                    </div>
+                  )}
+                  {boiler.manufacturerReference === "0010017417" && (
+                    <div className="public-fault-assistant__tips">
+                      <strong>Vérifications accessibles à l’utilisateur · ThemaFast Condens 30-A</strong>
+                      <ul>
+                        <li>Vérifiez la pression une fois par mois, sans demande de chauffage ni d’eau chaude. La notice recommande 1 à 1,5 bar (notice d’emploi 0020200493_01, p. 9).</li>
+                        <li>Si elle est trop basse, ne faites un appoint que si l’installateur vous a indiqué le robinet et confirmé que l’eau convient à votre installation. Ouvrez-le lentement, surveillez l’écran et refermez-le dès que la pression atteint 1 à 1,5 bar (notice d’emploi, p. 10).</li>
+                        <li>Si le chauffage ou l’eau chaude ne fonctionne pas, vérifiez le mode choisi, les températures réglées et la programmation du régulateur. La notice mentionne la purge des radiateurs en présence d’air ; faites-la uniquement si vous savez utiliser vos purgeurs (notice d’emploi, p. 10–11 et 15).</li>
+                        <li>Si l’écran indique un défaut, appuyez une fois sur la touche de réinitialisation et attendez cinq secondes. Si le défaut persiste ou revient, contactez un professionnel (notice d’emploi, p. 16).</li>
+                        <li>Si la pression clignote à 2,5 bar ou plus, ou si vous constatez une fuite, contactez un professionnel (notice d’emploi, p. 16).</li>
                       </ul>
                     </div>
                   )}
