@@ -3,3 +3,43 @@
 .technical-catalog-modal{width:min(1050px,100%);max-height:min(850px,92vh);overflow:auto;background:#fffaf7;border:1px solid #f1c8b7;border-radius:24px;box-shadow:0 24px 80px #25150f55;color:#241d1a}
 .technical-catalog-header{display:flex;justify-content:space-between;padding:28px 32px 20px;border-bottom:1px solid #f1ddd4}.technical-catalog-header h2{margin:4px 0;font-size:28px}.technical-catalog-header p{margin:0;color:#765f57}.technical-catalog-kicker{font-size:11px;font-weight:800;letter-spacing:.12em;color:#cf3d0b}.technical-catalog-close{border:0;background:transparent;font-size:32px;cursor:pointer;color:#765f57}.technical-catalog-filters{display:grid;grid-template-columns:240px 1fr;gap:12px;padding:20px 32px}.technical-catalog-filters select,.technical-catalog-filters input,.technical-catalog-shiba textarea{border:1px solid #e6c5b7;border-radius:12px;background:white;padding:13px;font:inherit}.technical-catalog-body{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:18px;padding:0 32px 24px}.technical-catalog-results{display:grid;gap:10px}.technical-catalog-item{display:flex;justify-content:space-between;gap:16px;padding:17px;border:1px solid #f0d8ce;background:#fff;border-radius:16px}.technical-catalog-item h3{margin:3px 0 8px;font-size:17px}.technical-catalog-item small{color:#806c64}.technical-catalog-actions{display:flex;flex-direction:column;gap:7px;min-width:175px}.technical-catalog-actions button,.technical-catalog-shiba button{border:0;border-radius:10px;padding:10px 12px;background:#d6400b;color:#fff;font-weight:700;cursor:pointer}.technical-catalog-actions .technical-catalog-secondary{background:#fff;color:#c63b0d;border:1px solid #e9b9a6}.technical-catalog-shiba{align-self:start;padding:18px;border:1px solid #efc2b0;border-radius:18px;background:#fff3ed}.technical-catalog-shiba img{width:68px;height:68px;object-fit:contain;float:left;margin-right:10px}.technical-catalog-shiba strong{display:block;padding-top:12px;font-size:18px}.technical-catalog-shiba p{clear:both;padding-top:12px;color:#765f57;line-height:1.45}.technical-catalog-shiba textarea{width:100%;box-sizing:border-box;resize:vertical;margin-bottom:9px}.technical-catalog-shiba button:disabled{opacity:.5;cursor:not-allowed}.technical-catalog-empty{padding:30px;color:#806c64}.technical-catalog-footer{padding:15px 32px 22px;border-top:1px solid #f1ddd4;color:#806c64;font-size:13px}@media(max-width:760px){.technical-catalog-overlay{padding:8px}.technical-catalog-header,.technical-catalog-filters,.technical-catalog-body{padding-left:18px;padding-right:18px}.technical-catalog-filters,.technical-catalog-body{grid-template-columns:1fr}.technical-catalog-item{flex-direction:column}.technical-catalog-actions{min-width:0}.technical-catalog-footer{padding-left:18px;padding-right:18px}}
 .technical-catalog-document-list article>div{min-width:0}@media(max-width:760px){.technical-catalog-documents{margin:0 18px 18px;padding:15px}.technical-catalog-documents-heading,.technical-catalog-document-list article{align-items:flex-start;flex-direction:column}}
+
+/* Parcours catégorie → marque → modèle, ajouté au catalogue existant. */
+.technical-catalog-path{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:16px 32px;border-bottom:1px solid #f1ddd4;color:#765f57;font-size:14px}
+.technical-catalog-path button{border:0;padding:4px 0;background:transparent;color:#9a3c1e;font:inherit;cursor:pointer}
+.technical-catalog-path [aria-current="step"]{font-weight:750;color:#241d1a}
+.technical-catalog-content{min-height:280px;padding:26px 32px 32px}
+.technical-catalog-content h3{margin:0 0 18px;font-size:21px}
+.technical-catalog-content h4{margin:18px 0 14px;font-size:18px}
+.technical-catalog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.technical-catalog-models{display:grid;gap:10px}
+.technical-catalog-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px;width:100%;padding:20px;border:1px solid #f0d8ce;border-radius:16px;background:#fff;color:#241d1a;text-align:left;font:inherit;cursor:pointer}
+.technical-catalog-card:hover,.technical-catalog-card:focus-visible{border-color:#d6400b;box-shadow:0 2px 12px #d6400b18}
+.technical-catalog-card strong{font-size:17px}
+.technical-catalog-card span{color:#765f57;font-size:14px}
+.technical-catalog-card .technical-catalog-link{color:#bb390d;font-weight:700}
+.technical-catalog-search{display:grid;gap:8px;margin-bottom:18px;font-weight:700}
+.technical-catalog-search input,.technical-catalog-assistant textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #e6c5b7;border-radius:12px;background:#fff;font:inherit}
+.technical-catalog-empty{padding:20px;border:1px dashed #e9b9a6;border-radius:12px;background:#fff;color:#765f57}
+.technical-catalog-model-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:20px}
+.technical-catalog-model-heading h3{margin:4px 0 6px}
+.technical-catalog-model-heading p{margin:0;color:#765f57}
+.technical-catalog-back{padding:8px 0;border:0;background:transparent;color:#aa3915;font:inherit;font-weight:700;cursor:pointer}
+.technical-catalog-document-list{display:grid;gap:10px}
+.technical-catalog-document-list article{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px;border:1px solid #f0d8ce;border-radius:12px;background:#fff}
+.technical-catalog-document-list article>div{min-width:0;overflow-wrap:anywhere}
+.technical-catalog-document-list small{display:block;margin-top:5px;color:#806c64}
+.technical-catalog-document-list button{padding:9px 12px;border:1px solid #e9b9a6;border-radius:10px;background:#fff;color:#bb390d;font-weight:700;cursor:pointer}
+.technical-catalog-assistant{max-width:700px}
+.technical-catalog-assistant-heading{display:flex;align-items:center;gap:14px;padding:12px 0}
+.technical-catalog-assistant-heading img{width:72px;height:72px;object-fit:contain}
+.technical-catalog-assistant-heading h4{margin:0 0 5px}
+.technical-catalog-assistant-heading p{margin:0;color:#765f57;line-height:1.5}
+.technical-catalog-assistant form{display:grid;gap:10px;margin-top:14px}
+.technical-catalog-assistant textarea{resize:vertical;min-height:110px}
+.technical-catalog-assistant form button{justify-self:start;padding:11px 17px;border:0;border-radius:10px;background:#d6400b;color:#fff;font-weight:700;cursor:pointer}
+.technical-catalog-assistant form button:disabled{opacity:.5;cursor:not-allowed}
+.technical-catalog-error{color:#9e2712}
+.technical-catalog-answer{margin-top:18px;padding:18px;border:1px solid #efc2b0;border-radius:14px;background:#fff;overflow-wrap:anywhere}
+.technical-catalog-answer p{margin:10px 0 0;line-height:1.65;white-space:pre-wrap}
+@media(max-width:760px){.technical-catalog-path,.technical-catalog-content{padding-left:18px;padding-right:18px}.technical-catalog-grid{grid-template-columns:1fr}.technical-catalog-model-heading,.technical-catalog-document-list article{flex-direction:column;align-items:flex-start}}
