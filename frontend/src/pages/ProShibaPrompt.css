@@ -1,0 +1,86 @@
+.pro-dashboard-card.pro-technical-catalog-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 18px;
+  min-height: 0;
+}
+
+.pro-technical-catalog-intro {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pro-technical-catalog-intro img {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.pro-technical-catalog-form {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.pro-technical-catalog-form label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.pro-technical-catalog-question-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.pro-technical-catalog-question-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--pro-line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--pro-ink);
+}
+
+.pro-technical-catalog-question-row input:focus-visible {
+  outline: 2px solid var(--pro-orange);
+  outline-offset: 2px;
+}
+
+.pro-dashboard-card.pro-technical-catalog-card .pro-primary-button {
+  flex: none;
+  max-width: none;
+  min-height: 48px;
+}
+
+.pro-technical-catalog-link {
+  align-self: flex-start;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--pro-orange-dark);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pro-technical-catalog-link:hover,
+.pro-technical-catalog-link:focus-visible {
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .pro-technical-catalog-question-row {
+    flex-direction: column;
+  }
+
+  .pro-dashboard-card.pro-technical-catalog-card .pro-primary-button {
+    width: 100%;
+  }
+}

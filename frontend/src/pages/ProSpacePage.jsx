@@ -20,8 +20,10 @@ import {
 import EquipmentWorkspace from "../components/EquipmentWorkspace";
 import CarnetPassCreatedModal from "../components/CarnetPassCreatedModal";
 import TechnicalCatalogModal from "../components/TechnicalCatalogModal";
+import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import equipmentIndex from "../data/equipment-index.json";
 import "./ProSpacePage.css";
+import "./ProShibaPrompt.css";
 
 const EMPTY_FORM = {
   name: "",
@@ -995,6 +997,8 @@ export default function ProSpacePage() {
   const [carnetPassPreview, setCarnetPassPreview] = useState(null);
   const [createdCarnetPass, setCreatedCarnetPass] = useState(null);
   const [technicalCatalogOpen, setTechnicalCatalogOpen] = useState(false);
+  const [shibaQuestion, setShibaQuestion] = useState("");
+  const [catalogMode, setCatalogMode] = useState("catalog");
   useEffect(() => {
     let cancelled = false;
 
@@ -1066,17 +1070,6 @@ export default function ProSpacePage() {
       cancelled = true;
     };
   }, [company?.id, equipmentRefreshKey]);
-
-  useEffect(() => {
-    if (
-      selectedEquipmentId &&
-      !equipments.some(
-        (equipment) => String(equipment.id) === String(selectedEquipmentId),
-      )
-    ) {
-      setSelectedEquipmentId("");
-    }
-  }, [equipments, selectedEquipmentId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1891,12 +1884,21 @@ export default function ProSpacePage() {
 
       <section className="pro-dashboard-grid">
         <article className="pro-dashboard-card pro-technical-catalog-card">
-          <div>
-            <span className="pro-dashboard-icon" aria-hidden="true">📚</span>
-            <h2>Catalogue technique</h2>
-            <p>Recherchez une marque, un modèle ou une référence et interrogez Shiba Bot sans créer de CarnetPass.</p>
+          <div className="pro-technical-catalog-intro">
+            <img src={shibaTechnicien} alt="" />
+            <div>
+              <h2>Posez une question à Shiba Bot</h2>
+              <p>Choisissez ensuite un modèle : la réponse s’appuie sur ses documents constructeur.</p>
+            </div>
           </div>
-          <button className="pro-secondary-button" type="button" onClick={() => setTechnicalCatalogOpen(true)}>Ouvrir le catalogue</button>
+          <form className="pro-technical-catalog-form" onSubmit={(event) => { event.preventDefault(); if (!shibaQuestion.trim()) return; setCatalogMode("assistant"); setTechnicalCatalogOpen(true); }}>
+            <label htmlFor="pro-shiba-question">Votre question</label>
+            <div className="pro-technical-catalog-question-row">
+              <input id="pro-shiba-question" value={shibaQuestion} onChange={(event) => setShibaQuestion(event.target.value)} placeholder="Ex. Que signifie le défaut F28 ?" />
+              <button className="pro-primary-button" type="submit" disabled={!shibaQuestion.trim()}>Poser la question</button>
+            </div>
+          </form>
+          <button className="pro-technical-catalog-link" type="button" onClick={() => { setCatalogMode("catalog"); setTechnicalCatalogOpen(true); }}>Parcourir le catalogue technique →</button>
         </article>
         <article className="pro-dashboard-card pro-equipment-card pro-equipment-card--full">
           <div>
@@ -2139,7 +2141,7 @@ export default function ProSpacePage() {
           )}
         </article>
       </section>
-      <TechnicalCatalogModal open={technicalCatalogOpen} onClose={() => setTechnicalCatalogOpen(false)} session={session} catalog={equipmentIndex.equipments.map((item) => ({ ...item, type: item.type || "boiler" }))} />
+      <TechnicalCatalogModal open={technicalCatalogOpen} onClose={() => setTechnicalCatalogOpen(false)} initialMode={catalogMode} initialQuestion={catalogMode === "assistant" ? shibaQuestion : ""} session={session} catalog={equipmentIndex.equipments.map((item) => ({ ...item, type: item.type || "boiler" }))} />
       {selectedEquipment && (
         <EquipmentWorkspace
           key={selectedEquipment.id}
