@@ -716,6 +716,21 @@ Réponds en français simple, technique et structuré.
     }
 
     // -----------------------------------------------------
+    // RECHERCHE DE REFERENCE DE PIECE
+    // -----------------------------------------------------
+
+    else if (ragResult?.queryIntent === "part_reference") {
+      aiInstructions = `
+Tu es l'assistant documentaire de CarnetPass pour les références de pièces.
+
+Réponds uniquement à partir des passages récupérés. Pour chaque pièce trouvée, donne sa désignation, sa référence exacte et sa provenance sous la forme « Vue éclatée – [nom ou identifiant du document], page [numéro] » lorsque le passage porte le type exploded_view. Utilise le champ Page du passage correspondant à cette pièce, jamais celui d'un autre passage. Si plusieurs pièces sont demandées, cite la page de chacune, même si elles figurent sur la même page.
+
+Privilégie la vue éclatée pour une recherche de référence. Si la référence n'est présente que dans une notice, nomme explicitement cette notice et sa page ; ne la présente pas comme issue de la vue éclatée. Si la vue éclatée ne permet pas de confirmer la référence ou sa page, indique-le sans inventer de citation. Distingue les pièces proches et les anciennes références des remplacements documentés.
+
+Réponds en français simple et concis.
+`;
+    }
+
     // QUESTION LIBRE / SYMPTOME / LOCALISATION
     // -----------------------------------------------------
 
