@@ -19,6 +19,7 @@ import {
 } from "../services/carnetPassService";
 import EquipmentWorkspace from "../components/EquipmentWorkspace";
 import CarnetPassCreatedModal from "../components/CarnetPassCreatedModal";
+import TechnicalCatalogModal from "../components/TechnicalCatalogModal";
 import equipmentIndex from "../data/equipment-index.json";
 import "./ProSpacePage.css";
 
@@ -993,6 +994,7 @@ export default function ProSpacePage() {
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
   const [carnetPassPreview, setCarnetPassPreview] = useState(null);
   const [createdCarnetPass, setCreatedCarnetPass] = useState(null);
+  const [technicalCatalogOpen, setTechnicalCatalogOpen] = useState(false);
   useEffect(() => {
     let cancelled = false;
 
@@ -1888,6 +1890,14 @@ export default function ProSpacePage() {
       </section>
 
       <section className="pro-dashboard-grid">
+        <article className="pro-dashboard-card pro-technical-catalog-card">
+          <div>
+            <span className="pro-dashboard-icon" aria-hidden="true">📚</span>
+            <h2>Catalogue technique</h2>
+            <p>Recherchez une marque, un modèle ou une référence et interrogez Shiba Bot sans créer de CarnetPass.</p>
+          </div>
+          <button className="pro-secondary-button" type="button" onClick={() => setTechnicalCatalogOpen(true)}>Ouvrir le catalogue</button>
+        </article>
         <article className="pro-dashboard-card pro-equipment-card pro-equipment-card--full">
           <div>
             <span className="pro-dashboard-icon" aria-hidden="true">
@@ -2129,6 +2139,7 @@ export default function ProSpacePage() {
           )}
         </article>
       </section>
+      <TechnicalCatalogModal open={technicalCatalogOpen} onClose={() => setTechnicalCatalogOpen(false)} session={session} catalog={equipmentIndex.equipments.map((item) => ({ ...item, type: item.type || "boiler" }))} />
       {selectedEquipment && (
         <EquipmentWorkspace
           key={selectedEquipment.id}
