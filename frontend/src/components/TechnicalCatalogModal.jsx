@@ -6,12 +6,31 @@ import "./TechnicalCatalogModal.css";
 
 const CATEGORIES = [
   { id: "boiler", label: "Chaudières" },
-  { id: "heat_pump", label: "Pompes à chaleur" },
-  { id: "air_conditioning", label: "Climatisations" },
+  { id: "heat_pump_indoor", label: "PAC · Unités intérieures", catalogType: "heat_pump" },
+  { id: "heat_pump_outdoor", label: "PAC · Unités extérieures", catalogType: "heat_pump" },
+  { id: "heat_pump", label: "PAC · Autres modèles" },
+  { id: "air_conditioning_indoor", label: "Clim · Unités intérieures", catalogType: "air_conditioning" },
+  { id: "air_conditioning_outdoor", label: "Clim · Unités extérieures", catalogType: "air_conditioning" },
+  { id: "air_conditioning", label: "Clim · Autres modèles" },
+  { id: "burner", label: "Brûleurs" },
+  { id: "water_heater", label: "Chauffe-bains" },
+  { id: "regulation", label: "Régulations" },
+  { id: "heat_pump_water_heater", label: "Chauffe-eau thermodynamiques" },
   { id: "vmc", label: "VMC" },
 ];
-// Repères visuels : aucun modèle ou document n'est inventé pour ces marques.
+// Marques à parcourir. Les modèles et documents restent indépendants de cette liste.
 const BOILER_BRANDS = ["Saunier Duval", "Atlantic", "Chaffoteaux", "De Dietrich", "Frisquet", "Vaillant", "Viessmann"];
+const CATEGORY_BRANDS = {
+  boiler: BOILER_BRANDS,
+  heat_pump_indoor: ["Saunier Duval", "Atlantic", "Daikin", "Mitsubishi Electric", "Panasonic", "Vaillant"],
+  heat_pump_outdoor: ["Saunier Duval", "Atlantic", "Daikin", "Mitsubishi Electric", "Panasonic", "Vaillant"],
+  air_conditioning_indoor: ["Saunier Duval", "Atlantic", "Daikin", "Mitsubishi Electric", "Panasonic"],
+  air_conditioning_outdoor: ["Saunier Duval", "Atlantic", "Daikin", "Mitsubishi Electric", "Panasonic"],
+  burner: ["Saunier Duval", "De Dietrich", "Riello", "Weishaupt"],
+  water_heater: ["Saunier Duval", "Atlantic", "Chaffoteaux", "Vaillant"],
+  regulation: ["Saunier Duval", "Atlantic", "Chaffoteaux", "De Dietrich", "Vaillant"],
+  heat_pump_water_heater: ["Atlantic", "Ariston", "Thermor"],
+};
 const normalize = (value) => String(value || "").normalize("NFD")
   .replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("fr");
 
@@ -41,8 +60,11 @@ function TechnicalCatalogContent({ onClose, catalog, session }) {
 
   const entries = Array.isArray(catalog) ? catalog : [];
   const category = CATEGORIES.find((item) => item.id === type);
-  const categoryEntries = entries.filter((item) => item.type === type);
-  const names = type === "boiler" ? [...BOILER_BRANDS] : [];
+  // Ne pas attribuer automatiquement les modèles PAC/clim à l'unité intérieure et extérieure.
+  // Les entrées historiques non précisées restent consultables dans leur famille d'origine.
+  const categoryEntries = entries.filter((item) => item.type === type ||
+    (category?.catalogType === item.type && item.unitPosition === type.split("_").at(-1)));
+  const names = [...(CATEGORY_BRANDS[type] || [])];
   for (const item of categoryEntries) {
     if (item.brand && !names.some((name) => normalize(name) === normalize(item.brand))) names.push(item.brand);
   }
@@ -107,18 +129,18 @@ function TechnicalCatalogContent({ onClose, catalog, session }) {
           {model && <><span aria-hidden="true">›</span><span>{model.model}</span></>}
         </nav>
         <div className="technical-catalog-content">
-          {step === "category" && <><h3>Choisissez un équipement</h3><div className="technical-catalog-grid">
-            {CATEGORIES.map((item) => <button key={item.id} type="button" className="technical-catalog-card" onClick={() => { setType(item.id); setStep("brand"); }}><strong>{item.label}</strong><span>Explorer les marques →</span></button>)}
+          {step === "category" && <><h3>Recherchez votre équipement</h3><div className="technical-catalog-category-grid">
+            {CATEGORIES.map((item) => <button key={item.id} type="button" className="technical-catalog-category" onClick={() => { setType(item.id); setStep("brand"); }}><strong>{item.label}</strong><span>Voir les marques ›</span></button>)}
           </div></>}
-          {step === "brand" && <><h3>Choisissez une marque · {category?.label}</h3>
-            {brands.length === 0 ? <p className="technical-catalog-empty">Aucune marque renseignée pour cette catégorie.</p> : <div className="technical-catalog-grid">
-              {brands.map(({ name, count }) => <button key={name} type="button" className="technical-catalog-card" onClick={() => { setBrand(name); setStep("models"); }}><strong>{name}</strong><span>{count ? `${count} modèle${count > 1 ? "s" : ""} au catalogue` : "Modèles à compléter"}</span></button>)}
+          {step === "brand" && <><div className="technical-catalog-band"><button type="button" onClick={toCategory} aria-label="Retour aux catégories">‹</button><h3>{category?.label}</h3></div><p className="technical-catalog-prompt">Choisissez une marque</p>
+            {brands.length === 0 ? <p className="technical-catalog-empty">Les marques de cette catégorie seront ajoutées progressivement.</p> : <div className="technical-catalog-list">
+              {brands.sort((a, b) => a.name.localeCompare(b.name, "fr")).map(({ name, count }) => <button key={name} type="button" className="technical-catalog-row" onClick={() => { setBrand(name); setStep("models"); }}><strong>{name}</strong><span>{count ? `${count} modèle${count > 1 ? "s" : ""}` : "À compléter"} <span aria-hidden="true">›</span></span></button>)}
             </div>}
           </>}
-          {step === "models" && <><h3>Modèles {brand}</h3>
+          {step === "models" && <><div className="technical-catalog-band"><button type="button" onClick={toBrands} aria-label="Retour aux marques">‹</button><h3>{brand}<small>{category?.label}</small></h3></div>
             <label className="technical-catalog-search">Rechercher un modèle ou une référence<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nom du modèle, référence…" autoFocus /></label>
-            {models.length === 0 ? <p className="technical-catalog-empty">{query ? "Aucun modèle ne correspond à cette recherche." : "Les modèles de cette marque seront ajoutés progressivement."}</p> : <div className="technical-catalog-models">
-              {models.map((item) => <button key={item.equipmentId || item.manufacturerReference || `${item.brand}-${item.model}`} type="button" className="technical-catalog-card" onClick={() => selectModel(item)}><strong>{item.model}{item.variant ? ` · ${item.variant}` : ""}</strong><span>Réf. produit : {item.manufacturerReference || "non renseignée"}</span><span className="technical-catalog-link">Voir le modèle →</span></button>)}
+            {models.length === 0 ? <p className="technical-catalog-empty">{query ? "Aucun modèle ne correspond à cette recherche." : "Les modèles seront ajoutés progressivement. La marque est déjà référencée."}</p> : <div className="technical-catalog-list">
+              {models.map((item) => <button key={item.equipmentId || item.manufacturerReference || `${item.brand}-${item.model}`} type="button" className="technical-catalog-row" onClick={() => selectModel(item)}><strong>{item.model}{item.variant ? ` · ${item.variant}` : ""}<small>{item.manufacturerReference || ""}</small></strong><span aria-hidden="true">›</span></button>)}
             </div>}
           </>}
           {model && ["model", "documents", "assistant"].includes(step) && <>
