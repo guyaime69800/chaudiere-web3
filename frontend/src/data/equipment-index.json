@@ -38,6 +38,15 @@
       "manufacturerReference": "0010021497",
       "dataFile": "equipment/saunier-duval-0010021497.json",
       "status": "pilot"
+    },
+    {
+      "equipmentId": "de-dietrich-mcr-2-24-7841749",
+      "brand": "De Dietrich",
+      "model": "MCR 2 24",
+      "variant": "FR",
+      "manufacturerReference": "7841749",
+      "dataFile": "equipment/de-dietrich-7841749.json",
+      "status": "pilot"
     }
   ]
 }

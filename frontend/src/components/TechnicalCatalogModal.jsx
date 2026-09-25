@@ -64,6 +64,9 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   const aiRequest = useRef(0);
 
   useEffect(() => () => { documentRequest.current += 1; aiRequest.current += 1; }, []);
+  useEffect(() => () => {
+    if (previewDocument?.documentUrl?.startsWith("blob:")) URL.revokeObjectURL(previewDocument.documentUrl);
+  }, [previewDocument]);
 
   const entries = Array.isArray(catalog) ? catalog : [];
   const category = CATEGORIES.find((item) => item.id === type);
@@ -103,6 +106,26 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
         setDocumentsError("La documentation est momentanément indisponible.");
       }
     } finally { if (request === documentRequest.current) setDocumentsBusy(false); }
+  }
+
+  async function openDocumentPreview(document) {
+    if (document.storage !== "private") {
+      setPreviewDocument(document);
+      return;
+    }
+
+    setDocumentsError("");
+    try {
+      if (!session?.access_token) throw new Error("Connecte-toi pour consulter ce document.");
+      const pathname = new URL(document.documentUrl).pathname.slice(1);
+      const response = await fetch(`/api/technical-document?pathname=${encodeURIComponent(pathname)}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!response.ok) throw new Error("Le document est momentanément indisponible.");
+      setPreviewDocument({ ...document, documentUrl: URL.createObjectURL(await response.blob()) });
+    } catch (previewError) {
+      setDocumentsError(previewError.message || "Le document est momentanément indisponible.");
+    }
   }
 
   async function askShiba(event) {
@@ -234,7 +257,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
               <button type="button" className="technical-catalog-back" onClick={() => setStep("model")}>← Retour au modèle</button><h4>Documents constructeur</h4>
               <div className="technical-catalog-document-list">{documents.map((item) => <article key={item.documentId}>
                 <div><strong>{item.title}</strong><small>{item.sourceName || model.brand} · {item.documentCode || item.manufacturerReference || model.manufacturerReference}{item.pageCount ? ` · ${item.pageCount} pages` : ""}</small></div>
-                <button type="button" onClick={() => setPreviewDocument(item)}>Consulter</button>
+                <button type="button" onClick={() => openDocumentPreview(item)}>Consulter</button>
               </article>)}</div>
             </section>}
             {step === "assistant" && <section className="technical-catalog-assistant" aria-label="Shiba Bot">
