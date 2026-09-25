@@ -185,6 +185,20 @@ export default async function handler(
     const normalizedQuestion =
       String(question ?? "").toLowerCase();
 
+    // La nomenclature commune MCR 2 24 / 30-35 MI distingue l'échangeur
+    // primaire (repère 32) du circuit sanitaire propre aux variantes MI.
+    // Ne jamais attribuer la référence du primaire à un échangeur à plaques.
+    const partQuestion = normalizedQuestion.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (
+      String(equipmentData.identity?.manufacturerReference) === "7841749" &&
+      /(?:echangeur.*plaqu|plaqu.*echangeur)/.test(partQuestion)
+    ) {
+      return response.status(200).json({
+        ok: true,
+        answer: "La référence d'un échangeur à plaques n'est pas confirmée pour le MCR 2 24 (réf. 7841749) dans les documents disponibles. La vue éclatée commune MCR 2 24 / 30-35 MI, page 2, désigne le repère 32 (7769953) comme « échangeur de chaleur » et le repère 77 (7672690) comme « joint échangeur sanitaire (MI) ». Aucun de ces deux numéros n'identifie avec certitude un échangeur à plaques de ce modèle. Vérifiez la variante sur la plaque signalétique et la documentation de la pièce avant toute commande.",
+      });
+    }
+
     const wantsErrorCodeList =
       normalizedQuestion.includes(
         "liste des codes"

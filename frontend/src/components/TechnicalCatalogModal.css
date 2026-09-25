@@ -29,7 +29,8 @@
 .technical-catalog-document-list article{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px;border:1px solid #f0d8ce;border-radius:12px;background:#fff}
 .technical-catalog-document-list article>div{min-width:0;overflow-wrap:anywhere}
 .technical-catalog-document-list small{display:block;margin-top:5px;color:#806c64}
-.technical-catalog-document-list button{padding:9px 12px;border:1px solid #e9b9a6;border-radius:10px;background:#fff;color:#bb390d;font-weight:700;cursor:pointer}
+.technical-catalog-document-list button{padding:9px 12px;border:1px solid var(--pro-orange,#c93608);border-radius:10px;background:var(--pro-orange,#c93608);color:#fff;font-weight:700;cursor:pointer}
+.technical-catalog-document-list button:hover,.technical-catalog-document-list button:focus-visible{background:var(--pro-orange-dark,#8f2307);border-color:var(--pro-orange-dark,#8f2307)}
 .technical-catalog-assistant{max-width:700px}
 .technical-catalog-assistant-heading{display:flex;align-items:center;gap:14px;padding:12px 0}
 .technical-catalog-assistant-heading img{width:72px;height:72px;object-fit:contain}

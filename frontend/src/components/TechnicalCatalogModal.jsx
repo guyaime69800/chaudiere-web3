@@ -124,11 +124,20 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
       const pathname = new URL(document.documentUrl).pathname.slice(1);
       const response = await fetch(`/api/technical-document?pathname=${encodeURIComponent(pathname)}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
+        signal: AbortSignal.timeout(45_000),
       });
-      if (!response.ok) throw new Error(response.status === 403 ? "Accès au document refusé. Vérifie ton compte professionnel." : "Impossible d’ouvrir ce document. Réessaie ou signale le problème.");
-      setPreviewDocument({ ...document, documentUrl: URL.createObjectURL(await response.blob()) });
+      if (!response.ok) {
+        const problem = await response.json().catch(() => null);
+        throw new Error(problem?.error || `Ouverture impossible (HTTP ${response.status}).`);
+      }
+      if (!response.headers.get("content-type")?.includes("application/pdf")) {
+        throw new Error("Le serveur n’a pas renvoyé un PDF.");
+      }
+      const blob = await response.blob();
+      if (!blob.size) throw new Error("Le PDF est vide.");
+      setPreviewDocument({ ...document, documentUrl: URL.createObjectURL(blob) });
     } catch (previewError) {
-      setDocumentsError(previewError.message || "Le document est momentanément indisponible.");
+      setDocumentsError(previewError.name === "TimeoutError" ? "L’ouverture du PDF a dépassé 45 secondes. Réessaie." : previewError.message || "Le document est momentanément indisponible.");
     } finally {
       setPreviewBusyId(null);
     }
