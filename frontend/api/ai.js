@@ -727,6 +727,8 @@ Réponds uniquement à partir des passages récupérés. Pour chaque pièce trou
 
 Privilégie la vue éclatée pour une recherche de référence. Si la référence n'est présente que dans une notice, nomme explicitement cette notice et sa page ; ne la présente pas comme issue de la vue éclatée. Si la vue éclatée ne permet pas de confirmer la référence ou sa page, indique-le sans inventer de citation. Distingue les pièces proches et les anciennes références des remplacements documentés.
 
+La vue éclatée peut couvrir plusieurs variantes. Vérifie que la pièce demandée est explicitement désignée et applicable au modèle exact et à sa référence constructeur. Ne confonds jamais « échangeur de chaleur » (primaire) avec « échangeur à plaques » (sanitaire), ni le joint d'un échangeur avec l'échangeur lui-même. Une mention « MI » ne prouve pas la présence de la pièce sur un modèle chauffage seul. Si le document ne permet pas de confirmer une référence pour la pièce exacte et la variante exacte, dis clairement que la référence n'est pas confirmée ; ne propose pas une référence approchante.
+
 Réponds en français simple et concis.
 `;
     }

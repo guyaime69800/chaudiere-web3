@@ -7,6 +7,9 @@ const DOCUMENTS = new Set([
   "saunier-duval/0010021497/03-Notice-d-installation-technique-THEMAPLUS-CONDENS-25-A.pdf",
   "saunier-duval/0010021497/04-Notice-d-utilisation-THEMAPLUS-CONDENS-25-A.pdf",
   "saunier-duval/0010021497/02-Vue-clat-e-THEMAPLUS-CONDENS-25-A.pdf",
+  "de-dietrich/7841749/notice-installation-mcr-2-24-aSYtrFVazWtmCHahWI1loZN0VrDVSB.pdf",
+  "de-dietrich/7841749/vue-eclatee-mcr-2-24-GyIH7UURjntAfTJkN1cuwWqrYPnIt0.pdf",
+  "de-dietrich/7841749/notice-utilisation-mcr-2-24-eX5FYSstYZMqyxcBhTcuNQsQobmSDl.pdf",
 ]);
 
 export default async function handler(req, res) {

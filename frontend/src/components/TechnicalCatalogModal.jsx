@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import { getEquipmentDocumentLibrary } from "../services/equipmentKnowledge";
 import DocumentPreviewModal from "./DocumentPreviewModal";
@@ -50,6 +51,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   const [documentsBusy, setDocumentsBusy] = useState(false);
   const [documentsError, setDocumentsError] = useState("");
   const [previewDocument, setPreviewDocument] = useState(null);
+  const [previewBusyId, setPreviewBusyId] = useState(null);
   const [question, setQuestion] = useState(initialQuestion);
   const [assistantOrigin, setAssistantOrigin] = useState(false);
   const [answer, setAnswer] = useState("");
@@ -84,7 +86,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   function clearModel({ preserveQuestion = false } = {}) {
     documentRequest.current += 1; aiRequest.current += 1;
     setModel(null); setDocuments([]); setDocumentsBusy(false); setDocumentsError("");
-    setPreviewDocument(null); if (!preserveQuestion) setQuestion(""); setAnswer(""); setAnswerSource(""); setAnswerSources([]); setAnswerCitations([]); setBusy(false); setError("");
+    setPreviewDocument(null); setPreviewBusyId(null); if (!preserveQuestion) setQuestion(""); setAnswer(""); setAnswerSource(""); setAnswerSources([]); setAnswerCitations([]); setBusy(false); setError("");
   }
   function toCategory() { clearModel({ preserveQuestion: true }); setType(""); setBrand(""); setQuery(""); setStep("category"); }
   function toBrands() { clearModel({ preserveQuestion: true }); setBrand(""); setQuery(""); setManualModel(""); setManualReference(""); setStep("brand"); }
@@ -109,22 +111,26 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   }
 
   async function openDocumentPreview(document) {
+    if (previewBusyId) return;
+    setDocumentsError("");
     if (document.storage !== "private") {
       setPreviewDocument(document);
       return;
     }
 
-    setDocumentsError("");
+    setPreviewBusyId(document.documentId);
     try {
       if (!session?.access_token) throw new Error("Connecte-toi pour consulter ce document.");
       const pathname = new URL(document.documentUrl).pathname.slice(1);
       const response = await fetch(`/api/technical-document?pathname=${encodeURIComponent(pathname)}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-      if (!response.ok) throw new Error("Le document est momentanément indisponible.");
+      if (!response.ok) throw new Error(response.status === 403 ? "Accès au document refusé. Vérifie ton compte professionnel." : "Impossible d’ouvrir ce document. Réessaie ou signale le problème.");
       setPreviewDocument({ ...document, documentUrl: URL.createObjectURL(await response.blob()) });
     } catch (previewError) {
       setDocumentsError(previewError.message || "Le document est momentanément indisponible.");
+    } finally {
+      setPreviewBusyId(null);
     }
   }
 
@@ -255,9 +261,10 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
             </>}
             {step === "documents" && <section aria-label={`Documentation ${model.brand} ${model.model}`}>
               <button type="button" className="technical-catalog-back" onClick={() => setStep("model")}>← Retour au modèle</button><h4>Documents constructeur</h4>
+              {documentsError && <p role="alert" className="technical-catalog-error">{documentsError}</p>}
               <div className="technical-catalog-document-list">{documents.map((item) => <article key={item.documentId}>
                 <div><strong>{item.title}</strong><small>{item.sourceName || model.brand} · {item.documentCode || item.manufacturerReference || model.manufacturerReference}{item.pageCount ? ` · ${item.pageCount} pages` : ""}</small></div>
-                <button type="button" onClick={() => openDocumentPreview(item)}>Consulter</button>
+                <button type="button" disabled={Boolean(previewBusyId)} onClick={() => openDocumentPreview(item)}>{previewBusyId === item.documentId ? "Ouverture…" : "Consulter"}</button>
               </article>)}</div>
             </section>}
             {step === "assistant" && <section className="technical-catalog-assistant" aria-label="Shiba Bot">
@@ -268,7 +275,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
               {!documentsBusy && !documents.length && <p className="technical-catalog-empty">Recherche sur le Web : les informations trouvées seront accompagnées de leurs sources et restent à vérifier sur l’appareil.</p>}
               <form onSubmit={askShiba}><label htmlFor="technical-catalog-question">Votre question</label><textarea id="technical-catalog-question" value={question} onChange={(event) => { setQuestion(event.target.value); setAnswer(""); setError(""); setAnswerSources([]); setAnswerCitations([]); }} placeholder="Ex. Où trouver la notice de ce modèle ?" rows={4} autoFocus /><button type="submit" disabled={!question.trim() || documentsBusy || busy}>{busy ? "Recherche…" : "Interroger Shiba Bot"}</button></form>
               {error && <p role="alert" className="technical-catalog-error">{error}</p>}
-              {answer && <div className="technical-catalog-answer" aria-live="polite"><div className="technical-catalog-answer-heading"><img src={shibaTechnicien} alt="" /><strong>Réponse de Shiba Bot {answerSource === "web" ? "· Recherche Web" : "· Documentation constructeur"}</strong></div>{answerSource === "web" ? <div className="technical-catalog-answer-body">{renderWebAnswer()}</div> : <p>{answer}</p>}{answerSource === "web" && !!answerSources.length && <div className="technical-catalog-sources"><strong>Sources consultées</strong><ul>{answerSources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || source.url}</a></li>)}</ul><small>Vérifiez les informations techniques dans la notice du modèle exact.</small></div>}</div>}
+              {answer && <div className="technical-catalog-answer" aria-live="polite"><div className="technical-catalog-answer-heading"><img src={shibaTechnicien} alt="" /><strong>Réponse de Shiba Bot {answerSource === "web" ? "· Recherche Web" : "· Documentation constructeur"}</strong></div>{answerSource === "web" ? <div className="technical-catalog-answer-body">{renderWebAnswer()}</div> : <div className="technical-catalog-answer-body"><ReactMarkdown>{answer}</ReactMarkdown></div>}{answerSource === "documents" && !!documents.length && <div className="technical-catalog-sources"><strong>Vérifier dans les documents</strong><ul>{documents.map((item) => <li key={item.documentId}><button type="button" disabled={Boolean(previewBusyId)} onClick={() => openDocumentPreview(item)}>{previewBusyId === item.documentId ? "Ouverture…" : item.title}</button></li>)}</ul><small>Vérifiez la référence et la variante exacte avant toute intervention.</small></div>}{answerSource === "web" && !!answerSources.length && <div className="technical-catalog-sources"><strong>Sources consultées</strong><ul>{answerSources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || source.url}</a></li>)}</ul><small>Vérifiez les informations techniques dans la notice du modèle exact.</small></div>}</div>}
             </section>}
           </>}
         </div>

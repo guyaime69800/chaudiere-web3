@@ -102,4 +102,6 @@
 .technical-catalog-sources ul{margin:8px 0;padding-left:20px}
 .technical-catalog-sources li{margin:7px 0;overflow-wrap:anywhere}
 .technical-catalog-sources a,.technical-catalog-answer p a{color:var(--pro-orange,#c93608);text-decoration:underline}
+.technical-catalog-sources button{border:0;padding:0;background:transparent;color:var(--pro-orange,#c93608);font:inherit;text-align:left;text-decoration:underline;cursor:pointer}
+.technical-catalog-sources button:disabled,.technical-catalog-document-list button:disabled{opacity:.6;cursor:wait}
 .technical-catalog-sources small{color:#765f57}
