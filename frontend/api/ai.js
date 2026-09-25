@@ -810,6 +810,14 @@ Reste concis (environ 150 mots), sauf si la sécurité exige davantage de préci
 Ne supprime jamais une réserve importante, une consigne de sécurité ou la source et sa page lorsqu'elles sont connues.
 `;
 
+    if (equipmentData.documents?.some((document) =>
+      document.notes?.includes("Prix affichés historiques")
+    )) {
+      aiInstructions += `
+Les prix figurant dans la vue éclatée sont historiques. Ne les présente jamais comme tarifs actuels et rappelle de vérifier les prix auprès du fournisseur avant tout devis ou commande.
+`;
+    }
+
     const aiResponse =
       await openai.responses.create({
         model: "gpt-5.6-luna",

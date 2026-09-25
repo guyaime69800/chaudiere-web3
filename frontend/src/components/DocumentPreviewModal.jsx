@@ -12,8 +12,9 @@ export default function DocumentPreviewModal({
   mimeType = "application/pdf",
   eyebrow = "APERÇU DU DOCUMENT",
   downloadLabel = "Télécharger le PDF",
+  historicalPrices = false,
 }) {
-  const [loading, setLoading] = useState(true);
+  const [loadedUrl, setLoadedUrl] = useState("");
   const dialogRef = useRef(null);
   const closeButtonRef = useRef(null);
   const triggerRef = useRef(null);
@@ -27,6 +28,7 @@ export default function DocumentPreviewModal({
     documentUrl && !isImage
       ? documentUrl + "#toolbar=1&navpanes=0&view=FitH"
       : documentUrl;
+  const loading = loadedUrl !== viewerUrl;
 
   useEffect(() => {
     onOpenChangeRef.current = onOpenChange;
@@ -42,7 +44,6 @@ export default function DocumentPreviewModal({
 
     const previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    setLoading(true);
 
     const focusFrame = window.requestAnimationFrame(() => {
       closeButtonRef.current?.focus();
@@ -130,6 +131,13 @@ export default function DocumentPreviewModal({
           </button>
         </header>
 
+        {historicalPrices && (
+          <div className="document-preview-modal__price-warning" role="note">
+            <strong>Attention : ne tenez pas compte des prix affichés dans ce PDF.</strong>
+            <span>Ce sont des tarifs historiques. Vérifiez les prix actuels auprès du fournisseur avant tout devis ou commande.</span>
+          </div>
+        )}
+
         <div className="document-preview-modal__viewer" aria-busy={loading}>
           {loading ? (
             <div
@@ -146,14 +154,14 @@ export default function DocumentPreviewModal({
             <img
               src={viewerUrl}
               alt={title || "Aperçu du document"}
-              onLoad={() => setLoading(false)}
-              onError={() => setLoading(false)}
+              onLoad={() => setLoadedUrl(viewerUrl)}
+              onError={() => setLoadedUrl(viewerUrl)}
             />
           ) : (
             <iframe
               src={viewerUrl}
               title={title || "Aperçu du document PDF"}
-              onLoad={() => setLoading(false)}
+              onLoad={() => setLoadedUrl(viewerUrl)}
             />
           )}
         </div>

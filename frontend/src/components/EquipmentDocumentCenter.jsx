@@ -886,6 +886,7 @@ function EquipmentDocumentCenterContent({
             : "document-carnetpass.pdf"
         }
         downloadLabel="Télécharger le document"
+        historicalPrices={Boolean(selectedDocument?.notes?.includes("Prix affichés historiques"))}
       />
       <DocumentPreviewModal
         open={Boolean(attachmentPreview)}

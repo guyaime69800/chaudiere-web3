@@ -290,7 +290,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
         </div>
         <footer className="technical-catalog-footer">Cette recherche ne crée aucun équipement.</footer>
       </section>
-      <DocumentPreviewModal open={Boolean(previewDocument)} onOpenChange={(isOpen) => { if (!isOpen) setPreviewDocument(null); }} eyebrow="DOCUMENT CONSTRUCTEUR" title={previewDocument?.title || "Document technique"} subtitle={`${previewDocument?.sourceName || model?.brand || "Constructeur"} · ${model?.model || ""}`} documentUrl={previewDocument?.documentUrl || ""} fileName={`${previewDocument?.documentCode || previewDocument?.documentId || "document"}.pdf`} />
+      <DocumentPreviewModal open={Boolean(previewDocument)} onOpenChange={(isOpen) => { if (!isOpen) setPreviewDocument(null); }} eyebrow="DOCUMENT CONSTRUCTEUR" title={previewDocument?.title || "Document technique"} subtitle={`${previewDocument?.sourceName || model?.brand || "Constructeur"} · ${model?.model || ""}`} documentUrl={previewDocument?.documentUrl || ""} fileName={`${previewDocument?.documentCode || previewDocument?.documentId || "document"}.pdf`} historicalPrices={Boolean(previewDocument?.notes?.includes("Prix affichés historiques"))} />
     </div>
   );
 }
