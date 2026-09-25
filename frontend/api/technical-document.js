@@ -3,8 +3,13 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import mcr2 from "../src/data/equipment/de-dietrich-7841749.json" with { type: "json" };
+import naia from "../src/data/equipment/atlantic-021272.json" with { type: "json" };
 
 const MCR_DOCUMENT_URLS = new Map(mcr2.documents
+  .filter((document) => document.storage === "private")
+  .map((document) => [new URL(document.documentUrl).pathname.slice(1), document.documentUrl]));
+
+const NAIA_DOCUMENT_URLS = new Map(naia.documents
   .filter((document) => document.storage === "private")
   .map((document) => [new URL(document.documentUrl).pathname.slice(1), document.documentUrl]));
 
@@ -13,6 +18,7 @@ const DOCUMENTS = new Set([
   "saunier-duval/0010021497/04-Notice-d-utilisation-THEMAPLUS-CONDENS-25-A.pdf",
   "saunier-duval/0010021497/02-Vue-clat-e-THEMAPLUS-CONDENS-25-A.pdf",
   ...MCR_DOCUMENT_URLS.keys(),
+  ...NAIA_DOCUMENT_URLS.keys(),
 ]);
 
 export default async function handler(req, res) {
@@ -30,7 +36,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const result = await get(MCR_DOCUMENT_URLS.get(pathname) ?? pathname, { access: "private" });
+    const documentUrl = MCR_DOCUMENT_URLS.get(pathname)
+      ?? NAIA_DOCUMENT_URLS.get(pathname)
+      ?? pathname;
+    const result = await get(documentUrl, { access: "private" });
+
     if (!result?.stream || result.statusCode !== 200) {
       return res.status(404).json({ error: "Document introuvable." });
     }
