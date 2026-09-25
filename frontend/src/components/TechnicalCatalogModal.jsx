@@ -223,7 +223,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   }
 
   return (
-    <div className="technical-catalog-overlay" role="presentation" onMouseDown={onClose}>
+    <div className="technical-catalog-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <section className="technical-catalog-modal" role="dialog" aria-modal="true" aria-labelledby="technical-catalog-title" onMouseDown={(event) => event.stopPropagation()}>
         <header className="technical-catalog-header">
           <div className="technical-catalog-header-brand"><img src={shibaTechnicien} alt="" /><div><span className="technical-catalog-kicker">OUTIL TECHNIQUE</span><h2 id="technical-catalog-title">{step === "assistant-picker" ? "Posez une question à Shiba Bot" : "Catalogue technique"}</h2></div></div>
