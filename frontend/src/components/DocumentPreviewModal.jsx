@@ -32,15 +32,10 @@ export default function DocumentPreviewModal({
   function openDocumentInNewTab(event) {
     event.preventDefault();
 
-    const previewWindow = window.open("", "_blank");
-
+    const previewWindow = window.open(documentUrl, "_blank");
     if (!previewWindow) {
       window.alert("Autorise l'ouverture des fenêtres pour consulter ce document.");
-      return;
     }
-
-    previewWindow.opener = null;
-    previewWindow.location.href = documentUrl;
   }
   useEffect(() => {
     onOpenChangeRef.current = onOpenChange;
