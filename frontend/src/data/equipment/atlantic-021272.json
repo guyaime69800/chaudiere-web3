@@ -1,0 +1,160 @@
+{
+  "version": "1.0",
+  "equipmentId": "atlantic-naia-2-micro-25-021272",
+  "identity": {
+    "brand": "Atlantic",
+    "productType": "chaudiere_gaz_condensation",
+    "range": "Naia 2 Micro",
+    "model": "Naia 2 Micro 25",
+    "variant": "FR",
+    "manufacturerReference": "021272"
+  },
+  "carnetPass": {
+    "linkedIds": []
+  },
+  "support": {
+    "manufacturer": "Atlantic",
+    "hotline": {
+      "label": "Hotline technique Atlantic",
+      "phone": "03 51 42 70 42",
+      "hours": null,
+      "source": "Livret SAV Naia/Naema, page 32 ; capture Pièces Express Naia 2 Micro 25",
+      "verifiedAt": "2026-09-25"
+    }
+  },
+  "documents": [
+    {
+      "documentId": "atlantic-naia-2-micro-25-installation-u0619432-1904-fr-15",
+      "title": "Notice d'installation - Naia 2 Micro 25",
+      "documentType": "installation_maintenance",
+      "documentCode": "U0619432_1904_FR_15",
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/atlantic/021272/notice-installation-naia-2-micro-25-c33wW53muwRNz9WE6xaBZY0fFDeKNh.pdf",
+      "revisionDate": "2020-02-27",
+      "pageCount": 72,
+      "language": "fr",
+      "sourceType": "manufacturer_document",
+      "sourceName": "Atlantic",
+      "appliesTo": [
+        "Naia 2 Micro 25"
+      ],
+      "manufacturerReference": "021272",
+      "usefulPages": {
+        "identification": [
+          1
+        ]
+      },
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "private",
+      "sha256": "d8ea822e71baa37fd235fce4a4b751aa6debc570a9fe53f532c015f816b77c5e",
+      "notes": "Notice commune aux Naia 2 Micro 25, 30 et 35. Vérifier la référence 021272 avant d'utiliser un réglage propre à une variante."
+    },
+    {
+      "documentId": "atlantic-naia-2-micro-25-reglages-extrait-u0619432",
+      "title": "Réglages et paramétrages - extrait de la notice Naia 2 Micro",
+      "documentType": "settings_extract",
+      "documentCode": "U0619432-reglages-extrait",
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/atlantic/021272/reglages-extrait-naia-2-micro-U2syAlJ1CSNinNO3oqvXQ9HKnA3bG4.pdf",
+      "revisionDate": "2020-02-27",
+      "pageCount": 13,
+      "language": "fr",
+      "sourceType": "manufacturer_document",
+      "sourceName": "Atlantic",
+      "appliesTo": [
+        "Naia 2 Micro 25"
+      ],
+      "manufacturerReference": "021272",
+      "usefulPages": {
+        "controls": [
+          1
+        ]
+      },
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "private",
+      "sha256": "23ceaed2741a7e4ccc163c92f0454770665db24c06ddc0180409822abdb2d74f",
+      "notes": "Extrait de la notice d'installation commune aux Naia 2 Micro 25, 30 et 35 ; pages et informations reprises dans la notice complète."
+    },
+    {
+      "documentId": "atlantic-naia-naema-v1-v2-livret-sav",
+      "title": "Livret SAV - Naia et Naema versions 1 et 2",
+      "documentType": "troubleshooting",
+      "documentCode": "NAIA-NAEMA-V1-V2-SAV",
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/atlantic/021272/livret-sav-naia-naema-v1-v2-hLCEYaQwcrnBGxlCYzQlVsYTnWmSed.pdf",
+      "revisionDate": null,
+      "pageCount": 32,
+      "language": "fr",
+      "sourceType": "manufacturer_document",
+      "sourceName": "Atlantic",
+      "appliesTo": [
+        "Naia 2 Micro 25"
+      ],
+      "manufacturerReference": "021272",
+      "usefulPages": {
+        "modelValidity": [
+          3
+        ],
+        "faultCodes": [
+          10
+        ],
+        "hotline": [
+          32
+        ]
+      },
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "private",
+      "sha256": "84a29477bbbf2563bd1e62dc6aff5f364874ba2610a3f9eb7997f57d5c30771a",
+      "notes": "Livret SAV commun à plusieurs modèles : vérifier que le code et la procédure s'appliquent à la référence 021272."
+    },
+    {
+      "documentId": "atlantic-naia-2-micro-25-nomenclature-2018-06-22",
+      "title": "Vue éclatée et références de pièces - Naia 2 Micro 25",
+      "documentType": "exploded_view",
+      "documentCode": "021272-nomenclature-2018",
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/atlantic/021272/vue-eclatee-naia-2-micro-25-B6blLX8velB1NDcQBWDJk2F6ATR5bG.pdf",
+      "revisionDate": "2018-06-22",
+      "pageCount": 15,
+      "language": "fr",
+      "sourceType": "manufacturer_spare_parts_catalog",
+      "sourceName": "Atlantic",
+      "appliesTo": [
+        "Naia 2 Micro 25"
+      ],
+      "manufacturerReference": "021272",
+      "usefulPages": {
+        "modelValidity": [
+          1
+        ],
+        "diagrams": [
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14
+        ],
+        "partsReferences": [
+          3,
+          5,
+          7,
+          9,
+          11,
+          13,
+          15
+        ]
+      },
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "private",
+      "sha256": "1ea316a3a7de84192959553c3b577da02ea9656c9a479871b3df6c64f6280828",
+      "notes": "Nomenclature Atlantic obtenue via Pièces Express, édition 2018. Références et disponibilité des pièces à vérifier auprès du fournisseur ; ne pas déduire de prix actuel."
+    }
+  ],
+  "errorCodeIndex": null,
+  "errorCodes": [],
+  "diagnosticRules": [],
+  "metadata": {
+    "status": "pilot",
+    "verificationStatus": "verified_documents",
+    "lastVerifiedAt": "2026-09-25",
+    "notes": "Quatre PDF vérifiés : la fiche réglages reprend une partie de la notice complète ; le livret SAV couvre plusieurs variantes et la nomenclature date de 2018."
+  }
+}

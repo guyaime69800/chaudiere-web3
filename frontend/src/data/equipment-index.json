@@ -47,6 +47,15 @@
       "manufacturerReference": "7841749",
       "dataFile": "equipment/de-dietrich-7841749.json",
       "status": "pilot"
+    },
+    {
+      "equipmentId": "atlantic-naia-2-micro-25-021272",
+      "brand": "Atlantic",
+      "model": "Naia 2 Micro 25",
+      "variant": "FR",
+      "manufacturerReference": "021272",
+      "dataFile": "equipment/atlantic-021272.json",
+      "status": "pilot"
     }
   ]
 }

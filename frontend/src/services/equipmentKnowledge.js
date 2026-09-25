@@ -160,6 +160,7 @@ export async function getEquipmentDocumentLibrary(input) {
     return {
       catalogueEquipment: null,
       identity: null,
+      support: null,
       documents: [],
     };
   }
@@ -174,6 +175,7 @@ export async function getEquipmentDocumentLibrary(input) {
   return {
     catalogueEquipment: knowledge.equipment,
     identity: knowledge.data?.identity ?? null,
+    support: knowledge.data?.support ?? null,
     documents,
   };
 }

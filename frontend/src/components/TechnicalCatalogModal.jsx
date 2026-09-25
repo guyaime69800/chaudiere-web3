@@ -48,6 +48,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   const [query, setQuery] = useState("");
   const [model, setModel] = useState(null);
   const [documents, setDocuments] = useState([]);
+  const [support, setSupport] = useState(null);
   const [documentsBusy, setDocumentsBusy] = useState(false);
   const [documentsError, setDocumentsError] = useState("");
   const [previewDocument, setPreviewDocument] = useState(null);
@@ -85,7 +86,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
 
   function clearModel({ preserveQuestion = false } = {}) {
     documentRequest.current += 1; aiRequest.current += 1;
-    setModel(null); setDocuments([]); setDocumentsBusy(false); setDocumentsError("");
+    setModel(null); setDocuments([]); setSupport(null); setDocumentsBusy(false); setDocumentsError("");
     setPreviewDocument(null); setPreviewBusyId(null); if (!preserveQuestion) setQuestion(""); setAnswer(""); setAnswerSource(""); setAnswerSources([]); setAnswerCitations([]); setBusy(false); setError("");
   }
   function toCategory() { clearModel({ preserveQuestion: true }); setType(""); setBrand(""); setQuery(""); setStep("category"); }
@@ -101,7 +102,10 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
     setDocumentsBusy(true);
     try {
       const library = await getEquipmentDocumentLibrary(item.equipmentId);
-      if (request === documentRequest.current) setDocuments(Array.isArray(library?.documents) ? library.documents : []);
+      if (request === documentRequest.current) {
+        setDocuments(Array.isArray(library?.documents) ? library.documents : []);
+        setSupport(library?.support ?? null);
+      }
     } catch (loadError) {
       if (request === documentRequest.current) {
         console.error("Chargement des documents impossible :", loadError);
@@ -256,7 +260,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
             </form>
           </>}
           {model && ["model", "documents", "assistant"].includes(step) && <>
-            <div className="technical-catalog-model-heading"><div><span className="technical-catalog-kicker">{model.brand}</span><h3>{model.model}{model.variant ? ` · ${model.variant}` : ""}</h3><p>Réf. produit : {model.manufacturerReference || "non renseignée"}</p></div>{step === "model" && <button type="button" className="technical-catalog-back" onClick={assistantOrigin ? toAssistantPicker : toModels}>← {assistantOrigin ? "Choisir un autre modèle" : "Tous les modèles"}</button>}</div>
+            <div className="technical-catalog-model-heading"><div><span className="technical-catalog-kicker">{model.brand}</span><h3>{model.model}{model.variant ? ` · ${model.variant}` : ""}</h3><p>Réf. produit : {model.manufacturerReference || "non renseignée"}</p>{support?.hotline?.phone && <p>{support.hotline.label || "Assistance technique"} : <a href={`tel:${support.hotline.phone.replace(/\s+/g, "")}`}>{support.hotline.phone}</a></p>}</div>{step === "model" && <button type="button" className="technical-catalog-back" onClick={assistantOrigin ? toAssistantPicker : toModels}>← {assistantOrigin ? "Choisir un autre modèle" : "Tous les modèles"}</button>}</div>
             {step === "model" && <>
               {documentsBusy && <p role="status">Vérification de la documentation…</p>}
               {documentsError && <p role="alert" className="technical-catalog-error">{documentsError}</p>}
