@@ -132,26 +132,59 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
     } finally { if (request === aiRequest.current) setBusy(false); }
   }
 
-  function renderWebAnswer() {
-    const citations = answerCitations.filter((item) => item.start >= 0 && item.end <= answer.length && item.start < item.end)
-      .sort((left, right) => left.start - right.start);
-    const parts = [];
+  function renderMarkdownInline(value, keyPrefix) {
+    const tokenPattern = /(\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|\*\*(.+?)\*\*|`([^`]+)`)/g;
+    const nodes = [];
     let cursor = 0;
-    for (const item of citations) {
-      if (item.start < cursor) continue;
-      parts.push(answer.slice(cursor, item.start));
-      parts.push(<a key={`${item.start}-${item.url}`} href={item.url} target="_blank" rel="noopener noreferrer" aria-label={`Source : ${item.title}`}>{answer.slice(item.start, item.end)}</a>);
-      cursor = item.end;
+    let match;
+    while ((match = tokenPattern.exec(value))) {
+      if (match.index > cursor) nodes.push(value.slice(cursor, match.index));
+      if (match[2] && match[3]) {
+        nodes.push(<a key={`${keyPrefix}-${match.index}`} href={match[3]} target="_blank" rel="noopener noreferrer">{match[2]}</a>);
+      } else if (match[4]) {
+        nodes.push(<strong key={`${keyPrefix}-${match.index}`}>{match[4]}</strong>);
+      } else if (match[5]) {
+        nodes.push(<code key={`${keyPrefix}-${match.index}`}>{match[5]}</code>);
+      }
+      cursor = tokenPattern.lastIndex;
     }
-    parts.push(answer.slice(cursor));
-    return parts;
+    if (cursor < value.length) nodes.push(value.slice(cursor));
+    return nodes;
+  }
+
+  function renderWebAnswer() {
+    let markdown = answer;
+    const citations = answerCitations.filter((item) => item.start >= 0 && item.end <= answer.length && item.start < item.end)
+      .sort((left, right) => right.start - left.start);
+    for (const item of citations) {
+      const citedText = answer.slice(item.start, item.end).replace(/\[|\]/g, "");
+      const safeUrl = String(item.url || "").replace(/[()\s]/g, (character) => encodeURIComponent(character));
+      if (/^https?:\/\//i.test(safeUrl)) {
+        markdown = `${markdown.slice(0, item.start)}[${citedText}](${safeUrl})${markdown.slice(item.end)}`;
+      }
+    }
+
+    return markdown.split(/\n{2,}/).filter((block) => block.trim()).map((block, blockIndex) => {
+      const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
+      if (lines.length === 1) {
+        const heading = lines[0].match(/^#{1,3}\s+(.+)$/);
+        if (heading) return <h3 key={`heading-${blockIndex}`}>{renderMarkdownInline(heading[1], `heading-${blockIndex}`)}</h3>;
+      }
+      const listMatch = lines[0]?.match(/^\s*(?:[-*•]|\d+[.)])\s+/);
+      if (listMatch && lines.every((line) => /^\s*(?:[-*•]|\d+[.)])\s+/.test(line))) {
+        const ordered = /^\s*\d/.test(lines[0]);
+        const List = ordered ? "ol" : "ul";
+        return <List key={`list-${blockIndex}`}>{lines.map((line, lineIndex) => <li key={lineIndex}>{renderMarkdownInline(line.replace(/^\s*(?:[-*•]|\d+[.)])\s+/, ""), `list-${blockIndex}-${lineIndex}`)}</li>)}</List>;
+      }
+      return <p key={`paragraph-${blockIndex}`}>{renderMarkdownInline(lines.join(" "), `paragraph-${blockIndex}`)}</p>;
+    });
   }
 
   return (
     <div className="technical-catalog-overlay" role="presentation" onMouseDown={onClose}>
       <section className="technical-catalog-modal" role="dialog" aria-modal="true" aria-labelledby="technical-catalog-title" onMouseDown={(event) => event.stopPropagation()}>
         <header className="technical-catalog-header">
-          <div><span className="technical-catalog-kicker">OUTIL TECHNIQUE</span><h2 id="technical-catalog-title">{step === "assistant-picker" ? "Posez une question à Shiba Bot" : "Catalogue technique"}</h2></div>
+          <div className="technical-catalog-header-brand"><img src={shibaTechnicien} alt="" /><div><span className="technical-catalog-kicker">OUTIL TECHNIQUE</span><h2 id="technical-catalog-title">{step === "assistant-picker" ? "Posez une question à Shiba Bot" : "Catalogue technique"}</h2></div></div>
           <button type="button" className="technical-catalog-close" onClick={onClose} aria-label="Fermer">×</button>
         </header>
         <div className="technical-catalog-content">
@@ -212,7 +245,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
               {!documentsBusy && !documents.length && <p className="technical-catalog-empty">Recherche sur le Web : les informations trouvées seront accompagnées de leurs sources et restent à vérifier sur l’appareil.</p>}
               <form onSubmit={askShiba}><label htmlFor="technical-catalog-question">Votre question</label><textarea id="technical-catalog-question" value={question} onChange={(event) => { setQuestion(event.target.value); setAnswer(""); setError(""); setAnswerSources([]); setAnswerCitations([]); }} placeholder="Ex. Où trouver la notice de ce modèle ?" rows={4} autoFocus /><button type="submit" disabled={!question.trim() || documentsBusy || busy}>{busy ? "Recherche…" : "Interroger Shiba Bot"}</button></form>
               {error && <p role="alert" className="technical-catalog-error">{error}</p>}
-              {answer && <div className="technical-catalog-answer" aria-live="polite"><strong>Réponse de Shiba Bot {answerSource === "web" ? "· Recherche Web" : "· Documentation constructeur"}</strong><p>{answerSource === "web" ? renderWebAnswer() : answer}</p>{answerSource === "web" && !!answerSources.length && <div className="technical-catalog-sources"><strong>Sources consultées</strong><ul>{answerSources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || source.url}</a></li>)}</ul><small>Vérifiez les informations techniques dans la notice du modèle exact.</small></div>}</div>}
+              {answer && <div className="technical-catalog-answer" aria-live="polite"><div className="technical-catalog-answer-heading"><img src={shibaTechnicien} alt="" /><strong>Réponse de Shiba Bot {answerSource === "web" ? "· Recherche Web" : "· Documentation constructeur"}</strong></div>{answerSource === "web" ? <div className="technical-catalog-answer-body">{renderWebAnswer()}</div> : <p>{answer}</p>}{answerSource === "web" && !!answerSources.length && <div className="technical-catalog-sources"><strong>Sources consultées</strong><ul>{answerSources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || source.url}</a></li>)}</ul><small>Vérifiez les informations techniques dans la notice du modèle exact.</small></div>}</div>}
             </section>}
           </>}
         </div>

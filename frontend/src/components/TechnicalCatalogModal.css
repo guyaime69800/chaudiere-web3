@@ -42,6 +42,16 @@
 .technical-catalog-error{color:#9e2712}
 .technical-catalog-answer{margin-top:18px;padding:18px;border:1px solid #efc2b0;border-radius:14px;background:#fff;overflow-wrap:anywhere}
 .technical-catalog-answer p{margin:10px 0 0;line-height:1.65;white-space:pre-wrap}
+.technical-catalog-header-brand{display:flex;align-items:center;gap:12px}
+.technical-catalog-header-brand>img{width:44px;height:44px;object-fit:contain}
+.technical-catalog-answer-heading{display:flex;align-items:center;gap:10px}
+.technical-catalog-answer-heading img{width:38px;height:38px;object-fit:contain}
+.technical-catalog-answer-body{margin-top:12px;line-height:1.65}
+.technical-catalog-answer-body h3{margin:18px 0 8px;font-size:1.08em}
+.technical-catalog-answer-body p{margin:8px 0;white-space:normal}
+.technical-catalog-answer-body ul,.technical-catalog-answer-body ol{padding-left:24px}
+.technical-catalog-answer-body li{margin:6px 0}
+.technical-catalog-answer-body code{padding:2px 5px;border-radius:4px;background:#f5efec;font-family:monospace}
 @media(max-width:760px){.technical-catalog-path,.technical-catalog-content{padding-left:18px;padding-right:18px}.technical-catalog-grid{grid-template-columns:1fr}.technical-catalog-model-heading,.technical-catalog-document-list article{flex-direction:column;align-items:flex-start}}
 
 /* Navigation compacte inspirée du parcours observé, avec l'identité CarnetPass. */
