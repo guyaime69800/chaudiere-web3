@@ -29,7 +29,19 @@ export default function DocumentPreviewModal({
       ? documentUrl + "#toolbar=1&navpanes=0&view=FitH"
       : documentUrl;
   const loading = loadedUrl !== viewerUrl;
+  function openDocumentInNewTab(event) {
+    event.preventDefault();
 
+    const previewWindow = window.open("", "_blank");
+
+    if (!previewWindow) {
+      window.alert("Autorise l'ouverture des fenêtres pour consulter ce document.");
+      return;
+    }
+
+    previewWindow.opener = null;
+    previewWindow.location.href = documentUrl;
+  }
   useEffect(() => {
     onOpenChangeRef.current = onOpenChange;
   }, [onOpenChange]);
@@ -176,7 +188,8 @@ export default function DocumentPreviewModal({
               className="document-preview-modal__button document-preview-modal__button--secondary"
               href={documentUrl}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
+              onClick={openDocumentInNewTab}
             >
               Ouvrir dans un nouvel onglet
             </a>
