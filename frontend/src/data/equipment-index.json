@@ -83,6 +83,15 @@
       "manufacturerReference": "3310545",
       "dataFile": "equipment/chaffoteaux-3310545.json",
       "status": "pilot"
+    },
+    {
+      "equipmentId": "elm-leblanc-megalia-cgla23-4h-5-7716704261",
+      "brand": "ELM Leblanc",
+      "model": "MEGALIA CGLA23-4H.5",
+      "variant": "",
+      "manufacturerReference": "7716704261",
+      "dataFile": "equipment/elm-leblanc-7716704261.json",
+      "status": "pilot"
     }
   ]
 }

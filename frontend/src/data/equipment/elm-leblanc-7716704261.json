@@ -1,0 +1,55 @@
+{
+  "version": "1.0",
+  "equipmentId": "elm-leblanc-megalia-cgla23-4h-5-7716704261",
+  "identity": {
+    "brand": "ELM Leblanc",
+    "productType": "chaudiere_gaz",
+    "range": "MEGALIA",
+    "model": "MEGALIA CGLA23-4H.5",
+    "variant": "",
+    "manufacturerReference": "7716704261"
+  },
+  "carnetPass": {
+    "linkedIds": []
+  },
+  "support": {
+    "manufacturer": "ELM Leblanc",
+    "hotline": null
+  },
+  "documents": [
+    {
+      "documentId": "elm-leblanc-7716704261-installation",
+      "title": "Notice d'installation - MEGALIA CGLA23-4H.5",
+      "documentType": "installation_maintenance",
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/Chaudi%C3%A8re%20%C2%B7%20ELM%20Leblanc/MEGALIA%20CGLA23-4H.5%20%C2%B7%207716704261/Notice%20d'installation%20-%20MEGALIA%20CGLA23-4H.5%20-%207716704261.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "ELM Leblanc",
+      "manufacturerReference": "7716704261",
+      "appliesTo": [
+        "MEGALIA CGLA23-4H.5"
+      ]
+    },
+    {
+      "documentId": "elm-leblanc-7716704261-exploded-view",
+      "title": "Vue éclatée et pièces - MEGALIA CGLA23-4H.5",
+      "documentType": "exploded_view",
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/Chaudi%C3%A8re%20%C2%B7%20ELM%20Leblanc/MEGALIA%20CGLA23-4H.5%20%C2%B7%207716704261/Vue%20%C3%A9clat%C3%A9e%20-%20MEGALIA%20CGLA23-4H.5%20-%207716704261.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "ELM Leblanc",
+      "manufacturerReference": "7716704261",
+      "appliesTo": [
+        "MEGALIA CGLA23-4H.5"
+      ]
+    }
+  ],
+  "errorCodeIndex": null,
+  "errorCodes": [],
+  "diagnosticRules": [],
+  "metadata": {
+    "status": "pilot",
+    "ragStatus": "pending",
+    "notes": "Vérifier la référence exacte de l'appareil avant toute commande de pièce."
+  }
+}

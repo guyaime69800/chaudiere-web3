@@ -1,4 +1,5 @@
 import { get } from "@vercel/blob";
+import elmLeblanc from "../src/data/equipment/elm-leblanc-7716704261.json" with { type: "json" };
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
@@ -24,7 +25,12 @@ const CHAFFOTEAUX_DOCUMENT_URLS = new Map(
   ),
 );
 
+const ELM_DOCUMENT_URLS = new Map(elmLeblanc.documents
+  .filter((document) => document.storage === "private")
+  .map((document) => [new URL(document.documentUrl).pathname.slice(1), document.documentUrl]));
+
 const DOCUMENTS = new Set([
+  ...ELM_DOCUMENT_URLS.keys(),
   "saunier-duval/0010021497/03-Notice-d-installation-technique-THEMAPLUS-CONDENS-25-A.pdf",
   "saunier-duval/0010021497/04-Notice-d-utilisation-THEMAPLUS-CONDENS-25-A.pdf",
   "saunier-duval/0010021497/02-Vue-clat-e-THEMAPLUS-CONDENS-25-A.pdf",
@@ -48,7 +54,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const documentUrl = MCR_DOCUMENT_URLS.get(pathname)
+    const documentUrl = ELM_DOCUMENT_URLS.get(pathname)
+      ?? MCR_DOCUMENT_URLS.get(pathname)
       ?? NAIA_DOCUMENT_URLS.get(pathname)
       ?? CHAFFOTEAUX_DOCUMENT_URLS.get(pathname)
       ?? pathname;
