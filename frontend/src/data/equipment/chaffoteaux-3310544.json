@@ -1,0 +1,74 @@
+{
+  "version": "1.0",
+  "equipmentId": "chaffoteaux-mira-c-green-ultra-30-fr-3310544",
+  "identity": {
+    "brand": "Chaffoteaux",
+    "productType": "chaudiere_gaz_condensation",
+    "range": "Mira C Green Ultra",
+    "model": "Mira C Green Ultra 30",
+    "variant": "FR",
+    "manufacturerReference": "3310544"
+  },
+  "carnetPass": {
+    "linkedIds": []
+  },
+  "support": {
+    "manufacturer": "Chaffoteaux",
+    "hotline": {
+      "label": "Service client Chaffoteaux",
+      "phone": "01 55 84 94 94",
+      "hours": null,
+      "source": "Notice commune, page 48 ; capture du 26/09/2026",
+      "verifiedAt": "2026-09-26"
+    }
+  },
+  "documents": [
+    {
+      "documentId": "chaffoteaux-3310544-installation_maintenance",
+      "title": "Notice d'installation - Mira C Green Ultra 30 FR",
+      "documentType": "installation_maintenance",
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/chaffoteaux/Mira%20C%20Green%20Ultra%2030%20FR%20%E2%80%94%20r%C3%A9f.%203310544/notice%20MIRA%20C%20GREEN%20ULTRA%2030%20FR%20%C2%B7%203310544.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "Chaffoteaux",
+      "manufacturerReference": "3310544",
+      "appliesTo": [
+        "Mira C Green Ultra 30 FR"
+      ]
+    },
+    {
+      "documentId": "chaffoteaux-3310544-settings_extract",
+      "title": "Réglages de combustion - Mira C Green Ultra 30 FR",
+      "documentType": "settings_extract",
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/chaffoteaux/Mira%20C%20Green%20Ultra%2025%20FR%20%E2%80%94%20r%C3%A9f.%203310543/R%C3%A9glages%20de%20combustion%20-%20MIRA%20C%20GREEN%20ULTRA%2025%20FR%20-%203310543.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "Chaffoteaux",
+      "manufacturerReference": "3310544",
+      "appliesTo": [
+        "Mira C Green Ultra 30 FR"
+      ]
+    },
+    {
+      "documentId": "chaffoteaux-3310544-exploded_view",
+      "title": "Vue éclatée et pièces - Mira C Green Ultra 30 FR",
+      "documentType": "exploded_view",
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/chaffoteaux/Mira%20C%20Green%20Ultra%2030%20FR%20%E2%80%94%20r%C3%A9f.%203310544/Vue%20%C3%A9clat%C3%A9e%20-%20MIRA%20C%20GREEN%20ULTRA%2030%20FR%20-%203310544.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "Chaffoteaux",
+      "manufacturerReference": "3310544",
+      "appliesTo": [
+        "Mira C Green Ultra 30 FR"
+      ]
+    }
+  ],
+  "errorCodeIndex": null,
+  "errorCodes": [],
+  "diagnosticRules": [],
+  "metadata": {
+    "status": "pilot",
+    "ragStatus": "pending",
+    "notes": "Vérifier la colonne propre à chaque puissance avant tout réglage ou commande de pièce."
+  }
+}

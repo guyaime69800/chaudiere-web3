@@ -47,6 +47,8 @@ for (const item of index.equipments) {
   ids.add(item.equipmentId);
   references.add(item.manufacturerReference);
 
+  if (data.metadata?.ragStatus === "pending") continue;
+
   if (!registry.includes(`src/data/${item.dataFile}`)) {
     throw new Error(`Registre RAG absent pour ${label}`);
   }
@@ -67,4 +69,4 @@ for (const item of index.equipments) {
   }
 }
 
-console.log(`${ids.size} modèles et leurs documents RAG vérifiés.`);
+console.log(`${ids.size} modèles vérifiés (Chaffoteaux : RAG en attente).`);

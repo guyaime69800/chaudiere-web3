@@ -56,6 +56,33 @@
       "manufacturerReference": "021272",
       "dataFile": "equipment/atlantic-021272.json",
       "status": "pilot"
+    },
+    {
+      "equipmentId": "chaffoteaux-mira-c-green-ultra-25-fr-3310543",
+      "brand": "Chaffoteaux",
+      "model": "Mira C Green Ultra 25",
+      "variant": "FR",
+      "manufacturerReference": "3310543",
+      "dataFile": "equipment/chaffoteaux-3310543.json",
+      "status": "pilot"
+    },
+    {
+      "equipmentId": "chaffoteaux-mira-c-green-ultra-30-fr-3310544",
+      "brand": "Chaffoteaux",
+      "model": "Mira C Green Ultra 30",
+      "variant": "FR",
+      "manufacturerReference": "3310544",
+      "dataFile": "equipment/chaffoteaux-3310544.json",
+      "status": "pilot"
+    },
+    {
+      "equipmentId": "chaffoteaux-mira-c-green-ultra-35-fr-3310545",
+      "brand": "Chaffoteaux",
+      "model": "Mira C Green Ultra 35",
+      "variant": "FR",
+      "manufacturerReference": "3310545",
+      "dataFile": "equipment/chaffoteaux-3310545.json",
+      "status": "pilot"
     }
   ]
 }
