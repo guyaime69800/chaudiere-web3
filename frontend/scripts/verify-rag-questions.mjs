@@ -11,6 +11,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const questions = [
   ["021272", "Quelle est la référence de la vanne gaz ?", "988113", 7],
   ["3310543", "Quelle est la référence de la vanne gaz ?", "65116557", 3],
+  ["3310543", "trouve moi la ref du circulateur", "65116908-03", 7],
   ["3310544", "Quelle est la référence de la pompe 5M PWM TACO ?", "65116908-03", 7],
   ["3310545", "Quelle est la référence de la vanne gaz ?", "65116557", 3],
   ["7716704261", "Quelle est la référence du moteur de circulateur ?", "8 716 771 427 0", 13],
@@ -25,6 +26,9 @@ for (const [model, question, reference, page] of questions) {
     item.page === page &&
     item.text.includes(reference));
   assert.ok(match, `${model} : ${reference} page ${page} absente des passages`);
+  if (question === "trouve moi la ref du circulateur") {
+    assert.equal(result.topResults[0], match, "La ligne de la pompe doit être le premier passage");
+  }
   console.log(`${model} : ${reference}, vue éclatée page ${page}`);
 }
 
@@ -32,3 +36,5 @@ for (const model of ["3310543", "3310544", "3310545"]) {
   assert.equal(getEquipmentConfig(model).equipmentData.support.hotline.phone, "01 55 84 94 94");
 }
 console.log("Hotline Chaffoteaux : 01 55 84 94 94");
+assert.equal(getEquipmentConfig("7716704261").equipmentData.support.hotline.phone, "08 20 00 40 00");
+console.log("Contact ELM indiqué sur EasySAV : 08 20 00 40 00");

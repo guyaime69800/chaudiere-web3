@@ -14,7 +14,13 @@
   },
   "support": {
     "manufacturer": "ELM Leblanc",
-    "hotline": null
+    "hotline": {
+      "label": "Contact ELM Leblanc indiqué sur EasySAV",
+      "phone": "08 20 00 40 00",
+      "hours": null,
+      "source": "Fiche EasySAV MEGALIA CGLA23-4H.5 (7716704261), capture fournie le 27/09/2026",
+      "verifiedAt": "2026-09-27"
+    }
   },
   "documents": [
     {

@@ -194,6 +194,7 @@ function isPartReferenceQuestion(question) {
 
   return (
     text.includes("reference") ||
+    /\bref\b/.test(text) ||
     text.includes("ref piece") ||
     text.includes("piece detachee") ||
     text.includes("piece de rechange") ||
@@ -401,7 +402,7 @@ function calculatePartBonus(
 function calculatePartRowBonus(question, documentText, documentType) {
   if (documentType !== "exploded_view") return 0;
 
-  const afterReference = normalizeText(question).split("reference")[1];
+  const afterReference = normalizeText(question).match(/\b(?:reference|ref)\.?\s+(.+)/)?.[1];
   if (!afterReference) return 0;
   const designation = afterReference
     .trim()
@@ -410,12 +411,16 @@ function calculatePartRowBonus(question, documentText, documentType) {
     .trim();
   if (!designation) return 0;
 
+  const designations = designation === "circulateur"
+    ? ["circulateur", "pompe"]
+    : [designation];
+
   for (const line of documentText.split("\n")) {
     let row = normalizeText(line).replace(/^\d{1,4}\s+/, "");
     row = row.replace(/^\d{5,}(?:-\d+)?\s+/, "");
     const hasReference = /\b\d{5,}(?:-\d+)?\b|\b\d\s+\d{3}\s+\d{3}\s+\d{3}\s+\d\b/.test(row);
     if (!hasReference) continue;
-    if (row.startsWith(designation)) return 0.65;
+    if (designations.some((part) => row.startsWith(part))) return 0.65;
   }
 
   return 0;

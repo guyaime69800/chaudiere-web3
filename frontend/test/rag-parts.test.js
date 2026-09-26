@@ -47,10 +47,31 @@ test("les quatre nouveaux modèles retrouvent une référence sur la vue exacte"
   }
 });
 
+test("une demande abrégée de réf du circulateur retrouve la pompe Chaffoteaux", async () => {
+  const config = getEquipmentConfig("3310543");
+  const result = await searchRagContext(
+    openai,
+    config.ragEmbeddingData,
+    "trouve moi la ref du circulateur",
+    3,
+  );
+  assert.equal(result.queryIntent, "part_reference");
+  assert.ok(result.topResults.some((item) =>
+    item.documentType === "exploded_view" &&
+    item.page === 7 &&
+    item.text.includes("65116908-03")));
+});
+
 test("la hotline Chaffoteaux reste présente sur les trois fiches", () => {
   for (const model of ["3310543", "3310544", "3310545"]) {
     assert.equal(getEquipmentConfig(model).equipmentData.support.hotline.phone, "01 55 84 94 94");
   }
+});
+
+test("le numéro ELM affiché sur la fiche EasySAV est disponible pour Shiba", () => {
+  const hotline = getEquipmentConfig("7716704261").equipmentData.support.hotline;
+  assert.equal(hotline.phone, "08 20 00 40 00");
+  assert.match(hotline.source, /EasySAV/);
 });
 
 test("la notice ELM scannée est indexée page par page après OCR", () => {
