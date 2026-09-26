@@ -21,6 +21,10 @@ const equipmentFileArg = process.argv[2];
 const documentTypeArg =
   process.argv[3] || "installation_maintenance";
 
+// Une copie locale du PDF permet l'indexation lorsque le jeton Blob
+// d'administration n'est pas disponible dans l'environnement de travail.
+const localPdfArg = process.argv[4];
+
 if (!equipmentFileArg) {
   throw new Error(
     "Fichier équipement manquant. Exemple : node scripts/extract-rag-document.mjs src/data/equipment/saunier-duval-0010017388.json"
@@ -68,7 +72,13 @@ console.log("Téléchargement du document...");
 
 let pdfBuffer;
 
-if (documentData.storage === "private") {
+if (localPdfArg) {
+  const localPdfPath = path.resolve(localPdfArg);
+  if (!fs.existsSync(localPdfPath) || path.extname(localPdfPath).toLowerCase() !== ".pdf") {
+    throw new Error(`PDF local introuvable : ${localPdfPath}`);
+  }
+  pdfBuffer = fs.readFileSync(localPdfPath);
+} else if (documentData.storage === "private") {
   const pathname = new URL(documentData.documentUrl).pathname.slice(1);
   const result = await get(pathname, { access: "private" });
 
@@ -97,6 +107,19 @@ console.log(
 const pdf = await getDocument({
   data: new Uint8Array(pdfBuffer),
 }).promise;
+
+let ocrWorker;
+let createCanvas;
+if (documentData.rag?.ocr) {
+  const [{ createWorker }, canvasModule] = await Promise.all([
+    import("tesseract.js"),
+    import("@napi-rs/canvas"),
+  ]);
+  createCanvas = canvasModule.createCanvas;
+  const cachePath = path.resolve("tmp/ocr-cache");
+  fs.mkdirSync(cachePath, { recursive: true });
+  ocrWorker = await createWorker("fra", 1, { cachePath });
+}
 
 console.log(
   "Nombre de pages détectées :",
@@ -138,6 +161,17 @@ for (
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
+  if (!text && ocrWorker) {
+    const viewport = page.getViewport({ scale: 2 });
+    const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+    await page.render({ canvasContext: canvas.getContext("2d"), viewport, canvas }).promise;
+    const recognized = await ocrWorker.recognize(canvas.toBuffer("image/png"));
+    text = recognized.data.text.trim();
+    if (!text) {
+      throw new Error(`OCR vide pour la page ${pageNumber} de ${documentData.documentId}`);
+    }
+  }
+
   pages.push({
     page: pageNumber,
     text,
@@ -147,6 +181,8 @@ for (
     `Page ${pageNumber}/${pdf.numPages} extraite - ${text.length} caractères`
   );
 }
+
+if (ocrWorker) await ocrWorker.terminate();
 
 // ---------------------------------------------------------
 // Création automatique du nom de fichier

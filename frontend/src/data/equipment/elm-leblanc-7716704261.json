@@ -21,6 +21,7 @@
       "documentId": "elm-leblanc-7716704261-installation",
       "title": "Notice d'installation - MEGALIA CGLA23-4H.5",
       "documentType": "installation_maintenance",
+      "rag": { "ocr": true },
       "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/Chaudi%C3%A8re%20%C2%B7%20ELM%20Leblanc/MEGALIA%20CGLA23-4H.5%20%C2%B7%207716704261/Notice%20d'installation%20-%20MEGALIA%20CGLA23-4H.5%20-%207716704261.pdf",
       "storage": "private",
       "language": "fr",
@@ -49,7 +50,7 @@
   "diagnosticRules": [],
   "metadata": {
     "status": "pilot",
-    "ragStatus": "pending",
+    "ragStatus": "ready",
     "notes": "Vérifier la référence exacte de l'appareil avant toute commande de pièce."
   }
 }

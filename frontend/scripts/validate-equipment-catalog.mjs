@@ -69,4 +69,4 @@ for (const item of index.equipments) {
   }
 }
 
-console.log(`${ids.size} modèles vérifiés (Chaffoteaux : RAG en attente).`);
+console.log(`${ids.size} modèles vérifiés et documents RAG contrôlés.`);

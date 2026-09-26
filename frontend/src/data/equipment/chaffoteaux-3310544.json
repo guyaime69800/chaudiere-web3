@@ -53,6 +53,7 @@
       "documentId": "chaffoteaux-3310544-exploded_view",
       "title": "Vue éclatée et pièces - Mira C Green Ultra 30 FR",
       "documentType": "exploded_view",
+      "notes": "Prix affichés historiques : ne pas les présenter comme tarifs actuels.",
       "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/chaffoteaux/Mira%20C%20Green%20Ultra%2030%20FR%20%E2%80%94%20r%C3%A9f.%203310544/Vue%20%C3%A9clat%C3%A9e%20-%20MIRA%20C%20GREEN%20ULTRA%2030%20FR%20-%203310544.pdf",
       "storage": "private",
       "language": "fr",
@@ -68,7 +69,7 @@
   "diagnosticRules": [],
   "metadata": {
     "status": "pilot",
-    "ragStatus": "pending",
+    "ragStatus": "ready",
     "notes": "Vérifier la colonne propre à chaque puissance avant tout réglage ou commande de pièce."
   }
 }

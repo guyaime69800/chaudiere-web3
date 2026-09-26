@@ -178,6 +178,15 @@ export default async function handler(
       ragEmbeddingData,
     } = equipmentConfig;
 
+    const hotlineQuestion = /(?:hotline|service client|num[eé]ro.*(?:t[eé]l[eé]phone|appeler)|contacter.*(?:fabricant|constructeur|chaffoteaux))/i.test(question);
+    const hotline = equipmentData.support?.hotline;
+    if (hotlineQuestion && hotline?.phone) {
+      return response.status(200).json({
+        ok: true,
+        answer: `${hotline.label ?? "Service client constructeur"} : ${hotline.phone}.${hotline.source ? ` Source : ${hotline.source}.` : ""}`,
+      });
+    }
+
     // -----------------------------------------------------
     // 4. ANALYSE DE LA QUESTION
     // -----------------------------------------------------

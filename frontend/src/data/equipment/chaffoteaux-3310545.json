@@ -68,7 +68,7 @@
   "diagnosticRules": [],
   "metadata": {
     "status": "pilot",
-    "ragStatus": "pending",
+    "ragStatus": "ready",
     "notes": "Vérifier la colonne propre à chaque puissance avant tout réglage ou commande de pièce."
   }
 }

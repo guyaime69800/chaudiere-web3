@@ -363,6 +363,20 @@ function calculatePartBonus(
     documentType === "exploded_view"
   ) {
     bonus += 0.45;
+
+    // Une page de dessin donne les repères, mais la référence à commander
+    // figure généralement dans le tableau de nomenclature voisin.
+    const hasPartsTable = (
+      /\breferences?\b/.test(text) &&
+      /\b(?:repere|designation|libelle)\b|\brep\./.test(text)
+    ) || (
+      /\bpos\b/.test(text) &&
+      /\bdenomination\b/.test(text) &&
+      /\bordre\b/.test(text)
+    );
+    if (hasPartsTable) {
+      bonus += 0.24;
+    }
   }
 
   const hintMatches =
@@ -382,6 +396,29 @@ function calculatePartBonus(
   }
 
   return bonus;
+}
+
+function calculatePartRowBonus(question, documentText, documentType) {
+  if (documentType !== "exploded_view") return 0;
+
+  const afterReference = normalizeText(question).split("reference")[1];
+  if (!afterReference) return 0;
+  const designation = afterReference
+    .trim()
+    .replace(/^(?:(?:de|du|des|la|le|l)\s+)+/, "")
+    .split(/\b(?:pour|sur|de la chaudiere|du modele)\b/)[0]
+    .trim();
+  if (!designation) return 0;
+
+  for (const line of documentText.split("\n")) {
+    let row = normalizeText(line).replace(/^\d{1,4}\s+/, "");
+    row = row.replace(/^\d{5,}(?:-\d+)?\s+/, "");
+    const hasReference = /\b\d{5,}(?:-\d+)?\b|\b\d\s+\d{3}\s+\d{3}\s+\d{3}\s+\d\b/.test(row);
+    if (!hasReference) continue;
+    if (row.startsWith(designation)) return 0.65;
+  }
+
+  return 0;
 }
 
 // ---------------------------------------------------------
@@ -734,7 +771,8 @@ function selectDiverseResults(
     );
 
   if (
-    selected.length < topK
+    selected.length < topK &&
+    !partReferenceQuestion
   ) {
     const diverseCandidate =
       results.find((result) => {
@@ -901,6 +939,10 @@ export async function searchRagContext(
           documentType
         );
 
+      const partRowBonus = partReferenceQuestion
+        ? calculatePartRowBonus(question, item.text, documentType)
+        : 0;
+
       // Bonus code défaut.
       const errorCodeAnalysis =
         calculateErrorCodeBonus(
@@ -924,6 +966,7 @@ export async function searchRagContext(
         lexicalScore * 0.08 +
         locationBonus +
         partBonus +
+        partRowBonus +
         errorCodeBonus +
         errorTableBonus;
 
@@ -956,6 +999,7 @@ export async function searchRagContext(
         locationBonus,
 
         partBonus,
+        partRowBonus,
 
         exactCodeMatch,
 
