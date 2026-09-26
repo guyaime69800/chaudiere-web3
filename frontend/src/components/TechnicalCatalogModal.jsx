@@ -81,8 +81,12 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
     if (item.brand && !names.some((name) => normalize(name) === normalize(item.brand))) names.push(item.brand);
   }
   const brands = names.map((name) => ({ name, count: categoryEntries.filter((item) => normalize(item.brand) === normalize(name)).length }));
+  const matchingBrands = brands.filter(({ name }) =>
+    normalize(name).includes(normalize(query)) ||
+    categoryEntries.some((item) => normalize(item.brand) === normalize(name) &&
+      normalize([item.brand, item.model, item.variant, item.manufacturerReference].join(" ")).includes(normalize(query))));
   const models = categoryEntries.filter((item) => normalize(item.brand) === normalize(brand)
-    && (!normalize(query) || normalize([item.model, item.variant, item.manufacturerReference].join(" ")).includes(normalize(query))));
+    && (!normalize(query) || normalize([item.brand, item.model, item.variant, item.manufacturerReference].join(" ")).includes(normalize(query))));
 
   function clearModel({ preserveQuestion = false } = {}) {
     documentRequest.current += 1; aiRequest.current += 1;
@@ -243,8 +247,11 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
             <button type="button" className="technical-catalog-back" onClick={() => { clearModel({ preserveQuestion: true }); setStep("category"); }}>Votre modèle est absent ? Choisir sa catégorie →</button>
           </section>}
           {step === "brand" && <><div className="technical-catalog-band"><button type="button" onClick={toCategory} aria-label="Retour aux catégories">‹</button><h3>{category?.label}</h3></div>
-            {brands.length === 0 ? <p className="technical-catalog-empty">Les marques de cette catégorie seront ajoutées progressivement.</p> : <div className="technical-catalog-list">
-              {brands.sort((a, b) => a.name.localeCompare(b.name, "fr")).map(({ name, count }) => <button key={name} type="button" className="technical-catalog-row" onClick={() => { setBrand(name); setStep("models"); }}><strong>{name}</strong><span>{count ? `${count} modèle${count > 1 ? "s" : ""}` : "À compléter"} <span aria-hidden="true">›</span></span></button>)}
+            <label className="technical-catalog-search" htmlFor="technical-catalog-category-search">Rechercher une marque ou un modèle
+              <input id="technical-catalog-category-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Marque, modèle ou référence…" autoFocus />
+            </label>
+            {matchingBrands.length === 0 ? <p className="technical-catalog-empty">{query ? "Aucune marque ni aucun modèle trouvé." : "Les marques de cette catégorie seront ajoutées progressivement."}</p> : <div className="technical-catalog-list">
+              {matchingBrands.sort((a, b) => a.name.localeCompare(b.name, "fr")).map(({ name, count }) => <button key={name} type="button" className="technical-catalog-row" onClick={() => { setBrand(name); setStep("models"); }}><strong>{name}</strong><span>{count ? `${count} modèle${count > 1 ? "s" : ""}` : "À compléter"} <span aria-hidden="true">›</span></span></button>)}
             </div>}
           </>}
           {step === "models" && <><div className="technical-catalog-band"><button type="button" onClick={toBrands} aria-label="Retour aux marques">‹</button><h3>{brand}</h3></div>

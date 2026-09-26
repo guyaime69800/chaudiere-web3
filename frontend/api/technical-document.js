@@ -4,6 +4,9 @@ import { pipeline } from "node:stream/promises";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import mcr2 from "../src/data/equipment/de-dietrich-7841749.json" with { type: "json" };
 import naia from "../src/data/equipment/atlantic-021272.json" with { type: "json" };
+import mira25 from "../src/data/equipment/chaffoteaux-3310543.json" with { type: "json" };
+import mira30 from "../src/data/equipment/chaffoteaux-3310544.json" with { type: "json" };
+import mira35 from "../src/data/equipment/chaffoteaux-3310545.json" with { type: "json" };
 
 const MCR_DOCUMENT_URLS = new Map(mcr2.documents
   .filter((document) => document.storage === "private")
@@ -13,12 +16,21 @@ const NAIA_DOCUMENT_URLS = new Map(naia.documents
   .filter((document) => document.storage === "private")
   .map((document) => [new URL(document.documentUrl).pathname.slice(1), document.documentUrl]));
 
+const CHAFFOTEAUX_DOCUMENT_URLS = new Map(
+  [mira25, mira30, mira35].flatMap((equipment) =>
+    equipment.documents
+      .filter((document) => document.storage === "private")
+      .map((document) => [new URL(document.documentUrl).pathname.slice(1), document.documentUrl]),
+  ),
+);
+
 const DOCUMENTS = new Set([
   "saunier-duval/0010021497/03-Notice-d-installation-technique-THEMAPLUS-CONDENS-25-A.pdf",
   "saunier-duval/0010021497/04-Notice-d-utilisation-THEMAPLUS-CONDENS-25-A.pdf",
   "saunier-duval/0010021497/02-Vue-clat-e-THEMAPLUS-CONDENS-25-A.pdf",
   ...MCR_DOCUMENT_URLS.keys(),
   ...NAIA_DOCUMENT_URLS.keys(),
+  ...CHAFFOTEAUX_DOCUMENT_URLS.keys(),
 ]);
 
 export default async function handler(req, res) {
@@ -38,6 +50,7 @@ export default async function handler(req, res) {
   try {
     const documentUrl = MCR_DOCUMENT_URLS.get(pathname)
       ?? NAIA_DOCUMENT_URLS.get(pathname)
+      ?? CHAFFOTEAUX_DOCUMENT_URLS.get(pathname)
       ?? pathname;
     const result = await get(documentUrl, { access: "private" });
 
