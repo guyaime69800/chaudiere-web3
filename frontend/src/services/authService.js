@@ -5,6 +5,7 @@ export async function signUp({ fullName, email, password }) {
     email: email.trim().toLowerCase(),
     password,
     options: {
+      emailRedirectTo: new URL("/connexion", window.location.origin).href,
       data: {
         full_name: fullName.trim(),
       },

@@ -22,6 +22,7 @@ import CarnetPassCreatedModal from "../components/CarnetPassCreatedModal";
 import TechnicalCatalogModal from "../components/TechnicalCatalogModal";
 import ShibaUsage from "../components/ShibaUsage";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
+import { DISCOVERY_EQUIPMENT_LIMIT, getDiscoveryAccess } from "../../shared/discovery-access.js";
 import equipmentIndex from "../data/equipment-index.json";
 import "./ProSpacePage.css";
 import "./ProShibaPrompt.css";
@@ -275,6 +276,7 @@ function CompanyAccountCard({
   user,
   session,
   companyVerified,
+  discoveryActive,
   verificationTitle,
   verificationMessage,
   verificationBusy,
@@ -431,7 +433,7 @@ function CompanyAccountCard({
           <p className="pro-company-verification-text">{verificationMessage}</p>
 
           <div className="pro-company-card-actions">
-            {!companyVerified && company.is_demo !== true && (
+            {!companyVerified && !discoveryActive && company.is_demo !== true && (
               <button
                 type="button"
                 className="pro-primary-button"
@@ -1381,7 +1383,7 @@ export default function ProSpacePage() {
       const savedEquipmentResult = await createCompanyEquipment(company.id, {
         ...equipmentForm,
         productReference: reference,
-      });
+      }, { discoveryMode: company.subscription?.plan === "free" && company.is_demo !== true });
       const savedEquipment = Array.isArray(savedEquipmentResult)
         ? savedEquipmentResult[0]
         : savedEquipmentResult;
@@ -1739,7 +1741,17 @@ export default function ProSpacePage() {
     verification.verified_siret === company.siret &&
     Boolean(verification.verified_at);
 
-  const companyCanCreateEquipment = companyVerified || company.is_demo === true;
+  const discovery = getDiscoveryAccess({
+    plan,
+    status: company.subscription?.status,
+    createdAt: company.created_at,
+    trialEndsAt: company.subscription?.trial_ends_at,
+    verificationStatus: verification?.status,
+  });
+
+  const companyCanCreateEquipment = company.is_demo === true || (plan === "free"
+    ? discovery.active && equipments.length < DISCOVERY_EQUIPMENT_LIMIT
+    : companyVerified);
 
   let verificationTitle = "Entreprise en attente de validation";
   let verificationMessage =
@@ -1749,6 +1761,12 @@ export default function ProSpacePage() {
     verificationTitle = "Mode démonstration";
     verificationMessage =
       "Cet espace de démonstration peut créer des équipements sans représenter une entreprise officiellement validée.";
+  } else if (plan === "free" && discovery.active) {
+    verificationTitle = "Découverte active";
+    verificationMessage = `Vous pouvez créer jusqu’à ${DISCOVERY_EQUIPMENT_LIMIT} équipements sans SIRET pendant votre essai. ${discovery.daysRemaining} jour(s) restant(s).`;
+  } else if (plan === "free") {
+    verificationTitle = "Essai Découverte terminé";
+    verificationMessage = "Votre essai de 5 jours est terminé. Vos équipements restent visibles. Les offres payantes seront bientôt disponibles.";
   } else if (companyVerified) {
     verificationTitle = "Entreprise validée";
     verificationMessage =
@@ -1827,6 +1845,7 @@ export default function ProSpacePage() {
         user={user}
         session={session}
         companyVerified={companyVerified}
+        discoveryActive={discovery.active}
         verificationTitle={verificationTitle}
         verificationMessage={verificationMessage}
         verificationBusy={verificationBusy}
@@ -1879,7 +1898,9 @@ export default function ProSpacePage() {
         <article>
           <span>Abonnement</span>
           <strong>{getPlanLabel(plan)}</strong>
-          <small>Compte actif</small>
+          <small>{plan === "free"
+            ? discovery.active ? `${discovery.daysRemaining} jour(s) d’essai restant(s)` : "Essai terminé"
+            : "Compte actif"}</small>
         </article>
       </section>
 
@@ -1928,13 +1949,18 @@ export default function ProSpacePage() {
               ? equipmentFormOpen
                 ? "Fermer le formulaire"
                 : "Ajouter un équipement"
-              : "Validation requise"}
+              : plan === "free"
+                ? discovery.active ? "Limite de 5 atteinte" : "Essai terminé"
+                : "Validation requise"}
           </button>
 
           {!companyCanCreateEquipment && (
             <p className="pro-equipment-lock">
-              L’ajout sera disponible après la validation du SIRET de
-              l’entreprise.
+              {plan === "free"
+                ? discovery.active
+                  ? "La formule Découverte est limitée à 5 équipements."
+                  : "L’essai Découverte de 5 jours est terminé."
+                : "L’ajout sera disponible après la validation du SIRET de l’entreprise."}
             </p>
           )}
 

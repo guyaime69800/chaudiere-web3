@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { getDiscoveryAccess } from "../../shared/discovery-access.js";
 
 // Vérifie qu'une requête provient d'un utilisateur professionnel autorisé.
 // Cette fonction n'utilise aucune clé administrateur Supabase.
@@ -154,7 +155,7 @@ export async function requireVerifiedCompany(req, res) {
     } = await supabase
       .from("companies")
       .select(
-        "id, siret, is_demo, company_verifications(status, verified_siret, verified_at)"
+        "id, siret, is_demo, created_at, company_verifications(status, verified_siret, verified_at)"
       )
       .eq("id", membership.company_id)
       .maybeSingle();
@@ -176,20 +177,42 @@ export async function requireVerifiedCompany(req, res) {
       company.siret === verification.verified_siret &&
       Boolean(verification.verified_at);
 
-    if (!company || (!demoAllowed && !verifiedAllowed)) {
+    const { data: subscription, error: subscriptionError } = await supabase
+      .from("subscriptions")
+      .select("plan, status, trial_ends_at")
+      .eq("company_id", membership.company_id)
+      .maybeSingle();
+    if (subscriptionError) throw new Error("Subscription check failed");
+    const discovery = getDiscoveryAccess({
+      plan: subscription?.plan,
+      status: subscription?.status,
+      createdAt: company?.created_at,
+      trialEndsAt: subscription?.trial_ends_at,
+      verificationStatus: verification?.status,
+    });
+
+    const accessAllowed = demoAllowed || (subscription?.plan === "free"
+      ? discovery.active
+      : verifiedAllowed);
+    if (!company || !accessAllowed) {
       return deny(
         403,
-        "COMPANY_NOT_APPROVED",
-        "Ton entreprise doit être validée avant de pouvoir utiliser cette fonction."
+        subscription?.plan === "free" ? "DISCOVERY_EXPIRED" : "COMPANY_NOT_APPROVED",
+        subscription?.plan === "free"
+          ? "L’essai Découverte est terminé ou indisponible."
+          : "Ton entreprise doit être validée avant de pouvoir utiliser cette fonction."
       );
     }
 
-  return {
-  userId: user.id,
-  companyId: company.id,
-  role: membership.role,
-  email: user.email || null,
-};
+    return {
+      userId: user.id,
+      companyId: company.id,
+      role: membership.role,
+      email: user.email || null,
+      accessKind: demoAllowed ? "demo" : subscription?.plan === "free" ? "discovery" : "verified",
+      discoveryStartsAt: company.created_at,
+      discoveryEndsAt: discovery.endsAt,
+    };
   } catch {
     // Ne jamais afficher le jeton, les clés ou les erreurs brutes Supabase.
 

@@ -9,8 +9,12 @@ const { readShibaUsage, refundShibaQuestion, reserveShibaQuestion, shibaQuotaEna
 function fakeRedis() {
   const values = new Map();
   return {
-    async get(key) { return values.get(key) || 0; },
-    async eval(script, [key], args) {
+    values,
+    async get(key) { return values.get(key) ?? null; },
+    async eval(script, [key, legacyKey], args) {
+      if (legacyKey && !values.has(key) && values.has(legacyKey)) {
+        values.set(key, values.get(legacyKey));
+      }
       const used = values.get(key) || 0;
       if (script.includes("DECR")) {
         values.set(key, Math.max(0, used - 1));
@@ -24,21 +28,30 @@ function fakeRedis() {
 }
 
 const companyId = "company-one";
-const alice = { companyId, userId: "alice" };
-const bob = { companyId, userId: "bob" };
+const alice = { companyId, userId: "alice", discoveryStartsAt: "2026-09-27T12:00:00.000Z", discoveryEndsAt: "2026-10-02T12:00:00.000Z" };
+const bob = { companyId, userId: "bob", discoveryStartsAt: "2026-09-27T12:00:00.000Z", discoveryEndsAt: "2026-10-02T12:00:00.000Z" };
 
-test("Découverte bloque la 21e question du mois, sans bloquer un autre technicien ni le mois suivant", async () => {
+test("Découverte bloque la 21e question même si l’essai traverse un changement de mois", async () => {
   const redis = fakeRedis();
-  const march = new Date("2026-03-12T12:00:00Z");
+  const september = new Date("2026-09-27T12:00:00Z");
   for (let index = 0; index < 20; index += 1) {
-    assert.equal((await reserveShibaQuestion(alice, "free", { redis, now: march })).allowed, true);
+    assert.equal((await reserveShibaQuestion(alice, "free", { redis, now: september })).allowed, true);
   }
-  const blocked = await reserveShibaQuestion(alice, "free", { redis, now: march });
+  const blocked = await reserveShibaQuestion(alice, "free", { redis, now: new Date("2026-10-01T00:00:00Z") });
   assert.equal(blocked.allowed, false);
   assert.equal(blocked.remaining, 0);
-  assert.equal((await readShibaUsage(alice, "free", { redis, now: march })).used, 20);
-  assert.equal((await reserveShibaQuestion(bob, "free", { redis, now: march })).allowed, true);
-  assert.equal((await reserveShibaQuestion(alice, "free", { redis, now: new Date("2026-04-01T00:00:00Z") })).allowed, true);
+  assert.equal((await readShibaUsage(alice, "free", { redis, now: september })).used, 20);
+  assert.equal((await reserveShibaQuestion(bob, "free", { redis, now: september })).allowed, true);
+  assert.equal(blocked.period, "trial");
+});
+
+test("un quota mensuel déjà consommé reste consommé pendant l’essai", async () => {
+  const redis = fakeRedis();
+  const now = new Date("2026-09-27T12:00:00Z");
+  redis.values.set(`carnetpass:shiba:monthly:v1:${companyId}:alice:2026-09`, 20);
+  assert.equal((await readShibaUsage(alice, "free", { redis, now })).remaining, 0);
+  assert.equal((await reserveShibaQuestion(alice, "free", { redis, now })).allowed, false);
+  assert.equal((await readShibaUsage(alice, "free", { redis, now: new Date("2026-10-01T00:00:00Z") })).remaining, 0);
 });
 
 test("Pro compte 200 questions par technicien et une tentative échouée peut être remboursée", async () => {

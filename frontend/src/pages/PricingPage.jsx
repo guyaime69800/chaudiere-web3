@@ -6,8 +6,8 @@ const offers = [
     name: "Découverte",
     audience: "Pour découvrir CarnetPass sur le terrain",
     price: "Gratuit",
-    priceDetail: "pendant 5 jours · essai à activer",
-    features: ["Essai de 5 jours prévu", "Jusqu’à 5 équipements", "Carnet et rapports", "20 questions à Shiba Bot pendant l’essai"],
+    priceDetail: "pendant 5 jours",
+    features: ["Essai gratuit de 5 jours", "Jusqu’à 5 équipements", "Carnet et rapports", "20 questions à Shiba Bot pendant l’essai"],
   },
   {
     name: "Pro",
@@ -19,10 +19,10 @@ const offers = [
   },
   {
     name: "Équipe",
-    audience: "Pour une entreprise CVC jusqu’à 10 personnes",
+    audience: "Pour une équipe de 5 personnes",
     price: "35 € HT",
-    priceDetail: "unité de facturation à préciser",
-    features: ["Fonctions Pro", "Jusqu’à 10 comptes et droits d’équipe", "Suivi partagé", "200 questions IA par mois et par technicien", "Accompagnement au démarrage"],
+    priceDetail: "par mois · une seule facture pour l’équipe",
+    features: ["Fonctions Pro", "Jusqu’à 5 comptes et droits d’équipe", "Une seule facture", "Suivi partagé", "200 questions IA par mois et par technicien", "Accompagnement au démarrage"],
   },
   {
     name: "Entreprise",

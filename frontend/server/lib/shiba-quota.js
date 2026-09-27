@@ -45,23 +45,43 @@ export async function getShibaPlan(request, professional) {
 }
 
 function quotaContext(professional, plan, now) {
-  const { key, resetAt } = period(now);
+  const monthly = period(now);
+  const trialEnd = plan === "free" ? Date.parse(professional.discoveryEndsAt || "") : NaN;
+  const trialStart = plan === "free" ? Date.parse(professional.discoveryStartsAt || "") : NaN;
+  if (plan === "free" && !Number.isFinite(trialEnd)) throw new Error("Discovery end date missing");
+  if (plan === "free" && !Number.isFinite(trialStart)) throw new Error("Discovery start date missing");
+  const resetAt = plan === "free" ? new Date(trialEnd) : monthly.resetAt;
   return {
-    key: `carnetpass:shiba:monthly:v1:${professional.companyId}:${professional.userId}:${key}`,
+    key: plan === "free"
+      ? `carnetpass:shiba:trial:v1:${professional.companyId}:${professional.userId}:${trialEnd}`
+      : `carnetpass:shiba:monthly:v1:${professional.companyId}:${professional.userId}:${monthly.key}`,
+    legacyKey: plan === "free"
+      ? `carnetpass:shiba:monthly:v1:${professional.companyId}:${professional.userId}:${period(new Date(trialStart)).key}`
+      : null,
     limit: shibaQuotaLimit(plan),
     resetAt: resetAt.toISOString(),
     expiresAt: Math.floor(resetAt.getTime() / 1000) + 86400,
+    period: plan === "free" ? "trial" : "month",
   };
 }
 
 export async function readShibaUsage(professional, plan, options = {}) {
   const context = quotaContext(professional, plan, options.now || new Date());
   if (context.limit === null) return { enabled: false };
-  const used = Number(await (options.redis || redis).get(context.key) || 0);
-  return { enabled: true, used, limit: context.limit, remaining: Math.max(0, context.limit - used), resetAt: context.resetAt };
+  const store = options.redis || redis;
+  const current = await store.get(context.key);
+  const used = Number(current ?? (context.legacyKey ? await store.get(context.legacyKey) : 0) ?? 0);
+  return { enabled: true, used, limit: context.limit, remaining: Math.max(0, context.limit - used), resetAt: context.resetAt, period: context.period };
 }
 
 const RESERVE_SCRIPT = `
+if KEYS[2] and KEYS[2] ~= '' and redis.call('EXISTS', KEYS[1]) == 0 then
+  local previous = redis.call('GET', KEYS[2])
+  if previous then
+    redis.call('SET', KEYS[1], previous)
+    redis.call('EXPIREAT', KEYS[1], tonumber(ARGV[2]))
+  end
+end
 local used = tonumber(redis.call('GET', KEYS[1]) or '0')
 local limit = tonumber(ARGV[1])
 if used >= limit then return {0, used} end
@@ -75,7 +95,7 @@ export async function reserveShibaQuestion(professional, plan, options = {}) {
   if (context.limit === null) return { allowed: true, enforced: false };
   const [allowed, used] = await (options.redis || redis).eval(
     RESERVE_SCRIPT,
-    [context.key],
+    [context.key, context.legacyKey || ""],
     [context.limit, context.expiresAt],
   );
   return {
@@ -86,6 +106,7 @@ export async function reserveShibaQuestion(professional, plan, options = {}) {
     limit: context.limit,
     remaining: Math.max(0, context.limit - Number(used)),
     resetAt: context.resetAt,
+    period: context.period,
   };
 }
 

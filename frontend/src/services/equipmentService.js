@@ -7,6 +7,10 @@ function getEquipmentErrorMessage(error) {
     return "Votre entreprise doit être validée avant d’ajouter un équipement.";
   }
 
+  if (message.includes("limitée à 5 équipements") || message.includes("période Découverte")) {
+    return message;
+  }
+
   if (
     message.includes("numéro de série existe déjà") ||
     error?.code === "23505"
@@ -45,9 +49,9 @@ export async function getCompanyEquipments(companyId) {
   return data || [];
 }
 
-export async function createCompanyEquipment(companyId, equipment) {
+export async function createCompanyEquipment(companyId, equipment, { discoveryMode = false } = {}) {
   const { data, error } = await supabase.rpc(
-    "create_company_equipment",
+    discoveryMode ? "create_discovery_equipment" : "create_company_equipment",
     {
       p_company_id: companyId,
       p_equipment_type: equipment.equipmentType,
