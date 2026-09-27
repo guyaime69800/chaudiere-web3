@@ -13,7 +13,9 @@
 .pricing-card h2 { margin: 0; font-size: 25px; }
 .pricing-card__top span { display: inline-block; margin-top: 8px; color: #ad3b10; font-size: 12px; font-weight: 800; }
 .pricing-card > p { min-height: 67px; color: #655a52; line-height: 1.5; }
-.pricing-card__status { padding: 13px 0; border-top: 1px solid #eadfd6; border-bottom: 1px solid #eadfd6; color: #a43b16; }
+.pricing-card__price { display: grid; gap: 3px; padding: 13px 0; border-top: 1px solid #eadfd6; border-bottom: 1px solid #eadfd6; color: #a43b16; }
+.pricing-card__price strong { font-size: 24px; }
+.pricing-card__price span { color: #675b53; font-size: 13px; }
 .pricing-card ul { flex: 1; padding: 0 0 0 21px; line-height: 1.55; }
 .pricing-card li { margin: 10px 0; }
 .pricing-card > a { display: inline-flex; justify-content: space-between; gap: 12px; padding: 12px 15px; border-radius: 9px; background: #281f1a; color: white; font-weight: 750; text-decoration: none; }

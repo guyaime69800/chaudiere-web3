@@ -5,22 +5,30 @@ const offers = [
   {
     name: "Découverte",
     audience: "Pour découvrir CarnetPass sur le terrain",
-    features: ["Essai de 14 jours envisagé", "Jusqu’à 5 équipements", "Carnet et rapports", "20 questions à Shiba Bot sur la période testée"],
+    price: "Gratuit",
+    priceDetail: "pendant 5 jours · essai à activer",
+    features: ["Essai de 5 jours prévu", "Jusqu’à 5 équipements", "Carnet et rapports", "20 questions à Shiba Bot pendant l’essai"],
   },
   {
     name: "Pro",
-    audience: "Pour un artisan ou une petite entreprise",
-    features: ["Équipements et interventions sans plafond métier", "Documents et attestations", "Catalogue technique disponible", "200 questions IA par mois et par technicien"],
+    audience: "Pour un artisan indépendant",
+    price: "25 € HT",
+    priceDetail: "par mois · 1 technicien",
+    features: ["Un compte technicien", "Équipements et interventions sans plafond métier", "Documents et attestations", "Catalogue technique disponible", "200 questions IA par mois"],
     featured: true,
   },
   {
     name: "Équipe",
-    audience: "Pour une entreprise CVC d’au moins cinq techniciens",
-    features: ["Fonctions Pro", "Comptes, droits et suivi partagé", "200 questions IA par mois et par technicien", "Accompagnement au démarrage"],
+    audience: "Pour une entreprise CVC jusqu’à 10 personnes",
+    price: "35 € HT",
+    priceDetail: "unité de facturation à préciser",
+    features: ["Fonctions Pro", "Jusqu’à 10 comptes et droits d’équipe", "Suivi partagé", "200 questions IA par mois et par technicien", "Accompagnement au démarrage"],
   },
   {
     name: "Entreprise",
     audience: "Pour un réseau ou un grand compte",
+    price: "Sur étude",
+    priceDetail: "proposition personnalisée",
     features: ["Volume et besoins étudiés ensemble", "Accompagnement adapté", "Conditions définies sur devis"],
   },
 ];
@@ -32,14 +40,14 @@ export default function PricingPage() {
       <header className="pricing-intro">
         <span className="pricing-eyebrow">Offres en préparation</span>
         <h1>Une formule adaptée à votre façon de travailler.</h1>
-        <p>Voici le contenu des offres envisagées pour CarnetPass. Les tarifs et les conditions commerciales sont en cours de validation. Aucun paiement n’est ouvert.</p>
+        <p>Voici les offres et tarifs proposés pour CarnetPass. Leurs conditions commerciales sont encore en préparation et aucun paiement n’est ouvert.</p>
       </header>
       <section className="pricing-grid" aria-label="Offres proposées">
         {offers.map((offer) => (
           <article className={`pricing-card${offer.featured ? " pricing-card--featured" : ""}`} key={offer.name}>
             <div className="pricing-card__top"><h2>{offer.name}</h2>{offer.featured && <span>Offre principale proposée</span>}</div>
             <p>{offer.audience}</p>
-            <strong className="pricing-card__status">Tarif à valider</strong>
+            <div className="pricing-card__price"><strong>{offer.price}</strong><span>{offer.priceDetail}</span></div>
             <ul>{offer.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
             <Link to="/inscription">Créer un compte <span aria-hidden="true">→</span></Link>
           </article>
