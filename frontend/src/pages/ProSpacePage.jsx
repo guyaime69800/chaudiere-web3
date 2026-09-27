@@ -1796,6 +1796,7 @@ export default function ProSpacePage() {
 
         <div className="pro-header-actions">
           <span className="pro-plan-badge">Formule {getPlanLabel(plan)}</span>
+          <Link className="pro-logout-button" to="/parametres-compte">Paramètres du compte</Link>
 
           <button
             className="pro-logout-button"

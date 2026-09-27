@@ -15,6 +15,7 @@ import PricingPage from "./pages/PricingPage.jsx";
 import SiteFooter from "./components/SiteFooter.jsx";
 import { CookiesPage, FaqPage, LegalNoticePage, PrivacyPage, SalesTermsPage, TermsPage } from "./pages/InfoPages.jsx";
 import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
+import AccountSettingsPage from "./pages/AccountSettingsPage.jsx";
 import { registerSW } from "virtual:pwa-register";
 const updateSW = registerSW({
   immediate: true,
@@ -78,6 +79,7 @@ createRoot(document.getElementById("root")).render(
               </ProtectedRoute>
             }
           />
+          <Route path="/parametres-compte" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
 
           {/* Fiche ouverte depuis un QR code */}
           <Route path="/appareil/:id" element={<App />} />
