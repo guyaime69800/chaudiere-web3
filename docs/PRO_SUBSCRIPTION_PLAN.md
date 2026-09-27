@@ -13,7 +13,8 @@
 2. Prix validés, périodicités, devise, affichage HT/TTC et période d'essai éventuelle.
 3. Compte Stripe en mode test et identifiants de prix correspondant aux offres validées.
 4. Politique de perte d'accès après impayé ou résiliation, et traitement des données déjà créées.
-5. Projet Supabase de Production et de Preview : commun ou séparé.
+
+Le propriétaire a confirmé que Production et Preview utilisent le même projet Supabase. Les deux variables publiques correspondantes sont maintenant enregistrées dans les deux environnements Vercel.
 
 ## Parcours à implémenter après ces décisions
 

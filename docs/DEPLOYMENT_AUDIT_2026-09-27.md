@@ -8,3 +8,5 @@
 Les lignes « Production rebuild » de Vercel proviennent des promotions CLI successives de Preview vers Production. La commande `vercel promote` crée un nouveau déploiement Production à partir de la Preview ; elle n'effectue aucune fusion vers `main`.
 
 Le contrôle navigateur de `www.carnetpass.fr` montre une page blanche avec l'erreur `Configuration Supabase manquante`. Au moment de l'audit, `VITE_SUPABASE_URL` et `VITE_SUPABASE_PUBLISHABLE_KEY` étaient présentes en Preview, mais absentes de l'environnement Production Vercel. Avec l'accord du propriétaire sur le choix du même projet Supabase, les deux variables Preview ont été ajoutées à Production, sans déploiement. Le déploiement actuellement servi reste blanc, car Vite intègre ces valeurs au moment de la compilation. Un nouveau déploiement Production nécessitera un accord explicite.
+
+Après l'audit, la branche de travail a été poussée au SHA `7e844ab8d7da02eb95917fd0092cbfd9e13de0f2`. La Preview Git `dpl_H6FZLNauY33CfkeJsrEH1kYrYo5b` est prête et associée à `test.carnetpass.fr` ; la Production est toujours `dpl_CjZMQGsT4BiM2Q7Ph6RhZN2RuEMF`.
