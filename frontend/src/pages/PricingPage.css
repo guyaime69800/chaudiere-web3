@@ -18,8 +18,10 @@
 .pricing-card__price span { color: #675b53; font-size: 13px; }
 .pricing-card ul { flex: 1; padding: 0 0 0 21px; line-height: 1.55; }
 .pricing-card li { margin: 10px 0; }
-.pricing-card > a { display: inline-flex; justify-content: space-between; gap: 12px; padding: 12px 15px; border-radius: 9px; background: #281f1a; color: white; font-weight: 750; text-decoration: none; }
-.pricing-card > a:hover { background: #a43b16; }
+.pricing-card > a, .pricing-card > button { display: inline-flex; justify-content: space-between; gap: 12px; padding: 12px 15px; border: 0; border-radius: 9px; background: #281f1a; color: white; font: inherit; font-weight: 750; text-decoration: none; cursor: pointer; }
+.pricing-card > a:hover, .pricing-card > button:hover { background: #a43b16; }
+.pricing-card > button:disabled { opacity: .6; cursor: wait; }
+.pricing-error { color: #a91919 !important; }
 .pricing-note { margin-top: 42px; padding: 30px; border-radius: 20px; background: #f2e9df; }
 .pricing-note h2 { margin: 0 0 12px; }
 .pricing-note p { max-width: 880px; color: #5a5049; line-height: 1.6; }

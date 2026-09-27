@@ -12,6 +12,14 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (!["POST", "DELETE"].includes(req.method)) return reply(res, 405, "Méthode non autorisée.");
 
+  if (!req.body) {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    if (chunks.reduce((size, chunk) => size + chunk.length, 0) > 4096) return reply(res, 413, "Requête trop volumineuse.");
+    try { req.body = JSON.parse(Buffer.concat(chunks).toString("utf8")); }
+    catch { return reply(res, 400, "Requête invalide."); }
+  }
+
   const url = process.env.VITE_SUPABASE_URL;
   const publicKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   const secretKey = process.env.SUPABASE_SECRET_KEY;

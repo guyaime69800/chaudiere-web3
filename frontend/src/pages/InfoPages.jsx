@@ -69,9 +69,10 @@ export function TermsPage() {
 }
 
 export function SalesTermsPage() {
+  const stripeTest = import.meta.env.VITE_STRIPE_TEST_BILLING_ENABLED === "true";
   return <InfoLayout title="Conditions commerciales" eyebrow="Projet avant paiement">
     <DraftNotice />
-    <section><h2>Paiement fermé</h2><p>Aucun abonnement payant ne peut être souscrit depuis cette Preview. Les offres et les tarifs envisagés ne constituent pas une proposition contractuelle.</p></section>
+    <section><h2>{stripeTest ? "Paiement de test" : "Paiement fermé"}</h2><p>{stripeTest ? "Seul l'environnement de test Stripe est disponible depuis cette Preview. Aucun paiement réel n'est prélevé et les droits payants ne sont pas activés par ce test." : "Aucun abonnement payant ne peut être souscrit depuis cette Preview. Les offres et les tarifs envisagés ne constituent pas une proposition contractuelle."}</p></section>
     <section><h2>Points à arrêter avant l’ouverture</h2><ul><li>Prix validés, unité de facturation par technicien, devise, TVA, essai et date de facturation.</li><li>Modalités de paiement, factures, retard de paiement et éventuels frais applicables.</li><li>Durée, renouvellement, changement du nombre de techniciens, résiliation en ligne et effet de la résiliation.</li><li>Accès aux carnets et documents, export et conservation des données après la fin du contrat.</li><li>Responsabilités, assistance, disponibilité et traitement des réclamations.</li></ul></section>
     <section><h2>Version contractuelle</h2><p><Placeholder>CGV B2B complètes et validées avant tout paiement, avec identité du vendeur et barème des prix</Placeholder></p></section>
   </InfoLayout>;

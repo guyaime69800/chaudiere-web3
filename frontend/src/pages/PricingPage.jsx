@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { startBilling } from "../services/billingService";
 import "./PricingPage.css";
 
 const offers = [
@@ -12,6 +14,7 @@ const offers = [
   },
   {
     name: "Pro",
+    plan: "pro",
     audience: "Pour un artisan indépendant",
     price: "25 € HT",
     priceDetail: "par mois · 1 technicien",
@@ -20,6 +23,7 @@ const offers = [
   },
   {
     name: "Équipe",
+    plan: "team",
     audience: "Pour une équipe de 5 personnes",
     price: "35 € HT",
     priceDetail: "par mois · une seule facture pour l’équipe",
@@ -35,14 +39,24 @@ const offers = [
 ];
 
 export default function PricingPage() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const testBilling = import.meta.env.VITE_STRIPE_TEST_BILLING_ENABLED === "true";
+  async function choose(plan) {
+    setBusy(true);
+    setError("");
+    try { window.location.assign(await startBilling(session.access_token, "checkout", plan)); }
+    catch (requestError) { setError(requestError.message); setBusy(false); }
+  }
   return (
     <main className="pricing-page">
       <nav className="pricing-nav" aria-label="Navigation"><Link to={user ? "/parametres-compte#formule" : "/"}>← {user ? "Mes paramètres" : "CarnetPass"}</Link><Link to={user ? "/espace-pro" : "/connexion"}>Accéder à l’application</Link></nav>
       <header className="pricing-intro">
-        <span className="pricing-eyebrow">Offres en préparation</span>
+        <span className="pricing-eyebrow">{testBilling ? "Paiement en mode test" : "Offres en préparation"}</span>
         <h1>Une formule adaptée à votre façon de travailler.</h1>
-        <p>Voici les offres et tarifs proposés pour CarnetPass. Vous pouvez demander un changement de formule ; aucun paiement ni changement automatique de droits n’est encore ouvert.</p>
+        <p>{testBilling ? "Essayez le parcours d’abonnement avec une carte de test Stripe. Aucun paiement réel ne sera prélevé et vos droits CarnetPass ne changent pas pendant ce test." : "Voici les offres et tarifs proposés pour CarnetPass. Vous pouvez demander un changement de formule ; aucun paiement ni changement automatique de droits n’est encore ouvert."}</p>
+        {error && <p role="alert" className="pricing-error">{error}</p>}
       </header>
       <section className="pricing-grid" aria-label="Offres proposées">
         {offers.map((offer) => (
@@ -51,7 +65,9 @@ export default function PricingPage() {
             <p>{offer.audience}</p>
             <div className="pricing-card__price"><strong>{offer.price}</strong><span>{offer.priceDetail}</span></div>
             <ul>{offer.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
-            {user && offer.name !== "Découverte" ? (
+            {user && testBilling && offer.plan ? (
+              <button type="button" disabled={busy} onClick={() => choose(offer.plan)}>Choisir ou modifier la formule <span aria-hidden="true">→</span></button>
+            ) : user && offer.name !== "Découverte" ? (
               <a href={`mailto:contact@carnetpass.fr?subject=${encodeURIComponent(`Demande de formule ${offer.name} — CarnetPass`)}&body=${encodeURIComponent(`Bonjour,\n\nJe souhaite être informé de l'ouverture de la formule ${offer.name} pour mon compte ${user.email}.\n\nMerci.`)}`}>Demander cette formule <span aria-hidden="true">→</span></a>
             ) : user ? (
               <Link to="/parametres-compte#formule">Consulter ma formule <span aria-hidden="true">→</span></Link>

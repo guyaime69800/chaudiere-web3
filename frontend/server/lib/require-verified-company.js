@@ -191,9 +191,11 @@ export async function requireVerifiedCompany(req, res) {
       verificationStatus: verification?.status,
     });
 
+    const paidActive = subscription?.plan !== "free"
+      && ["active", "trialing"].includes(subscription?.status);
     const accessAllowed = demoAllowed || (subscription?.plan === "free"
       ? discovery.active
-      : verifiedAllowed);
+      : paidActive && verifiedAllowed);
     if (!company || !accessAllowed) {
       return deny(
         403,

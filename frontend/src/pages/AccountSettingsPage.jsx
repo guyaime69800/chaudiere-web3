@@ -6,6 +6,7 @@ import { getMyCompany } from "../services/companyService";
 import { signOut } from "../services/authService";
 import { getDiscoveryAccess } from "../../shared/discovery-access.js";
 import PasswordField from "../components/PasswordField";
+import { startBilling } from "../services/billingService";
 import "./AccountSettingsPage.css";
 
 async function accountRequest(method, token, body) {
@@ -23,6 +24,7 @@ export default function AccountSettingsPage() {
   const { user, session } = useAuth();
   const navigate = useNavigate();
   const [company, setCompany] = useState(null);
+  const [testSubscription, setTestSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [newEmail, setNewEmail] = useState("");
@@ -44,6 +46,14 @@ export default function AccountSettingsPage() {
       if (profileResult.error) setError("Impossible de charger le profil.");
       setName(profileResult.data?.full_name || "");
       setCompany(companyResult);
+      if (import.meta.env.VITE_STRIPE_TEST_BILLING_ENABLED === "true" && companyResult?.id) {
+        const { data: stripeTest, error: stripeError } = await supabase.from("stripe_test_subscriptions")
+          .select("plan, status, current_period_end, cancel_at_period_end, stripe_subscription_id")
+          .eq("company_id", companyResult.id).maybeSingle();
+        if (!active) return;
+        if (stripeError) setError("Impossible de charger l'abonnement Stripe de test.");
+        else setTestSubscription(stripeTest);
+      }
       setLoading(false);
     }
     load().catch(() => { if (active) { setError("Impossible de charger les paramètres."); setLoading(false); } });
@@ -60,6 +70,7 @@ export default function AccountSettingsPage() {
   }
 
   const subscription = company?.subscription;
+  const testBilling = import.meta.env.VITE_STRIPE_TEST_BILLING_ENABLED === "true";
   const discovery = company && subscription?.plan === "free"
     ? getDiscoveryAccess({ plan: subscription.plan, status: subscription.status,
       createdAt: company.created_at, trialEndsAt: subscription.trial_ends_at,
@@ -113,11 +124,17 @@ export default function AccountSettingsPage() {
           <h2>Formule et essai</h2>
           {!company ? <p>Aucune entreprise associée.</p> : <>
             <p>Entreprise : <strong>{company.name}</strong></p>
-            <p>Formule : <strong>{subscription?.plan === "free" ? "Découverte gratuite" : subscription?.plan || "Non disponible"}</strong></p>
+            <p>Formule : <strong>{subscription?.plan === "free" ? "Découverte gratuite" : subscription?.plan === "team" ? "Équipe" : subscription?.plan === "pro" ? "Pro" : subscription?.plan || "Non disponible"}</strong></p>
             <p>État : <strong>{subscription?.status === "canceled" ? "arrêté" : discovery?.active ? "essai actif" : subscription?.status || "terminé"}</strong></p>
             {discovery?.endsAt && subscription?.status !== "canceled" && <p>Fin prévue : {new Date(discovery.endsAt).toLocaleDateString("fr-FR")}</p>}
             {subscription?.plan === "free" && <p>Aucune carte bancaire ni aucun prélèvement n’est associé à l’essai Découverte.</p>}
             <Link className="account-settings-plan-link" to="/tarifs?from=account">Voir les formules et demander un changement →</Link>
+            {testBilling && <p>Stripe test : <strong>{testSubscription?.plan === "team" ? "Équipe" : testSubscription?.plan === "pro" ? "Pro" : "aucune formule test"}</strong>{testSubscription?.status ? ` · ${testSubscription.status}` : ""}. Ce test ne change pas encore vos droits réels.</p>}
+            {testBilling && testSubscription?.stripe_subscription_id && ["owner", "admin"].includes(company.role) &&
+              <button type="button" className="account-settings-secondary" disabled={Boolean(busy)} onClick={() => run("portal", async () => {
+                window.location.assign(await startBilling(session.access_token, "portal"));
+                return "Ouverture du portail Stripe.";
+              })}>Gérer et résilier mon abonnement test</button>}
             {subscription?.plan === "free" && subscription.status !== "canceled" && company.role === "admin" &&
               <button className="account-settings-secondary" type="button" disabled={Boolean(busy)} onClick={() => {
                 if (!window.confirm("Arrêter l’essai Découverte maintenant ? La création de nouveaux appareils sera désactivée.")) return;
@@ -127,7 +144,7 @@ export default function AccountSettingsPage() {
                   return result;
                 });
               }}>Arrêter l’essai</button>}
-            {subscription?.plan !== "free" && <p>Pour une formule payante, contactez <a href="mailto:contact@carnetpass.fr">contact@carnetpass.fr</a> afin d’obtenir la procédure de résiliation.</p>}
+            {subscription?.plan !== "free" && !testBilling && <p>Pour une formule payante, contactez <a href="mailto:contact@carnetpass.fr">contact@carnetpass.fr</a> afin d’obtenir la procédure de résiliation.</p>}
           </>}
         </section>
         <section className="account-settings-card account-settings-danger">

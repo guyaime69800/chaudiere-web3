@@ -3,6 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 import accountHandler from "../server/account.js";
+import billingHandler from "../server/billing.js";
+
+export const config = { api: { bodyParser: false } };
 
 // Cette route fonctionne uniquement côté serveur Vercel.
 // La clé SUPABASE_SECRET_KEY ne doit jamais être utilisée dans frontend/src.
@@ -93,6 +96,7 @@ async function saveVerificationResult(
 
 export default async function handler(req, res) {
   if (req.query?.account_route === "1") return accountHandler(req, res);
+  if (req.query?.billing_route === "1") return billingHandler(req, res);
   res.setHeader("Allow", "POST");
 
   if (req.method !== "POST") {

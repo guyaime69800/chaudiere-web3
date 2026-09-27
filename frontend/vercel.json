@@ -5,6 +5,14 @@
       "destination": "/api/verify-company?account_route=1"
     },
     {
+      "source": "/api/billing",
+      "destination": "/api/verify-company?billing_route=1"
+    },
+    {
+      "source": "/api/stripe-webhook",
+      "destination": "/api/verify-company?billing_route=1&webhook=1"
+    },
+    {
       "source": "/((?!api(?:/|$)|src(?:/|$)|node_modules(?:/|$)|assets(?:/|$)|@|.*\\.).*)",
       "destination": "/index.html"
     }

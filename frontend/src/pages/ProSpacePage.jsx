@@ -72,6 +72,7 @@ function getPlanLabel(plan) {
   const labels = {
     free: "Découverte",
     pro: "Professionnel",
+    team: "Équipe",
     enterprise: "Entreprise",
   };
 
@@ -1751,7 +1752,7 @@ export default function ProSpacePage() {
 
   const companyCanCreateEquipment = company.is_demo === true || (plan === "free"
     ? discovery.active && equipments.length < DISCOVERY_EQUIPMENT_LIMIT
-    : companyVerified);
+    : companyVerified && ["active", "trialing"].includes(company.subscription?.status));
 
   let verificationTitle = "Entreprise en attente de validation";
   let verificationMessage =
