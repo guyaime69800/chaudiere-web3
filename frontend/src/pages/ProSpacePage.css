@@ -1713,6 +1713,21 @@
   margin-top: 0;
 }
 
+.pro-company-card-actions .pro-settings-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pro-settings-link svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
 .pro-company-details {
   display: grid;
   gap: 22px;
