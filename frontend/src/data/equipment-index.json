@@ -92,6 +92,15 @@
       "manufacturerReference": "7716704261",
       "dataFile": "equipment/elm-leblanc-7716704261.json",
       "status": "pilot"
+    },
+    {
+      "equipmentId": "frisquet-hydromotrix-vent-23-2000-0006000-0806000",
+      "brand": "Frisquet",
+      "model": "HYDROMOTRIX VENT. 23 kW 2000",
+      "variant": "0006000–0806000",
+      "manufacturerReference": "0006000-0806000",
+      "dataFile": "equipment/frisquet-hydromotrix-vent-23-2000.json",
+      "status": "pilot"
     }
   ]
 }
