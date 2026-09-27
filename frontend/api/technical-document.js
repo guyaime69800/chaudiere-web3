@@ -10,6 +10,7 @@ import mira30 from "../src/data/equipment/chaffoteaux-3310544.json" with { type:
 import mira35 from "../src/data/equipment/chaffoteaux-3310545.json" with { type: "json" };
 import frisquet from "../src/data/equipment/frisquet-hydromotrix-vent-23-2000.json" with { type: "json" };
 import frisquet32 from "../src/data/equipment/frisquet-hydromotrix-vent-32.json" with { type: "json" };
+import frisquet322000 from "../src/data/equipment/frisquet-hydromotrix-vent-32-2000.json" with { type: "json" };
 
 const MCR_DOCUMENT_URLS = new Map(mcr2.documents
   .filter((document) => document.storage === "private")
@@ -31,7 +32,7 @@ const ELM_DOCUMENT_URLS = new Map(elmLeblanc.documents
   .filter((document) => document.storage === "private")
   .map((document) => [new URL(document.documentUrl).pathname.slice(1), document.documentUrl]));
 
-const FRISQUET_DOCUMENT_URLS = new Map([frisquet, frisquet32].flatMap((equipment) => equipment.documents)
+const FRISQUET_DOCUMENT_URLS = new Map([frisquet, frisquet32, frisquet322000].flatMap((equipment) => equipment.documents)
   .filter((document) => document.storage === "private")
   .map((document) => [new URL(document.documentUrl).pathname.slice(1), document.documentUrl]));
 

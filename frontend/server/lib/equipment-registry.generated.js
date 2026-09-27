@@ -126,71 +126,91 @@ import rag6_3 from "../../src/data/rag/frisquet-frisquet-hydromotrix-vent-23-200
   type: "json",
 };
 
-import equipment7 from "../../src/data/equipment/frisquet-hydromotrix-vent-32.json" with {
+import equipment7 from "../../src/data/equipment/frisquet-hydromotrix-vent-32-2000.json" with {
   type: "json",
 };
 
-import rag7_0 from "../../src/data/rag/frisquet-frisquet-hydromotrix-vent-32-exploded-view.full.embeddings.json" with {
+import rag7_0 from "../../src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-exploded-view.full.embeddings.json" with {
   type: "json",
 };
 
-import rag7_1 from "../../src/data/rag/frisquet-frisquet-hydromotrix-vent-32-installation.full.embeddings.json" with {
+import rag7_1 from "../../src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-installation.full.embeddings.json" with {
   type: "json",
 };
 
-import rag7_2 from "../../src/data/rag/frisquet-frisquet-hydromotrix-vent-32-user-manual.full.embeddings.json" with {
+import rag7_2 from "../../src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-troubleshooting.full.embeddings.json" with {
   type: "json",
 };
 
-import equipment8 from "../../src/data/equipment/saunier-duval-0010017388.json" with {
+import rag7_3 from "../../src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-user-manual.full.embeddings.json" with {
   type: "json",
 };
 
-import rag8_0 from "../../src/data/rag/saunier-duval-0020238207-08.full.embeddings.json" with {
+import equipment8 from "../../src/data/equipment/frisquet-hydromotrix-vent-32.json" with {
   type: "json",
 };
 
-import rag8_1 from "../../src/data/rag/saunier-duval-sd-themaplus-condens-30-a-exploded-view-0010017388.full.embeddings.json" with {
+import rag8_0 from "../../src/data/rag/frisquet-frisquet-hydromotrix-vent-32-exploded-view.full.embeddings.json" with {
   type: "json",
 };
 
-import equipment9 from "../../src/data/equipment/saunier-duval-0010017417.json" with {
+import rag8_1 from "../../src/data/rag/frisquet-frisquet-hydromotrix-vent-32-installation.full.embeddings.json" with {
   type: "json",
 };
 
-import rag9_0 from "../../src/data/rag/saunier-duval-0020238209-04.full.embeddings.json" with {
+import rag8_2 from "../../src/data/rag/frisquet-frisquet-hydromotrix-vent-32-user-manual.full.embeddings.json" with {
   type: "json",
 };
 
-import rag9_1 from "../../src/data/rag/saunier-duval-sd-themafast-condens-30-a-exploded-view-0010017417.full.embeddings.json" with {
+import equipment9 from "../../src/data/equipment/saunier-duval-0010017388.json" with {
   type: "json",
 };
 
-import rag9_2 from "../../src/data/rag/saunier-duval-0020200493-01.full.embeddings.json" with {
+import rag9_0 from "../../src/data/rag/saunier-duval-0020238207-08.full.embeddings.json" with {
   type: "json",
 };
 
-import equipment10 from "../../src/data/equipment/saunier-duval-0010021497.json" with {
+import rag9_1 from "../../src/data/rag/saunier-duval-sd-themaplus-condens-30-a-exploded-view-0010017388.full.embeddings.json" with {
   type: "json",
 };
 
-import rag10_0 from "../../src/data/rag/saunier-duval-sd-0010021497-installation.full.embeddings.json" with {
+import equipment10 from "../../src/data/equipment/saunier-duval-0010017417.json" with {
   type: "json",
 };
 
-import rag10_1 from "../../src/data/rag/saunier-duval-sd-0010021497-utilisation.full.embeddings.json" with {
+import rag10_0 from "../../src/data/rag/saunier-duval-0020238209-04.full.embeddings.json" with {
   type: "json",
 };
 
-import rag10_2 from "../../src/data/rag/saunier-duval-sd-0010021497-vue-eclatee.full.embeddings.json" with {
+import rag10_1 from "../../src/data/rag/saunier-duval-sd-themafast-condens-30-a-exploded-view-0010017417.full.embeddings.json" with {
   type: "json",
 };
 
-import equipment11 from "../../src/data/equipment/vaillant-8000044523.json" with {
+import rag10_2 from "../../src/data/rag/saunier-duval-0020200493-01.full.embeddings.json" with {
   type: "json",
 };
 
-import rag11_0 from "../../src/data/rag/vaillant-0020279448-11.full.embeddings.json" with {
+import equipment11 from "../../src/data/equipment/saunier-duval-0010021497.json" with {
+  type: "json",
+};
+
+import rag11_0 from "../../src/data/rag/saunier-duval-sd-0010021497-installation.full.embeddings.json" with {
+  type: "json",
+};
+
+import rag11_1 from "../../src/data/rag/saunier-duval-sd-0010021497-utilisation.full.embeddings.json" with {
+  type: "json",
+};
+
+import rag11_2 from "../../src/data/rag/saunier-duval-sd-0010021497-vue-eclatee.full.embeddings.json" with {
+  type: "json",
+};
+
+import equipment12 from "../../src/data/equipment/vaillant-8000044523.json" with {
+  type: "json",
+};
+
+import rag12_0 from "../../src/data/rag/vaillant-0020279448-11.full.embeddings.json" with {
   type: "json",
 };
 
@@ -424,22 +444,28 @@ export const generatedEquipmentRegistry = [
     equipmentData: equipment7,
     ragDocuments: [
       {
-        documentId: "frisquet-hydromotrix-vent-32-exploded-view",
+        documentId: "frisquet-hydromotrix-vent-32-2000-exploded-view",
         documentType: "exploded_view",
-        title: "Vue éclatée - HYDROMOTRIX VENT. 32 kW",
+        title: "Vue éclatée - HYDROMOTRIX VENT. 32 kW 2000",
         ragEmbeddingData: rag7_0,
       },
       {
-        documentId: "frisquet-hydromotrix-vent-32-installation",
+        documentId: "frisquet-hydromotrix-vent-32-2000-installation",
         documentType: "installation_maintenance",
-        title: "Notice d'installation - HYDROMOTRIX VENT. 32 kW",
+        title: "Notice d'installation - HYDROMOTRIX VENT. 32 kW 2000",
         ragEmbeddingData: rag7_1,
       },
       {
-        documentId: "frisquet-hydromotrix-vent-32-user-manual",
-        documentType: "user_manual",
-        title: "Notice d'utilisation - HYDROMOTRIX VENT. 32 kW",
+        documentId: "frisquet-hydromotrix-vent-32-2000-troubleshooting",
+        documentType: "troubleshooting",
+        title: "Notice d’aide au dépannage - HYDROMOTRIX VENT. 32 kW 2000",
         ragEmbeddingData: rag7_2,
+      },
+      {
+        documentId: "frisquet-hydromotrix-vent-32-2000-user-manual",
+        documentType: "user_manual",
+        title: "Notice d'utilisation - HYDROMOTRIX VENT. 32 kW 2000",
+        ragEmbeddingData: rag7_3,
       },
     ],
     ragEmbeddingData: {
@@ -448,6 +474,7 @@ export const generatedEquipmentRegistry = [
         ...(rag7_0.items ?? []),
         ...(rag7_1.items ?? []),
         ...(rag7_2.items ?? []),
+        ...(rag7_3.items ?? []),
       ],
     },
   },
@@ -455,16 +482,22 @@ export const generatedEquipmentRegistry = [
     equipmentData: equipment8,
     ragDocuments: [
       {
-        documentId: "sd-themaplus-condens-installation-maintenance-0020238207-08",
-        documentType: "installation_maintenance",
-        title: "Notice d'installation et de maintenance - ThemaPlus Condens",
+        documentId: "frisquet-hydromotrix-vent-32-exploded-view",
+        documentType: "exploded_view",
+        title: "Vue éclatée - HYDROMOTRIX VENT. 32 kW",
         ragEmbeddingData: rag8_0,
       },
       {
-        documentId: "sd-themaplus-condens-30-a-exploded-view-0010017388",
-        documentType: "exploded_view",
-        title: "Vue éclatée - ThemaPlus Condens 30-A (H-FR)",
+        documentId: "frisquet-hydromotrix-vent-32-installation",
+        documentType: "installation_maintenance",
+        title: "Notice d'installation - HYDROMOTRIX VENT. 32 kW",
         ragEmbeddingData: rag8_1,
+      },
+      {
+        documentId: "frisquet-hydromotrix-vent-32-user-manual",
+        documentType: "user_manual",
+        title: "Notice d'utilisation - HYDROMOTRIX VENT. 32 kW",
+        ragEmbeddingData: rag8_2,
       },
     ],
     ragEmbeddingData: {
@@ -472,6 +505,7 @@ export const generatedEquipmentRegistry = [
       items: [
         ...(rag8_0.items ?? []),
         ...(rag8_1.items ?? []),
+        ...(rag8_2.items ?? []),
       ],
     },
   },
@@ -479,22 +513,16 @@ export const generatedEquipmentRegistry = [
     equipmentData: equipment9,
     ragDocuments: [
       {
-        documentId: "sd-themafast-condens-installation-maintenance-0020238209-04",
+        documentId: "sd-themaplus-condens-installation-maintenance-0020238207-08",
         documentType: "installation_maintenance",
-        title: "Notice d'installation et de maintenance - ThemaFast Condens / Thema Condens",
+        title: "Notice d'installation et de maintenance - ThemaPlus Condens",
         ragEmbeddingData: rag9_0,
       },
       {
-        documentId: "sd-themafast-condens-30-a-exploded-view-0010017417",
+        documentId: "sd-themaplus-condens-30-a-exploded-view-0010017388",
         documentType: "exploded_view",
-        title: "Vue éclatée - ThemaFast Condens 30-A (H-FR)",
+        title: "Vue éclatée - ThemaPlus Condens 30-A (H-FR)",
         ragEmbeddingData: rag9_1,
-      },
-      {
-        documentId: "sd-themafast-condens-user-manual-0020200493-01",
-        documentType: "user_manual",
-        title: "Notice d'utilisation - ThemaFast Condens / Thema Condens",
-        ragEmbeddingData: rag9_2,
       },
     ],
     ragEmbeddingData: {
@@ -502,7 +530,6 @@ export const generatedEquipmentRegistry = [
       items: [
         ...(rag9_0.items ?? []),
         ...(rag9_1.items ?? []),
-        ...(rag9_2.items ?? []),
       ],
     },
   },
@@ -510,21 +537,21 @@ export const generatedEquipmentRegistry = [
     equipmentData: equipment10,
     ragDocuments: [
       {
-        documentId: "sd-0010021497-installation",
+        documentId: "sd-themafast-condens-installation-maintenance-0020238209-04",
         documentType: "installation_maintenance",
-        title: "Notice d'installation technique - ThemaPlus Condens 25-A",
+        title: "Notice d'installation et de maintenance - ThemaFast Condens / Thema Condens",
         ragEmbeddingData: rag10_0,
       },
       {
-        documentId: "sd-0010021497-utilisation",
-        documentType: "user_manual",
-        title: "Notice d'utilisation - ThemaPlus Condens 25-A",
+        documentId: "sd-themafast-condens-30-a-exploded-view-0010017417",
+        documentType: "exploded_view",
+        title: "Vue éclatée - ThemaFast Condens 30-A (H-FR)",
         ragEmbeddingData: rag10_1,
       },
       {
-        documentId: "sd-0010021497-vue-eclatee",
-        documentType: "exploded_view",
-        title: "Vue éclatée - ThemaPlus Condens 25-A",
+        documentId: "sd-themafast-condens-user-manual-0020200493-01",
+        documentType: "user_manual",
+        title: "Notice d'utilisation - ThemaFast Condens / Thema Condens",
         ragEmbeddingData: rag10_2,
       },
     ],
@@ -541,16 +568,47 @@ export const generatedEquipmentRegistry = [
     equipmentData: equipment11,
     ragDocuments: [
       {
-        documentId: "vaillant-ecotec-plus-vuw-installation-maintenance-0020279448-11",
+        documentId: "sd-0010021497-installation",
         documentType: "installation_maintenance",
-        title: "Notice d'installation et de maintenance - ecoTEC plus VU/VUW",
+        title: "Notice d'installation technique - ThemaPlus Condens 25-A",
         ragEmbeddingData: rag11_0,
+      },
+      {
+        documentId: "sd-0010021497-utilisation",
+        documentType: "user_manual",
+        title: "Notice d'utilisation - ThemaPlus Condens 25-A",
+        ragEmbeddingData: rag11_1,
+      },
+      {
+        documentId: "sd-0010021497-vue-eclatee",
+        documentType: "exploded_view",
+        title: "Vue éclatée - ThemaPlus Condens 25-A",
+        ragEmbeddingData: rag11_2,
       },
     ],
     ragEmbeddingData: {
       model: rag11_0.model ?? "text-embedding-3-small",
       items: [
         ...(rag11_0.items ?? []),
+        ...(rag11_1.items ?? []),
+        ...(rag11_2.items ?? []),
+      ],
+    },
+  },
+  {
+    equipmentData: equipment12,
+    ragDocuments: [
+      {
+        documentId: "vaillant-ecotec-plus-vuw-installation-maintenance-0020279448-11",
+        documentType: "installation_maintenance",
+        title: "Notice d'installation et de maintenance - ecoTEC plus VU/VUW",
+        ragEmbeddingData: rag12_0,
+      },
+    ],
+    ragEmbeddingData: {
+      model: rag12_0.model ?? "text-embedding-3-small",
+      items: [
+        ...(rag12_0.items ?? []),
       ],
     },
   },

@@ -110,6 +110,15 @@
       "manufacturerReference": "9701000-0014000",
       "dataFile": "equipment/frisquet-hydromotrix-vent-32.json",
       "status": "pilot"
+    },
+    {
+      "equipmentId": "frisquet-hydromotrix-vent-32-2000-0014000-0803000",
+      "brand": "Frisquet",
+      "model": "HYDROMOTRIX VENT. 32 kW 2000",
+      "variant": "0014000–0803000",
+      "manufacturerReference": "0014000-0803000",
+      "dataFile": "equipment/frisquet-hydromotrix-vent-32-2000.json",
+      "status": "pilot"
     }
   ]
 }

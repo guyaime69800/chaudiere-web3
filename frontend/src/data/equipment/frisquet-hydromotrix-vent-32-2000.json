@@ -1,0 +1,83 @@
+{
+  "version": "1.0",
+  "equipmentId": "frisquet-hydromotrix-vent-32-2000-0014000-0803000",
+  "identity": {
+    "brand": "Frisquet",
+    "productType": "chaudiere_gaz",
+    "range": "HYDROMOTRIX VENT.",
+    "model": "HYDROMOTRIX VENT. 32 kW 2000",
+    "variant": "0014000–0803000",
+    "manufacturerReference": "0014000-0803000"
+  },
+  "carnetPass": { "linkedIds": [] },
+  "support": {
+    "manufacturer": "Frisquet",
+    "hotline": {
+      "label": "Hotline Frisquet",
+      "phone": "01 60 09 91 00",
+      "hours": null,
+      "source": "Numéro Frisquet confirmé par l'utilisateur comme commun aux modèles",
+      "verifiedAt": "2026-09-27"
+    }
+  },
+  "documents": [
+    {
+      "documentId": "frisquet-hydromotrix-vent-32-2000-exploded-view",
+      "title": "Vue éclatée - HYDROMOTRIX VENT. 32 kW 2000",
+      "documentType": "exploded_view",
+      "pageCount": 16,
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/Frisquet/HYDROMOTRIX%20VENT.32kW%202000%20/Vue%20%C3%A9clat%C3%A9e%20-%20HYDROMOTRIX%20VENT.32kW%202000%20@0014000-_0803000%20(1).pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "Frisquet",
+      "manufacturerReference": "0014000-0803000",
+      "appliesTo": ["HYDROMOTRIX VENT. 32 kW 2000, 0014000–0803000"]
+    },
+    {
+      "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+      "title": "Notice d'installation - HYDROMOTRIX VENT. 32 kW 2000",
+      "documentType": "installation_maintenance",
+      "pageCount": 16,
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/Frisquet/HYDROMOTRIX%20VENT.32kW%202000%20/Notice%20d'installation%20-%20HYDROMOTRIX%20VENT.32kW%202000%20@0014000-_0803000.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "Frisquet",
+      "manufacturerReference": "0014000-0803000",
+      "appliesTo": ["HYDROMOTRIX VENT. 32 kW 2000, 0014000–0803000"]
+    },
+    {
+      "documentId": "frisquet-hydromotrix-vent-32-2000-troubleshooting",
+      "title": "Notice d’aide au dépannage - HYDROMOTRIX VENT. 32 kW 2000",
+      "documentType": "troubleshooting",
+      "pageCount": 56,
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/Frisquet/HYDROMOTRIX%20VENT.32kW%202000%20/0014000-%3E0803000/Notice%20d%E2%80%99aide%20au%20d%C3%A9pannage%20-%20HYDROMOTRIX%20VENT.32kW%202000%20@0014000-_0803000.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "Frisquet",
+      "manufacturerReference": "0014000-0803000",
+      "appliesTo": ["HYDROMOTRIX VENT. 32 kW 2000, 0014000–0803000"]
+    },
+    {
+      "documentId": "frisquet-hydromotrix-vent-32-2000-user-manual",
+      "title": "Notice d'utilisation - HYDROMOTRIX VENT. 32 kW 2000",
+      "documentType": "user_manual",
+      "pageCount": 20,
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/Frisquet/HYDROMOTRIX%20VENT.32kW%202000%20/Notice%20d%E2%80%99utilisation%20-%20HYDROMOTRIX%20VENT.32kW%202000%20@0014000-_0803000.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "Frisquet",
+      "manufacturerReference": "0014000-0803000",
+      "appliesTo": ["HYDROMOTRIX VENT. 32 kW 2000, 0014000–0803000"]
+    }
+  ],
+  "errorCodeIndex": null,
+  "errorCodes": [],
+  "diagnosticRules": [],
+  "metadata": {
+    "status": "pilot",
+    "ragStatus": "ready",
+    "verificationStatus": "verified_documents",
+    "lastVerifiedAt": "2026-09-27",
+    "notes": "Quatre PDF privés vérifiés. La vue éclatée est spécifique à la plage 0014000–0803000. Les notices d'installation, d'utilisation et de dépannage sont identiques aux PDF fournis pour la 23 kW 2000 et couvrent plusieurs variantes HYDROMOTRIX Ventouse ; vérifier la variante 32 kW avant d'appliquer une procédure."
+  }
+}
