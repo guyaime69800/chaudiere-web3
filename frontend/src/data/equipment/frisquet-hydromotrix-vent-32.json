@@ -1,0 +1,72 @@
+{
+  "version": "1.0",
+  "equipmentId": "frisquet-hydromotrix-vent-32-9701000-0014000",
+  "identity": {
+    "brand": "Frisquet",
+    "productType": "chaudiere_gaz",
+    "range": "HYDROMOTRIX VENT.",
+    "model": "HYDROMOTRIX VENT. 32 kW",
+    "variant": "9701000–0014000",
+    "manufacturerReference": "9701000-0014000"
+  },
+  "carnetPass": { "linkedIds": [] },
+  "support": {
+    "manufacturer": "Frisquet",
+    "hotline": {
+      "label": "Hotline Frisquet",
+      "phone": "01 60 09 91 00",
+      "hours": null,
+      "source": "Capture de la fiche HYDROMOTRIX VENT. 32 kW fournie par l'utilisateur ; numéro indiqué comme commun aux modèles Frisquet",
+      "verifiedAt": "2026-09-27"
+    }
+  },
+  "documents": [
+    {
+      "documentId": "frisquet-hydromotrix-vent-32-exploded-view",
+      "title": "Vue éclatée - HYDROMOTRIX VENT. 32 kW",
+      "documentType": "exploded_view",
+      "pageCount": 12,
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/Frisquet/HYDROMOTRIX%20VENT.32%20kW%20@9701000-%3E0014000/Vue%20%C3%A9clat%C3%A9e%20-%20HYDROMOTRIX%20VENT.32%20kW%20@9701000-_0014000.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "Frisquet",
+      "manufacturerReference": "9701000-0014000",
+      "appliesTo": ["HYDROMOTRIX VENT. 32 kW, 9701000–0014000"]
+    },
+    {
+      "documentId": "frisquet-hydromotrix-vent-32-installation",
+      "title": "Notice d'installation - HYDROMOTRIX VENT. 32 kW",
+      "documentType": "installation_maintenance",
+      "pageCount": 16,
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/Frisquet/HYDROMOTRIX%20VENT.32%20kW%20@9701000-%3E0014000/Notice%20d'installation%20-%20HYDROMOTRIX%20VENT.32%20kW%20@9701000-_0014000.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "Frisquet",
+      "manufacturerReference": "9701000-0014000",
+      "appliesTo": ["HYDROMOTRIX VENT. 32 kW, 9701000–0014000"]
+    },
+    {
+      "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+      "title": "Notice d'utilisation - HYDROMOTRIX VENT. 32 kW",
+      "documentType": "user_manual",
+      "pageCount": 16,
+      "rag": { "ocr": true },
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/Frisquet/HYDROMOTRIX%20VENT.32%20kW%20@9701000-%3E0014000/Notice%20d%E2%80%99utilisation%20-%20HYDROMOTRIX%20VENT.32%20kW%20@9701000-_0014000.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "Frisquet",
+      "manufacturerReference": "9701000-0014000",
+      "appliesTo": ["HYDROMOTRIX VENT. 32 kW, 9701000–0014000"]
+    }
+  ],
+  "errorCodeIndex": null,
+  "errorCodes": [],
+  "diagnosticRules": [],
+  "metadata": {
+    "status": "pilot",
+    "ragStatus": "ready",
+    "verificationStatus": "verified_documents",
+    "lastVerifiedAt": "2026-09-27",
+    "notes": "Trois PDF privés transmis par l'utilisateur. La vue éclatée cible 9701000–0014000. La notice d'installation couvre aussi Gazliner Ventouse 23 kW ; la notice d'utilisation couvre plusieurs modèles Frisquet. Vérifier la variante 32 kW avant d'appliquer une procédure."
+  }
+}
