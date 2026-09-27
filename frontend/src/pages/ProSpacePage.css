@@ -607,12 +607,25 @@
 }
 
 .pro-stat-grid article {
+  display: flex;
+  flex-direction: column;
   min-height: 172px;
   padding: 23px;
   border: 1px solid rgba(91, 59, 46, 0.09);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 12px 35px rgba(61, 30, 17, 0.06);
+}
+
+.pro-plan-manage-link {
+  align-self: flex-start;
+  margin-top: auto;
+  padding-top: 12px;
+  color: var(--pro-orange-dark);
+  font-size: 13px;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .pro-stat-grid article > span {

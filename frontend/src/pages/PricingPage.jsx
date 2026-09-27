@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import "./PricingPage.css";
 
 const offers = [
@@ -34,13 +35,14 @@ const offers = [
 ];
 
 export default function PricingPage() {
+  const { user } = useAuth();
   return (
     <main className="pricing-page">
-      <nav className="pricing-nav" aria-label="Navigation"><Link to="/">← CarnetPass</Link><Link to="/connexion">Accéder à l’application</Link></nav>
+      <nav className="pricing-nav" aria-label="Navigation"><Link to={user ? "/parametres-compte#formule" : "/"}>← {user ? "Mes paramètres" : "CarnetPass"}</Link><Link to={user ? "/espace-pro" : "/connexion"}>Accéder à l’application</Link></nav>
       <header className="pricing-intro">
         <span className="pricing-eyebrow">Offres en préparation</span>
         <h1>Une formule adaptée à votre façon de travailler.</h1>
-        <p>Voici les offres et tarifs proposés pour CarnetPass. Leurs conditions commerciales sont encore en préparation et aucun paiement n’est ouvert.</p>
+        <p>Voici les offres et tarifs proposés pour CarnetPass. Vous pouvez demander un changement de formule ; aucun paiement ni changement automatique de droits n’est encore ouvert.</p>
       </header>
       <section className="pricing-grid" aria-label="Offres proposées">
         {offers.map((offer) => (
@@ -49,7 +51,13 @@ export default function PricingPage() {
             <p>{offer.audience}</p>
             <div className="pricing-card__price"><strong>{offer.price}</strong><span>{offer.priceDetail}</span></div>
             <ul>{offer.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
-            <Link to="/inscription">Créer un compte <span aria-hidden="true">→</span></Link>
+            {user && offer.name !== "Découverte" ? (
+              <a href={`mailto:contact@carnetpass.fr?subject=${encodeURIComponent(`Demande de formule ${offer.name} — CarnetPass`)}&body=${encodeURIComponent(`Bonjour,\n\nJe souhaite être informé de l'ouverture de la formule ${offer.name} pour mon compte ${user.email}.\n\nMerci.`)}`}>Demander cette formule <span aria-hidden="true">→</span></a>
+            ) : user ? (
+              <Link to="/parametres-compte#formule">Consulter ma formule <span aria-hidden="true">→</span></Link>
+            ) : (
+              <Link to="/inscription">Créer un compte <span aria-hidden="true">→</span></Link>
+            )}
           </article>
         ))}
       </section>

@@ -109,7 +109,7 @@ export default function AccountSettingsPage() {
           </form>
           <button className="account-settings-secondary" type="button" disabled={Boolean(busy)} onClick={() => run("logout", async () => { await signOut(); navigate("/connexion"); return "Déconnexion effectuée."; })}>Se déconnecter</button>
         </section>
-        <section className="account-settings-card">
+        <section className="account-settings-card" id="formule">
           <h2>Formule et essai</h2>
           {!company ? <p>Aucune entreprise associée.</p> : <>
             <p>Entreprise : <strong>{company.name}</strong></p>
@@ -117,6 +117,7 @@ export default function AccountSettingsPage() {
             <p>État : <strong>{subscription?.status === "canceled" ? "arrêté" : discovery?.active ? "essai actif" : subscription?.status || "terminé"}</strong></p>
             {discovery?.endsAt && subscription?.status !== "canceled" && <p>Fin prévue : {new Date(discovery.endsAt).toLocaleDateString("fr-FR")}</p>}
             {subscription?.plan === "free" && <p>Aucune carte bancaire ni aucun prélèvement n’est associé à l’essai Découverte.</p>}
+            <Link className="account-settings-plan-link" to="/tarifs?from=account">Voir les formules et demander un changement →</Link>
             {subscription?.plan === "free" && subscription.status !== "canceled" && company.role === "admin" &&
               <button className="account-settings-secondary" type="button" disabled={Boolean(busy)} onClick={() => {
                 if (!window.confirm("Arrêter l’essai Découverte maintenant ? La création de nouveaux appareils sera désactivée.")) return;

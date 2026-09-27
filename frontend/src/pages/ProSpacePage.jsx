@@ -1910,6 +1910,7 @@ export default function ProSpacePage() {
           <small>{plan === "free"
             ? discovery.active ? `${discovery.daysRemaining} jour(s) d’essai restant(s)` : "Essai terminé"
             : "Compte actif"}</small>
+          <Link className="pro-plan-manage-link" to="/parametres-compte#formule">Changer de formule →</Link>
         </article>
       </section>
 
