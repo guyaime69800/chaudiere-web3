@@ -7,6 +7,7 @@ const PRICES = {
 };
 const priceToPlan = Object.fromEntries(Object.entries(PRICES).map(([plan, price]) => [price, plan]));
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
+const stripeTestKey = () => process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
 
 function send(res, status, message, extra = {}) {
   return res.status(status).json({ ok: status < 400, message, ...extra });
@@ -16,7 +17,7 @@ async function stripe(path, params, method = "POST") {
   const response = await fetch(`https://api.stripe.com/v1/${path}`, {
     method,
     headers: {
-      Authorization: `Bearer ${process.env.STRIPE_TEST_SECRET_KEY}`,
+      Authorization: `Bearer ${stripeTestKey()}`,
       ...(params ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
     },
     body: params ? new URLSearchParams(params) : undefined,
@@ -74,7 +75,7 @@ async function syncSubscription(admin, stripeSubscription) {
 export default async function billingHandler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") return send(res, 405, "Méthode non autorisée.");
-  if (process.env.VERCEL_ENV !== "preview" || !process.env.STRIPE_TEST_SECRET_KEY?.startsWith("sk_test_")) {
+  if (process.env.VERCEL_ENV !== "preview" || !stripeTestKey()?.startsWith("sk_test_")) {
     return send(res, 503, "Paiement test indisponible.");
   }
   const supabaseUrl = process.env.VITE_SUPABASE_URL;

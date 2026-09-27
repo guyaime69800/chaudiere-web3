@@ -6,7 +6,7 @@ Le parcours de paiement reste fermé tant que les variables ci-dessous ne sont p
 
 1. Appliquer `supabase/migrations/20260928_01_stripe_test_billing.sql` dans le projet Supabase CarnetPass. Cette migration crée une table de test séparée : elle ne modifie pas `subscriptions` et ne donne aucun droit payant réel.
 2. Dans Vercel, ajouter **uniquement pour Preview** :
-   - `STRIPE_TEST_SECRET_KEY` : clé secrète `sk_test_…` du compte Stripe de test CarnetPass.
+   - `STRIPE_SECRET_KEY` (ou `STRIPE_TEST_SECRET_KEY`) : clé secrète `sk_test_…` du compte Stripe de test CarnetPass.
    - `STRIPE_TEST_WEBHOOK_SECRET` : secret `whsec_…` de l'endpoint webhook créé à l'étape suivante.
    - `VITE_STRIPE_TEST_BILLING_ENABLED` : `true`.
 3. Dans Stripe **environnement de test**, créer un endpoint webhook `https://test.carnetpass.fr/api/stripe-webhook` pour `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated` et `customer.subscription.deleted`. Choisir les événements du compte, en format snapshot.
