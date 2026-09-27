@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/account",
+      "destination": "/api/verify-company?account_route=1"
+    },
+    {
       "source": "/((?!api(?:/|$)|src(?:/|$)|node_modules(?:/|$)|assets(?:/|$)|@|.*\\.).*)",
       "destination": "/index.html"
     }

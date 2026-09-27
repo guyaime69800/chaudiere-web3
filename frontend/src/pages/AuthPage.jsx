@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { signIn, signUp } from "../services/authService";
+import PasswordField from "../components/PasswordField";
 import "./AuthPage.css";
 
 const initialForm = {
@@ -186,11 +187,8 @@ export default function AuthPage({ mode = "connexion" }) {
               />
             </label>
 
-            <label className="auth-field">
-              <span>Mot de passe</span>
-
-              <input
-                type="password"
+            <PasswordField
+                label="Mot de passe"
                 name="password"
                 value={form.password}
                 onChange={updateField}
@@ -198,15 +196,11 @@ export default function AuthPage({ mode = "connexion" }) {
                 minLength="8"
                 placeholder="8 caractères minimum"
                 required
-              />
-            </label>
+            />
 
             {isSignUp && (
-              <label className="auth-field">
-                <span>Confirmer le mot de passe</span>
-
-                <input
-                  type="password"
+              <PasswordField
+                  label="Confirmer le mot de passe"
                   name="confirmation"
                   value={form.confirmation}
                   onChange={updateField}
@@ -214,8 +208,7 @@ export default function AuthPage({ mode = "connexion" }) {
                   minLength="8"
                   placeholder="Saisissez à nouveau le mot de passe"
                   required
-                />
-              </label>
+              />
             )}
 
             <div className="auth-feedback" aria-live="polite">

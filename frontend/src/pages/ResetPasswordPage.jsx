@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../services/supabaseClient";
+import PasswordField from "../components/PasswordField";
 import "./AuthPage.css";
 
 export default function ResetPasswordPage() {
@@ -159,31 +160,25 @@ export default function ResetPasswordPage() {
               Changement pour : <strong>{session.user.email}</strong>
             </p>
 
-            <label className="auth-field">
-              <span>Nouveau mot de passe</span>
-              <input
-                type="password"
+            <PasswordField
+                label="Nouveau mot de passe"
                 autoComplete="new-password"
                 minLength={12}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 disabled={busy}
                 required
-              />
-            </label>
+            />
 
-            <label className="auth-field">
-              <span>Confirmer le nouveau mot de passe</span>
-              <input
-                type="password"
+            <PasswordField
+                label="Confirmer le nouveau mot de passe"
                 autoComplete="new-password"
                 minLength={12}
                 value={confirmation}
                 onChange={(event) => setConfirmation(event.target.value)}
                 disabled={busy}
                 required
-              />
-            </label>
+            />
 
             <button className="auth-submit" disabled={busy} type="submit">
               {busy ? "Enregistrement…" : "Changer mon mot de passe"}

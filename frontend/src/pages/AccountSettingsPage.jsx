@@ -5,6 +5,7 @@ import { supabase } from "../services/supabaseClient";
 import { getMyCompany } from "../services/companyService";
 import { signOut } from "../services/authService";
 import { getDiscoveryAccess } from "../../shared/discovery-access.js";
+import PasswordField from "../components/PasswordField";
 import "./AccountSettingsPage.css";
 
 async function accountRequest(method, token, body) {
@@ -103,7 +104,7 @@ export default function AccountSettingsPage() {
             setNewPassword("");
             return "Mot de passe modifié.";
           }); }}>
-            <label>Nouveau mot de passe<input type="password" autoComplete="new-password" minLength={12} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required /></label>
+            <PasswordField label="Nouveau mot de passe" autoComplete="new-password" minLength={12} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required />
             <button disabled={Boolean(busy)}>Changer le mot de passe</button>
           </form>
           <button className="account-settings-secondary" type="button" disabled={Boolean(busy)} onClick={() => run("logout", async () => { await signOut(); navigate("/connexion"); return "Déconnexion effectuée."; })}>Se déconnecter</button>
@@ -142,7 +143,7 @@ export default function AccountSettingsPage() {
             });
           }}>
             <label>Recopiez votre adresse e-mail<input type="email" autoComplete="off" value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} required /></label>
-            <label>Votre mot de passe<input type="password" autoComplete="current-password" value={deletePassword} onChange={(event) => setDeletePassword(event.target.value)} required /></label>
+            <PasswordField label="Votre mot de passe" autoComplete="current-password" value={deletePassword} onChange={(event) => setDeletePassword(event.target.value)} required />
             <button className="account-settings-delete" disabled={Boolean(busy)}>Supprimer définitivement mon compte</button>
           </form>
           <p>Pour une demande concernant les données conservées : <a href="mailto:contact@carnetpass.fr">contact@carnetpass.fr</a>.</p>
