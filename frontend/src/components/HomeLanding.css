@@ -12,6 +12,7 @@
 .home-button--secondary { color: #fff9f3; border: 1px solid #756a60; }
 .home-button--secondary:hover { background: #39322d; }
 .home-hero__lookup { display: inline-block; margin-top: 26px; color: #ead1c2; font-size: 14px; text-underline-offset: 4px; }
+.home-hero__pricing { display: inline-block; margin-top: 20px; margin-right: 22px; color: #f5ad87; font-size: 14px; font-weight: 750; text-underline-offset: 4px; }
 .home-hero__visual { position: relative; padding: 22px; border: 1px solid #d9cbc0; border-radius: 22px; background: #fbf7f1; color: #2b211d; box-shadow: 0 30px 60px #0005; transform: rotate(2deg); }
 .home-visual-topline { display: flex; align-items: center; gap: 9px; padding: 3px 0 17px; color: #6b5e56; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .home-visual-dot { width: 9px; height: 9px; border-radius: 50%; background: #d7714e; }

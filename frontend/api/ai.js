@@ -6,6 +6,7 @@ import { searchRagContext } from "../server/lib/rag.js";
 
 import { aiRateLimit } from "../server/lib/rate-limit.js";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
+import { getShibaPlan, refundShibaQuestion, reserveShibaQuestion, setShibaUsageHeaders, shibaQuotaEnabled } from "../server/lib/shiba-quota.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -110,6 +111,7 @@ export default async function handler(
   request,
   response
 ) {
+  let quotaReservation;
   try {
     // -----------------------------------------------------
     // 1. VERIFICATION DE LA METHODE HTTP
@@ -427,6 +429,26 @@ export default async function handler(
           message:
             "La protection de l'Assistant CarnetPass est momentanément indisponible.",
         });
+    }
+
+    if (shibaQuotaEnabled()) {
+      const professional = await requireVerifiedCompany(request, response);
+      if (!professional) return;
+      try {
+        const plan = await getShibaPlan(request, professional);
+        quotaReservation = await reserveShibaQuestion(professional, plan);
+        setShibaUsageHeaders(response, quotaReservation);
+        if (!quotaReservation.allowed) {
+          return response.status(429).json({
+            code: "SHIBA_QUOTA_REACHED",
+            error: "Le quota mensuel Shiba Bot est atteint. Vos carnets et documents restent accessibles.",
+            usage: { used: quotaReservation.used, limit: quotaReservation.limit, remaining: 0, resetAt: quotaReservation.resetAt },
+          });
+        }
+      } catch (error) {
+        console.error("Quota Shiba indisponible :", error);
+        return response.status(503).json({ error: "Le compteur Shiba est momentanément indisponible." });
+      }
     }
 
     // -----------------------------------------------------
@@ -899,6 +921,10 @@ ${JSON.stringify(
         context,
       });
   } catch (error) {
+    if (quotaReservation?.allowed) {
+      try { await refundShibaQuestion(quotaReservation); }
+      catch (refundError) { console.error("Remboursement quota Shiba indisponible :", refundError); }
+    }
     console.error(
       "Erreur API IA CarnetPass :",
       error

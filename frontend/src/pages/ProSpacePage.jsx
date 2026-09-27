@@ -20,6 +20,7 @@ import {
 import EquipmentWorkspace from "../components/EquipmentWorkspace";
 import CarnetPassCreatedModal from "../components/CarnetPassCreatedModal";
 import TechnicalCatalogModal from "../components/TechnicalCatalogModal";
+import ShibaUsage from "../components/ShibaUsage";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import equipmentIndex from "../data/equipment-index.json";
 import "./ProSpacePage.css";
@@ -1891,6 +1892,7 @@ export default function ProSpacePage() {
               <p>Choisissez ensuite un modèle : la réponse s’appuie sur ses documents constructeur.</p>
             </div>
           </div>
+          <ShibaUsage session={session} />
           <form className="pro-technical-catalog-form" onSubmit={(event) => { event.preventDefault(); if (!shibaQuestion.trim()) return; setCatalogMode("assistant"); setTechnicalCatalogOpen(true); }}>
             <label htmlFor="pro-shiba-question">Votre question</label>
             <div className="pro-technical-catalog-question-row">

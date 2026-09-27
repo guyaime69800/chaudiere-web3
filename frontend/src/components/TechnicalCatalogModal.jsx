@@ -3,6 +3,8 @@ import ReactMarkdown from "react-markdown";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import { getEquipmentDocumentLibrary } from "../services/equipmentKnowledge";
 import DocumentPreviewModal from "./DocumentPreviewModal";
+import ShibaUsage from "./ShibaUsage";
+import { refreshShibaUsage } from "../services/shibaUsageEvents";
 import "./TechnicalCatalogModal.css";
 
 const CATEGORIES = [
@@ -166,6 +168,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
           : { brand: model.brand, model: model.model, reference: model.manufacturerReference, category: category?.label || model.type, question: question.trim() }),
       });
       const result = await response.json();
+      refreshShibaUsage();
       if (!response.ok || !result?.ok) throw new Error(result?.message || result?.error || "Réponse indisponible.");
       if (request === aiRequest.current) {
         setAnswer(result.answer || "Aucune réponse reçue.");
@@ -290,6 +293,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
             {step === "assistant" && <section className="technical-catalog-assistant" aria-label="Shiba Bot">
               <button type="button" className="technical-catalog-back" onClick={assistantOrigin ? toAssistantPicker : () => setStep("model")}>← {assistantOrigin ? "Choisir un autre modèle" : "Retour au modèle"}</button>
               <div className="technical-catalog-assistant-heading"><img src={shibaTechnicien} alt="" /><div><h4>Shiba Bot</h4><p>Posez une question précise. Vérifiez les références et les sources du modèle.</p></div></div>
+              <ShibaUsage session={session} />
               {documentsBusy && <p role="status">Vérification de la documentation…</p>}
               {documentsError && <p role="alert" className="technical-catalog-error">{documentsError}</p>}
               {!documentsBusy && !documents.length && <p className="technical-catalog-empty">Recherche sur le Web : les informations trouvées seront accompagnées de leurs sources et restent à vérifier sur l’appareil.</p>}

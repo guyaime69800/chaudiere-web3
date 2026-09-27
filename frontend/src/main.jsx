@@ -11,6 +11,9 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider } from "./context/AuthProvider";
 import AuthPage from "./pages/AuthPage.jsx";
 import ProSpacePage from "./pages/ProSpacePage.jsx";
+import PricingPage from "./pages/PricingPage.jsx";
+import SiteFooter from "./components/SiteFooter.jsx";
+import { CookiesPage, FaqPage, LegalNoticePage, PrivacyPage, SalesTermsPage, TermsPage } from "./pages/InfoPages.jsx";
 import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
 import { registerSW } from "virtual:pwa-register";
 const updateSW = registerSW({
@@ -48,6 +51,13 @@ createRoot(document.getElementById("root")).render(
           />
           {/* Accueil public */}
           <Route path="/" element={<App />} />
+          <Route path="/tarifs" element={<PricingPage />} />
+          <Route path="/faq" element={<FaqPage />} />
+          <Route path="/mentions-legales" element={<LegalNoticePage />} />
+          <Route path="/confidentialite" element={<PrivacyPage />} />
+          <Route path="/cookies" element={<CookiesPage />} />
+          <Route path="/conditions-utilisation" element={<TermsPage />} />
+          <Route path="/conditions-commerciales" element={<SalesTermsPage />} />
 
           {/* Authentification professionnelle */}
           <Route
@@ -72,6 +82,7 @@ createRoot(document.getElementById("root")).render(
           {/* Fiche ouverte depuis un QR code */}
           <Route path="/appareil/:id" element={<App />} />
         </Routes>
+        <SiteFooter />
       </BrowserRouter>
     </AuthProvider>
   </StrictMode>

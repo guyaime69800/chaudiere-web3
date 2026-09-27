@@ -12,6 +12,8 @@ import DocumentPreviewModal from "./DocumentPreviewModal";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import "./EquipmentDocumentCenter.css";
 import { useAuth } from "../hooks/useAuth";
+import ShibaUsage from "./ShibaUsage";
+import { refreshShibaUsage } from "../services/shibaUsageEvents";
 
 const DOCUMENT_FILTERS = [
   { id: "all", label: "Tous" },
@@ -410,6 +412,7 @@ function EquipmentDocumentCenterContent({
         }),
       });
       const result = await response.json();
+      refreshShibaUsage();
 
       if (!response.ok || !result?.ok) {
         throw new Error(result?.message || result?.error || "Réponse IA indisponible.");
@@ -647,6 +650,7 @@ function EquipmentDocumentCenterContent({
             </div>
           </div>
           <p>Posez une question sur les notices et la vue éclatée. Vérifiez la page citée avant toute intervention.</p>
+          <ShibaUsage session={session} />
           <form onSubmit={handleAskAi}>
             <label htmlFor="equipment-ai-question">Votre question</label>
             <textarea

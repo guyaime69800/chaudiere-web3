@@ -36,6 +36,7 @@ export default function HomeLanding() {
             <Link className="home-button home-button--primary" to="/connexion">Accéder à l’application <span aria-hidden="true">→</span></Link>
             <Link className="home-button home-button--secondary" to="/inscription">Créer un espace professionnel</Link>
           </div>
+          <Link className="home-hero__pricing" to="/tarifs">Découvrir les offres en préparation →</Link>
           <a className="home-hero__lookup" href="#rechercher-appareil">Vous avez un identifiant ou un QR code ? Rechercher un appareil ↓</a>
         </div>
         <div className="home-hero__visual" aria-label="Aperçu des informations réunies dans CarnetPass">

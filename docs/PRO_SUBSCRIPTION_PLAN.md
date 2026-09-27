@@ -35,4 +35,12 @@ La migration devra conserver une correspondance unique `company_id` ↔ `stripe_
 - Vérifier qu'un membre non administrateur ne peut ni acheter ni résilier pour l'entreprise, et qu'un navigateur ne peut pas modifier son plan.
 - Contrôler les parcours sur `test.carnetpass.fr` avant toute demande de mise en Production. Aucune clé ou prix Stripe réel n'est activé dans cette préparation.
 
+## Préparation de l'offre au 27 septembre 2026
+
+Le propriétaire propose Découverte (essai 14 jours, 5 équipements, 20 questions Shiba), Pro (200 questions IA/mois/technicien), Équipe (dès 5 techniciens, 200 questions IA/mois/technicien) et Entreprise sur devis. Les montants communiqués sont un **projet non validé** : la page `/tarifs` ne les affiche pas et aucun paiement n'est actif.
+
+La Preview teste pour l'instant les limites **IA seulement** : 20 questions par mois pour `free` et 200 par mois et par technicien pour `pro`. Le compteur est côté serveur, commun aux deux API Shiba, et se remet à zéro le premier jour du mois UTC. `enterprise` reste sans limite commerciale définie ; la protection par adresse IP existante s'applique. L'offre Équipe n'a pas encore de valeur distincte dans l'enum `subscription_plan` ; le quota de `pro` s'appliquerait à ses techniciens, sous réserve de finaliser la modélisation.
+
+L'essai de 14 jours, le plafond de 5 équipements, l'attribution des places par technicien, la facturation et la résiliation ne sont **pas** activés. La base Supabase étant commune à Preview et Production, aucune migration de souscription n'est appliquée pour ce test d'interface. Atteindre le quota IA ne doit jamais bloquer les carnets ni les documents.
+
 Références techniques : [abonnements Stripe](https://docs.stripe.com/billing/subscriptions/build-subscriptions), [webhooks Stripe](https://docs.stripe.com/webhooks), [horloges de test Stripe](https://docs.stripe.com/billing/testing/test-clocks).

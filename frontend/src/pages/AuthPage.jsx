@@ -244,6 +244,7 @@ export default function AuthPage({ mode = "connexion" }) {
                   : "Se connecter"}
             </button>
           </form>
+          {isSignUp && <p className="auth-switch">Avant de créer un compte, consultez nos <Link to="/conditions-utilisation">conditions d’utilisation</Link> et notre <Link to="/confidentialite">information sur les données personnelles</Link>.</p>}
           {!isSignUp && (
             <p className="auth-switch">
               <Link to="/reinitialiser-mot-de-passe">

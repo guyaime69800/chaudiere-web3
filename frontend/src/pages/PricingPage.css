@@ -1,0 +1,25 @@
+.pricing-page { max-width: 1220px; margin: 0 auto; padding: 24px 24px 80px; color: #271e18; }
+.pricing-nav { display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+.pricing-nav a { color: #a43b16; font-weight: 750; text-decoration: none; }
+.pricing-nav a:hover { text-decoration: underline; }
+.pricing-intro { max-width: 760px; padding: 70px 0 45px; }
+.pricing-eyebrow { color: #a43b16; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.pricing-intro h1 { margin: 14px 0 18px; font-size: clamp(38px, 5vw, 65px); line-height: 1.05; letter-spacing: -.045em; }
+.pricing-intro p { color: #625951; font-size: 18px; line-height: 1.6; }
+.pricing-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.pricing-card { display: flex; flex-direction: column; padding: 25px 22px; border: 1px solid #e3d8cf; border-radius: 20px; background: #fffdfa; }
+.pricing-card--featured { border-color: #c2410c; box-shadow: 0 12px 30px #a8401420; }
+.pricing-card__top { min-height: 68px; }
+.pricing-card h2 { margin: 0; font-size: 25px; }
+.pricing-card__top span { display: inline-block; margin-top: 8px; color: #ad3b10; font-size: 12px; font-weight: 800; }
+.pricing-card > p { min-height: 67px; color: #655a52; line-height: 1.5; }
+.pricing-card__status { padding: 13px 0; border-top: 1px solid #eadfd6; border-bottom: 1px solid #eadfd6; color: #a43b16; }
+.pricing-card ul { flex: 1; padding: 0 0 0 21px; line-height: 1.55; }
+.pricing-card li { margin: 10px 0; }
+.pricing-card > a { display: inline-flex; justify-content: space-between; gap: 12px; padding: 12px 15px; border-radius: 9px; background: #281f1a; color: white; font-weight: 750; text-decoration: none; }
+.pricing-card > a:hover { background: #a43b16; }
+.pricing-note { margin-top: 42px; padding: 30px; border-radius: 20px; background: #f2e9df; }
+.pricing-note h2 { margin: 0 0 12px; }
+.pricing-note p { max-width: 880px; color: #5a5049; line-height: 1.6; }
+@media (max-width: 1050px) { .pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .pricing-page { padding: 20px 16px 55px; } .pricing-nav { font-size: 13px; } .pricing-intro { padding: 54px 0 25px; } .pricing-grid { grid-template-columns: 1fr; } .pricing-card > p { min-height: 0; } }
