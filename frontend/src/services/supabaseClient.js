@@ -6,7 +6,7 @@ const supabasePublishableKey =
 
 if (!supabaseUrl || !supabasePublishableKey) {
   throw new Error(
-    "Configuration Supabase manquante dans le fichier .env.local."
+    "Configuration Supabase de l'application manquante."
   );
 }
 

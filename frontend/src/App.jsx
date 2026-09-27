@@ -11,6 +11,7 @@ import { useWallet } from "./blockchain/useWallet";
 import { loadEquipmentKnowledge } from "./services/equipmentKnowledge";
 import CarnetPassCreatedModal from "./components/CarnetPassCreatedModal";
 import shibaTechnicien from "./assets/carnetpass-shiba-technicien.png";
+import HomeLanding from "./components/HomeLanding";
 import ReactMarkdown from "react-markdown";
 import "./App.css";
 import { supabase } from "./services/supabaseClient";
@@ -1126,10 +1127,14 @@ function App({ initialMode = "public" }) {
         )}
       </header>
 
+      {location.pathname === "/" && mode === "public" && !boiler && !selectedEquipment && searchResults.length === 0 && (
+        <HomeLanding />
+      )}
+
       {/* ---------- HERO + RECHERCHE (toujours visible) ---------- */}
-      <section className="hero">
-        <h1>Le carnet d'entretien infalsifiable de vos équipements</h1>
-        <p>Chaudière, climatisation, pompe à chaleur, VMC — un registre vérifiable qui suit l'appareil, pas son propriétaire.</p>
+      <section className="hero" id="rechercher-appareil">
+        {location.pathname === "/" ? <h2>Retrouver un appareil</h2> : <h1>Le carnet d'entretien de votre équipement</h1>}
+        <p>Saisissez un identifiant CarnetPass ou scannez le QR code pour ouvrir la fiche de l’appareil.</p>
 
         <div className="search">
           <input
