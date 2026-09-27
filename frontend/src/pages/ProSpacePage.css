@@ -1713,14 +1713,32 @@
   margin-top: 0;
 }
 
-.pro-company-card-actions .pro-settings-link {
+.pro-hero-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pro-settings-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid rgba(201, 54, 8, 0.25);
+  border-radius: 999px;
+  color: var(--pro-orange-dark);
+  background: rgba(255, 240, 233, 0.9);
+  font-size: 12px;
+  font-weight: 750;
   text-decoration: none;
   white-space: nowrap;
 }
+
+.pro-settings-link:hover { background: #ffe5d8; }
+.pro-settings-link:focus-visible { outline: 3px solid rgba(201, 54, 8, 0.3); outline-offset: 2px; }
 
 .pro-settings-link svg {
   width: 16px;

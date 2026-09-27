@@ -460,13 +460,6 @@ function CompanyAccountCard({
                 Modifier
               </button>
             )}
-            <Link className="pro-action-card-button pro-settings-link" to="/parametres-compte">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M10.5 2.8h3l.5 2.1a7.4 7.4 0 0 1 1.8.8l1.9-1.1 2.1 2.1-1.1 1.9c.3.6.6 1.2.8 1.8l2.1.5v3l-2.1.5a7.4 7.4 0 0 1-.8 1.8l1.1 1.9-2.1 2.1-1.9-1.1a7.4 7.4 0 0 1-1.8.8l-.5 2.1h-3l-.5-2.1a7.4 7.4 0 0 1-1.8-.8l-1.9 1.1-2.1-2.1 1.1-1.9a7.4 7.4 0 0 1-.8-1.8L2.8 13v-3l2.1-.5a7.4 7.4 0 0 1 .8-1.8L4.6 5.8l2.1-2.1 1.9 1.1a7.4 7.4 0 0 1 1.8-.8l.1-1.2Z" />
-                <circle cx="12" cy="11.5" r="2.7" />
-              </svg>
-              Paramètres du compte
-            </Link>
           </div>
         </article>
         <div className="pro-account-side-column">
@@ -1817,7 +1810,16 @@ export default function ProSpacePage() {
 
       <section className="pro-dashboard-hero">
         <div>
-          <span className="pro-eyebrow">ESPACE PROFESSIONNEL</span>
+          <div className="pro-hero-controls">
+            <span className="pro-eyebrow">ESPACE PROFESSIONNEL</span>
+            <Link className="pro-settings-link" to="/parametres-compte">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M10.5 2.8h3l.5 2.1a7.4 7.4 0 0 1 1.8.8l1.9-1.1 2.1 2.1-1.1 1.9c.3.6.6 1.2.8 1.8l2.1.5v3l-2.1.5a7.4 7.4 0 0 1-.8 1.8l1.1 1.9-2.1 2.1-1.9-1.1a7.4 7.4 0 0 1-1.8.8l-.5 2.1h-3l-.5-2.1a7.4 7.4 0 0 1-1.8-.8l-1.9 1.1-2.1-2.1 1.1-1.9a7.4 7.4 0 0 1-.8-1.8L2.8 13v-3l2.1-.5a7.4 7.4 0 0 1 .8-1.8L4.6 5.8l2.1-2.1 1.9 1.1a7.4 7.4 0 0 1 1.8-.8l.1-1.2Z" />
+                <circle cx="12" cy="11.5" r="2.7" />
+              </svg>
+              Paramètres du compte
+            </Link>
+          </div>
           <h1>Bienvenue chez {company.name}</h1>
           <p>Votre tableau de bord CarnetPass est maintenant prêt.</p>
         </div>
