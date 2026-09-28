@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { aiRateLimit } from "../server/lib/rate-limit.js";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import { getShibaPlan, refundShibaQuestion, reserveShibaQuestion, setShibaUsageHeaders, shibaQuotaEnabled } from "../server/lib/shiba-quota.js";
+import { reportAnomaly } from "../server/lib/anomaly-alert.js";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -105,7 +106,8 @@ export default async function handler(request, response) {
     }
 
     // Aucune conclusion technique sans URL consultable.
-    if (!answer || !sources.length) {
+    if (!answer || !sources.length || !citations.length) {
+      await reportAnomaly("shiba_grounding", "WEB_SOURCE_OR_CITATION_MISSING");
       return response.status(200).json({ ok: true, source: "web", answer: "Aucune source exploitable trouvée pour ce modèle. Vérifiez sa référence ou recherchez une notice officielle.", sources: [], citations: [] });
     }
     return response.status(200).json({ ok: true, source: "web", answer, citations, sources: sources.slice(0, 8) });
@@ -115,6 +117,7 @@ export default async function handler(request, response) {
       catch (refundError) { console.error("Remboursement quota Shiba indisponible :", refundError); }
     }
     console.error("Recherche Web Shiba indisponible :", error);
+    await reportAnomaly("shiba_unavailable", "web_search_failed");
     return response.status(503).json({ error: "La recherche Web de Shiba est momentanément indisponible." });
   }
 }

@@ -175,7 +175,7 @@ export default function DocumentPreviewModal({
 
         <footer className="document-preview-modal__footer">
           <p>
-            Vérifiez le document avant de le télécharger ou de le transmettre.
+            Vérifiez le document avant de le télécharger ou de le transmettre. Les notices, schémas et marques restent soumis aux droits de leurs titulaires.
           </p>
 
           <div>

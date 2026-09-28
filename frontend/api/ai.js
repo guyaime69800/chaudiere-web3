@@ -7,6 +7,8 @@ import { searchRagContext } from "../server/lib/rag.js";
 import { aiRateLimit } from "../server/lib/rate-limit.js";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import { getShibaPlan, refundShibaQuestion, reserveShibaQuestion, setShibaUsageHeaders, shibaQuotaEnabled } from "../server/lib/shiba-quota.js";
+import { reportAnomaly } from "../server/lib/anomaly-alert.js";
+import { checkDocumentGrounding, UNVERIFIED_ANSWER } from "../server/lib/shiba-grounding.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -514,6 +516,19 @@ Recherche uniquement les passages qui concernent réellement ce code ou l'une de
           )
         : null;
 
+    if (shouldUseRag) {
+      const evidenceIssue = checkDocumentGrounding({ passages: ragResult?.topResults, answer: "Passages retrouvés", codeVariants: normalizedCode ? errorCodeVariants : [] });
+      if (evidenceIssue) {
+        await reportAnomaly("shiba_grounding", evidenceIssue);
+        if (quotaReservation?.allowed) {
+          try { await refundShibaQuestion(quotaReservation); }
+          catch (refundError) { console.error("Remboursement quota Shiba indisponible :", refundError); }
+          quotaReservation = null;
+        }
+        return response.status(200).json({ ok: true, answer: UNVERIFIED_ANSWER, verification: "insufficient_evidence" });
+      }
+    }
+
     // -----------------------------------------------------
     // 11. CONSTRUCTION DU CONTEXTE
     // -----------------------------------------------------
@@ -888,6 +903,14 @@ ${JSON.stringify(
     const answer =
       aiResponse.output_text;
 
+    if (shouldUseRag) {
+      const groundingIssue = checkDocumentGrounding({ passages: ragResult.topResults, answer, codeVariants: normalizedCode ? errorCodeVariants : [] });
+      if (groundingIssue) {
+        await reportAnomaly("shiba_grounding", groundingIssue);
+        return response.status(200).json({ ok: true, answer: UNVERIFIED_ANSWER, verification: "insufficient_evidence" });
+      }
+    }
+
     return response
       .status(200)
       .json({
@@ -929,6 +952,7 @@ ${JSON.stringify(
       "Erreur API IA CarnetPass :",
       error
     );
+    await reportAnomaly("shiba_unavailable", "ai_request_failed");
 
     return response
       .status(500)

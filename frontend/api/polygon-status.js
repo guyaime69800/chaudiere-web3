@@ -1,5 +1,6 @@
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import { checkEquipmentRegistryV2 } from "../server/lib/equipment-registry-v2.js";
+import { reportAnomaly } from "../server/lib/anomaly-alert.js";
 
 export default async function handler(req, res) {
   const startedAt = Date.now();
@@ -33,6 +34,10 @@ export default async function handler(req, res) {
 
   try {
     const status = await checkEquipmentRegistryV2();
+    const polygonIssue = status.chainId !== 137 || status.paused || !status.serverAuthorized;
+    if (polygonIssue) await reportAnomaly("polygon_critical", "network_contract_or_authorization");
+    else if (status.balanceStatus === "critical") await reportAnomaly("polygon_critical", "low_balance");
+    else if (status.balanceStatus === "warning") await reportAnomaly("polygon_warning", "low_balance");
     const logMethod =
       status.balanceStatus === "healthy" ? "log" : "warn";
 
@@ -99,6 +104,7 @@ export default async function handler(req, res) {
         diagnostic,
       })
     );
+    await reportAnomaly("polygon_unavailable", diagnostic);
 
     return res.status(503).json({
       ok: false,

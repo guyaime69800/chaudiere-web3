@@ -5,6 +5,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import accountHandler from "../server/account.js";
 import billingHandler from "../server/billing.js";
 import enterpriseQuoteHandler from "../server/enterprise-quote.js";
+import systemHealthHandler from "../server/system-health.js";
 
 export const config = { api: { bodyParser: false } };
 
@@ -99,6 +100,7 @@ export default async function handler(req, res) {
   if (req.query?.account_route === "1") return accountHandler(req, res);
   if (req.query?.billing_route === "1") return billingHandler(req, res);
   if (req.query?.enterprise_quote_route === "1") return enterpriseQuoteHandler(req, res);
+  if (req.query?.system_health_route === "1") return systemHealthHandler(req, res);
   res.setHeader("Allow", "POST");
 
   if (req.method !== "POST") {

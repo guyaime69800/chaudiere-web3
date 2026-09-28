@@ -1,0 +1,10 @@
+.system-health { margin: 22px 0; padding: 22px 24px; border: 1px solid #e4d6c9; border-radius: 17px; background: #fffdfa; color: #2d211a; }
+.system-health__heading { display: flex; justify-content: space-between; gap: 15px; align-items: center; }
+.system-health__heading span { color: #a43b16; font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+.system-health h2 { margin: 6px 0 0; font-size: 21px; }
+.system-health button { border: 1px solid #cbb9aa; border-radius: 8px; padding: 8px 12px; background: white; color: #7c361b; cursor: pointer; }
+.system-health ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; padding: 0; list-style: none; }
+.system-health li { display: grid; gap: 4px; padding: 10px; border-radius: 8px; background: #f8f1eb; }
+.system-health li strong { color: #246942; }
+.system-health li strong.system-health__problem { color: #ad261e; }
+.system-health small { color: #675b53; line-height: 1.5; }
