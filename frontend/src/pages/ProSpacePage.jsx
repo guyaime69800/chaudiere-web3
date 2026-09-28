@@ -21,8 +21,6 @@ import EquipmentWorkspace from "../components/EquipmentWorkspace";
 import CarnetPassCreatedModal from "../components/CarnetPassCreatedModal";
 import TechnicalCatalogModal from "../components/TechnicalCatalogModal";
 import ShibaUsage from "../components/ShibaUsage";
-import { PolygonWalletMonitor } from "../components/PolygonWalletMonitor";
-import SystemHealthMonitor from "../components/SystemHealthMonitor";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import { DISCOVERY_EQUIPMENT_LIMIT, getDiscoveryAccess } from "../../shared/discovery-access.js";
 import equipmentIndex from "../data/equipment-index.json";
@@ -1878,8 +1876,6 @@ export default function ProSpacePage() {
           setRefreshKey((currentKey) => currentKey + 1);
         }}
       />
-      <SystemHealthMonitor companyRole={company.role} accessToken={session?.access_token} />
-      <PolygonWalletMonitor companyRole={company.role} accessToken={session?.access_token} />
       <section className="pro-stat-grid">
         <article>
           <span>Équipements suivis</span>

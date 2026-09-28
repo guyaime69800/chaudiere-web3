@@ -17,10 +17,6 @@
       "destination": "/api/verify-company?enterprise_quote_route=1"
     },
     {
-      "source": "/api/system-health",
-      "destination": "/api/verify-company?system_health_route=1"
-    },
-    {
       "source": "/((?!api(?:/|$)|src(?:/|$)|node_modules(?:/|$)|assets(?:/|$)|@|.*\\.).*)",
       "destination": "/index.html"
     }

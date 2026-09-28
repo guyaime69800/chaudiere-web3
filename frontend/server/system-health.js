@@ -1,31 +1,45 @@
 import { Redis } from "@upstash/redis";
-import { requireVerifiedCompany } from "./lib/require-verified-company.js";
+import { checkEquipmentRegistryV2 } from "./lib/equipment-registry-v2.js";
 import { reportAnomaly } from "./lib/anomaly-alert.js";
 
-export default async function systemHealthHandler(req, res) {
-  res.setHeader("Cache-Control", "no-store");
-  if (req.method !== "GET") return res.status(405).json({ error: "Méthode non autorisée." });
-  const professional = await requireVerifiedCompany(req, res);
-  if (!professional) return;
-  if (!["owner", "admin"].includes(professional.role)) return res.status(403).json({ error: "Accès réservé aux responsables." });
-
-  const checks = {
-    database: "ok", // L'authentification et l'entreprise viennent d'être vérifiées dans Supabase.
-    ai: process.env.OPENAI_API_KEY ? "configured" : "unavailable",
-    email: process.env.RESEND_API_KEY ? "configured" : "unavailable",
-    stripeTest: process.env.VERCEL_ENV === "preview"
-      ? (process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY)?.startsWith("sk_test_") ? "configured" : "unavailable"
-      : "not_applicable",
-    redis: "unavailable",
-  };
-  if (process.env.UPSTASH_REDIS_REST_KV_REST_API_URL && process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN) {
-    try {
-      const redis = new Redis({ url: process.env.UPSTASH_REDIS_REST_KV_REST_API_URL, token: process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN });
-      await redis.ping();
-      checks.redis = "ok";
-    } catch { checks.redis = "unavailable"; }
+// Internal monitoring runs at most once every 15 minutes per environment.
+// It returns no diagnostic data to visitors or professional accounts.
+export async function runInternalMonitoring() {
+  const url = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN;
+  if (!url || !token) {
+    await reportAnomaly("service_unavailable", "redis_configuration_missing");
+    return;
   }
-  const problems = Object.entries(checks).filter(([, state]) => state === "unavailable").map(([name]) => name);
-  if (problems.length) await reportAnomaly("service_unavailable", problems.join(","));
-  return res.status(200).json({ ok: problems.length === 0, checks, checkedAt: new Date().toISOString() });
+
+  let redis;
+  try {
+    redis = new Redis({ url, token });
+    const first = await redis.set(`carnetpass:internal-monitor:${process.env.VERCEL_ENV || "local"}`, "1", { nx: true, ex: 900 });
+    if (first !== "OK") return;
+    await redis.ping();
+  } catch {
+    await reportAnomaly("service_unavailable", "redis_unavailable");
+    return;
+  }
+
+  const missing = [];
+  if (!process.env.OPENAI_API_KEY) missing.push("shiba_configuration");
+  if (!process.env.RESEND_API_KEY) missing.push("email_configuration");
+  if (process.env.VERCEL_ENV === "preview" &&
+    !(process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY)?.startsWith("sk_test_")) {
+    missing.push("stripe_test_configuration");
+  }
+  if (missing.length) await reportAnomaly("service_unavailable", missing.join(","));
+
+  try {
+    const status = await checkEquipmentRegistryV2();
+    if (status.chainId !== 137 || status.paused || !status.serverAuthorized || status.balanceStatus === "critical") {
+      await reportAnomaly("polygon_critical", "network_contract_authorization_or_balance");
+    } else if (status.balanceStatus === "warning") {
+      await reportAnomaly("polygon_warning", "low_balance");
+    }
+  } catch (error) {
+    await reportAnomaly("polygon_unavailable", error?.code || "check_failed");
+  }
 }
