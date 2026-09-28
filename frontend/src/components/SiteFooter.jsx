@@ -11,7 +11,7 @@ export default function SiteFooter() {
         <Link to="/confidentialite">Confidentialité</Link>
         <Link to="/cookies">Cookies</Link>
         <Link to="/conditions-utilisation">Conditions d’utilisation</Link>
-        <Link to="/conditions-commerciales">Conditions commerciales</Link>
+        <Link to="/conditions-commerciales">CGV B2B</Link>
       </nav>
     </footer>
   );

@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import cgvB2B from "../content/cgv-b2b.md?raw";
 import "./InfoPages.css";
 
 function InfoLayout({ title, eyebrow, children }) {
@@ -74,12 +76,10 @@ export function TermsPage() {
 
 export function SalesTermsPage() {
   const stripeTest = import.meta.env.VITE_STRIPE_TEST_BILLING_ENABLED === "true";
-  return <InfoLayout title="Conditions commerciales" eyebrow="Projet avant paiement">
+  return <InfoLayout title="Conditions générales de vente B2B" eyebrow="Projet avant paiement">
     <DraftNotice />
     <section><h2>{stripeTest ? "Paiement de test" : "Paiement fermé"}</h2><p>{stripeTest ? "Seul l'environnement de test Stripe est disponible depuis cette Preview. Aucun paiement réel n'est prélevé et les droits payants ne sont pas activés par ce test." : "Aucun abonnement payant ne peut être souscrit depuis cette Preview. Les offres et les tarifs envisagés ne constituent pas une proposition contractuelle."}</p></section>
-    <section><h2>Formules proposées</h2><p>La formule Découverte est un essai gratuit de 5 jours avec une limite de 5 équipements. Les tarifs présentés sont Pro à 25 € HT par mois et Équipe à 35 € HT par mois. La formule Entreprise fait l’objet d’une étude et d’un devis individuel. Les détails figurent sur la <Link to="/tarifs">page des formules</Link>.</p></section>
-    <section><h2>Gestion du test Stripe</h2><p>Lorsque le test est activé, le titulaire autorisé du compte peut consulter l’abonnement test, changer de formule ou accéder au portail Stripe depuis ses paramètres. Stripe présente le montant éventuel d’un ajustement avant la confirmation. Une résiliation programmée prend effet à la fin de la période indiquée par Stripe.</p></section>
-    <section><h2>Points à arrêter avant l’ouverture commerciale</h2><ul><li>Validation définitive des prix, de la TVA, de l’unité de facturation et de la date de facturation.</li><li>Modalités de paiement réel, factures, retard de paiement et éventuels frais applicables.</li><li>Durée, renouvellement, changement du nombre de techniciens et effet de la résiliation.</li><li>Accès aux carnets et documents, export et conservation des données après la fin du contrat.</li><li>Responsabilités, assistance, disponibilité et traitement des réclamations.</li></ul></section>
-    <section><h2>Version contractuelle</h2><p><Placeholder>CGV B2B complètes et validées avant tout paiement, avec identité du vendeur et barème des prix</Placeholder></p></section>
+    <section><h2>Points à compléter avant publication</h2><p>Le document ci-dessous reprend votre projet de CGV B2B. Les champs entre crochets, notamment l’identité du fournisseur, la date de version et la durée d’export des données, restent à définir. Il ne constitue pas encore une version acceptée lors d’une souscription. Les offres actuellement présentées figurent sur la <Link to="/tarifs">page des formules</Link>.</p></section>
+    <article className="info-page__markdown"><ReactMarkdown>{cgvB2B.replace(/^# Conditions générales de vente B2B — CarnetPass\s*/, "")}</ReactMarkdown></article>
   </InfoLayout>;
 }

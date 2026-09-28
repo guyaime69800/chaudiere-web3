@@ -11,4 +11,6 @@
 .info-draft strong { color: #813114; }
 .info-draft p { margin: 6px 0 0; }
 .info-placeholder { color: #8c3214; font-weight: 700; }
+.info-page__markdown h2 { margin: 32px 0 12px; padding-top: 18px; border-top: 1px solid #eee7e0; }
+.info-page__markdown p, .info-page__markdown li { line-height: 1.75; }
 @media (max-width: 600px) { .info-page { padding: 22px 16px 55px; } .info-page > header { padding-top: 42px; } }
