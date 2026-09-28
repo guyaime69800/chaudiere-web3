@@ -12,6 +12,7 @@ import { AuthProvider } from "./context/AuthProvider";
 import AuthPage from "./pages/AuthPage.jsx";
 import ProSpacePage from "./pages/ProSpacePage.jsx";
 import PricingPage from "./pages/PricingPage.jsx";
+import EnterpriseQuotePage from "./pages/EnterpriseQuotePage.jsx";
 import SiteFooter from "./components/SiteFooter.jsx";
 import { CookiesPage, FaqPage, LegalNoticePage, PrivacyPage, SalesTermsPage, TermsPage } from "./pages/InfoPages.jsx";
 import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
@@ -53,6 +54,7 @@ createRoot(document.getElementById("root")).render(
           {/* Accueil public */}
           <Route path="/" element={<App />} />
           <Route path="/tarifs" element={<PricingPage />} />
+          <Route path="/demande-entreprise" element={<EnterpriseQuotePage />} />
           <Route path="/faq" element={<FaqPage />} />
           <Route path="/mentions-legales" element={<LegalNoticePage />} />
           <Route path="/confidentialite" element={<PrivacyPage />} />

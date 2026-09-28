@@ -13,6 +13,10 @@
       "destination": "/api/verify-company?billing_route=1&webhook=1"
     },
     {
+      "source": "/api/enterprise-quote",
+      "destination": "/api/verify-company?enterprise_quote_route=1"
+    },
+    {
       "source": "/((?!api(?:/|$)|src(?:/|$)|node_modules(?:/|$)|assets(?:/|$)|@|.*\\.).*)",
       "destination": "/index.html"
     }

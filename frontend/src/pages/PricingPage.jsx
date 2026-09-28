@@ -65,7 +65,9 @@ export default function PricingPage() {
             <p>{offer.audience}</p>
             <div className="pricing-card__price"><strong>{offer.price}</strong><span>{offer.priceDetail}</span></div>
             <ul>{offer.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
-            {user && testBilling && offer.plan ? (
+            {offer.name === "Entreprise" ? (
+              <Link to="/demande-entreprise">Demander cette formule <span aria-hidden="true">→</span></Link>
+            ) : user && testBilling && offer.plan ? (
               <button type="button" disabled={busy} onClick={() => choose(offer.plan)}>Choisir ou modifier la formule <span aria-hidden="true">→</span></button>
             ) : user && offer.name !== "Découverte" ? (
               <a href={`mailto:contact@carnetpass.fr?subject=${encodeURIComponent(`Demande de formule ${offer.name} — CarnetPass`)}&body=${encodeURIComponent(`Bonjour,\n\nJe souhaite être informé de l'ouverture de la formule ${offer.name} pour mon compte ${user.email}.\n\nMerci.`)}`}>Demander cette formule <span aria-hidden="true">→</span></a>
