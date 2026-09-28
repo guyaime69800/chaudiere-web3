@@ -8,6 +8,8 @@ const PRICES = {
 const priceToPlan = Object.fromEntries(Object.entries(PRICES).map(([plan, price]) => [price, plan]));
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const stripeTestKey = () => process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
+const portalReturnUrl = "https://test.carnetpass.fr/parametres-compte#formule";
+const portalConfigMarker = "carnetpass_preview_plan_changes_v1";
 
 function send(res, status, message, extra = {}) {
   return res.status(status).json({ ok: status < 400, message, ...extra });
@@ -25,6 +27,44 @@ async function stripe(path, params, method = "POST") {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error?.message || "Stripe indisponible.");
   return data;
+}
+
+async function testPortalConfiguration() {
+  const configurations = await stripe("billing_portal/configurations?limit=100", null, "GET");
+  const existing = configurations.data?.find((configuration) => configuration.active
+    && configuration.metadata?.carnetpass_preview === portalConfigMarker);
+  if (existing) return existing.id;
+
+  const [pro, team] = await Promise.all(Object.values(PRICES).map((price) =>
+    stripe(`prices/${encodeURIComponent(price)}`, null, "GET")));
+  const configuration = await stripe("billing_portal/configurations", {
+    "metadata[carnetpass_preview]": portalConfigMarker,
+    "features[invoice_history][enabled]": "true",
+    "features[payment_method_update][enabled]": "true",
+    "features[subscription_cancel][enabled]": "true",
+    "features[subscription_cancel][mode]": "at_period_end",
+    "features[subscription_update][enabled]": "true",
+    "features[subscription_update][default_allowed_updates][0]": "price",
+    "features[subscription_update][proration_behavior]": "always_invoice",
+    "features[subscription_update][products][0][product]": pro.product,
+    "features[subscription_update][products][0][prices][0]": PRICES.pro,
+    "features[subscription_update][products][1][product]": team.product,
+    "features[subscription_update][products][1][prices][0]": PRICES.team,
+  });
+  return configuration.id;
+}
+
+export function planChangeParams(customerId, subscription, itemId, plan, configuration) {
+  return {
+    customer: customerId,
+    configuration,
+    return_url: portalReturnUrl,
+    "flow_data[type]": "subscription_update_confirm",
+    "flow_data[subscription_update_confirm][subscription]": subscription,
+    "flow_data[subscription_update_confirm][items][0][id]": itemId,
+    "flow_data[subscription_update_confirm][items][0][price]": PRICES[plan],
+    "flow_data[subscription_update_confirm][items][0][quantity]": "1",
+  };
 }
 
 async function readBody(req) {
@@ -137,10 +177,25 @@ export default async function billingHandler(req, res) {
       if (readError || !saved?.stripe_customer_id) throw readError || new Error("Stripe customer not saved");
       customerId = saved.stripe_customer_id;
     }
-    if ((body.action === "portal" || (body.action === "checkout" && current?.stripe_subscription_id && current.status !== "canceled"))
-      && customerId && current?.stripe_subscription_id) {
+    if (body.action === "checkout" && PRICES[body.plan] && customerId
+      && current?.stripe_subscription_id && current.status !== "canceled") {
+      const subscription = await stripe(`subscriptions/${encodeURIComponent(current.stripe_subscription_id)}`, null, "GET");
+      const item = subscription.items?.data?.[0];
+      if (subscription.customer !== customerId || subscription.items?.data?.length !== 1
+        || !Object.values(PRICES).includes(item?.price?.id)
+        || !["active", "trialing"].includes(subscription.status)) {
+        return send(res, 409, "Cet abonnement ne peut pas être modifié depuis le parcours de test.");
+      }
+      if (item.price.id === PRICES[body.plan]) {
+        return send(res, 409, "Vous utilisez déjà cette formule de test.");
+      }
+      const portal = await stripe("billing_portal/sessions",
+        planChangeParams(customerId, subscription.id, item.id, body.plan, await testPortalConfiguration()));
+      return send(res, 200, "Changement de formule prêt.", { url: portal.url });
+    }
+    if (body.action === "portal" && customerId && current?.stripe_subscription_id) {
       const portal = await stripe("billing_portal/sessions", {
-        customer: customerId, return_url: "https://test.carnetpass.fr/parametres-compte#formule",
+        customer: customerId, return_url: portalReturnUrl,
       });
       return send(res, 200, "Portail prêt.", { url: portal.url });
     }

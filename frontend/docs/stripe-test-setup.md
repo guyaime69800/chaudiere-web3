@@ -10,13 +10,13 @@ Le parcours de paiement reste fermé tant que les variables ci-dessous ne sont p
    - `STRIPE_TEST_WEBHOOK_SECRET` : secret `whsec_…` de l'endpoint webhook créé à l'étape suivante.
    - `VITE_STRIPE_TEST_BILLING_ENABLED` : `true`.
 3. Dans Stripe **environnement de test**, créer un endpoint webhook `https://test.carnetpass.fr/api/stripe-webhook` pour `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated` et `customer.subscription.deleted`. Choisir les événements du compte, en format snapshot.
-4. Dans Stripe **environnement de test**, activer le portail client et autoriser les changements entre les deux tarifs ainsi que la résiliation. Configurer l'effet de la résiliation selon le comportement voulu.
+4. Dans Stripe **environnement de test**, activer le portail client pour la résiliation et les moyens de paiement. Lorsqu'un client choisit l'autre formule sur la page des tarifs, CarnetPass crée une configuration de portail de test distincte et ouvre directement la confirmation du changement, avec les proratas affichés par Stripe.
 5. Redéployer la Preview après avoir ajouté les variables Vercel.
 
 Ne mettre aucune clé Stripe dans `VITE_…` sauf l'indicateur booléen. Ne jamais réutiliser une clé `sk_live_…` pour ce test.
 
 ## Vérification
 
-Depuis un compte administrateur CarnetPass confirmé, ouvrir « Paramètres du compte » puis « Voir les formules ». Choisir Pro ou Équipe et payer avec une carte de test indiquée dans la documentation Stripe. Revenir aux paramètres et vérifier la ligne « Stripe test ». Ouvrir le portail pour changer de formule ou résilier ; vérifier ensuite la mise à jour de la ligne.
+Depuis un compte administrateur CarnetPass confirmé, ouvrir « Paramètres du compte » puis « Voir les formules ». Choisir Pro ou Équipe et payer avec une carte de test indiquée dans la documentation Stripe. Revenir aux paramètres et vérifier la ligne « Stripe test ». Pour changer de formule, choisir l'autre tarif : Stripe doit afficher la nouvelle formule et son montant avant confirmation. Pour résilier, ouvrir « Gérer et résilier mon abonnement test ». Vérifier ensuite la mise à jour de la ligne après chaque action.
 
 La table `stripe_test_subscriptions` n'affecte ni les accès ni la facturation réelle. L'activation des formules payantes exigera un raccordement de production distinct et la validation des conditions commerciales.
