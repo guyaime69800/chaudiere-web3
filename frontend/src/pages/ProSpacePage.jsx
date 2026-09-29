@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { signOut } from "../services/authService";
+import { activeStripeTestPlan, getStripeTestSubscription } from "../services/stripeTestSubscription";
 import {
   createCompany,
   getMyCompany,
@@ -968,6 +969,7 @@ export default function ProSpacePage() {
   const navigate = useNavigate();
 
   const [company, setCompany] = useState(null);
+  const [testSubscription, setTestSubscription] = useState(null);
   const [siretMessage, setSiretMessage] = useState("");
   const [verificationBusy, setVerificationBusy] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -1003,6 +1005,13 @@ export default function ProSpacePage() {
   const [technicalCatalogOpen, setTechnicalCatalogOpen] = useState(false);
   const [shibaQuestion, setShibaQuestion] = useState("");
   const [catalogMode, setCatalogMode] = useState("catalog");
+  useEffect(() => {
+    let active = true;
+    if (company?.id) getStripeTestSubscription(company.id)
+      .then((subscription) => { if (active) setTestSubscription(subscription); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [company?.id]);
   useEffect(() => {
     let cancelled = false;
 
@@ -1731,6 +1740,7 @@ export default function ProSpacePage() {
   }
 
   const plan = company.subscription?.plan || "free";
+  const testPlan = activeStripeTestPlan(testSubscription);
   const selectedEquipment =
     equipments.find(
       (equipment) => String(equipment.id) === String(selectedEquipmentId),
@@ -1796,7 +1806,7 @@ export default function ProSpacePage() {
         <Brand />
 
         <div className="pro-header-actions">
-          <span className="pro-plan-badge">Formule {getPlanLabel(plan)}</span>
+          <span className="pro-plan-badge">Accès {getPlanLabel(plan)}{testPlan ? ` · abonnement test ${getPlanLabel(testPlan)}` : ""}</span>
 
           <button
             className="pro-logout-button"
@@ -1911,6 +1921,7 @@ export default function ProSpacePage() {
           <small>{plan === "free"
             ? discovery.active ? `${discovery.daysRemaining} jour(s) d’essai restant(s)` : "Essai terminé"
             : "Compte actif"}</small>
+          {testPlan && <small>Abonnement Stripe de test : {getPlanLabel(testPlan)} actif</small>}
           <Link className="pro-plan-manage-link" to="/parametres-compte#formule">Changer de formule →</Link>
         </article>
       </section>

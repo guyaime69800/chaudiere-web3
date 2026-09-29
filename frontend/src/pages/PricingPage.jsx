@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { startBilling } from "../services/billingService";
 import { getMyCompany } from "../services/companyService";
+import { activeStripeTestPlan, getStripeTestSubscription } from "../services/stripeTestSubscription";
 import "./PricingPage.css";
 
 const offers = [
@@ -47,15 +48,24 @@ export default function PricingPage() {
   const [error, setError] = useState("");
   const [errorPlan, setErrorPlan] = useState("");
   const [currentPlan, setCurrentPlan] = useState(undefined);
+  const [testSubscription, setTestSubscription] = useState(null);
   const testBilling = import.meta.env.VITE_STRIPE_TEST_BILLING_ENABLED === "true";
   useEffect(() => {
     if (!user?.id) return;
     let active = true;
     getMyCompany(user.id)
-      .then((company) => { if (active) setCurrentPlan(company?.subscription?.plan || null); })
+      .then(async (company) => {
+        if (!active) return;
+        setCurrentPlan(company?.subscription?.plan || null);
+        if (company?.id && testBilling) {
+          const stripeTest = await getStripeTestSubscription(company.id);
+          if (active) setTestSubscription(stripeTest);
+        }
+      })
       .catch(() => { if (active) setCurrentPlan(null); });
     return () => { active = false; };
-  }, [user?.id]);
+  }, [user?.id, testBilling]);
+  const testPlan = activeStripeTestPlan(testSubscription);
   async function choose(plan) {
     setBusy(true);
     setError("");
@@ -82,7 +92,9 @@ export default function PricingPage() {
             {user && currentPlan === undefined && offer.name === "Découverte" ? (
               <span className="pricing-current" role="status">Chargement de votre formule…</span>
             ) : user && currentPlan === "free" && offer.name === "Découverte" ? (
-              <span className="pricing-current" aria-label="Formule actuelle">Formule actuelle</span>
+              <span className="pricing-current" aria-label="Formule d'accès actuelle">Accès actuel : Découverte</span>
+            ) : user && testBilling && offer.plan === testPlan ? (
+              <span className="pricing-current" aria-label="Abonnement de test actif">Abonnement test actif : {offer.name}</span>
             ) : offer.name === "Entreprise" ? (
               <Link to="/demande-entreprise">Demander cette formule <span aria-hidden="true">→</span></Link>
             ) : user && testBilling && offer.plan ? (
