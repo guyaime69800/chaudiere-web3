@@ -188,6 +188,12 @@ export default async function billingHandler(req, res) {
     return send(res, 403, "Seul le responsable d'une entreprise peut gérer sa formule.");
   }
   const companyId = memberships[0].company_id;
+  const { data: access, error: accessError } = await admin.from("subscriptions")
+    .select("plan, status").eq("company_id", companyId).single();
+  if (accessError) return send(res, 503, "Formule indisponible.");
+  if (body.action === "checkout" && access.plan === "enterprise" && access.status === "active") {
+    return send(res, 409, "Votre accès Entreprise est géré par CarnetPass. Contactez l'équipe pour modifier votre contrat.");
+  }
   const { data: current, error: currentError } = await admin.from("stripe_test_subscriptions")
     .select("stripe_customer_id, stripe_subscription_id, status").eq("company_id", companyId).maybeSingle();
   if (currentError) return send(res, 503, "Abonnement indisponible.");
