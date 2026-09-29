@@ -80,11 +80,32 @@ export default async function handler(req, res) {
     if (!user) return fail(res, 403, "Accès refusé.");
     const { id, action, category, distributionConfirmed } = req.body || {};
     if (typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id)
-      || !["approve", "reject"].includes(action)
+      || !["approve", "reject", "set-hotline", "set-aliases"].includes(action)
       || (action === "approve" && (!catalogCategories.has(category) || distributionConfirmed !== true))) {
       return fail(res, 400, "Validation incomplète.");
     }
     const db = service();
+    if (action === "set-hotline") {
+      const phone = String(req.body?.phone || "").trim();
+      if (phone && (phone.length < 6 || phone.length > 32 || !/^[+0-9(). -]+$/.test(phone)
+        || (phone.match(/\d/g) || []).length < 6)) return fail(res, 400, "Numéro de hotline invalide.");
+      const { data: updated, error } = await db.from("platform_document_intake")
+        .update({ hotline_phone: phone || null }).eq("id", id).eq("status", "approved")
+        .select("id").maybeSingle();
+      if (error || !updated) return fail(res, 503, "Enregistrement de la hotline impossible.");
+      return res.status(200).json({ ok: true });
+    }
+    if (action === "set-aliases") {
+      const aliases = String(req.body?.aliases || "").split(",").map((value) => value.trim()).filter(Boolean);
+      if (aliases.length > 10 || aliases.some((value) => value.length < 2 || value.length > 160)) {
+        return fail(res, 400, "Références associées invalides.");
+      }
+      const { data: updated, error } = await db.from("platform_document_intake")
+        .update({ model_aliases: [...new Set(aliases)] }).eq("id", id).eq("status", "approved")
+        .select("id").maybeSingle();
+      if (error || !updated) return fail(res, 503, "Enregistrement des références impossible.");
+      return res.status(200).json({ ok: true });
+    }
     const { data: entry, error: lookupError } = await db.from("platform_document_intake")
       .select("id, blob_pathname, size_bytes, sha256, status")
       .eq("id", id).maybeSingle();
@@ -132,14 +153,14 @@ export default async function handler(req, res) {
       return;
     }
     const { data, error } = await service().from("platform_document_intake")
+      .select("id, manufacturer, model_reference, title, original_filename, size_bytes, status, catalog_category, hotline_phone, model_aliases, created_at")
+      .order("created_at", { ascending: false }).limit(50);
+    if (!error) return res.status(200).json({ ok: true, documents: data, publicationReady: true, hotlineReady: true });
+    const fallback = await service().from("platform_document_intake")
       .select("id, manufacturer, model_reference, title, original_filename, size_bytes, status, catalog_category, created_at")
       .order("created_at", { ascending: false }).limit(50);
-    if (!error) return res.status(200).json({ ok: true, documents: data, publicationReady: true });
-    const fallback = await service().from("platform_document_intake")
-      .select("id, manufacturer, model_reference, title, original_filename, size_bytes, status, created_at")
-      .order("created_at", { ascending: false }).limit(50);
     return fallback.error ? fail(res, 503, "Documents indisponibles.")
-      : res.status(200).json({ ok: true, documents: fallback.data, publicationReady: false });
+      : res.status(200).json({ ok: true, documents: fallback.data, publicationReady: true, hotlineReady: false });
   }
   if (req.method !== "POST") return fail(res, 405, "Méthode non autorisée.");
   const body = req.body;

@@ -40,11 +40,16 @@ export default async function handler(req, res) {
       return;
     }
     const { data, error } = await db.from("platform_document_intake")
+      .select("id, manufacturer, model_reference, title, catalog_category, hotline_phone, model_aliases")
+      .eq("status", "approved").not("distribution_confirmed_at", "is", null)
+      .order("created_at", { ascending: false }).limit(500);
+    if (!error) return res.status(200).json({ ok: true, documents: data });
+    const fallback = await db.from("platform_document_intake")
       .select("id, manufacturer, model_reference, title, catalog_category")
       .eq("status", "approved").not("distribution_confirmed_at", "is", null)
       .order("created_at", { ascending: false }).limit(500);
-    if (error) return res.status(503).json({ error: "Catalogue indisponible." });
-    return res.status(200).json({ ok: true, documents: data });
+    return fallback.error ? res.status(503).json({ error: "Catalogue indisponible." })
+      : res.status(200).json({ ok: true, documents: fallback.data });
   } catch {
     if (!res.headersSent) return res.status(503).json({ error: "Catalogue indisponible." });
   }

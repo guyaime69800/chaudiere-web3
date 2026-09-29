@@ -57,6 +57,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   const [previewDocument, setPreviewDocument] = useState(null);
   const [previewBusyId, setPreviewBusyId] = useState(null);
   const [question, setQuestion] = useState(initialQuestion);
+  const [searchSource, setSearchSource] = useState("auto");
   const [assistantOrigin, setAssistantOrigin] = useState(false);
   const [answer, setAnswer] = useState("");
   const [answerSource, setAnswerSource] = useState("");
@@ -93,6 +94,8 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
       manufacturerReference: document.model_reference, type: document.catalog_category, publishedDocuments: [] };
     if (!existing) entries.push(item);
     if (!item.publishedDocuments) item.publishedDocuments = [];
+    if (document.hotline_phone) item.hotlinePhone = document.hotline_phone;
+    item.searchAliases = [...new Set([...(item.searchAliases || []), ...(document.model_aliases || [])])];
     item.publishedDocuments.push({ documentId: document.id, title: document.title,
       sourceName: document.manufacturer, storage: "platform-private", documentCode: document.model_reference });
   }
@@ -108,9 +111,9 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   const matchingBrands = brands.filter(({ name }) =>
     normalize(name).includes(normalize(query)) ||
     categoryEntries.some((item) => normalize(item.brand) === normalize(name) &&
-      normalize([item.brand, item.model, item.variant, item.manufacturerReference].join(" ")).includes(normalize(query))));
+      normalize([item.brand, item.model, item.variant, item.manufacturerReference, ...(item.searchAliases || [])].join(" ")).includes(normalize(query))));
   const models = categoryEntries.filter((item) => normalize(item.brand) === normalize(brand)
-    && (!normalize(query) || normalize([item.brand, item.model, item.variant, item.manufacturerReference].join(" ")).includes(normalize(query))));
+    && (!normalize(query) || normalize([item.brand, item.model, item.variant, item.manufacturerReference, ...(item.searchAliases || [])].join(" ")).includes(normalize(query))));
 
   function clearModel({ preserveQuestion = false } = {}) {
     documentRequest.current += 1; aiRequest.current += 1;
@@ -127,13 +130,14 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
     const request = ++documentRequest.current;
     setAssistantOrigin(fromAssistant); setModel(item); setStep(fromAssistant ? "assistant" : "model");
     if (item.publishedDocuments) setDocuments(item.publishedDocuments);
+    if (item.hotlinePhone) setSupport({ hotline: { label: `Hotline ${item.brand}`, phone: item.hotlinePhone } });
     if (!item.equipmentId) return;
     setDocumentsBusy(true);
     try {
       const library = await getEquipmentDocumentLibrary(item.equipmentId);
       if (request === documentRequest.current) {
         setDocuments([...(Array.isArray(library?.documents) ? library.documents : []), ...(item.publishedDocuments || [])]);
-        setSupport(library?.support ?? null);
+        setSupport(item.hotlinePhone ? { ...(library?.support || {}), hotline: { label: `Hotline ${item.brand}`, phone: item.hotlinePhone } } : library?.support ?? null);
       }
     } catch (loadError) {
       if (request === documentRequest.current) {
@@ -181,7 +185,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   async function askShiba(event) {
     event.preventDefault();
     if (!question.trim() || !model || documentsBusy || busy) return;
-    const useDocumentation = Boolean(model.equipmentId && documents.length);
+    const useDocumentation = searchSource !== "web" && Boolean(model.equipmentId && documents.length);
     const request = ++aiRequest.current;
     setBusy(true); setError(""); setAnswer(""); setAnswerSources([]); setAnswerCitations([]); setAnswerSource("");
     try {
@@ -270,7 +274,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
             <div className="technical-catalog-assistant-heading"><img src={shibaTechnicien} alt="" /><p>Choisissez un modèle. Shiba consulte ses documents ou recherche des sources sur le Web.</p></div>
             <label className="technical-catalog-search" htmlFor="technical-catalog-picker-question">Votre question<textarea id="technical-catalog-picker-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ex. Que signifie le code défaut F28 ?" rows={3} /></label>
             <label className="technical-catalog-search" htmlFor="technical-catalog-picker-model">Rechercher un modèle<input id="technical-catalog-picker-model" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Marque, modèle ou référence" /></label>
-            <div className="technical-catalog-list">{entries.filter((item) => (item.equipmentId || item.publishedDocuments) && (!normalize(query) || normalize([item.brand, item.model, item.variant, item.manufacturerReference].join(" ")).includes(normalize(query)))).map((item) => <button key={item.equipmentId || `${item.brand}-${item.model}-${item.type}`} type="button" className="technical-catalog-row" onClick={() => selectModel(item, true)}><strong>{item.brand} · {item.model}{item.variant ? ` · ${item.variant}` : ""}<small>{item.manufacturerReference}</small></strong><span aria-hidden="true">›</span></button>)}</div>
+            <div className="technical-catalog-list">{entries.filter((item) => (item.equipmentId || item.publishedDocuments) && (!normalize(query) || normalize([item.brand, item.model, item.variant, item.manufacturerReference, ...(item.searchAliases || [])].join(" ")).includes(normalize(query)))).map((item) => <button key={item.equipmentId || `${item.brand}-${item.model}-${item.type}`} type="button" className="technical-catalog-row" onClick={() => selectModel(item, true)}><strong>{item.brand} · {item.model}{item.variant ? ` · ${item.variant}` : ""}<small>{item.manufacturerReference}</small></strong><span aria-hidden="true">›</span></button>)}</div>
             {!entries.length && <p className="technical-catalog-empty">Les documents constructeur seront ajoutés progressivement.</p>}
             <button type="button" className="technical-catalog-back" onClick={() => { clearModel({ preserveQuestion: true }); setStep("category"); }}>Votre modèle est absent ? Choisir sa catégorie →</button>
           </section>}
@@ -295,7 +299,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
             </form>
           </>}
           {model && ["model", "documents", "assistant"].includes(step) && <>
-            <div className="technical-catalog-model-heading"><div><span className="technical-catalog-kicker">{model.brand}</span><h3>{model.model}{model.variant ? ` · ${model.variant}` : ""}</h3><p>Réf. produit : {model.manufacturerReference || "non renseignée"}</p>{support?.hotline?.phone && <p>{support.hotline.label || "Assistance technique"} : <a href={`tel:${support.hotline.phone.replace(/\s+/g, "")}`}>{support.hotline.phone}</a></p>}</div>{step === "model" && <button type="button" className="technical-catalog-back" onClick={assistantOrigin ? toAssistantPicker : toModels}>← {assistantOrigin ? "Choisir un autre modèle" : "Tous les modèles"}</button>}</div>
+            <div className="technical-catalog-model-heading"><div><span className="technical-catalog-kicker">{model.brand}</span><h3>{model.model}{model.variant ? ` · ${model.variant}` : ""}</h3><p>Réf. produit : {model.manufacturerReference || "non renseignée"}</p>{!!model.searchAliases?.length && <p>Autres références couvertes : {model.searchAliases.join(", ")}</p>}{support?.hotline?.phone && <p>{support.hotline.label || "Assistance technique"} : <a href={`tel:${support.hotline.phone.replace(/\s+/g, "")}`}>{support.hotline.phone}</a></p>}</div>{step === "model" && <button type="button" className="technical-catalog-back" onClick={assistantOrigin ? toAssistantPicker : toModels}>← {assistantOrigin ? "Choisir un autre modèle" : "Tous les modèles"}</button>}</div>
             {step === "model" && <>
               {documentsBusy && <p role="status">Vérification de la documentation…</p>}
               {documentsError && <p role="alert" className="technical-catalog-error">{documentsError}</p>}
@@ -322,7 +326,14 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
               {documentsBusy && <p role="status">Vérification de la documentation…</p>}
               {documentsError && <p role="alert" className="technical-catalog-error">{documentsError}</p>}
               {!documentsBusy && (!model.equipmentId || !documents.length) && <p className="technical-catalog-empty">Recherche sur le Web : les informations trouvées seront accompagnées de leurs sources et restent à vérifier sur l’appareil.</p>}
-              <form onSubmit={askShiba}><label htmlFor="technical-catalog-question">Votre question</label><textarea id="technical-catalog-question" value={question} onChange={(event) => { setQuestion(event.target.value); setAnswer(""); setError(""); setAnswerSources([]); setAnswerCitations([]); }} placeholder="Ex. Où trouver la notice de ce modèle ?" rows={4} autoFocus /><button type="submit" disabled={!question.trim() || documentsBusy || busy}>{busy ? "Recherche…" : "Interroger Shiba Bot"}</button></form>
+              <form onSubmit={askShiba}>
+                <label htmlFor="technical-catalog-source">Source de la réponse</label>
+                <select id="technical-catalog-source" value={searchSource} onChange={(event) => { setSearchSource(event.target.value); setAnswer(""); setError(""); }}>
+                  <option value="auto">Automatique : documentation indexée si disponible, sinon Web</option>
+                  <option value="web">Recherche Web avec sources</option>
+                </select>
+                <label htmlFor="technical-catalog-question">Votre question</label><textarea id="technical-catalog-question" value={question} onChange={(event) => { setQuestion(event.target.value); setAnswer(""); setError(""); setAnswerSources([]); setAnswerCitations([]); }} placeholder="Ex. Quelle est la référence de cette pièce ?" rows={4} autoFocus /><button type="submit" disabled={!question.trim() || documentsBusy || busy}>{busy ? "Recherche…" : "Interroger Shiba Bot"}</button>
+              </form>
               {error && <p role="alert" className="technical-catalog-error">{error}</p>}
               {answer && <div className="technical-catalog-answer" aria-live="polite"><div className="technical-catalog-answer-heading"><img src={shibaTechnicien} alt="" /><strong>Réponse de Shiba Bot {answerSource === "web" ? "· Recherche Web" : "· Documentation constructeur"}</strong></div>{answerSource === "web" ? <div className="technical-catalog-answer-body">{renderWebAnswer()}</div> : <div className="technical-catalog-answer-body"><ReactMarkdown>{answer}</ReactMarkdown></div>}{answerSource === "documents" && !!documents.length && <div className="technical-catalog-sources"><strong>Vérifier dans les documents</strong><ul>{documents.map((item) => <li key={item.documentId}><button type="button" disabled={Boolean(previewBusyId)} onClick={() => openDocumentPreview(item)}>{previewBusyId === item.documentId ? "Ouverture…" : item.title}</button></li>)}</ul><small>Vérifiez la référence et la variante exacte avant toute intervention.</small></div>}{answerSource === "web" && !!answerSources.length && <div className="technical-catalog-sources"><strong>Sources consultées</strong><ul>{answerSources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || source.url}</a></li>)}</ul><small>Vérifiez les informations techniques dans la notice du modèle exact.</small></div>}</div>}
             </section>}

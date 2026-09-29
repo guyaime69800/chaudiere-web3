@@ -1932,7 +1932,7 @@ export default function ProSpacePage() {
             <img src={shibaTechnicien} alt="" />
             <div>
               <h2>Posez une question à Shiba Bot</h2>
-              <p>Choisissez ensuite un modèle : la réponse s’appuie sur ses documents constructeur.</p>
+              <p>Choisissez un modèle, puis recherchez dans la documentation disponible ou sur le Web avec des sources.</p>
             </div>
           </div>
           <ShibaUsage session={session} />

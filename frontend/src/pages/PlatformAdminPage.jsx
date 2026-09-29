@@ -46,6 +46,9 @@ export default function PlatformAdminPage() {
   const [documentTitle, setDocumentTitle] = useState("");
   const [documents, setDocuments] = useState([]);
   const [publicationReady, setPublicationReady] = useState(false);
+  const [hotlineReady, setHotlineReady] = useState(false);
+  const [hotlineInputs, setHotlineInputs] = useState({});
+  const [aliasInputs, setAliasInputs] = useState({});
   const [reviewCategories, setReviewCategories] = useState({});
   const [distributionConfirmed, setDistributionConfirmed] = useState({});
   const loadDocuments = useCallback(async () => {
@@ -54,6 +57,7 @@ export default function PlatformAdminPage() {
     if (!response.ok) throw new Error(result?.error || "Documents indisponibles.");
     setDocuments(result.documents || []);
     setPublicationReady(result.publicationReady === true);
+    setHotlineReady(result.hotlineReady === true);
   }, [session.access_token]);
   const load = useCallback(async () => {
     const result = await request(session.access_token, null, search, selected);
@@ -72,7 +76,7 @@ export default function PlatformAdminPage() {
     let active = true;
     fetch("/api/platform-admin-documents", { headers: { Authorization: `Bearer ${session.access_token}` } })
       .then((response) => response.ok ? response.json() : null)
-      .then((result) => { if (active && result) { setDocuments(result.documents || []); setPublicationReady(result.publicationReady === true); } })
+      .then((result) => { if (active && result) { setDocuments(result.documents || []); setPublicationReady(result.publicationReady === true); setHotlineReady(result.hotlineReady === true); } })
       .catch(() => {});
     return () => { active = false; };
   }, [session.access_token]);
@@ -129,6 +133,38 @@ export default function PlatformAdminPage() {
       const result = await response.json().catch(() => null);
       if (!response.ok) throw new Error(result?.error || "Validation impossible.");
       setMessage(action === "approve" ? "Notice validée et publiée dans le catalogue." : "Notice rejetée.");
+      await loadDocuments();
+    } catch (cause) { setError(cause.message); }
+    finally { setBusy(false); }
+  }
+
+  async function saveHotline(entry) {
+    const phone = hotlineInputs[entry.id] ?? entry.hotline_phone ?? "";
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const response = await fetch("/api/platform-admin-documents", {
+        method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, action: "set-hotline", phone }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Hotline indisponible.");
+      setMessage("Hotline enregistrée dans le catalogue.");
+      await loadDocuments();
+    } catch (cause) { setError(cause.message); }
+    finally { setBusy(false); }
+  }
+
+  async function saveAliases(entry) {
+    const aliases = aliasInputs[entry.id] ?? (entry.model_aliases || []).join(", ");
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const response = await fetch("/api/platform-admin-documents", {
+        method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, action: "set-aliases", aliases }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Références indisponibles.");
+      setMessage("Références associées enregistrées dans le catalogue.");
       await loadDocuments();
     } catch (cause) { setError(cause.message); }
     finally { setBusy(false); }
@@ -218,6 +254,12 @@ export default function PlatformAdminPage() {
         <ul>{documents.map((entry) => <li key={entry.id}>
           {entry.manufacturer} · {entry.model_reference} · {entry.title} · {entry.original_filename} · {entry.status === "approved" ? "Publié dans le catalogue" : entry.status === "rejected" ? "Rejeté" : "En attente de validation"}
           <button type="button" onClick={() => downloadDocument(entry)}>Télécharger</button>
+          {hotlineReady && entry.status === "approved" && <div>
+            <label>Hotline {entry.manufacturer} <input type="tel" value={hotlineInputs[entry.id] ?? entry.hotline_phone ?? ""} onChange={(event) => setHotlineInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="01 76 21 82 94" maxLength={32} /></label>
+            <button type="button" disabled={busy} onClick={() => saveHotline(entry)}>Enregistrer la hotline</button>
+            <label>Autres références couvertes par le PDF <input value={aliasInputs[entry.id] ?? (entry.model_aliases || []).join(", ")} onChange={(event) => setAliasInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="AW-CBV009-N11" maxLength={1620} /></label>
+            <button type="button" disabled={busy} onClick={() => saveAliases(entry)}>Enregistrer les références</button>
+          </div>}
           {publicationReady && entry.status === "pending_review" && <div>
             <label>Catégorie du catalogue <select value={reviewCategories[entry.id] || ""} onChange={(event) => setReviewCategories((previous) => ({ ...previous, [entry.id]: event.target.value }))}>
               <option value="">Choisir une catégorie</option>

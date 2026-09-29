@@ -19,7 +19,7 @@
 .technical-catalog-card span{color:#765f57;font-size:14px}
 .technical-catalog-card .technical-catalog-link{color:#bb390d;font-weight:700}
 .technical-catalog-search{display:grid;gap:8px;margin-bottom:18px;font-weight:700}
-.technical-catalog-search input,.technical-catalog-assistant textarea{width:100%;box-sizing:border-box;padding:12px;border:1px solid #e6c5b7;border-radius:12px;background:#fff;font:inherit}
+.technical-catalog-search input,.technical-catalog-assistant textarea,.technical-catalog-assistant select{width:100%;box-sizing:border-box;padding:12px;border:1px solid #e6c5b7;border-radius:12px;background:#fff;font:inherit}
 .technical-catalog-empty{padding:20px;border:1px dashed #e9b9a6;border-radius:12px;background:#fff;color:#765f57}
 .technical-catalog-model-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:20px}
 .technical-catalog-model-heading h3{margin:4px 0 6px}
