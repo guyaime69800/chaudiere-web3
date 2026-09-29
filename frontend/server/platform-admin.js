@@ -43,24 +43,39 @@ export default async function platformAdminHandler(req, res) {
   if (req.method === "GET") {
     const search = String(req.query?.search || "").trim();
     if (search.length > 80) return send(res, 400, "Recherche trop longue.");
-    const query = admin.from("companies").select("id, name, siret, created_at, company_verifications(status), subscriptions(plan, status, current_period_end)")
+    const query = admin.from("companies").select("id, name, siret, created_at, company_verifications(status), subscriptions(plan, status, current_period_end, enterprise_seat_limit)")
       .order("created_at", { ascending: false }).limit(30);
     if (search) query.ilike("name", `%${search.replace(/[%_,()]/g, "")}%`);
     const { data: companies, error: companyError } = await query;
     if (companyError) return send(res, 503, "Entreprises indisponibles.");
     const { data: events, error: eventError } = await admin.from("enterprise_access_events")
-      .select("company_id, actor_id, action, payment_reference, contract_end, note, created_at")
+      .select("company_id, actor_id, action, payment_reference, contract_end, note, seat_limit, target_user_id, created_at")
       .order("created_at", { ascending: false }).limit(30);
     if (eventError) return send(res, 503, "Historique indisponible.");
     const { data: collaborators, error: collabError } = await admin.from("platform_admins")
       .select("user_id, role, created_at").order("created_at", { ascending: true });
     if (collabError) return send(res, 503, "Collaborateurs indisponibles.");
-    return send(res, 200, "OK", { role: operator.role, companies, events, collaborators });
+    let members = [];
+    let memberCount = 0;
+    const selectedCompany = String(req.query?.companyId || "");
+    if (selectedCompany) {
+      if (!/^[0-9a-f-]{36}$/i.test(selectedCompany)) return send(res, 400, "Entreprise invalide.");
+      const { data: rows, count, error: memberError } = await admin.from("company_members")
+        .select("user_id, role", { count: "exact" }).eq("company_id", selectedCompany)
+        .order("created_at", { ascending: true }).limit(100);
+      if (memberError) return send(res, 503, "Équipe indisponible.");
+      memberCount = count || 0;
+      members = await Promise.all((rows || []).map(async (row) => {
+        const { data: found } = await admin.auth.admin.getUserById(row.user_id);
+        return { ...row, email: found?.user?.email || null };
+      }));
+    }
+    return send(res, 200, "OK", { role: operator.role, companies, events, collaborators, members, memberCount });
   }
 
   let body;
   try { body = await bodyOf(req); } catch { return send(res, 400, "Requête invalide."); }
-  if (body?.action === "activate" || body?.action === "suspend") {
+  if (["activate", "suspend", "set-seats"].includes(body?.action)) {
     const companyId = body.companyId;
     if (typeof companyId !== "string" || !/^[0-9a-f-]{36}$/i.test(companyId)) return send(res, 400, "Entreprise invalide.");
     const contractEnd = body.action === "activate" ? new Date(body.contractEnd) : null;
@@ -70,16 +85,36 @@ export default async function platformAdminHandler(req, res) {
     }
     const reference = String(body.paymentReference || "").trim();
     const note = String(body.note || "").trim();
+    const seatLimit = body.action === "suspend" ? null : Number(body.seatLimit);
     if (reference.length > 120 || note.length > 500 || (body.action === "activate" && reference.length < 3)) {
       return send(res, 400, "Référence du règlement ou note invalide.");
     }
+    if (body.action !== "suspend" && (!Number.isInteger(seatLimit) || seatLimit < 1 || seatLimit > 10000)) {
+      return send(res, 400, "Nombre de comptes invalide.");
+    }
     const { error } = await admin.rpc("platform_set_enterprise", {
-      p_actor: user.id, p_company: companyId, p_action: body.action,
+      p_actor: user.id, p_company: companyId, p_action: body.action === "set-seats" ? "set_seats" : body.action,
       p_contract_end: contractEnd?.toISOString() || null,
-      p_payment_reference: reference, p_note: note,
+      p_payment_reference: reference, p_note: note, p_seat_limit: seatLimit,
     });
     if (error) return send(res, 409, "Changement refusé. Vérifiez l'entreprise, son abonnement Stripe test et les informations du contrat.");
-    return send(res, 200, body.action === "activate" ? "Accès Entreprise activé." : "Accès Entreprise suspendu.");
+    return send(res, 200, body.action === "activate" ? "Accès Entreprise activé."
+      : body.action === "suspend" ? "Accès Entreprise suspendu." : "Nombre de comptes mis à jour.");
+  }
+  if (["add-technician", "remove-technician"].includes(body?.action)) {
+    const companyId = body.companyId;
+    const email = String(body.email || "").trim().toLowerCase();
+    const note = String(body.note || "").trim();
+    if (typeof companyId !== "string" || !/^[0-9a-f-]{36}$/i.test(companyId)
+      || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || note.length > 500) {
+      return send(res, 400, "Entreprise, e-mail ou note invalide.");
+    }
+    const { error } = await admin.rpc("platform_manage_technician", {
+      p_actor: user.id, p_company: companyId, p_email: email,
+      p_add: body.action === "add-technician", p_note: note,
+    });
+    if (error) return send(res, 409, "Changement refusé. Vérifiez le compte confirmé, l'abonnement et les places disponibles.");
+    return send(res, 200, body.action === "add-technician" ? "Technicien ajouté." : "Technicien retiré.");
   }
   if (body?.action === "add-collaborator" || body?.action === "remove-collaborator") {
     if (operator.role !== "founder") return send(res, 403, "Seul le fondateur gère les collaborateurs.");
