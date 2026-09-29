@@ -4,6 +4,7 @@ import { pipeline } from "node:stream/promises";
 import { createClient } from "@supabase/supabase-js";
 import { del, get, issueSignedToken } from "@vercel/blob";
 import { handleUploadPresigned } from "@vercel/blob/client";
+import platformCatalogDocuments from "../server/lib/platform-catalog-documents.js";
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const maximumSizeInBytes = 10 * 1024 * 1024;
@@ -66,6 +67,7 @@ async function completeUpload({ blob, tokenPayload }) {
 }
 
 export default async function handler(req, res) {
+  if (req.query?.catalog_route === "1") return platformCatalogDocuments(req, res);
   res.setHeader("Cache-Control", "no-store");
   if (!enabled()) return fail(res, 404, "Fonction indisponible.");
   if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_PUBLISHABLE_KEY

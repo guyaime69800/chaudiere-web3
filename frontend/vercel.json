@@ -21,6 +21,10 @@
       "destination": "/api/verify-company?platform_admin_route=1"
     },
     {
+      "source": "/api/platform-catalog-documents",
+      "destination": "/api/platform-admin-documents?catalog_route=1"
+    },
+    {
       "source": "/((?!api(?:/|$)|src(?:/|$)|node_modules(?:/|$)|assets(?:/|$)|@|.*\\.).*)",
       "destination": "/index.html"
     }

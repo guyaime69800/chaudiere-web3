@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { get } from "@vercel/blob";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
+import { requireVerifiedCompany } from "./require-verified-company.js";
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const enabled = () => process.env.VERCEL_ENV === "preview"
