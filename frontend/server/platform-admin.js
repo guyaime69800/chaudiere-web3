@@ -70,7 +70,7 @@ export default async function platformAdminHandler(req, res) {
         return { ...row, email: found?.user?.email || null };
       }));
     }
-    return send(res, 200, "OK", { role: operator.role, companies, events, collaborators, members, memberCount });
+    return send(res, 200, "OK", { role: operator.role, companies, events, collaborators, members, memberCount, selectedCompanyId: selectedCompany });
   }
 
   let body;

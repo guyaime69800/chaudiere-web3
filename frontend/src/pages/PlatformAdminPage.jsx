@@ -108,7 +108,9 @@ export default function PlatformAdminPage() {
     finally { setBusy(false); }
   }
 
-  const company = data?.companies?.find((entry) => entry.id === selected);
+  const company = data?.selectedCompanyId === selected
+    ? data.companies?.find((entry) => entry.id === selected)
+    : null;
   return <main className="platform-admin">
     <Link to="/espace-pro">← Retour à CarnetPass</Link>
     <h1>Administration CarnetPass</h1>
@@ -123,11 +125,13 @@ export default function PlatformAdminPage() {
         </form>
         <ul>{data.companies.map((entry) => <li key={entry.id}>
           <button type="button" onClick={() => { setSelected(entry.id); setSeatLimit(entry.subscriptions?.enterprise_seat_limit || 1); }} aria-pressed={selected === entry.id}>
-            {entry.name} · {entry.siret || "SIRET absent"} · {entry.subscriptions?.plan || "sans formule"} / {entry.subscriptions?.status || "—"}
+            {entry.name} · {entry.siret || "SIRET absent"} · créée le {new Date(entry.created_at).toLocaleDateString("fr-FR")} · réf. {entry.id.slice(0, 8)} · {entry.subscriptions?.plan || "sans formule"} / {entry.subscriptions?.status || "—"}
           </button>
         </li>)}</ul>
       </section>
+      {selected && data.selectedCompanyId !== selected && <p role="status">Chargement de la fiche entreprise…</p>}
       {company && <section><h2>{company.name}</h2>
+        <p>Référence entreprise : {company.id}</p>
         <p>Vérification : {company.company_verifications?.status || "inconnue"}. Formule : {company.subscriptions?.plan || "—"}.
           Échéance : {company.subscriptions?.current_period_end ? new Date(company.subscriptions.current_period_end).toLocaleDateString("fr-FR") : "aucune"}.
           Comptes : {data.memberCount}/{company.subscriptions?.enterprise_seat_limit || "non défini"} (responsable compris).</p>
