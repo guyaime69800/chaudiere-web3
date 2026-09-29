@@ -3023,3 +3023,13 @@ grant select, insert, update on public.platform_document_intake to service_role;
 commit;
 
 -- END 20260929_03_platform_document_intake.sql
+
+-- BEGIN 20260929_04_company_members_service_read.sql
+begin;
+
+grant select (company_id, user_id, role)
+  on public.company_members to service_role;
+
+commit;
+
+-- END 20260929_04_company_members_service_read.sql
