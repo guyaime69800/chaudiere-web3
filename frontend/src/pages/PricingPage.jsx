@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { startBilling } from "../services/billingService";
+import { getMyCompany } from "../services/companyService";
 import "./PricingPage.css";
 
 const offers = [
@@ -44,10 +45,21 @@ export default function PricingPage() {
   const { user, session } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [errorPlan, setErrorPlan] = useState("");
+  const [currentPlan, setCurrentPlan] = useState(undefined);
   const testBilling = import.meta.env.VITE_STRIPE_TEST_BILLING_ENABLED === "true";
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    getMyCompany(user.id)
+      .then((company) => { if (active) setCurrentPlan(company?.subscription?.plan || null); })
+      .catch(() => { if (active) setCurrentPlan(null); });
+    return () => { active = false; };
+  }, [user?.id]);
   async function choose(plan) {
     setBusy(true);
     setError("");
+    setErrorPlan(plan);
     try { window.location.assign(await startBilling(session.access_token, "checkout", plan)); }
     catch (requestError) { setError(requestError.message); setBusy(false); }
   }
@@ -67,10 +79,15 @@ export default function PricingPage() {
             <p>{offer.audience}</p>
             <div className="pricing-card__price"><strong>{offer.price}</strong><span>{offer.priceDetail}</span>{offer.taxDetail && <span>{offer.taxDetail}</span>}</div>
             <ul>{offer.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
-            {offer.name === "Entreprise" ? (
+            {user && currentPlan === undefined && offer.name === "Découverte" ? (
+              <span className="pricing-current" role="status">Chargement de votre formule…</span>
+            ) : user && currentPlan === "free" && offer.name === "Découverte" ? (
+              <span className="pricing-current" aria-label="Formule actuelle">Formule actuelle</span>
+            ) : offer.name === "Entreprise" ? (
               <Link to="/demande-entreprise">Demander cette formule <span aria-hidden="true">→</span></Link>
             ) : user && testBilling && offer.plan ? (
-              <button type="button" disabled={busy} onClick={() => choose(offer.plan)}>Choisir ou modifier la formule <span aria-hidden="true">→</span></button>
+              <><button type="button" disabled={busy} onClick={() => choose(offer.plan)}>Choisir ou modifier la formule <span aria-hidden="true">→</span></button>
+                {error && errorPlan === offer.plan && <p className="pricing-error" role="alert">{error}</p>}</>
             ) : user && offer.name !== "Découverte" ? (
               <a href={`mailto:contact@carnetpass.fr?subject=${encodeURIComponent(`Demande de formule ${offer.name} — CarnetPass`)}&body=${encodeURIComponent(`Bonjour,\n\nJe souhaite être informé de l'ouverture de la formule ${offer.name} pour mon compte ${user.email}.\n\nMerci.`)}`}>Demander cette formule <span aria-hidden="true">→</span></a>
             ) : user ? (
