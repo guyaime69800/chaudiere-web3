@@ -110,7 +110,7 @@ export default function AccountSettingsPage() {
             const { error: updateError } = await supabase.auth.updateUser({ email: nextEmail });
             if (updateError) throw new Error(updateError.message);
             setNewEmail("");
-            return "Vérifiez votre nouvelle boîte e-mail pour confirmer le changement.";
+            return "Vérifiez les messages envoyés à votre ancienne et à votre nouvelle adresse, puis confirmez les deux liens pour terminer le changement.";
           }); }}>
             <label>Nouvelle adresse e-mail<input type="email" autoComplete="email" value={newEmail} onChange={(event) => setNewEmail(event.target.value)} required /></label>
             <button disabled={Boolean(busy)}>Modifier l’adresse e-mail</button>
