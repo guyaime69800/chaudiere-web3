@@ -11,3 +11,14 @@ export async function startBilling(token, action, plan) {
   }
   return result.url;
 }
+
+export async function sendTestBillingConfirmation(token) {
+  const response = await fetch("/api/billing", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "email-confirmation" }),
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(result?.message || "Confirmation de test indisponible.");
+  return result.message;
+}

@@ -139,6 +139,49 @@ async function syncSubscription(admin, stripeSubscription) {
   if (updateError) throw updateError;
 }
 
+async function sendTestInvoiceEmail(admin, invoice) {
+  const customer = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
+  const subscriptionId = typeof invoice.subscription === "string" ? invoice.subscription
+    : invoice.parent?.subscription_details?.subscription;
+  if (!customer || !subscriptionId || invoice.status !== "paid" || invoice.livemode
+    || invoice.currency !== "eur" || !process.env.RESEND_API_KEY) return false;
+  const { data: row, error } = await admin.from("stripe_test_subscriptions")
+    .select("stripe_subscription_id, plan").eq("stripe_customer_id", customer).maybeSingle();
+  if (error) throw error;
+  if (row?.stripe_subscription_id !== subscriptionId || !["pro", "team"].includes(row.plan)) return false;
+  const stripeCustomer = await stripe(`customers/${encodeURIComponent(customer)}`, null, "GET");
+  const email = stripeCustomer.email;
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
+  const plan = row.plan === "team" ? "Équipe" : "Pro";
+  const amount = (invoice.amount_paid / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+  const lines = [
+    "TEST INTERNE CARNETPASS — aucun paiement réel n'a été prélevé.",
+    "",
+    `Votre facture de test CarnetPass ${plan} a été payée : ${amount}.`,
+    `Numéro de facture : ${invoice.number || invoice.id}`,
+    invoice.hosted_invoice_url ? `Consulter la facture sur Stripe : ${invoice.hosted_invoice_url}` : "",
+    "",
+    "Cet essai Stripe ne modifie pas encore les droits de votre compte CarnetPass.",
+    "Retrouvez votre abonnement de test dans les paramètres du compte sur https://test.carnetpass.fr.",
+  ].filter(Boolean);
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": `carnetpass-test-invoice-${invoice.id}`,
+    },
+    body: JSON.stringify({
+      from: process.env.ENTERPRISE_QUOTE_FROM_EMAIL || "CarnetPass <contact@carnetpass.fr>",
+      to: [email],
+      subject: `CarnetPass — confirmation de votre facture de test ${plan}`,
+      text: lines.join("\n"),
+    }),
+  });
+  if (!response.ok) throw new Error(`Resend ${response.status}`);
+  return true;
+}
+
 export default async function billingHandler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") return send(res, 405, "Méthode non autorisée.");
@@ -166,6 +209,14 @@ export default async function billingHandler(req, res) {
         const subscription = event.type === "customer.subscription.deleted"
           ? event.data.object : await stripe(`subscriptions/${encodeURIComponent(id)}`, null, "GET");
         await syncSubscription(admin, subscription);
+      } else if (event.type === "invoice.paid") {
+        const invoice = await stripe(`invoices/${encodeURIComponent(event.data.object.id)}`, null, "GET");
+        const subscriptionId = typeof invoice.subscription === "string" ? invoice.subscription
+          : invoice.parent?.subscription_details?.subscription;
+        if (typeof subscriptionId === "string") {
+          await syncSubscription(admin, await stripe(`subscriptions/${encodeURIComponent(subscriptionId)}`, null, "GET"));
+        }
+        if (await sendTestInvoiceEmail(admin, invoice)) return send(res, 200, "Confirmation de test envoyée.");
       }
       return send(res, 200, "Événement reçu.");
     } catch (error) {
@@ -207,6 +258,18 @@ export default async function billingHandler(req, res) {
     .select("stripe_customer_id, stripe_subscription_id, status").eq("company_id", companyId).maybeSingle();
   if (currentError) return send(res, 503, "Abonnement indisponible.");
   try {
+    if (body.action === "email-confirmation" && current?.stripe_customer_id && current?.stripe_subscription_id) {
+      const subscription = await stripe(`subscriptions/${encodeURIComponent(current.stripe_subscription_id)}`, null, "GET");
+      if (subscription.customer !== current.stripe_customer_id || !subscription.latest_invoice) {
+        return send(res, 409, "Aucune facture de test à confirmer.");
+      }
+      const invoiceId = typeof subscription.latest_invoice === "string" ? subscription.latest_invoice : subscription.latest_invoice.id;
+      const invoice = await stripe(`invoices/${encodeURIComponent(invoiceId)}`, null, "GET");
+      if (!(await sendTestInvoiceEmail(admin, invoice))) {
+        return send(res, 409, "Facture de test non payée ou envoi non configuré.");
+      }
+      return send(res, 200, "Confirmation de test envoyée par e-mail.");
+    }
     let customerId = current?.stripe_customer_id;
     if (!customerId && body.action === "checkout" && PRICES[body.plan]) {
       const customer = await stripe("customers", { email: user.email, "metadata[company_id]": companyId });

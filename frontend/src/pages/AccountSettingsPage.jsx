@@ -6,7 +6,7 @@ import { getMyCompany } from "../services/companyService";
 import { signOut } from "../services/authService";
 import { getDiscoveryAccess } from "../../shared/discovery-access.js";
 import PasswordField from "../components/PasswordField";
-import { startBilling } from "../services/billingService";
+import { sendTestBillingConfirmation, startBilling } from "../services/billingService";
 import "./AccountSettingsPage.css";
 
 async function accountRequest(method, token, body) {
@@ -146,6 +146,10 @@ export default function AccountSettingsPage() {
                 window.location.assign(await startBilling(session.access_token, "portal"));
                 return "Ouverture du portail Stripe.";
               })}>Gérer mon abonnement et télécharger mes factures test</button>}
+            {testBilling && testSubscription?.stripe_subscription_id && ["owner", "admin"].includes(company.role) &&
+              <button type="button" className="account-settings-secondary" disabled={Boolean(busy)} onClick={() => run("email-confirmation", async () => {
+                return sendTestBillingConfirmation(session.access_token);
+              })}>Recevoir la confirmation du paiement test par e-mail</button>}
             {testBilling && testSubscription?.stripe_subscription_id && <p>Les factures sont téléchargeables dans le portail Stripe. Les montants HT, TVA et TTC affichés sur chaque facture correspondent aux taxes réellement appliquées par Stripe.</p>}
             {subscription?.plan === "free" && subscription.status !== "canceled" && company.role === "admin" &&
               <button className="account-settings-secondary" type="button" disabled={Boolean(busy)} onClick={() => {
