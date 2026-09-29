@@ -255,7 +255,7 @@ export default function PlatformAdminPage() {
           {entry.manufacturer} · {entry.model_reference} · {entry.title} · {entry.original_filename} · {entry.status === "approved" ? "Publié dans le catalogue" : entry.status === "rejected" ? "Rejeté" : "En attente de validation"}
           <button type="button" onClick={() => downloadDocument(entry)}>Télécharger</button>
           {hotlineReady && entry.status === "approved" && <div>
-            <label>Hotline {entry.manufacturer} <input type="tel" value={hotlineInputs[entry.id] ?? entry.hotline_phone ?? ""} onChange={(event) => setHotlineInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="01 76 21 82 94" maxLength={32} /></label>
+            <label>Hotline <input type="tel" value={hotlineInputs[entry.id] ?? entry.hotline_phone ?? ""} onChange={(event) => setHotlineInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="Numéro de téléphone" maxLength={32} /></label>
             <button type="button" disabled={busy} onClick={() => saveHotline(entry)}>Enregistrer la hotline</button>
             <label>Autres références couvertes par le PDF <input value={aliasInputs[entry.id] ?? (entry.model_aliases || []).join(", ")} onChange={(event) => setAliasInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="AW-CBV009-N11" maxLength={1620} /></label>
             <button type="button" disabled={busy} onClick={() => saveAliases(entry)}>Enregistrer les références</button>

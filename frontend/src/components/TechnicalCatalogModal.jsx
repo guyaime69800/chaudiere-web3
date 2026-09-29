@@ -130,14 +130,14 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
     const request = ++documentRequest.current;
     setAssistantOrigin(fromAssistant); setModel(item); setStep(fromAssistant ? "assistant" : "model");
     if (item.publishedDocuments) setDocuments(item.publishedDocuments);
-    if (item.hotlinePhone) setSupport({ hotline: { label: `Hotline ${item.brand}`, phone: item.hotlinePhone } });
+    if (item.hotlinePhone) setSupport({ hotline: { label: "Hotline", phone: item.hotlinePhone } });
     if (!item.equipmentId) return;
     setDocumentsBusy(true);
     try {
       const library = await getEquipmentDocumentLibrary(item.equipmentId);
       if (request === documentRequest.current) {
         setDocuments([...(Array.isArray(library?.documents) ? library.documents : []), ...(item.publishedDocuments || [])]);
-        setSupport(item.hotlinePhone ? { ...(library?.support || {}), hotline: { label: `Hotline ${item.brand}`, phone: item.hotlinePhone } } : library?.support ?? null);
+        setSupport(item.hotlinePhone ? { ...(library?.support || {}), hotline: { label: "Hotline", phone: item.hotlinePhone } } : library?.support ?? null);
       }
     } catch (loadError) {
       if (request === documentRequest.current) {
