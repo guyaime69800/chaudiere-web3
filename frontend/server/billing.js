@@ -184,7 +184,14 @@ export default async function billingHandler(req, res) {
   if (authError || !user?.email_confirmed_at) return send(res, 401, "Reconnectez-vous.");
   const { data: memberships, error: memberError } = await admin.from("company_members")
     .select("company_id, role").eq("user_id", user.id).limit(2);
-  if (memberError || memberships?.length !== 1 || !["owner", "admin"].includes(memberships[0].role)) {
+  if (memberError) {
+    console.error("Stripe membership lookup failed", { code: memberError.code, message: memberError.message });
+    return send(res, 503, "Impossible de vérifier votre entreprise. Réessayez plus tard.");
+  }
+  if (memberships?.length !== 1) {
+    return send(res, 409, "Aucune entreprise unique n'est associée à ce compte. Contactez CarnetPass.");
+  }
+  if (!["owner", "admin"].includes(memberships[0].role)) {
     return send(res, 403, "Seul le responsable d'une entreprise peut gérer sa formule.");
   }
   const companyId = memberships[0].company_id;
