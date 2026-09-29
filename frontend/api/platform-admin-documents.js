@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import { createClient } from "@supabase/supabase-js";
 import { del, get, issueSignedToken } from "@vercel/blob";
 import { handleUploadPresigned } from "@vercel/blob/client";
@@ -73,6 +75,23 @@ export default async function handler(req, res) {
     const token = /^Bearer ([^\s]+)$/i.exec(req.headers.authorization || "")?.[1];
     const user = await authorize(token);
     if (!user) return fail(res, 403, "Accès refusé.");
+    if (req.query?.id) {
+      if (typeof req.query.id !== "string" || !/^[0-9a-f-]{36}$/i.test(req.query.id)) return fail(res, 400, "Document invalide.");
+      const { data: entry, error: lookupError } = await service().from("platform_document_intake")
+        .select("blob_pathname, size_bytes").eq("id", req.query.id).maybeSingle();
+      if (lookupError || !entry) return fail(res, 404, "Document introuvable.");
+      const stored = await get(entry.blob_pathname, { access: "private", useCache: false });
+      if (!stored?.stream || stored.blob?.pathname !== entry.blob_pathname
+        || stored.blob?.contentType !== "application/pdf" || stored.blob?.size !== entry.size_bytes) {
+        return fail(res, 409, "Fichier indisponible ou altéré.");
+      }
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", "attachment; filename=notice-carnetpass.pdf");
+      res.setHeader("Content-Length", String(entry.size_bytes));
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      await pipeline(Readable.fromWeb(stored.stream), res);
+      return;
+    }
     const { data, error } = await service().from("platform_document_intake")
       .select("id, manufacturer, model_reference, title, original_filename, size_bytes, status, created_at")
       .order("created_at", { ascending: false }).limit(50);

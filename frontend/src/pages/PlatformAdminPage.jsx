@@ -83,6 +83,21 @@ export default function PlatformAdminPage() {
     finally { setBusy(false); }
   }
 
+  async function downloadDocument(entry) {
+    setError("");
+    try {
+      const response = await fetch(`/api/platform-admin-documents?id=${encodeURIComponent(entry.id)}`,
+        { headers: { Authorization: `Bearer ${session.access_token}` } });
+      if (!response.ok) throw new Error("Téléchargement impossible.");
+      const url = URL.createObjectURL(await response.blob());
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = entry.original_filename;
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (cause) { setError(cause.message); }
+  }
+
   async function act(body) {
     setBusy(true); setError(""); setMessage("");
     try {
@@ -159,8 +174,9 @@ export default function PlatformAdminPage() {
           <button disabled={busy} type="submit">Déposer le document</button>
           <button disabled={busy} type="button" onClick={() => loadDocuments().catch((cause) => setError(cause.message))}>Actualiser la liste</button>
         </form>
-        <ul>{documents.map((document) => <li key={document.id}>
-          {document.manufacturer} · {document.model_reference} · {document.title} · {document.original_filename} · En attente de validation
+        <ul>{documents.map((entry) => <li key={entry.id}>
+          {entry.manufacturer} · {entry.model_reference} · {entry.title} · {entry.original_filename} · En attente de validation
+          <button type="button" onClick={() => downloadDocument(entry)}>Télécharger</button>
         </li>)}</ul>
       </section>
       {data.role === "founder" && <section><h2>Collaborateurs internes</h2>
