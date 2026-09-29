@@ -4,12 +4,10 @@ L'écran `/administration-interne` est réservé aux administrateurs internes Ca
 
 ## Mise en service
 
-1. Créer un **nouveau projet Supabase** réservé à CarnetPass Preview. Le projet `rpwzzvrueenstsjtbzto` est actuellement partagé et ne doit pas recevoir cette migration pour un essai.
-2. Appliquer toutes les migrations du dépôt, dans l'ordre, à la base du nouveau projet. Cela crée les tables et les fonctions dont dépend l'application ; ne copier aucune donnée client réelle.
-3. Configurer uniquement sur Vercel Preview `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` et `SUPABASE_SECRET_KEY` avec les valeurs du **nouveau projet**. Si `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` existent aussi en Preview, elles doivent désigner ce même nouveau projet : certains endpoints les utilisent en priorité. Ne jamais placer une clé secrète dans une variable `VITE_`.
-4. Redéployer la branche `feature/documentation-multi-docs`. Créer à nouveau le compte `contact@carnetpass.fr` dans la nouvelle base, puis confirmer son e-mail. Le compte créé dans l'ancienne base n'est pas transféré automatiquement.
-5. Exécuter `supabase/bootstrap-preview-founder.sql` dans l'éditeur SQL du **nouveau projet uniquement** ; ce script refuse de s'exécuter si le compte n'est pas confirmé.
-6. Ajouter `CARNETPASS_PREVIEW_ENTERPRISE_ADMIN_ENABLED=true` à l'environnement Vercel **Preview uniquement**, puis redéployer la branche. Se connecter avec `contact@carnetpass.fr` et ouvrir `/administration-interne`.
+1. Créer un deuxième projet Supabase pour Preview, car l'utilisation du projet existant `rpwzzvrueenstsjtbzto` par Production est inconnue. Ne pas modifier ce projet existant ni y copier des données clients. Appliquer toutes les migrations du dépôt, dans l'ordre, au nouveau projet.
+2. Sur le nouveau projet, créer et confirmer à nouveau le compte `contact@carnetpass.fr`. Exécuter `supabase/bootstrap-preview-founder.sql` dans son éditeur SQL ; ce script refuse de s'exécuter si le compte n'est pas confirmé.
+3. Configurer uniquement sur Vercel Preview `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` et `SUPABASE_SECRET_KEY` avec les valeurs du nouveau projet. Si `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` existent aussi en Preview, elles doivent désigner le même projet : certains endpoints les utilisent en priorité. Ne jamais placer une clé secrète dans une variable `VITE_`.
+4. Ajouter `CARNETPASS_PREVIEW_ENTERPRISE_ADMIN_ENABLED=true` à l'environnement Vercel **Preview uniquement**, puis redéployer la branche `feature/documentation-multi-docs`. Se connecter avec `contact@carnetpass.fr` et ouvrir `/administration-interne`.
 
 ## Usage
 
