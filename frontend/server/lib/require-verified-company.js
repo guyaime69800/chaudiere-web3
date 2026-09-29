@@ -179,7 +179,7 @@ export async function requireVerifiedCompany(req, res) {
 
     const { data: subscription, error: subscriptionError } = await supabase
       .from("subscriptions")
-      .select("plan, status, trial_ends_at")
+      .select("plan, status, trial_ends_at, current_period_end")
       .eq("company_id", membership.company_id)
       .maybeSingle();
     if (subscriptionError) throw new Error("Subscription check failed");
@@ -191,8 +191,10 @@ export async function requireVerifiedCompany(req, res) {
       verificationStatus: verification?.status,
     });
 
+    const enterpriseWithinTerm = subscription?.plan !== "enterprise"
+      || (subscription.current_period_end && Date.parse(subscription.current_period_end) > Date.now());
     const paidActive = subscription?.plan !== "free"
-      && ["active", "trialing"].includes(subscription?.status);
+      && ["active", "trialing"].includes(subscription?.status) && enterpriseWithinTerm;
     const accessAllowed = demoAllowed || (subscription?.plan === "free"
       ? discovery.active
       : paidActive && verifiedAllowed);

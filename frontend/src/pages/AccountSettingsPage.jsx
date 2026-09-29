@@ -25,6 +25,7 @@ export default function AccountSettingsPage() {
   const navigate = useNavigate();
   const [company, setCompany] = useState(null);
   const [testSubscription, setTestSubscription] = useState(null);
+  const [platformAdmin, setPlatformAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [newEmail, setNewEmail] = useState("");
@@ -60,6 +61,15 @@ export default function AccountSettingsPage() {
     return () => { active = false; };
   }, [user.id]);
 
+  useEffect(() => {
+    if (!session?.access_token) return;
+    let active = true;
+    fetch("/api/platform-admin", { headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then((response) => { if (active) setPlatformAdmin(response.ok); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [session?.access_token]);
+
   async function run(action, callback) {
     setBusy(action);
     setError("");
@@ -80,6 +90,7 @@ export default function AccountSettingsPage() {
   return (
     <main className="account-settings">
       <header><Link to="/espace-pro">← Retour à mon espace</Link><h1>Paramètres du compte</h1><p>{user.email}</p></header>
+      {platformAdmin && <p><Link to="/administration-interne">Administration interne CarnetPass</Link></p>}
       {loading ? <p>Chargement…</p> : <div className="account-settings-grid">
         <section className="account-settings-card">
           <h2>Mon profil</h2>
