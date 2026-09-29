@@ -5,6 +5,9 @@ export async function startBilling(token, action, plan) {
     body: JSON.stringify({ action, plan }),
   });
   const result = await response.json().catch(() => null);
-  if (!response.ok || !result?.url) throw new Error(result?.message || "Paiement test indisponible.");
+  if (!response.ok || !result?.url) {
+    const message = result?.message || "Paiement test indisponible.";
+    throw new Error(result?.diagnostic ? `${message} (code ${result.diagnostic})` : message);
+  }
   return result.url;
 }
