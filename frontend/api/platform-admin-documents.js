@@ -10,7 +10,7 @@ const maximumSizeInBytes = 10 * 1024 * 1024;
 const fail = (res, status, error) => res.status(status).json({ ok: false, error });
 const enabled = () => process.env.VERCEL_ENV === "preview"
   && process.env.VERCEL_GIT_COMMIT_REF === "feature/documentation-multi-docs"
-  && process.env.CARNETPASS_PREVIEW_ENTERPRISE_ADMIN_ENABLED === "true";
+  && process.env.VITE_SUPABASE_URL === "https://bqqzzbwqmiyxcotvqtoc.supabase.co";
 const service = () => createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SECRET_KEY, options);
 
 async function authorize(token) {

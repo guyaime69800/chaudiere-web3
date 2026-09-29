@@ -22,7 +22,7 @@ export default async function platformAdminHandler(req, res) {
     || process.env.VERCEL_GIT_COMMIT_REF !== "feature/documentation-multi-docs") {
     return send(res, 404, "Fonction indisponible.");
   }
-  if (process.env.CARNETPASS_PREVIEW_ENTERPRISE_ADMIN_ENABLED !== "true") {
+  if (process.env.VITE_SUPABASE_URL !== "https://bqqzzbwqmiyxcotvqtoc.supabase.co") {
     return send(res, 503, "Administration en attente d'une base Preview séparée.");
   }
   const url = process.env.VITE_SUPABASE_URL;
