@@ -25,19 +25,6 @@ grant select, insert, update, delete on public.platform_admins to service_role;
 grant select, insert on public.enterprise_access_events to service_role;
 grant usage, select on sequence public.enterprise_access_events_id_seq to service_role;
 
--- A confirmed founder account must exist before this migration is applied.
-do $$
-declare v_founder uuid;
-begin
-  select id into v_founder from auth.users
-  where lower(email) = 'contact@carnetpass.fr' and email_confirmed_at is not null;
-  if v_founder is null then
-    raise exception 'Create and confirm contact@carnetpass.fr before applying platform admin migration';
-  end if;
-  insert into public.platform_admins(user_id, role) values (v_founder, 'founder');
-end;
-$$;
-
 create or replace function public.platform_set_enterprise(
   p_actor uuid, p_company uuid, p_action text,
   p_contract_end timestamptz, p_payment_reference text, p_note text

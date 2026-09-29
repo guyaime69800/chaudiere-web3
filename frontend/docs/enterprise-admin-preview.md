@@ -4,11 +4,12 @@ L'écran `/administration-interne` est réservé aux administrateurs internes Ca
 
 ## Mise en service
 
-1. Vérifier que `test.carnetpass.fr` utilise un projet Supabase **distinct** de la production. Ne pas appliquer la migration ni activer le module si la base est partagée.
-2. Créer et confirmer le compte CarnetPass `contact@carnetpass.fr` dans le projet Supabase Preview.
-3. Appliquer `supabase/migrations/20260929_01_platform_enterprise_admin.sql` **uniquement** au projet Supabase Preview. La migration échoue si le compte fondateur confirmé n'existe pas.
-4. Ajouter `CARNETPASS_PREVIEW_ENTERPRISE_ADMIN_ENABLED=true` à l'environnement Vercel **Preview uniquement**, puis redéployer la branche `feature/documentation-multi-docs`.
-5. Se connecter avec `contact@carnetpass.fr`, puis ouvrir Paramètres du compte → Administration interne CarnetPass.
+1. Créer un **nouveau projet Supabase** réservé à CarnetPass Preview. Le projet `rpwzzvrueenstsjtbzto` est actuellement partagé et ne doit pas recevoir cette migration pour un essai.
+2. Appliquer toutes les migrations du dépôt, dans l'ordre, à la base du nouveau projet. Cela crée les tables et les fonctions dont dépend l'application ; ne copier aucune donnée client réelle.
+3. Configurer uniquement sur Vercel Preview `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` et `SUPABASE_SECRET_KEY` avec les valeurs du **nouveau projet**. Si `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` existent aussi en Preview, elles doivent désigner ce même nouveau projet : certains endpoints les utilisent en priorité. Ne jamais placer une clé secrète dans une variable `VITE_`.
+4. Redéployer la branche `feature/documentation-multi-docs`. Créer à nouveau le compte `contact@carnetpass.fr` dans la nouvelle base, puis confirmer son e-mail. Le compte créé dans l'ancienne base n'est pas transféré automatiquement.
+5. Exécuter `supabase/bootstrap-preview-founder.sql` dans l'éditeur SQL du **nouveau projet uniquement** ; ce script refuse de s'exécuter si le compte n'est pas confirmé.
+6. Ajouter `CARNETPASS_PREVIEW_ENTERPRISE_ADMIN_ENABLED=true` à l'environnement Vercel **Preview uniquement**, puis redéployer la branche. Se connecter avec `contact@carnetpass.fr` et ouvrir `/administration-interne`.
 
 ## Usage
 
