@@ -134,7 +134,8 @@ export default function AccountSettingsPage() {
               <button type="button" className="account-settings-secondary" disabled={Boolean(busy)} onClick={() => run("portal", async () => {
                 window.location.assign(await startBilling(session.access_token, "portal"));
                 return "Ouverture du portail Stripe.";
-              })}>Gérer et résilier mon abonnement test</button>}
+              })}>Gérer mon abonnement et télécharger mes factures test</button>}
+            {testBilling && testSubscription?.stripe_subscription_id && <p>Les factures sont téléchargeables dans le portail Stripe. Les montants HT, TVA et TTC affichés sur chaque facture correspondent aux taxes réellement appliquées par Stripe.</p>}
             {subscription?.plan === "free" && subscription.status !== "canceled" && company.role === "admin" &&
               <button className="account-settings-secondary" type="button" disabled={Boolean(busy)} onClick={() => {
                 if (!window.confirm("Arrêter l’essai Découverte maintenant ? La création de nouveaux appareils sera désactivée.")) return;

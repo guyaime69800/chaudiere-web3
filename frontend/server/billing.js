@@ -2,14 +2,20 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
 const PRICES = {
+  pro: "price_1UL0nM8Wefijgtt281qKbtMQ",
+  team: "price_1UL0xE8Wefijgtt2ctj3Go8V",
+};
+const LEGACY_PRICES = {
   pro: "price_1UKQZc8Wefijgtt2dZlvPFUy",
   team: "price_1UKQc18Wefijgtt2gcXNK8tY",
 };
-const priceToPlan = Object.fromEntries(Object.entries(PRICES).map(([plan, price]) => [price, plan]));
+const TEST_TAX_RATE = "txr_1UL13C8Wefijgtt2XG8pN2le";
+const priceToPlan = Object.fromEntries([LEGACY_PRICES, PRICES]
+  .flatMap((prices) => Object.entries(prices).map(([plan, price]) => [price, plan])));
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const stripeTestKey = () => process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
 const portalReturnUrl = "https://test.carnetpass.fr/parametres-compte#formule";
-const portalConfigMarker = "carnetpass_preview_plan_changes_v1";
+const portalConfigMarker = "carnetpass_preview_plan_changes_v2";
 
 function send(res, status, message, extra = {}) {
   return res.status(status).json({ ok: status < 400, message, ...extra });
@@ -18,6 +24,7 @@ function send(res, status, message, extra = {}) {
 async function stripe(path, params, method = "POST") {
   const response = await fetch(`https://api.stripe.com/v1/${path}`, {
     method,
+    signal: AbortSignal.timeout(10000),
     headers: {
       Authorization: `Bearer ${stripeTestKey()}`,
       ...(params ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
@@ -29,17 +36,37 @@ async function stripe(path, params, method = "POST") {
   return data;
 }
 
+async function validateTestTaxRate() {
+  const rate = await stripe(`tax_rates/${encodeURIComponent(TEST_TAX_RATE)}`, null, "GET");
+  if (rate.livemode || !rate.active || !rate.inclusive || rate.percentage !== 20 || rate.country !== "FR") {
+    throw new Error("Invalid Preview tax rate");
+  }
+}
+
+async function validateTestPrice(plan) {
+  const price = await stripe(`prices/${encodeURIComponent(PRICES[plan])}`, null, "GET");
+  const expected = plan === "pro" ? 2800 : 3800;
+  if (price.livemode || !price.active || price.currency !== "eur"
+    || price.unit_amount !== expected || price.recurring?.interval !== "month"
+    || price.tax_behavior === "exclusive") throw new Error("Invalid Preview price");
+  return price;
+}
+
 async function testPortalConfiguration() {
   const configurations = await stripe("billing_portal/configurations?limit=100", null, "GET");
   const existing = configurations.data?.find((configuration) => configuration.active
-    && configuration.metadata?.carnetpass_preview === portalConfigMarker);
+    && configuration.metadata?.carnetpass_preview === portalConfigMarker
+    && configuration.features?.invoice_history?.enabled);
   if (existing) return existing.id;
 
-  const [pro, team] = await Promise.all(Object.values(PRICES).map((price) =>
-    stripe(`prices/${encodeURIComponent(price)}`, null, "GET")));
+  const [pro, team] = await Promise.all([validateTestPrice("pro"), validateTestPrice("team")]);
   const configuration = await stripe("billing_portal/configurations", {
     "metadata[carnetpass_preview]": portalConfigMarker,
     "features[invoice_history][enabled]": "true",
+    "features[customer_update][enabled]": "true",
+    "features[customer_update][allowed_updates][0]": "name",
+    "features[customer_update][allowed_updates][1]": "address",
+    "features[customer_update][allowed_updates][2]": "tax_id",
     "features[payment_method_update][enabled]": "true",
     "features[subscription_cancel][enabled]": "true",
     "features[subscription_cancel][mode]": "at_period_end",
@@ -179,15 +206,20 @@ export default async function billingHandler(req, res) {
     }
     if (body.action === "checkout" && PRICES[body.plan] && customerId
       && current?.stripe_subscription_id && current.status !== "canceled") {
+      await validateTestTaxRate();
+      await validateTestPrice(body.plan);
       const subscription = await stripe(`subscriptions/${encodeURIComponent(current.stripe_subscription_id)}`, null, "GET");
       const item = subscription.items?.data?.[0];
       if (subscription.customer !== customerId || subscription.items?.data?.length !== 1
-        || !Object.values(PRICES).includes(item?.price?.id)
+        || !priceToPlan[item?.price?.id]
         || !["active", "trialing"].includes(subscription.status)) {
         return send(res, 409, "Cet abonnement ne peut pas être modifié depuis le parcours de test.");
       }
       if (item.price.id === PRICES[body.plan]) {
         return send(res, 409, "Vous utilisez déjà cette formule de test.");
+      }
+      if (!subscription.default_tax_rates?.some((rate) => rate.id === TEST_TAX_RATE || rate === TEST_TAX_RATE)) {
+        return send(res, 409, "Cet ancien abonnement test ne comporte pas la TVA. Consultez ses factures dans le portail ; un changement de formule demande une migration fiscale préalable.");
       }
       const portal = await stripe("billing_portal/sessions",
         planChangeParams(customerId, subscription.id, item.id, body.plan, await testPortalConfiguration()));
@@ -196,11 +228,14 @@ export default async function billingHandler(req, res) {
     if (body.action === "portal" && customerId && current?.stripe_subscription_id) {
       const portal = await stripe("billing_portal/sessions", {
         customer: customerId, return_url: portalReturnUrl,
+        configuration: await testPortalConfiguration(),
       });
       return send(res, 200, "Portail prêt.", { url: portal.url });
     }
     if (body.action === "checkout" && PRICES[body.plan] && customerId
       && (!current?.stripe_subscription_id || current.status === "canceled")) {
+      await validateTestTaxRate();
+      await validateTestPrice(body.plan);
       if (current?.stripe_subscription_id) {
         const { error: resetError } = await admin.from("stripe_test_subscriptions")
           .update({ stripe_subscription_id: null }).eq("company_id", companyId).eq("status", "canceled");
@@ -209,6 +244,7 @@ export default async function billingHandler(req, res) {
       const checkout = await stripe("checkout/sessions", {
         mode: "subscription", customer: customerId,
         "line_items[0][price]": PRICES[body.plan], "line_items[0][quantity]": "1",
+        "subscription_data[default_tax_rates][0]": TEST_TAX_RATE,
         client_reference_id: companyId,
         success_url: "https://test.carnetpass.fr/parametres-compte?paiement=retour#formule",
         cancel_url: "https://test.carnetpass.fr/tarifs?paiement=annule",

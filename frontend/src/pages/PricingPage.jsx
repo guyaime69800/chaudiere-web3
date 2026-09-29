@@ -16,7 +16,8 @@ const offers = [
     name: "Pro",
     plan: "pro",
     audience: "Pour un artisan indépendant",
-    price: "25 € HT",
+    price: "28 € TTC",
+    taxDetail: "23,33 € HT + 4,67 € de TVA (20 %, arrondis)",
     priceDetail: "par mois · 1 technicien",
     features: ["Un compte technicien", "Équipements et interventions sans plafond métier", "Documents et attestations", "Catalogue technique disponible", "200 questions IA par mois"],
     featured: true,
@@ -25,7 +26,8 @@ const offers = [
     name: "Équipe",
     plan: "team",
     audience: "Pour une équipe de 5 personnes",
-    price: "35 € HT",
+    price: "38 € TTC",
+    taxDetail: "31,67 € HT + 6,33 € de TVA (20 %, arrondis)",
     priceDetail: "par mois · une seule facture pour l’équipe",
     features: ["Fonctions Pro", "Jusqu’à 5 comptes et droits d’équipe", "Une seule facture", "Suivi partagé", "200 questions IA par mois et par technicien", "Accompagnement au démarrage"],
   },
@@ -55,7 +57,7 @@ export default function PricingPage() {
       <header className="pricing-intro">
         <span className="pricing-eyebrow">{testBilling ? "Paiement en mode test" : "Offres en préparation"}</span>
         <h1>Une formule adaptée à votre façon de travailler.</h1>
-        <p>{testBilling ? "Essayez le parcours d’abonnement avec une carte de test Stripe. Aucun paiement réel ne sera prélevé et vos droits CarnetPass ne changent pas pendant ce test." : "Voici les offres et tarifs proposés pour CarnetPass. Vous pouvez demander un changement de formule ; aucun paiement ni changement automatique de droits n’est encore ouvert."}</p>
+        <p>{testBilling ? "Les prix TTC ci-dessous supposent une TVA de 20 %. Le paiement reste en mode test : vérifiez le montant et la TVA affichés par Stripe avant de confirmer. Aucun paiement réel ne sera prélevé et vos droits CarnetPass ne changent pas pendant ce test." : "Voici les offres et tarifs proposés pour CarnetPass. Vous pouvez demander un changement de formule ; aucun paiement ni changement automatique de droits n’est encore ouvert."}</p>
         {error && <p role="alert" className="pricing-error">{error}</p>}
       </header>
       <section className="pricing-grid" aria-label="Offres proposées">
@@ -63,7 +65,7 @@ export default function PricingPage() {
           <article className={`pricing-card${offer.featured ? " pricing-card--featured" : ""}`} key={offer.name}>
             <div className="pricing-card__top"><h2>{offer.name}</h2>{offer.featured && <span>Offre principale proposée</span>}</div>
             <p>{offer.audience}</p>
-            <div className="pricing-card__price"><strong>{offer.price}</strong><span>{offer.priceDetail}</span></div>
+            <div className="pricing-card__price"><strong>{offer.price}</strong><span>{offer.priceDetail}</span>{offer.taxDetail && <span>{offer.taxDetail}</span>}</div>
             <ul>{offer.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
             {offer.name === "Entreprise" ? (
               <Link to="/demande-entreprise">Demander cette formule <span aria-hidden="true">→</span></Link>
