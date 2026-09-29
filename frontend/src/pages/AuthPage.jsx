@@ -33,6 +33,18 @@ function getFriendlyError(error) {
   return "Une erreur est survenue. Veuillez réessayer.";
 }
 
+async function isPlatformAdmin(accessToken) {
+  if (!accessToken) return false;
+  try {
+    const response = await fetch("/api/platform-admin", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 export default function AuthPage({ mode = "connexion" }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -77,7 +89,8 @@ export default function AuthPage({ mode = "connexion" }) {
         });
 
         if (data.session) {
-          navigate(destination);
+          const admin = await isPlatformAdmin(data.session.access_token);
+          navigate(admin ? "/administration-interne" : destination);
           return;
         }
 
@@ -87,12 +100,12 @@ export default function AuthPage({ mode = "connexion" }) {
 
         setForm(initialForm);
       } else {
-        await signIn({
+        const data = await signIn({
           email: form.email,
           password: form.password,
         });
-
-        navigate(destination);
+        const admin = await isPlatformAdmin(data.session?.access_token);
+        navigate(admin ? "/administration-interne" : destination);
       }
     } catch (error) {
       setErrorMessage(getFriendlyError(error));
