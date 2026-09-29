@@ -6,7 +6,6 @@ import accountHandler from "../server/account.js";
 import billingHandler from "../server/billing.js";
 import enterpriseQuoteHandler from "../server/enterprise-quote.js";
 import { runInternalMonitoring } from "../server/system-health.js";
-import documentResearchHandler from "../server/document-research.js";
 
 export const config = { api: { bodyParser: false } };
 
@@ -98,7 +97,6 @@ async function saveVerificationResult(
 }
 
 export default async function handler(req, res) {
-  if (req.query?.document_research_route === "1") return documentResearchHandler(req, res);
   await runInternalMonitoring();
   if (req.query?.account_route === "1") return accountHandler(req, res);
   if (req.query?.billing_route === "1") return billingHandler(req, res);

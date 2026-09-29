@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { researchPilot } from "../server/lib/document-research.js";
+import { researchPilot } from "../scripts/lib/document-research.js";
 import { getEquipmentConfig } from "../server/lib/equipment-registry.js";
 import { searchRagContext } from "../server/lib/rag.js";
 

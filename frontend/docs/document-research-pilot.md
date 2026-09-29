@@ -1,23 +1,25 @@
-# Recherche documentaire interne — pilote Preview
+# Assistant documentaire interne — pilote de développement
 
-Le pilote couvre uniquement **De Dietrich MCR 2 24**, référence **7841749**. Il est disponible sur `/admin/recherche-documents` avec le compte Supabase confirmé `contact@carnetpass.fr`, uniquement lorsque `VERCEL_ENV=preview`.
+L'assistant ne fait plus partie de l'application CarnetPass. Il n'a ni page ni API publique. Il produit un dossier de recherche dans le dépôt, pour examen par l'administrateur avant toute importation.
 
-## Ce que fait la recherche
+## Premier modèle
 
-- Lit un petit index de liens publics du fabricant, vérifiés manuellement, sans interroger une API payante.
-- Compare les résultats aux documents de la fiche `src/data/equipment/de-dietrich-7841749.json` à l'aide du code documentaire.
-- Affiche la source, le PDF public, l'éditeur, le type, le modèle, la langue, la date, le niveau de confiance et les variantes.
-- Propose EasySAV et Pièces Express comme recherches **manuelles**. Aucun téléchargement automatisé n'est fait sur ces sites.
-- Limite l'accès à cinq consultations par heure et par compte via Upstash.
+Depuis `frontend` :
 
-Le résultat n'est jamais une autorisation de réutilisation. Même un PDF du fabricant doit être vérifié pour la variante exacte et pour les droits de copie, d'hébergement et d'indexation.
+```powershell
+node scripts/research-documents.mjs --brand="De Dietrich" --model="MCR 2 24" --reference=7841749
+```
 
-## Pour ajouter un document après validation humaine
+Le résultat est `research/reports/de-dietrich-mcr-2-24-7841749.md`. Il rassemble les documents déjà présents, deux liens publics du fabricant, les variantes proches, les doublons et les points à valider. Le dossier est régénéré à chaque lancement de la commande.
 
-1. Vérifier sur le PDF le modèle, la référence constructeur, la langue, la révision et les pages utiles. Rejeter ou isoler les variantes proches.
-2. Vérifier que l'hébergement dans CarnetPass et l'indexation pour Shiba sont autorisés. Conserver la preuve de cette autorisation hors du catalogue public.
-3. Vérifier le code documentaire et l'empreinte SHA-256 pour éviter les doublons.
-4. Ajouter le document à la fiche de l'équipement, puis utiliser `scripts/import-rag-document.mjs` **uniquement après validation**. Ce script extrait le texte, crée les passages et embeddings et régénère le registre RAG ; il peut consommer l'API OpenAI.
-5. Lancer `npm test` et `npm run build`. La vérification `test/document-research.test.js` couvre le pilote et le rappel de la vue éclatée pour une question de référence de pièce.
+Ce premier pilote utilise des liens constructeur examinés pour un seul modèle. Il ne lance aucune recherche Web, ne télécharge aucun PDF et ne consomme aucune API payante. Les autres modèles, les PAC et les climatisations ne sont pas encore pris en charge par cette commande.
 
-Le pilote n'implémente pas encore la recherche générale par marque ou le processus d'approbation persistant. Il n'ajoute aucun document aux données ni à Shiba.
+## Validation et intégration
+
+1. Examiner chaque lien et PDF depuis le site du fabricant. Comparer modèle, puissance, génération et référence constructeur. Une notice de gamme ne suffit pas à valider une variante.
+2. Vérifier les droits de copie, stockage, redistribution et indexation ; conserver la preuve. EasySAV et Pièces Express restent des recherches manuelles, sans téléchargement automatisé. Respecter notamment la limite EasySAV de 20 fichiers.
+3. Vérifier les doublons par code documentaire et, si le fichier a été fourni légalement, par SHA-256.
+4. Après approbation explicite, ajouter le document validé à la fiche du modèle puis utiliser le processus documentaire existant (`scripts/import-rag-document.mjs`). Cette étape peut écrire dans Vercel Blob et consommer l'API OpenAI ; elle ne fait pas partie de la commande de recherche.
+5. Régénérer et valider le registre avec les scripts existants. Tester que Shiba cite le document du bon modèle, et la vue éclatée pour une référence de pièce.
+
+Le premier dossier est un inventaire de pistes, pas une autorisation d'hébergement. Aucun document n'est ajouté au catalogue ou au RAG par cette commande.
