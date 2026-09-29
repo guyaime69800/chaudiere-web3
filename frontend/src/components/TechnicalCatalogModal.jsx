@@ -50,6 +50,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   const [query, setQuery] = useState("");
   const [model, setModel] = useState(null);
   const [documents, setDocuments] = useState([]);
+  const [publishedDocuments, setPublishedDocuments] = useState([]);
   const [support, setSupport] = useState(null);
   const [documentsBusy, setDocumentsBusy] = useState(false);
   const [documentsError, setDocumentsError] = useState("");
@@ -69,11 +70,32 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   const aiRequest = useRef(0);
 
   useEffect(() => () => { documentRequest.current += 1; aiRequest.current += 1; }, []);
+  useEffect(() => {
+    if (!session?.access_token) return;
+    const controller = new AbortController();
+    fetch("/api/platform-catalog-documents", {
+      headers: { Authorization: `Bearer ${session.access_token}` }, signal: controller.signal,
+    }).then((response) => response.ok ? response.json() : null)
+      .then((result) => { if (!controller.signal.aborted) setPublishedDocuments(result?.documents || []); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [session?.access_token]);
   useEffect(() => () => {
     if (previewDocument?.documentUrl?.startsWith("blob:")) URL.revokeObjectURL(previewDocument.documentUrl);
   }, [previewDocument]);
 
-  const entries = Array.isArray(catalog) ? catalog : [];
+  const entries = (Array.isArray(catalog) ? catalog : []).map((item) => ({ ...item }));
+  for (const document of publishedDocuments) {
+    const existing = entries.find((item) => normalize(item.brand) === normalize(document.manufacturer)
+      && normalize(item.manufacturerReference || item.model) === normalize(document.model_reference)
+      && item.type === document.catalog_category);
+    const item = existing || { brand: document.manufacturer, model: document.model_reference,
+      manufacturerReference: document.model_reference, type: document.catalog_category, publishedDocuments: [] };
+    if (!existing) entries.push(item);
+    if (!item.publishedDocuments) item.publishedDocuments = [];
+    item.publishedDocuments.push({ documentId: document.id, title: document.title,
+      sourceName: document.manufacturer, storage: "platform-private", documentCode: document.model_reference });
+  }
   const category = CATEGORIES.find((item) => item.id === type);
   // Une entrée PAC/clim ne rejoint une unité que si sa position est renseignée.
   const categoryEntries = entries.filter((item) => item.type === type ||
@@ -104,12 +126,13 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
     clearModel({ preserveQuestion: true });
     const request = ++documentRequest.current;
     setAssistantOrigin(fromAssistant); setModel(item); setStep(fromAssistant ? "assistant" : "model");
+    if (item.publishedDocuments) setDocuments(item.publishedDocuments);
     if (!item.equipmentId) return;
     setDocumentsBusy(true);
     try {
       const library = await getEquipmentDocumentLibrary(item.equipmentId);
       if (request === documentRequest.current) {
-        setDocuments(Array.isArray(library?.documents) ? library.documents : []);
+        setDocuments([...(Array.isArray(library?.documents) ? library.documents : []), ...(item.publishedDocuments || [])]);
         setSupport(library?.support ?? null);
       }
     } catch (loadError) {
@@ -123,7 +146,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   async function openDocumentPreview(document) {
     if (previewBusyId) return;
     setDocumentsError("");
-    if (document.storage !== "private") {
+    if (document.storage !== "private" && document.storage !== "platform-private") {
       setPreviewDocument(document);
       return;
     }
@@ -131,8 +154,10 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
     setPreviewBusyId(document.documentId);
     try {
       if (!session?.access_token) throw new Error("Connecte-toi pour consulter ce document.");
-      const pathname = new URL(document.documentUrl).pathname.slice(1);
-      const response = await fetch(`/api/technical-document?pathname=${encodeURIComponent(pathname)}`, {
+      const endpoint = document.storage === "platform-private"
+        ? `/api/platform-catalog-documents?id=${encodeURIComponent(document.documentId)}`
+        : `/api/technical-document?pathname=${encodeURIComponent(new URL(document.documentUrl).pathname.slice(1))}`;
+      const response = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${session.access_token}` },
         signal: AbortSignal.timeout(45_000),
       });
@@ -245,7 +270,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
             <div className="technical-catalog-assistant-heading"><img src={shibaTechnicien} alt="" /><p>Choisissez un modèle. Shiba consulte ses documents ou recherche des sources sur le Web.</p></div>
             <label className="technical-catalog-search" htmlFor="technical-catalog-picker-question">Votre question<textarea id="technical-catalog-picker-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ex. Que signifie le code défaut F28 ?" rows={3} /></label>
             <label className="technical-catalog-search" htmlFor="technical-catalog-picker-model">Rechercher un modèle<input id="technical-catalog-picker-model" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Marque, modèle ou référence" /></label>
-            <div className="technical-catalog-list">{entries.filter((item) => item.equipmentId && (!normalize(query) || normalize([item.brand, item.model, item.variant, item.manufacturerReference].join(" ")).includes(normalize(query)))).map((item) => <button key={item.equipmentId} type="button" className="technical-catalog-row" onClick={() => selectModel(item, true)}><strong>{item.brand} · {item.model}{item.variant ? ` · ${item.variant}` : ""}<small>{item.manufacturerReference}</small></strong><span aria-hidden="true">›</span></button>)}</div>
+            <div className="technical-catalog-list">{entries.filter((item) => (item.equipmentId || item.publishedDocuments) && (!normalize(query) || normalize([item.brand, item.model, item.variant, item.manufacturerReference].join(" ")).includes(normalize(query)))).map((item) => <button key={item.equipmentId || `${item.brand}-${item.model}-${item.type}`} type="button" className="technical-catalog-row" onClick={() => selectModel(item, true)}><strong>{item.brand} · {item.model}{item.variant ? ` · ${item.variant}` : ""}<small>{item.manufacturerReference}</small></strong><span aria-hidden="true">›</span></button>)}</div>
             {!entries.length && <p className="technical-catalog-empty">Les documents constructeur seront ajoutés progressivement.</p>}
             <button type="button" className="technical-catalog-back" onClick={() => { clearModel({ preserveQuestion: true }); setStep("category"); }}>Votre modèle est absent ? Choisir sa catégorie →</button>
           </section>}
@@ -279,7 +304,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
                 {!!documents.length && (
                 <button type="button" className="technical-catalog-card" onClick={() => setStep("documents")}><strong>Documents constructeur</strong><span>{documents.length} document{documents.length > 1 ? "s" : ""} disponible{documents.length > 1 ? "s" : ""} →</span></button>
                 )}
-                <button type="button" className="technical-catalog-card" onClick={() => setStep("assistant")}><strong className="technical-catalog-shiba-label"><img src={shibaTechnicien} alt="" /> Interroger Shiba Bot</strong><span>{documents.length ? "Réponse issue des documents constructeur" : "Recherche Web avec sources"} →</span></button>
+                <button type="button" className="technical-catalog-card" onClick={() => setStep("assistant")}><strong className="technical-catalog-shiba-label"><img src={shibaTechnicien} alt="" /> Interroger Shiba Bot</strong><span>{model.equipmentId && documents.length ? "Réponse issue des documents constructeur" : "Recherche Web avec sources"} →</span></button>
               </div>}
             </>}
             {step === "documents" && <section aria-label={`Documentation ${model.brand} ${model.model}`}>
@@ -296,7 +321,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
               <ShibaUsage session={session} />
               {documentsBusy && <p role="status">Vérification de la documentation…</p>}
               {documentsError && <p role="alert" className="technical-catalog-error">{documentsError}</p>}
-              {!documentsBusy && !documents.length && <p className="technical-catalog-empty">Recherche sur le Web : les informations trouvées seront accompagnées de leurs sources et restent à vérifier sur l’appareil.</p>}
+              {!documentsBusy && (!model.equipmentId || !documents.length) && <p className="technical-catalog-empty">Recherche sur le Web : les informations trouvées seront accompagnées de leurs sources et restent à vérifier sur l’appareil.</p>}
               <form onSubmit={askShiba}><label htmlFor="technical-catalog-question">Votre question</label><textarea id="technical-catalog-question" value={question} onChange={(event) => { setQuestion(event.target.value); setAnswer(""); setError(""); setAnswerSources([]); setAnswerCitations([]); }} placeholder="Ex. Où trouver la notice de ce modèle ?" rows={4} autoFocus /><button type="submit" disabled={!question.trim() || documentsBusy || busy}>{busy ? "Recherche…" : "Interroger Shiba Bot"}</button></form>
               {error && <p role="alert" className="technical-catalog-error">{error}</p>}
               {answer && <div className="technical-catalog-answer" aria-live="polite"><div className="technical-catalog-answer-heading"><img src={shibaTechnicien} alt="" /><strong>Réponse de Shiba Bot {answerSource === "web" ? "· Recherche Web" : "· Documentation constructeur"}</strong></div>{answerSource === "web" ? <div className="technical-catalog-answer-body">{renderWebAnswer()}</div> : <div className="technical-catalog-answer-body"><ReactMarkdown>{answer}</ReactMarkdown></div>}{answerSource === "documents" && !!documents.length && <div className="technical-catalog-sources"><strong>Vérifier dans les documents</strong><ul>{documents.map((item) => <li key={item.documentId}><button type="button" disabled={Boolean(previewBusyId)} onClick={() => openDocumentPreview(item)}>{previewBusyId === item.documentId ? "Ouverture…" : item.title}</button></li>)}</ul><small>Vérifiez la référence et la variante exacte avant toute intervention.</small></div>}{answerSource === "web" && !!answerSources.length && <div className="technical-catalog-sources"><strong>Sources consultées</strong><ul>{answerSources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || source.url}</a></li>)}</ul><small>Vérifiez les informations techniques dans la notice du modèle exact.</small></div>}</div>}

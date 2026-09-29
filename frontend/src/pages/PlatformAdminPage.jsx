@@ -4,6 +4,15 @@ import { uploadPresigned } from "@vercel/blob/client";
 import { useAuth } from "../hooks/useAuth";
 import "./PlatformAdminPage.css";
 
+const catalogCategories = [
+  ["boiler", "Chaudières"], ["heat_pump_indoor", "PAC · unités intérieures"],
+  ["heat_pump_outdoor", "PAC · unités extérieures"],
+  ["air_conditioning_indoor", "Clim · unités intérieures"],
+  ["air_conditioning_outdoor", "Clim · unités extérieures"], ["burner", "Brûleurs"],
+  ["water_heater", "Chauffe-bains"], ["regulation", "Régulations"],
+  ["heat_pump_water_heater", "Chauffe-eau thermodynamiques"], ["vmc", "VMC"],
+];
+
 async function request(token, body, search = "", companyId = "") {
   const params = new URLSearchParams({ search });
   if (companyId) params.set("companyId", companyId);
@@ -36,11 +45,15 @@ export default function PlatformAdminPage() {
   const [modelReference, setModelReference] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
   const [documents, setDocuments] = useState([]);
+  const [publicationReady, setPublicationReady] = useState(false);
+  const [reviewCategories, setReviewCategories] = useState({});
+  const [distributionConfirmed, setDistributionConfirmed] = useState({});
   const loadDocuments = useCallback(async () => {
     const response = await fetch("/api/platform-admin-documents", { headers: { Authorization: `Bearer ${session.access_token}` } });
     const result = await response.json().catch(() => null);
     if (!response.ok) throw new Error(result?.error || "Documents indisponibles.");
     setDocuments(result.documents || []);
+    setPublicationReady(result.publicationReady === true);
   }, [session.access_token]);
   const load = useCallback(async () => {
     const result = await request(session.access_token, null, search, selected);
@@ -59,7 +72,7 @@ export default function PlatformAdminPage() {
     let active = true;
     fetch("/api/platform-admin-documents", { headers: { Authorization: `Bearer ${session.access_token}` } })
       .then((response) => response.ok ? response.json() : null)
-      .then((result) => { if (active && result) setDocuments(result.documents || []); })
+      .then((result) => { if (active && result) { setDocuments(result.documents || []); setPublicationReady(result.publicationReady === true); } })
       .catch(() => {});
     return () => { active = false; };
   }, [session.access_token]);
@@ -96,6 +109,29 @@ export default function PlatformAdminPage() {
       anchor.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (cause) { setError(cause.message); }
+  }
+
+  async function reviewDocument(entry, action) {
+    const category = reviewCategories[entry.id];
+    if (action === "approve" && (!category || !distributionConfirmed[entry.id])) {
+      setError("Choisissez une catégorie et confirmez le droit de diffuser ce PDF.");
+      return;
+    }
+    if (!window.confirm(action === "approve"
+      ? `Publier ${entry.title} pour tous les comptes CarnetPass ?`
+      : `Rejeter ${entry.title} ?`)) return;
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const response = await fetch("/api/platform-admin-documents", {
+        method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, action, category, distributionConfirmed: distributionConfirmed[entry.id] === true }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Validation impossible.");
+      setMessage(action === "approve" ? "Notice validée et publiée dans le catalogue." : "Notice rejetée.");
+      await loadDocuments();
+    } catch (cause) { setError(cause.message); }
+    finally { setBusy(false); }
   }
 
   async function act(body) {
@@ -170,6 +206,7 @@ export default function PlatformAdminPage() {
       </li>)}</ul></section>
       <section><h2>Importer une notice technique</h2>
         <p>Le PDF reste privé et en attente de validation. Son dépôt ne le rend pas encore disponible dans le catalogue ou dans l'assistant.</p>
+        {!publicationReady && <p>La publication attend l’activation du catalogue dans la base Preview.</p>}
         <form onSubmit={importDocument}>
           <label>Fabricant <input required minLength={2} maxLength={120} value={manufacturer} onChange={(event) => setManufacturer(event.target.value)} /></label>
           <label>Référence exacte du modèle <input required minLength={2} maxLength={160} value={modelReference} onChange={(event) => setModelReference(event.target.value)} /></label>
@@ -179,8 +216,17 @@ export default function PlatformAdminPage() {
           <button disabled={busy} type="button" onClick={() => loadDocuments().catch((cause) => setError(cause.message))}>Actualiser la liste</button>
         </form>
         <ul>{documents.map((entry) => <li key={entry.id}>
-          {entry.manufacturer} · {entry.model_reference} · {entry.title} · {entry.original_filename} · En attente de validation
+          {entry.manufacturer} · {entry.model_reference} · {entry.title} · {entry.original_filename} · {entry.status === "approved" ? "Publié dans le catalogue" : entry.status === "rejected" ? "Rejeté" : "En attente de validation"}
           <button type="button" onClick={() => downloadDocument(entry)}>Télécharger</button>
+          {publicationReady && entry.status === "pending_review" && <div>
+            <label>Catégorie du catalogue <select value={reviewCategories[entry.id] || ""} onChange={(event) => setReviewCategories((previous) => ({ ...previous, [entry.id]: event.target.value }))}>
+              <option value="">Choisir une catégorie</option>
+              {catalogCategories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select></label>
+            <label><input type="checkbox" checked={distributionConfirmed[entry.id] === true} onChange={(event) => setDistributionConfirmed((previous) => ({ ...previous, [entry.id]: event.target.checked }))} /> J’ai vérifié la référence et le droit de diffuser ce PDF à tous les comptes CarnetPass.</label>
+            <button type="button" disabled={busy || !reviewCategories[entry.id] || !distributionConfirmed[entry.id]} onClick={() => reviewDocument(entry, "approve")}>Valider et publier</button>
+            <button type="button" disabled={busy} onClick={() => reviewDocument(entry, "reject")}>Rejeter</button>
+          </div>}
         </li>)}</ul>
       </section>
       {data.role === "founder" && <section><h2>Collaborateurs internes</h2>

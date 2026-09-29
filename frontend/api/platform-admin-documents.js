@@ -7,6 +7,7 @@ import { handleUploadPresigned } from "@vercel/blob/client";
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const maximumSizeInBytes = 10 * 1024 * 1024;
+const catalogCategories = new Set(["boiler", "heat_pump_indoor", "heat_pump_outdoor", "air_conditioning_indoor", "air_conditioning_outdoor", "burner", "water_heater", "regulation", "heat_pump_water_heater", "vmc"]);
 const fail = (res, status, error) => res.status(status).json({ ok: false, error });
 const enabled = () => process.env.VERCEL_ENV === "preview"
   && process.env.VERCEL_GIT_COMMIT_REF === "feature/documentation-multi-docs"
@@ -71,6 +72,42 @@ export default async function handler(req, res) {
     || !process.env.SUPABASE_SECRET_KEY || !process.env.BLOB_WEBHOOK_PUBLIC_KEY) {
     return fail(res, 503, "Configuration de l'import indisponible.");
   }
+  if (req.method === "PATCH") {
+    const token = /^Bearer ([^\s]+)$/i.exec(req.headers.authorization || "")?.[1];
+    const user = await authorize(token);
+    if (!user) return fail(res, 403, "Accès refusé.");
+    const { id, action, category, distributionConfirmed } = req.body || {};
+    if (typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id)
+      || !["approve", "reject"].includes(action)
+      || (action === "approve" && (!catalogCategories.has(category) || distributionConfirmed !== true))) {
+      return fail(res, 400, "Validation incomplète.");
+    }
+    const db = service();
+    const { data: entry, error: lookupError } = await db.from("platform_document_intake")
+      .select("id, blob_pathname, size_bytes, sha256, status")
+      .eq("id", id).maybeSingle();
+    if (lookupError || !entry) return fail(res, 404, "Document introuvable.");
+    if (entry.status !== "pending_review") return fail(res, 409, "Document déjà traité.");
+    if (action === "approve") {
+      const stored = await get(entry.blob_pathname, { access: "private", useCache: false });
+      if (!stored?.stream || stored.blob?.size !== entry.size_bytes || stored.blob?.contentType !== "application/pdf") {
+        return fail(res, 409, "PDF indisponible ou modifié.");
+      }
+      const hash = createHash("sha256");
+      for await (const chunk of stored.stream) hash.update(chunk);
+      if (hash.digest("hex") !== entry.sha256) return fail(res, 409, "PDF modifié depuis son dépôt.");
+    }
+    const now = new Date().toISOString();
+    const { data: updated, error } = await db.from("platform_document_intake")
+      .update({ status: action === "approve" ? "approved" : "rejected",
+        catalog_category: action === "approve" ? category : null,
+        distribution_confirmed_at: action === "approve" ? now : null,
+        reviewed_by: user.id, reviewed_at: now })
+      .eq("id", id).eq("status", "pending_review").select("id").maybeSingle();
+    if (error) return fail(res, 503, "Validation indisponible.");
+    if (!updated) return fail(res, 409, "Document déjà traité.");
+    return res.status(200).json({ ok: true });
+  }
   if (req.method === "GET") {
     const token = /^Bearer ([^\s]+)$/i.exec(req.headers.authorization || "")?.[1];
     const user = await authorize(token);
@@ -93,9 +130,14 @@ export default async function handler(req, res) {
       return;
     }
     const { data, error } = await service().from("platform_document_intake")
+      .select("id, manufacturer, model_reference, title, original_filename, size_bytes, status, catalog_category, created_at")
+      .order("created_at", { ascending: false }).limit(50);
+    if (!error) return res.status(200).json({ ok: true, documents: data, publicationReady: true });
+    const fallback = await service().from("platform_document_intake")
       .select("id, manufacturer, model_reference, title, original_filename, size_bytes, status, created_at")
       .order("created_at", { ascending: false }).limit(50);
-    return error ? fail(res, 503, "Documents indisponibles.") : res.status(200).json({ ok: true, documents: data });
+    return fallback.error ? fail(res, 503, "Documents indisponibles.")
+      : res.status(200).json({ ok: true, documents: fallback.data, publicationReady: false });
   }
   if (req.method !== "POST") return fail(res, 405, "Méthode non autorisée.");
   const body = req.body;
