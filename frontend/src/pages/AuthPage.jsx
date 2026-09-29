@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { signIn, signUp } from "../services/authService";
 import PasswordField from "../components/PasswordField";
 import "./AuthPage.css";
@@ -35,6 +35,9 @@ function getFriendlyError(error) {
 
 export default function AuthPage({ mode = "connexion" }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const destination = location.state?.from?.pathname === "/administration-interne"
+    ? "/administration-interne" : "/espace-pro";
   const isSignUp = mode === "inscription";
 
   const [form, setForm] = useState(initialForm);
@@ -74,7 +77,7 @@ export default function AuthPage({ mode = "connexion" }) {
         });
 
         if (data.session) {
-          navigate("/espace-pro");
+          navigate(destination);
           return;
         }
 
@@ -89,7 +92,7 @@ export default function AuthPage({ mode = "connexion" }) {
           password: form.password,
         });
 
-        navigate("/espace-pro");
+        navigate(destination);
       }
     } catch (error) {
       setErrorMessage(getFriendlyError(error));
