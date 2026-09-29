@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider } from "./context/AuthProvider";
 import AuthPage from "./pages/AuthPage.jsx";
 import ProSpacePage from "./pages/ProSpacePage.jsx";
+import DocumentResearchPage from "./pages/DocumentResearchPage.jsx";
 import PricingPage from "./pages/PricingPage.jsx";
 import EnterpriseQuotePage from "./pages/EnterpriseQuotePage.jsx";
 import SiteFooter from "./components/SiteFooter.jsx";
@@ -82,6 +83,7 @@ createRoot(document.getElementById("root")).render(
             }
           />
           <Route path="/parametres-compte" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
+          <Route path="/admin/recherche-documents" element={<ProtectedRoute><DocumentResearchPage /></ProtectedRoute>} />
 
           {/* Fiche ouverte depuis un QR code */}
           <Route path="/appareil/:id" element={<App />} />

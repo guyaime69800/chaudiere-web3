@@ -17,6 +17,10 @@
       "destination": "/api/verify-company?enterprise_quote_route=1"
     },
     {
+      "source": "/api/document-research",
+      "destination": "/api/verify-company?document_research_route=1"
+    },
+    {
       "source": "/((?!api(?:/|$)|src(?:/|$)|node_modules(?:/|$)|assets(?:/|$)|@|.*\\.).*)",
       "destination": "/index.html"
     }
