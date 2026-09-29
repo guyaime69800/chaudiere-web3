@@ -183,6 +183,29 @@ export default function PlatformAdminPage() {
   const company = data?.selectedCompanyId === selected
     ? data.companies?.find((entry) => entry.id === selected)
     : null;
+  const pendingDocuments = documents.filter((entry) => entry.status === "pending_review");
+  const archivedDocuments = documents.filter((entry) => entry.status !== "pending_review");
+  function renderDocument(entry) {
+    return <li key={entry.id}>
+      {entry.manufacturer} · {entry.model_reference} · {entry.title} · {entry.original_filename} · {entry.status === "approved" ? "Publié dans le catalogue" : entry.status === "rejected" ? "Rejeté" : "En attente de validation"}
+      <button type="button" onClick={() => downloadDocument(entry)}>Télécharger</button>
+      {hotlineReady && entry.status === "approved" && <div>
+        <label>Hotline <input type="tel" value={hotlineInputs[entry.id] ?? entry.hotline_phone ?? ""} onChange={(event) => setHotlineInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="Numéro de téléphone" maxLength={32} /></label>
+        <button type="button" disabled={busy} onClick={() => saveHotline(entry)}>Enregistrer la hotline</button>
+        <label>Autres références couvertes par le PDF <input value={aliasInputs[entry.id] ?? (entry.model_aliases || []).join(", ")} onChange={(event) => setAliasInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="Autre référence du modèle" maxLength={1620} /></label>
+        <button type="button" disabled={busy} onClick={() => saveAliases(entry)}>Enregistrer les références</button>
+      </div>}
+      {publicationReady && entry.status === "pending_review" && <div>
+        <label>Catégorie du catalogue <select value={reviewCategories[entry.id] || ""} onChange={(event) => setReviewCategories((previous) => ({ ...previous, [entry.id]: event.target.value }))}>
+          <option value="">Choisir une catégorie</option>
+          {catalogCategories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </select></label>
+        <label><input type="checkbox" checked={distributionConfirmed[entry.id] === true} onChange={(event) => setDistributionConfirmed((previous) => ({ ...previous, [entry.id]: event.target.checked }))} /> J’ai vérifié la référence et le droit de diffuser ce PDF à tous les comptes CarnetPass.</label>
+        <button type="button" disabled={busy || !reviewCategories[entry.id] || !distributionConfirmed[entry.id]} onClick={() => reviewDocument(entry, "approve")}>Valider et publier</button>
+        <button type="button" disabled={busy} onClick={() => reviewDocument(entry, "reject")}>Rejeter</button>
+      </div>}
+    </li>;
+  }
   return <main className="platform-admin">
     <Link to="/espace-pro">← Retour à CarnetPass</Link>
     <h1>Administration CarnetPass</h1>
@@ -251,25 +274,11 @@ export default function PlatformAdminPage() {
           <button disabled={busy} type="submit">Déposer le document</button>
           <button disabled={busy} type="button" onClick={() => loadDocuments().catch((cause) => setError(cause.message))}>Actualiser la liste</button>
         </form>
-        <ul>{documents.map((entry) => <li key={entry.id}>
-          {entry.manufacturer} · {entry.model_reference} · {entry.title} · {entry.original_filename} · {entry.status === "approved" ? "Publié dans le catalogue" : entry.status === "rejected" ? "Rejeté" : "En attente de validation"}
-          <button type="button" onClick={() => downloadDocument(entry)}>Télécharger</button>
-          {hotlineReady && entry.status === "approved" && <div>
-            <label>Hotline <input type="tel" value={hotlineInputs[entry.id] ?? entry.hotline_phone ?? ""} onChange={(event) => setHotlineInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="Numéro de téléphone" maxLength={32} /></label>
-            <button type="button" disabled={busy} onClick={() => saveHotline(entry)}>Enregistrer la hotline</button>
-            <label>Autres références couvertes par le PDF <input value={aliasInputs[entry.id] ?? (entry.model_aliases || []).join(", ")} onChange={(event) => setAliasInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="AW-CBV009-N11" maxLength={1620} /></label>
-            <button type="button" disabled={busy} onClick={() => saveAliases(entry)}>Enregistrer les références</button>
-          </div>}
-          {publicationReady && entry.status === "pending_review" && <div>
-            <label>Catégorie du catalogue <select value={reviewCategories[entry.id] || ""} onChange={(event) => setReviewCategories((previous) => ({ ...previous, [entry.id]: event.target.value }))}>
-              <option value="">Choisir une catégorie</option>
-              {catalogCategories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-            </select></label>
-            <label><input type="checkbox" checked={distributionConfirmed[entry.id] === true} onChange={(event) => setDistributionConfirmed((previous) => ({ ...previous, [entry.id]: event.target.checked }))} /> J’ai vérifié la référence et le droit de diffuser ce PDF à tous les comptes CarnetPass.</label>
-            <button type="button" disabled={busy || !reviewCategories[entry.id] || !distributionConfirmed[entry.id]} onClick={() => reviewDocument(entry, "approve")}>Valider et publier</button>
-            <button type="button" disabled={busy} onClick={() => reviewDocument(entry, "reject")}>Rejeter</button>
-          </div>}
-        </li>)}</ul>
+        <h3>Notices à traiter ({pendingDocuments.length})</h3>
+        {pendingDocuments.length ? <ul>{pendingDocuments.map(renderDocument)}</ul> : <p>Aucune notice en attente.</p>}
+        <details><summary>Notices classées ({archivedDocuments.length})</summary>
+          <ul>{archivedDocuments.map(renderDocument)}</ul>
+        </details>
       </section>
       {data.role === "founder" && <section><h2>Collaborateurs internes</h2>
         <p>Le collaborateur doit déjà avoir créé et confirmé son compte CarnetPass. Seul le fondateur peut accorder ou retirer ce rôle.</p>

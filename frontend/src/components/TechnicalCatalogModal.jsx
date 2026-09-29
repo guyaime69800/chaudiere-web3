@@ -63,6 +63,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   const [answerSource, setAnswerSource] = useState("");
   const [answerSources, setAnswerSources] = useState([]);
   const [answerCitations, setAnswerCitations] = useState([]);
+  const [webFallbackAvailable, setWebFallbackAvailable] = useState(false);
   const [manualModel, setManualModel] = useState("");
   const [manualReference, setManualReference] = useState("");
   const [busy, setBusy] = useState(false);
@@ -118,7 +119,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   function clearModel({ preserveQuestion = false } = {}) {
     documentRequest.current += 1; aiRequest.current += 1;
     setModel(null); setDocuments([]); setSupport(null); setDocumentsBusy(false); setDocumentsError("");
-    setPreviewDocument(null); setPreviewBusyId(null); if (!preserveQuestion) setQuestion(""); setAnswer(""); setAnswerSource(""); setAnswerSources([]); setAnswerCitations([]); setBusy(false); setError("");
+    setPreviewDocument(null); setPreviewBusyId(null); if (!preserveQuestion) setQuestion(""); setAnswer(""); setAnswerSource(""); setAnswerSources([]); setAnswerCitations([]); setWebFallbackAvailable(false); setBusy(false); setError("");
   }
   function toCategory() { clearModel({ preserveQuestion: true }); setType(""); setBrand(""); setQuery(""); setStep("category"); }
   function toBrands() { clearModel({ preserveQuestion: true }); setBrand(""); setQuery(""); setManualModel(""); setManualReference(""); setStep("brand"); }
@@ -182,12 +183,12 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
     }
   }
 
-  async function askShiba(event) {
+  async function askShiba(event, forcedSource = "") {
     event.preventDefault();
     if (!question.trim() || !model || documentsBusy || busy) return;
-    const useDocumentation = searchSource !== "web" && Boolean(model.equipmentId && documents.length);
+    const useDocumentation = (forcedSource || searchSource) !== "web" && Boolean(model.equipmentId && documents.length);
     const request = ++aiRequest.current;
-    setBusy(true); setError(""); setAnswer(""); setAnswerSources([]); setAnswerCitations([]); setAnswerSource("");
+    setBusy(true); setError(""); setAnswer(""); setAnswerSources([]); setAnswerCitations([]); setAnswerSource(""); setWebFallbackAvailable(false);
     try {
       const response = await fetch(useDocumentation ? "/api/ai" : "/api/ai-web", {
         method: "POST",
@@ -204,6 +205,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
         setAnswerSource(useDocumentation ? "documents" : "web");
         setAnswerSources(Array.isArray(result.sources) ? result.sources : []);
         setAnswerCitations(Array.isArray(result.citations) ? result.citations : []);
+        setWebFallbackAvailable(useDocumentation && result.verification === "insufficient_evidence");
       }
     } catch (requestError) {
       if (request === aiRequest.current) setError(requestError.message || "Réponse indisponible.");
@@ -308,7 +310,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
                 {!!documents.length && (
                 <button type="button" className="technical-catalog-card" onClick={() => setStep("documents")}><strong>Documents constructeur</strong><span>{documents.length} document{documents.length > 1 ? "s" : ""} disponible{documents.length > 1 ? "s" : ""} →</span></button>
                 )}
-                <button type="button" className="technical-catalog-card" onClick={() => setStep("assistant")}><strong className="technical-catalog-shiba-label"><img src={shibaTechnicien} alt="" /> Interroger Shiba Bot</strong><span>{model.equipmentId && documents.length ? "Réponse issue des documents constructeur" : "Recherche Web avec sources"} →</span></button>
+                <button type="button" className="technical-catalog-card" onClick={() => setStep("assistant")}><strong className="technical-catalog-shiba-label"><img src={shibaTechnicien} alt="" /> Interroger Shiba Bot</strong><span>Documents indexés ou recherche Web avec sources →</span></button>
               </div>}
             </>}
             {step === "documents" && <section aria-label={`Documentation ${model.brand} ${model.model}`}>
@@ -336,6 +338,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
               </form>
               {error && <p role="alert" className="technical-catalog-error">{error}</p>}
               {answer && <div className="technical-catalog-answer" aria-live="polite"><div className="technical-catalog-answer-heading"><img src={shibaTechnicien} alt="" /><strong>Réponse de Shiba Bot {answerSource === "web" ? "· Recherche Web" : "· Documentation constructeur"}</strong></div>{answerSource === "web" ? <div className="technical-catalog-answer-body">{renderWebAnswer()}</div> : <div className="technical-catalog-answer-body"><ReactMarkdown>{answer}</ReactMarkdown></div>}{answerSource === "documents" && !!documents.length && <div className="technical-catalog-sources"><strong>Vérifier dans les documents</strong><ul>{documents.map((item) => <li key={item.documentId}><button type="button" disabled={Boolean(previewBusyId)} onClick={() => openDocumentPreview(item)}>{previewBusyId === item.documentId ? "Ouverture…" : item.title}</button></li>)}</ul><small>Vérifiez la référence et la variante exacte avant toute intervention.</small></div>}{answerSource === "web" && !!answerSources.length && <div className="technical-catalog-sources"><strong>Sources consultées</strong><ul>{answerSources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || source.url}</a></li>)}</ul><small>Vérifiez les informations techniques dans la notice du modèle exact.</small></div>}</div>}
+              {webFallbackAvailable && <button type="button" className="technical-catalog-back" disabled={busy} onClick={(event) => askShiba(event, "web")}>Rechercher aussi sur le Web avec des sources →</button>}
             </section>}
           </>}
         </div>
