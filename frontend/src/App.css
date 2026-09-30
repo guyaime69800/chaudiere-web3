@@ -208,6 +208,13 @@ body {
 .public-fault-assistant form label { font-weight: 700; }
 .public-fault-assistant form input { flex: 1 1 150px; min-width: 0; padding: 10px; border: 1px solid #e6c7ba; border-radius: 8px; }
 .public-fault-assistant > p { line-height: 1.5; }
+.public-company-contact { margin: 1.5rem 0; padding: 1.25rem; border: 1px solid #e7cfc2; border-radius: 18px; background: #fffaf7; color: #241a16; }
+.public-company-contact h3 { margin: 0 0 .5rem; }
+.public-company-contact p { margin: .5rem 0 1rem; line-height: 1.5; }
+.public-company-contact__links { display: flex; flex-wrap: wrap; gap: .65rem; }
+.public-company-contact__links a { display: inline-flex; align-items: center; min-height: 44px; padding: .65rem .9rem; border: 1px solid #c7400c; border-radius: 10px; background: #fff; color: #9b2c06; font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
+.public-company-contact__links a:hover { background: #fff0e9; text-decoration: underline; }
+.public-company-contact__links a:focus-visible { outline: 3px solid #c7400c; outline-offset: 2px; }
 .claim-card {
   margin-top: 26px; padding: clamp(20px, 4vw, 30px); border: 1px solid #fed7c3;
   border-radius: 18px; background: linear-gradient(135deg, #fff8f4 0%, #fff 75%);

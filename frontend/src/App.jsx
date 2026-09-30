@@ -1553,12 +1553,14 @@ function App({ initialMode = "public" }) {
         boiler && (
           <section className="result">
             <EmergencyContacts />
-            {boiler.publicContact && <div className="technical-docs" aria-label="Coordonnées de l’entreprise liée à ce QR code">
+            {boiler.publicContact && <div className="public-company-contact" aria-label="Coordonnées de l’entreprise liée à ce QR code">
               <h3>{boiler.publicContact.companyName || "Entreprise associée"}</h3>
               <p>Coordonnées publiées par l’entreprise pour cet appareil. En cas de danger immédiat, utilisez les numéros d’urgence ci-dessus.</p>
-              {boiler.publicContact.phone && <p><a href={`tel:${boiler.publicContact.phone}`}>Téléphoner : {boiler.publicContact.phone}</a></p>}
-              {boiler.publicContact.email && <p><a href={`mailto:${boiler.publicContact.email}`}>Écrire : {boiler.publicContact.email}</a></p>}
-              {boiler.publicContact.website && <p><a href={boiler.publicContact.website} target="_blank" rel="noopener noreferrer">Site internet de l’entreprise</a></p>}
+              <div className="public-company-contact__links">
+                {boiler.publicContact.phone && <a href={`tel:${boiler.publicContact.phone}`}>Téléphoner : {boiler.publicContact.phone}</a>}
+                {boiler.publicContact.email && <a href={`mailto:${boiler.publicContact.email}`}>Écrire : {boiler.publicContact.email}</a>}
+                {boiler.publicContact.website && <a href={boiler.publicContact.website} target="_blank" rel="noopener noreferrer">Site internet de l’entreprise</a>}
+              </div>
             </div>}
             <div className="appareil">
               <div className="appareil-head">
