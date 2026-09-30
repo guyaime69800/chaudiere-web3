@@ -3,6 +3,7 @@ import BoilerMaintenanceCertificateForm from "./BoilerMaintenanceCertificateForm
 import CarnetPassModal from "./CarnetPassModal";
 import EquipmentDocumentCenter from "./EquipmentDocumentCenter";
 import InterventionForm from "./InterventionForm";
+import ThermodynamicDocuments from "./ThermodynamicDocuments";
 import "./EquipmentWorkspace.css";
 
 const WORKSPACE_TABS = [
@@ -144,6 +145,7 @@ export default function EquipmentWorkspace({
     const [requestedInterventionId, setRequestedInterventionId] = useState("");
     const [carnetPassModalOpen, setCarnetPassModalOpen] = useState(false);
     const [technicalDocumentCount, setTechnicalDocumentCount] = useState(0);
+    const [thermodynamicDocuments, setThermodynamicDocuments] = useState([]);
     const workspaceRef = useRef(null);
 
     const equipmentInterventions = useMemo(
@@ -187,16 +189,18 @@ export default function EquipmentWorkspace({
 
     const issuedCertificateCount = equipmentCertificates.filter(
         (certificate) => certificate.status === "issued",
-    ).length;
+    ).length + thermodynamicDocuments.filter((document) => document.status === "issued").length;
 
     const draftCertificateCount = equipmentCertificates.filter(
         (certificate) => certificate.status === "draft",
-    ).length;
+    ).length + thermodynamicDocuments.filter((document) => document.status === "draft").length;
 
     const totalDocumentCount =
         technicalDocumentCount +
         confirmedInterventionCount +
-        equipmentCertificates.length;
+        equipmentCertificates.length +
+        thermodynamicDocuments.length;
+    const regulatoryDocumentCount = equipmentCertificates.length + thermodynamicDocuments.length;
 
     const carnetPassPresentation = getCarnetPassPresentation(
         carnetPassStatus,
@@ -208,10 +212,21 @@ export default function EquipmentWorkspace({
             ? String(carnetPassStatus.carnetPassId)
             : "";
     useEffect(() => {
+        if (!["air_conditioning", "heat_pump"].includes(equipment.equipment_type) || !session?.access_token) return;
+        const controller = new AbortController();
+        fetch(`/api/thermodynamic-documents?equipmentId=${encodeURIComponent(equipment.id)}`, {
+            headers: { Authorization: `Bearer ${session.access_token}` }, signal: controller.signal,
+        }).then((response) => response.ok ? response.json() : null)
+            .then((result) => { if (!controller.signal.aborted) setThermodynamicDocuments(result?.documents || []); })
+            .catch(() => {});
+        return () => controller.abort();
+    }, [equipment.id, equipment.equipment_type, session?.access_token]);
+    useEffect(() => {
         setActiveTab("summary");
         setRequestedInterventionId("");
         setCarnetPassModalOpen(false);
         setTechnicalDocumentCount(0);
+        setThermodynamicDocuments([]);
 
         window.requestAnimationFrame(() => {
             workspaceRef.current?.scrollIntoView({
@@ -240,8 +255,8 @@ export default function EquipmentWorkspace({
             return `${tab.label} (${equipmentInterventions.length})`;
         }
 
-        if (tab.id === "regulatory" && equipmentCertificates.length > 0) {
-            return `${tab.label} (${equipmentCertificates.length})`;
+        if (tab.id === "regulatory" && regulatoryDocumentCount > 0) {
+            return `${tab.label} (${regulatoryDocumentCount})`;
         }
 
         if (tab.id === "documents" && totalDocumentCount > 0) {
@@ -379,7 +394,7 @@ export default function EquipmentWorkspace({
                         <article>
                             <span>Documents réglementaires</span>
                             <strong>
-                                {boilerCertificatesLoading ? "…" : equipmentCertificates.length}
+                                {boilerCertificatesLoading && equipment.equipment_type === "boiler" ? "…" : regulatoryDocumentCount}
                             </strong>
                             <small>
                                 {issuedCertificateCount} émise
@@ -454,15 +469,18 @@ export default function EquipmentWorkspace({
                                 setActiveTab("summary");
                             }}
                         />
+                    ) : ["air_conditioning", "heat_pump"].includes(equipment.equipment_type) ? (
+                        <ThermodynamicDocuments
+                            equipment={equipment}
+                            interventions={equipmentInterventions}
+                            session={session}
+                            company={company}
+                            onDocumentsChange={setThermodynamicDocuments}
+                        />
                     ) : (
                         <div className="equipment-workspace__empty-state">
-                            <span aria-hidden="true">📋</span>
                             <h3>Documents réglementaires de l’équipement</h3>
-                            <p>
-                                Les attestations PAC, les fiches d’intervention climatisation et
-                                les CERFA fluides frigorigènes seront ajoutés ici selon le type
-                                d’équipement.
-                            </p>
+                            <p>Aucun formulaire spécifique n’est encore disponible pour ce type d’équipement.</p>
                         </div>
                     ))}
 
@@ -471,7 +489,7 @@ export default function EquipmentWorkspace({
                         equipment={equipment}
                         carnetPassId={carnetPassStatus?.carnetPassId || ""}
                         reportCount={confirmedInterventionCount}
-                        certificateCount={equipmentCertificates.length}
+                        certificateCount={regulatoryDocumentCount}
                         onOpenHistory={() => setActiveTab("history")}
                         onOpenRegulatory={() => setActiveTab("regulatory")}
                         onTechnicalDocumentCountChange={setTechnicalDocumentCount}
