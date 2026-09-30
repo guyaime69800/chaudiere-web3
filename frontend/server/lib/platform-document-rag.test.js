@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { jsPDF } from "jspdf";
-import { cleanPdfText, documentTypeFromTitle, extractPdfItems, splitPageText } from "./platform-document-rag.js";
+import { cleanPdfText, documentTypeFromTitle, extractPdfItems, packEmbedding, splitPageText } from "./platform-document-rag.js";
 import { searchRagContext } from "./rag.js";
 
 test("identifies exploded views before indexing", () => {
@@ -46,4 +46,16 @@ test("Shiba's existing RAG can search a published exploded-view index", async ()
   assert.equal(result.topResults[0].page, 3);
   assert.equal(result.topResults[0].documentType, "exploded_view");
   assert.match(result.contextText, /Page : 3/);
+});
+
+test("Shiba searches compact published embeddings without losing page citations", async () => {
+  const rag = { model: "test-embedding", items: [{
+    chunkId: "airwell-page-486", documentId: "ServiceManual", documentType: "installation_manual",
+    page: 486, section: "ServiceManual - page 486", text: "Moteur ventilateur référence ABC123",
+    ...packEmbedding([0.8, 0.6]),
+  }] };
+  const openai = { embeddings: { create: async () => ({ data: [{ embedding: [0.8, 0.6, 0.1] }] }) } };
+  const result = await searchRagContext(openai, rag, "référence moteur ventilateur");
+  assert.equal(result.topResults[0].page, 486);
+  assert.match(result.contextText, /Page : 486/);
 });

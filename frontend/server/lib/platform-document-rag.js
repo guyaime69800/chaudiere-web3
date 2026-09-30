@@ -6,12 +6,23 @@ import OpenAI from "openai";
 import "pdfjs-dist/legacy/build/pdf.worker.mjs";
 
 const EMBEDDING_MODEL = "text-embedding-3-small";
+const EMBEDDING_DIMENSIONS = 512;
 const MAX_PAGES = 600;
 const MAX_CHUNKS = 1800;
 
 // PostgreSQL JSONB rejects NUL and malformed UTF-16 emitted by some PDF fonts.
 export function cleanPdfText(value) {
   return String(value || "").replace(/\u0000/g, "").replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "\uFFFD");
+}
+
+// Compact vectors keep large manuals below the database statement timeout.
+export function packEmbedding(values) {
+  if (!Array.isArray(values) || !values.length || values.some((value) => !Number.isFinite(value))) {
+    throw new Error("Embedding invalide.");
+  }
+  const scale = Math.max(...values.map(Math.abs)) / 127 || 1;
+  const bytes = Buffer.from(values.map((value) => Math.round(value / scale) & 0xff));
+  return { embeddingQ8: bytes.toString("base64"), embeddingScale: scale };
 }
 
 export function documentTypeFromTitle(title) {
@@ -111,13 +122,13 @@ export async function indexPlatformDocument(db, entry) {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     for (let offset = 0; offset < items.length; offset += 32) {
       const batch = items.slice(offset, offset + 32);
-      const result = await openai.embeddings.create({ model: EMBEDDING_MODEL, input: batch.map((item) => item.text) });
-      for (const value of result.data || []) batch[value.index].embedding = value.embedding;
-      if (batch.some((item) => !item.embedding)) throw new Error("Embedding incomplet.");
+      const result = await openai.embeddings.create({ model: EMBEDDING_MODEL, dimensions: EMBEDDING_DIMENSIONS, input: batch.map((item) => item.text) });
+      for (const value of result.data || []) Object.assign(batch[value.index], packEmbedding(value.embedding));
+      if (batch.some((item) => !item.embeddingQ8)) throw new Error("Embedding incomplet.");
     }
     const { error } = await db.from("platform_document_intake").update({
       rag_status: "ready", rag_error: null, rag_indexed_at: new Date().toISOString(),
-      rag_data: { model: EMBEDDING_MODEL, items },
+      rag_data: { model: EMBEDDING_MODEL, embeddingDimensions: EMBEDDING_DIMENSIONS, items },
     }).eq("id", entry.id).eq("rag_status", "indexing");
     if (error) throw error;
     return { status: "ready", pageCount, chunkCount: items.length };

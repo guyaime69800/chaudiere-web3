@@ -24,8 +24,7 @@ function cosineSimilarity(a, b) {
     !Array.isArray(a) ||
     !Array.isArray(b) ||
     a.length === 0 ||
-    b.length === 0 ||
-    a.length !== b.length
+    b.length === 0
   ) {
     return 0;
   }
@@ -34,7 +33,9 @@ function cosineSimilarity(a, b) {
   let magnitudeA = 0;
   let magnitudeB = 0;
 
-  for (let i = 0; i < a.length; i++) {
+  // Shortened OpenAI embeddings are comparable with the matching prefix
+  // of a full-size query vector; cosine normalizes both vectors here.
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
     dotProduct += a[i] * b[i];
     magnitudeA += a[i] * a[i];
     magnitudeB += b[i] * b[i];
@@ -620,6 +621,10 @@ function getRagItems(
       items.push({
         ...item,
 
+        embedding: item.embeddingQ8
+          ? unpackEmbedding(item.embeddingQ8, item.embeddingScale)
+          : item.embedding,
+
         documentType:
           item.documentType ??
           source.documentType ??
@@ -634,6 +639,12 @@ function getRagItems(
   }
 
   return items;
+}
+
+function unpackEmbedding(encoded, scale) {
+  if (typeof encoded !== "string" || !Number.isFinite(scale) || scale <= 0) return [];
+  const bytes = Buffer.from(encoded, "base64");
+  return Array.from(bytes, (value) => (value > 127 ? value - 256 : value) * scale);
 }
 
 function getEmbeddingModel(
