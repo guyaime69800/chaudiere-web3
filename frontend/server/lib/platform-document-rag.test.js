@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { jsPDF } from "jspdf";
-import { documentTypeFromTitle, extractPdfItems, splitPageText } from "./platform-document-rag.js";
+import { cleanPdfText, documentTypeFromTitle, extractPdfItems, splitPageText } from "./platform-document-rag.js";
 import { searchRagContext } from "./rag.js";
 
 test("identifies exploded views before indexing", () => {
@@ -16,6 +16,11 @@ test("chunks page text with overlap and no lost ending", () => {
   assert.ok(chunks[0].includes("référence 0"));
   assert.ok(chunks.at(-1).includes("référence 79"));
   assert.ok(chunks.every((chunk) => chunk.length <= 250));
+});
+
+test("removes PDF text characters rejected by PostgreSQL JSONB", () => {
+  assert.equal(cleanPdfText("pompe\u0000 123\uD800 X\uDC00"), "pompe 123\uFFFD X\uFFFD");
+  assert.equal(splitPageText("référence\u0000 456")[0], "référence 456");
 });
 
 test("keeps PDF page numbers in the indexed passages", async () => {

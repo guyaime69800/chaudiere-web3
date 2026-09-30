@@ -248,6 +248,12 @@ export default function PlatformAdminPage() {
   const pendingCount = documents.filter((entry) => entry.status === "pending_review").length;
   const pendingDocuments = documents.filter((entry) => entry.status === "pending_review");
   const archivedDocuments = documents.filter((entry) => entry.status !== "pending_review");
+  const archivedModels = Object.values(archivedDocuments.reduce((groups, entry) => {
+    const key = `${entry.manufacturer || ""}\u0000${entry.model_reference || ""}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+    if (!groups[key]) groups[key] = { manufacturer: entry.manufacturer, reference: entry.model_reference, entries: [] };
+    groups[key].entries.push(entry);
+    return groups;
+  }, {}));
   function renderDocument(entry) {
     const content = <>
       <p className="platform-admin-document-name"><strong>{entry.manufacturer} · {entry.model_reference}</strong> · {entry.title} <span>({entry.status === "approved" ? "Publié" : entry.status === "rejected" ? "Rejeté" : "À valider"})</span></p>
@@ -353,8 +359,12 @@ export default function PlatformAdminPage() {
         <div className="platform-admin-document-queue"><h3>Documents à valider ({pendingCount})</h3>
           {pendingCount ? <ul>{pendingDocuments.map(renderDocument)}</ul> : <p>Aucun document en attente. Les PDF publiés restent disponibles dans le catalogue technique.</p>}
         </div>
-        {!!archivedDocuments.length && <details className="platform-admin-document-archive"><summary>Archives des documents traités ({archivedDocuments.length})</summary>
-          <ul>{archivedDocuments.map(renderDocument)}</ul>
+        {!!archivedDocuments.length && <details className="platform-admin-document-archive"><summary>Archives des modèles ({archivedModels.length}) · {archivedDocuments.length} document(s)</summary>
+          <ul>{archivedModels.map((group) => <li key={`${group.manufacturer}:${group.reference}`} className="platform-admin-document-item">
+            <details><summary>{group.manufacturer} · {group.reference} ({group.entries.length} document{group.entries.length > 1 ? "s" : ""})</summary>
+              <ul>{group.entries.map(renderDocument)}</ul>
+            </details>
+          </li>)}</ul>
         </details>}
       </section>
       {data.role === "founder" && <section><h2>Collaborateurs internes</h2>

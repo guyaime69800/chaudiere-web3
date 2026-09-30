@@ -6,8 +6,13 @@ import OpenAI from "openai";
 import "pdfjs-dist/legacy/build/pdf.worker.mjs";
 
 const EMBEDDING_MODEL = "text-embedding-3-small";
-const MAX_PAGES = 200;
-const MAX_CHUNKS = 300;
+const MAX_PAGES = 600;
+const MAX_CHUNKS = 1800;
+
+// PostgreSQL JSONB rejects NUL and malformed UTF-16 emitted by some PDF fonts.
+export function cleanPdfText(value) {
+  return String(value || "").replace(/\u0000/g, "").replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "\uFFFD");
+}
 
 export function documentTypeFromTitle(title) {
   return /vue\s*eclat|vue\s*éclat|pi[eè]ces?\s+d[eé]tach|spare\s+parts|exploded/i.test(title || "")
@@ -15,7 +20,7 @@ export function documentTypeFromTitle(title) {
 }
 
 export function splitPageText(text, maxLength = 2800, overlap = 250) {
-  const value = String(text || "").replace(/\r/g, "").replace(/[ \t]+/g, " ").trim();
+  const value = cleanPdfText(text).replace(/\r/g, "").replace(/[ \t]+/g, " ").trim();
   if (!value) return [];
   const chunks = [];
   let start = 0;
@@ -45,7 +50,7 @@ export async function extractPdfItems(bytes, entry) {
       const content = await page.getTextContent();
       const pageText = content.items.map((item) => `${item.str || ""}${item.hasEOL ? "\n" : " "}`).join("");
       if (pageText.trim().length < 30) blankPages += 1;
-      for (const [index, text] of splitPageText(pageText).entries()) {
+      for (const [index, text] of splitPageText(pageText, pdf.numPages > 200 ? 4000 : 2800).entries()) {
         items.push({
           chunkId: `${entry.id}-page-${pageNumber}-chunk-${index + 1}`,
           documentId: entry.title,
