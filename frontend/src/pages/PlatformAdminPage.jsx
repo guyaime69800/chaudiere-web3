@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { uploadPresigned } from "@vercel/blob/client";
 import { useAuth } from "../hooks/useAuth";
@@ -41,6 +41,7 @@ export default function PlatformAdminPage() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [documentFile, setDocumentFile] = useState(null);
+  const documentFileInput = useRef(null);
   const [manufacturer, setManufacturer] = useState("");
   const [modelReference, setModelReference] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
@@ -90,8 +91,14 @@ export default function PlatformAdminPage() {
 
   async function importDocument(event) {
     event.preventDefault();
-    if (!documentFile || documentFile.type !== "application/pdf" || documentFile.size > 10 * 1024 * 1024) {
-      setDocumentNotice({ text: "Sélectionnez un PDF de 10 Mo maximum.", kind: "error" }); return;
+    if (!documentFile) {
+      setDocumentNotice({ text: "Choisissez un fichier PDF avant de le déposer.", kind: "error" }); return;
+    }
+    if (documentFile.type !== "application/pdf" && !documentFile.name.toLowerCase().endsWith(".pdf")) {
+      setDocumentNotice({ text: "Le fichier sélectionné doit être un PDF.", kind: "error" }); return;
+    }
+    if (!documentFile.size || documentFile.size > 10 * 1024 * 1024) {
+      setDocumentNotice({ text: `Ce PDF pèse ${(documentFile.size / 1024 / 1024).toFixed(1)} Mo. La limite est de 10 Mo ; utilisez une version compressée avant de réessayer.`, kind: "error" }); return;
     }
     if (newHotlinePhone.trim() && (!/^[+0-9(). -]{6,32}$/.test(newHotlinePhone.trim())
       || (newHotlinePhone.match(/\d/g) || []).length < 6)) {
@@ -108,6 +115,7 @@ export default function PlatformAdminPage() {
       });
       setDocumentNotice({ text: "PDF envoyé. Vérification de son enregistrement…", kind: "progress" });
       setDocumentFile(null);
+      if (documentFileInput.current) documentFileInput.current.value = "";
       setNewHotlinePhone("");
       let recorded = false;
       for (let attempt = 0; attempt < 6; attempt += 1) {
@@ -215,10 +223,13 @@ export default function PlatformAdminPage() {
     ? data.companies?.find((entry) => entry.id === selected)
     : null;
   const pendingCount = documents.filter((entry) => entry.status === "pending_review").length;
+  const pendingDocuments = documents.filter((entry) => entry.status === "pending_review");
+  const archivedDocuments = documents.filter((entry) => entry.status !== "pending_review");
   function renderDocument(entry) {
-    return <li key={entry.id}>
-      {entry.manufacturer} · {entry.model_reference} · {entry.title} · {entry.original_filename} · {entry.status === "approved" ? "Publié dans le catalogue" : entry.status === "rejected" ? "Rejeté" : "En attente de validation"}
-      <button type="button" onClick={() => downloadDocument(entry)}>Télécharger</button>
+    const content = <>
+      <p className="platform-admin-document-name"><strong>{entry.manufacturer} · {entry.model_reference}</strong> · {entry.title} <span>({entry.status === "approved" ? "Publié" : entry.status === "rejected" ? "Rejeté" : "À valider"})</span></p>
+      <p className="platform-admin-document-filename">{entry.original_filename}</p>
+      <button type="button" onClick={() => downloadDocument(entry)}>Télécharger le PDF</button>
       {hotlineReady && entry.status === "approved" && <div>
         <label>Hotline <input type="tel" value={hotlineInputs[entry.id] ?? entry.hotline_phone ?? ""} onChange={(event) => setHotlineInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="Numéro de téléphone" maxLength={32} /></label>
         <button type="button" disabled={busy} onClick={() => saveHotline(entry)}>Enregistrer la hotline</button>
@@ -236,6 +247,9 @@ export default function PlatformAdminPage() {
         <button type="button" disabled={busy || !reviewCategories[entry.id] || !distributionConfirmed[entry.id]} onClick={() => reviewDocument(entry, "approve")}>Valider et publier</button>
         <button type="button" disabled={busy} onClick={() => reviewDocument(entry, "reject")}>Rejeter</button>
       </div>}
+    </>;
+    return <li key={entry.id} className="platform-admin-document-item">
+      {entry.status === "pending_review" ? content : <details><summary>{entry.manufacturer} · {entry.model_reference} · {entry.title} ({entry.status === "approved" ? "Publié" : "Rejeté"})</summary>{content}</details>}
     </li>;
   }
   return <main className="platform-admin">
@@ -295,7 +309,7 @@ export default function PlatformAdminPage() {
       <section><h2>Historique récent</h2><ul>{data.events.map((event, index) => <li key={`${event.created_at}-${index}`}>
         {new Date(event.created_at).toLocaleString("fr-FR")} · {event.action} · {data.companies.find((entry) => entry.id === event.company_id)?.name || event.company_id} · {event.payment_reference || "sans référence"}
       </li>)}</ul></section>
-      <section><h2>Importer une notice technique</h2>
+      <section><h2>Importer un document technique</h2>
         <p>Le PDF reste privé et en attente de validation. Son dépôt ne le rend pas encore disponible dans le catalogue ou dans l'assistant.</p>
         {!publicationReady && <p>La publication attend l’activation du catalogue dans la base Preview.</p>}
         <form onSubmit={importDocument}>
@@ -303,14 +317,17 @@ export default function PlatformAdminPage() {
           <label>Référence exacte du modèle <input required minLength={2} maxLength={160} value={modelReference} onChange={(event) => setModelReference(event.target.value)} /></label>
           <label>Titre du document <input required minLength={2} maxLength={200} value={documentTitle} onChange={(event) => setDocumentTitle(event.target.value)} /></label>
           <label>Hotline <input type="tel" value={newHotlinePhone} onChange={(event) => setNewHotlinePhone(event.target.value)} placeholder="Numéro de téléphone (facultatif)" maxLength={32} /></label>
-          <label>Fichier PDF, 10 Mo maximum <input type="file" accept="application/pdf,.pdf" required onChange={(event) => setDocumentFile(event.target.files?.[0] || null)} /></label>
+          <label>Fichier PDF, 10 Mo maximum <input ref={documentFileInput} type="file" accept="application/pdf,.pdf" required onChange={(event) => { setDocumentFile(event.target.files?.[0] || null); setDocumentNotice(null); }} /></label>
           <button disabled={busy} type="submit">Déposer le document</button>
           <button disabled={busy} type="button" onClick={() => loadDocuments().catch((cause) => setError(cause.message))}>Actualiser la liste</button>
         </form>
         {documentNotice && <p role={documentNotice.kind === "error" ? "alert" : "status"} className={`platform-admin-inline-${documentNotice.kind}`}>{documentNotice.text}</p>}
-        <details><summary>Documents déposés ({documents.length}) · {pendingCount} en attente de validation</summary>
-          <ul>{documents.map(renderDocument)}</ul>
-        </details>
+        <div className="platform-admin-document-queue"><h3>Documents à valider ({pendingCount})</h3>
+          {pendingCount ? <ul>{pendingDocuments.map(renderDocument)}</ul> : <p>Aucun document en attente. Les PDF publiés restent disponibles dans le catalogue technique.</p>}
+        </div>
+        {!!archivedDocuments.length && <details className="platform-admin-document-archive"><summary>Archives des documents traités ({archivedDocuments.length})</summary>
+          <ul>{archivedDocuments.map(renderDocument)}</ul>
+        </details>}
       </section>
       {data.role === "founder" && <section><h2>Collaborateurs internes</h2>
         <p>Le collaborateur doit déjà avoir créé et confirmé son compte CarnetPass. Seul le fondateur peut accorder ou retirer ce rôle.</p>
