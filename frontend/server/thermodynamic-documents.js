@@ -1,9 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { del, get, put } from "@vercel/blob";
 import { createHash, randomUUID } from "node:crypto";
-import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
-import { buildThermodynamicPdf } from "../server/lib/thermodynamic-document-pdf.js";
-import { THERMODYNAMIC_KINDS, normalizeThermodynamicData, normalizeDrawnSignature, validateIssue } from "../server/lib/thermodynamic-document-schema.js";
+import { requireVerifiedCompany } from "./lib/require-verified-company.js";
+import { buildThermodynamicPdf } from "./lib/thermodynamic-document-pdf.js";
+import { THERMODYNAMIC_KINDS, normalizeThermodynamicData, normalizeDrawnSignature, validateIssue } from "./lib/thermodynamic-document-schema.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const enabled = () => process.env.VERCEL_ENV === "preview"

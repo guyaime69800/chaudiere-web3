@@ -4,6 +4,7 @@ import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import { handleBoilerMaintenanceCertificates } from "../server/lib/boiler-maintenance-certificates.js";
+import handleThermodynamicDocuments from "../server/thermodynamic-documents.js";
 import {
     buildMaintenanceProof,
     registerMaintenanceProof,
@@ -1562,6 +1563,9 @@ async function createIntervention(req, res) {
 }
 
 export default async function handler(req, res) {
+    if (req.query?.thermodynamic_route === "1") {
+        return handleThermodynamicDocuments(req, res);
+    }
     if (req.query?.resource === "boiler-certificates") {
         return handleBoilerMaintenanceCertificates(req, res);
     }
