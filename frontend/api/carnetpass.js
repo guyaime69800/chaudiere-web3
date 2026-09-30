@@ -242,6 +242,38 @@ async function createCarnetPass(req, res) {
     });
   }
 
+  const requestedContacts = body.publicContacts ?? {};
+  if (!requestedContacts || typeof requestedContacts !== "object" || Array.isArray(requestedContacts)
+      || Object.keys(requestedContacts).some((key) => !["phone", "email", "website"].includes(key))) {
+    return res.status(400).json({ ok: false, error: "Choix des coordonnées publiques invalide." });
+  }
+  let publicContact = null;
+  if (Object.values(requestedContacts).some(Boolean)) {
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+    if (!url || !key) return res.status(503).json({ ok: false, error: "Vérification des coordonnées indisponible." });
+    const db = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data: company, error } = await db.from("companies").select("name, phone, email").eq("id", creator.companyId).maybeSingle();
+    if (error || !company) return res.status(503).json({ ok: false, error: "Vérification des coordonnées indisponible." });
+    const phone = requestedContacts.phone ? String(requestedContacts.phone).trim() : null;
+    const email = requestedContacts.email ? String(requestedContacts.email).trim() : null;
+    if ((phone && phone !== String(company.phone || "").trim()) || (email && email.toLowerCase() !== String(company.email || "").trim().toLowerCase())
+        || (requestedContacts.phone && !phone) || (requestedContacts.email && !email)) {
+      return res.status(400).json({ ok: false, error: "Les coordonnées sélectionnées ne correspondent pas à votre entreprise." });
+    }
+    let website = null;
+    if (requestedContacts.website) {
+      try {
+        const parsed = new URL(String(requestedContacts.website));
+        if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.href.length > 2048) throw new Error("invalid");
+        website = parsed.href;
+      } catch {
+        return res.status(400).json({ ok: false, error: "Le site public doit être une adresse HTTPS valide." });
+      }
+    }
+    publicContact = { companyName: String(company.name || "").slice(0, 160), phone, email, website };
+  }
+
   if (!validText(body.manufacturerReference, 128)) {
     return res.status(400).json({
       ok: false,
@@ -462,6 +494,7 @@ async function createCarnetPass(req, res) {
         version: "1.3",
         createdByUserId: creator.userId,
         createdByCompanyId: creator.companyId,
+        publicContact,
         carnetPassId,
         equipmentId,
         manufacturerReference,

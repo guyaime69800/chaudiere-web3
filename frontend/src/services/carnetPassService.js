@@ -106,7 +106,7 @@ export async function getCompanyCarnetPassStatuses(
   return result.statuses.map(sanitizeStatus);
 }
 
-export async function createCompanyCarnetPass(equipment) {
+export async function createCompanyCarnetPass(equipment, publicContacts = {}) {
   const { data, error } = await supabase.auth.getSession();
 
   if (error || !data?.session?.access_token) {
@@ -126,6 +126,7 @@ export async function createCompanyCarnetPass(equipment) {
       brand: equipment.brand.trim(),
       model: equipment.model.trim(),
       productType: equipment.productType,
+      publicContacts,
     }),
   });
 

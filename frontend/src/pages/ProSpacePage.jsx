@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { signOut } from "../services/authService";
 import { activeStripeTestPlan, getStripeTestSubscription } from "../services/stripeTestSubscription";
@@ -23,6 +23,7 @@ import CarnetPassCreatedModal from "../components/CarnetPassCreatedModal";
 import TechnicalCatalogModal from "../components/TechnicalCatalogModal";
 import { catalogEquipmentPrefill } from "../lib/catalogEquipmentPrefill.js";
 import ShibaUsage from "../components/ShibaUsage";
+import EmergencyContacts from "../components/EmergencyContacts";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import { DISCOVERY_EQUIPMENT_LIMIT, getDiscoveryAccess } from "../../shared/discovery-access.js";
 import equipmentIndex from "../data/equipment-index.json";
@@ -904,6 +905,7 @@ function CompanyAccountCard({
         description="Consultez les formulaires et les règles applicables aux interventions techniques."
         className="pro-compliance-modal"
       >
+        <EmergencyContacts />
         <div className="pro-compliance-links">
           <a
             href="https://entreprendre.service-public.gouv.fr/vosdroits/R43122"
@@ -967,7 +969,6 @@ function CompanyAccountCard({
 export default function ProSpacePage() {
   const { user, session } = useAuth();
   const userId = user?.id;
-  const navigate = useNavigate();
 
   const [company, setCompany] = useState(null);
   const [testSubscription, setTestSubscription] = useState(null);
@@ -1004,6 +1005,12 @@ export default function ProSpacePage() {
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
   const [carnetPassPreview, setCarnetPassPreview] = useState(null);
   const [createdCarnetPass, setCreatedCarnetPass] = useState(null);
+  const [publicContactOptions, setPublicContactOptions] = useState({ phone: false, email: false, website: false, websiteUrl: "" });
+  const selectedPublicContacts = () => ({
+    phone: publicContactOptions.phone ? company?.phone || "" : null,
+    email: publicContactOptions.email ? company?.email || "" : null,
+    website: publicContactOptions.website ? publicContactOptions.websiteUrl.trim() : null,
+  });
   const [technicalCatalogOpen, setTechnicalCatalogOpen] = useState(false);
   const [shibaQuestion, setShibaQuestion] = useState("");
   const [shibaSource, setShibaSource] = useState("documents");
@@ -1427,7 +1434,7 @@ export default function ProSpacePage() {
           productReference: reference,
           equipmentRecordId: savedEquipment.id,
           productType: getEquipmentTypeLabel(equipmentForm.equipmentType),
-        });
+        }, selectedPublicContacts());
         setCreatedCarnetPass({
           carnetPassId: result.carnetPassId,
           qrToken: result.qrToken,
@@ -1501,45 +1508,31 @@ export default function ProSpacePage() {
     setEquipmentError("");
     setEquipmentMessage("");
 
-    if (!equipment.serial_number) {
-      setEquipmentSubmitting(true);
-      try {
+    setEquipmentSubmitting(true);
+    try {
         const result = await createCompanyCarnetPass({
           productReference,
           equipmentRecordId: equipment.id,
-          serialNumber: "",
+          serialNumber: equipment.serial_number || "",
           brand: equipment.brand,
           model: equipment.model,
           productType: getEquipmentTypeLabel(equipment.equipment_type),
-        });
+        }, selectedPublicContacts());
         setCreatedCarnetPass({
           carnetPassId: result.carnetPassId,
           qrToken: result.qrToken,
           brand: equipment.brand,
           model: equipment.model,
-          serialNumber: null,
+          serialNumber: equipment.serial_number || null,
         });
         setEquipmentRefreshKey((currentKey) => currentKey + 1);
-      } catch (error) {
+    } catch (error) {
         setEquipmentError(`${error.message} Vérifiez le statut avant de réessayer.`);
         setEquipmentRefreshKey((currentKey) => currentKey + 1);
-      } finally {
+    } finally {
         setEquipmentSubmitting(false);
-      }
-      return;
     }
 
-    navigate("/", {
-      state: {
-        professionalEquipment: {
-          productReference,
-          serialNumber: equipment.serial_number,
-          brand: equipment.brand,
-          model: equipment.model,
-          productType: getEquipmentTypeLabel(equipment.equipment_type),
-        },
-      },
-    });
   }
 
   if (loading) {
@@ -2132,6 +2125,15 @@ export default function ProSpacePage() {
               </button>
             </form>
           )}
+
+          <fieldset className="pro-form" style={{ marginTop: "1rem" }}>
+            <legend>Coordonnées visibles sur les nouveaux QR codes</legend>
+            <p>Choisissez librement plusieurs moyens de contact. Aucun n’est publié par défaut. Les numéros d’urgence restent distincts.</p>
+            <label><input type="checkbox" checked={publicContactOptions.phone} disabled={!company?.phone} onChange={(event) => setPublicContactOptions((current) => ({ ...current, phone: event.target.checked }))} /> Téléphone {company?.phone ? `(${company.phone})` : "— à renseigner dans Mon entreprise"}</label>
+            <label><input type="checkbox" checked={publicContactOptions.email} disabled={!company?.email} onChange={(event) => setPublicContactOptions((current) => ({ ...current, email: event.target.checked }))} /> E-mail {company?.email ? `(${company.email})` : "— à renseigner dans Mon entreprise"}</label>
+            <label><input type="checkbox" checked={publicContactOptions.website} onChange={(event) => setPublicContactOptions((current) => ({ ...current, website: event.target.checked }))} /> Site internet</label>
+            {publicContactOptions.website && <label>Adresse du site (https://)<input type="url" value={publicContactOptions.websiteUrl} onChange={(event) => setPublicContactOptions((current) => ({ ...current, websiteUrl: event.target.value }))} placeholder="https://exemple.fr" maxLength={2048} /></label>}
+          </fieldset>
 
           {equipments.length > 0 && (
             <ul className="pro-equipment-list">

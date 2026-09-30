@@ -12,6 +12,7 @@ import { loadEquipmentKnowledge } from "./services/equipmentKnowledge";
 import CarnetPassCreatedModal from "./components/CarnetPassCreatedModal";
 import shibaTechnicien from "./assets/carnetpass-shiba-technicien.png";
 import HomeLanding from "./components/HomeLanding";
+import EmergencyContacts from "./components/EmergencyContacts";
 import ReactMarkdown from "react-markdown";
 import "./App.css";
 import { supabase } from "./services/supabaseClient";
@@ -124,6 +125,7 @@ function App({ initialMode = "public" }) {
   const [aiAnswer, setAiAnswer] = useState("");
   const [publicFaultQuestion, setPublicFaultQuestion] = useState("");
   const [publicFaultResponse, setPublicFaultResponse] = useState("");
+  const [publicGuideTopic, setPublicGuideTopic] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
 
 
@@ -572,6 +574,7 @@ function App({ initialMode = "public" }) {
           model: identity.model ?? "",
           productReference: carnetPassResult.manufacturerReference ?? "",
           manufacturerReference: carnetPassResult.manufacturerReference ?? "",
+          publicContact: carnetPassResult.publicContact ?? null,
 
           // Le jeton provient du lien ouvert, jamais d'une recherche par numéro.
           // origin = adresse de base de l'application actuellement ouverte.
@@ -1549,6 +1552,14 @@ function App({ initialMode = "public" }) {
       {
         boiler && (
           <section className="result">
+            <EmergencyContacts />
+            {boiler.publicContact && <div className="technical-docs" aria-label="Coordonnées de l’entreprise liée à ce QR code">
+              <h3>{boiler.publicContact.companyName || "Entreprise associée"}</h3>
+              <p>Coordonnées publiées par l’entreprise pour cet appareil. En cas de danger immédiat, utilisez les numéros d’urgence ci-dessus.</p>
+              {boiler.publicContact.phone && <p><a href={`tel:${boiler.publicContact.phone}`}>Téléphoner : {boiler.publicContact.phone}</a></p>}
+              {boiler.publicContact.email && <p><a href={`mailto:${boiler.publicContact.email}`}>Écrire : {boiler.publicContact.email}</a></p>}
+              {boiler.publicContact.website && <p><a href={boiler.publicContact.website} target="_blank" rel="noopener noreferrer">Site internet de l’entreprise</a></p>}
+            </div>}
             <div className="appareil">
               <div className="appareil-head">
                 <div>
@@ -1741,6 +1752,21 @@ function App({ initialMode = "public" }) {
               </div>
             ) : boiler.carnetPassId ? (
               <>
+                <div className="technical-docs" id="notice-utilisation-publique">
+                  <h3>Notice d’utilisation</h3>
+                  {equipmentKnowledge?.data?.documents?.filter((document) =>
+                    document.documentType === "user_manual"
+                    && document.storage === "public"
+                    && document.documentUrl
+                  ).map((document) => (
+                    <a key={document.documentId} className="btn btn-ghost" href={document.documentUrl} target="_blank" rel="noopener noreferrer">Ouvrir la notice d’utilisation · {document.title}</a>
+                  ))}
+                  {!equipmentKnowledge?.data?.documents?.some((document) =>
+                    document.documentType === "user_manual"
+                    && document.storage === "public"
+                    && document.documentUrl
+                  ) && <p>Notice d’utilisation non publiée pour ce modèle. Demandez-la à l’entreprise intervenante ou au fabricant.</p>}
+                </div>
                 <div className="documentation-optional-notice" role="note">
                   <strong>Historique vérifiable de cet appareil.</strong>
                   <span>Les interventions confirmées ci-dessous disposent d’une empreinte enregistrée sur Polygon. Elle permet de vérifier qu’une preuve existe et que son empreinte n’a pas été modifiée après validation ; elle ne certifie pas à elle seule la qualité des travaux.</span>
@@ -1748,11 +1774,30 @@ function App({ initialMode = "public" }) {
                 <div className="public-fault-assistant">
                   <div className="public-fault-assistant__heading">
                     <img src={shibaTechnicien} alt="Shiba Inu chauffagiste CarnetPass" width="64" height="70" />
-                    <div><strong>Le Shiba CarnetPass · codes défaut</strong><p>Entrez le code affiché sur votre appareil pour en connaître la signification, si elle est référencée. Exemples : F.22, F.28 ou F.29.</p></div>
+                    <div><strong>Shiba Bot · aide au particulier</strong><p>Retrouvez vos entretiens, la notice d’utilisation disponible et les contacts de sécurité. Pour une réparation, contactez l’entreprise qui suit votre appareil.</p></div>
                   </div>
-                  <form onSubmit={(event) => {
+                  <div className="public-fault-assistant__choices" aria-label="Aide au particulier">
+                    <button className="btn btn-ghost" type="button" onClick={() => setPublicGuideTopic("maintenance")}>Mes entretiens</button>
+                    <button className="btn btn-ghost" type="button" onClick={() => setPublicGuideTopic("manual")}>Notice d’utilisation</button>
+                    <button className="btn btn-ghost" type="button" onClick={() => setPublicGuideTopic("emergency")}>Urgence</button>
+                  </div>
+                  {publicGuideTopic === "maintenance" && <p role="status">Les interventions confirmées sont affichées dans l’historique d’entretien plus bas sur cette fiche. Pour une question sur les travaux, contactez l’entreprise intervenante.</p>}
+                  {publicGuideTopic === "manual" && <p role="status">Seules les notices d’utilisation autorisées à la publication peuvent être ouvertes ici. Si aucune notice n’apparaît ci-dessous, demandez-la à l’entreprise intervenante ou au fabricant.</p>}
+                  {publicGuideTopic === "emergency" && <p role="status">En cas de danger immédiat, éloignez-vous et appelez le 112. Les autres contacts de sécurité sont indiqués en haut de cette fiche.</p>}
+                  <p>Un code défaut ne suffit pas à établir un diagnostic. Cinq questions par mois sont possibles pour chaque visiteur et chaque appareil. Les entretiens, notices disponibles et contacts d’urgence restent accessibles sans cette limite.</p>
+                  <form onSubmit={async (event) => {
                     event.preventDefault();
-                    setPublicFaultResponse(publicFaultAnswer(publicFaultQuestion, boiler.manufacturerReference));
+                    if (!/^(?:F\s*\.?\s*)?0*\d{1,3}$/i.test(publicFaultQuestion.trim())) {
+                      setPublicFaultResponse("Indiquez uniquement le code affiché, par exemple F.28 ou 28.");
+                      return;
+                    }
+                    try {
+                      const response = await fetch("/api/public-shiba", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ carnetPassId: boiler.carnetPassId, question: publicFaultQuestion }) });
+                      const result = await response.json();
+                      setPublicFaultResponse(result.ok ? `${publicFaultAnswer(publicFaultQuestion, boiler.manufacturerReference)} (${result.remaining} question(s) restante(s) ce mois-ci.)` : result.error || "Shiba Bot est momentanément indisponible.");
+                    } catch {
+                      setPublicFaultResponse("Shiba Bot est momentanément indisponible. Les contacts d’urgence restent accessibles.");
+                    }
                   }}>
                     <label htmlFor="public-fault-code">Code défaut affiché</label>
                     <input id="public-fault-code" value={publicFaultQuestion} maxLength={8} onChange={(event) => {

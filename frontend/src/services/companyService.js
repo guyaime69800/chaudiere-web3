@@ -7,6 +7,10 @@ function getCompanyErrorMessage(error) {
     return "Le SIRET doit contenir exactement 14 chiffres.";
   }
 
+  if (message.includes("numéro de téléphone valide")) {
+    return "Un numéro de téléphone est nécessaire pour créer votre entreprise. Contactez l’assistance si votre compte a été créé avant cette obligation.";
+  }
+
   if (message.includes("Découverte déjà utilisée")) {
     return "Cet essai a déjà été utilisé. Renseignez un SIRET pour créer l’entreprise sans nouvel essai, puis choisissez une formule payante.";
   }

@@ -7,12 +7,17 @@ import "./AuthPage.css";
 const initialForm = {
   fullName: "",
   email: "",
+  phone: "",
   password: "",
   confirmation: "",
 };
 
 function getFriendlyError(error) {
   const message = error?.message ?? "";
+
+  if (message === "Invalid phone number") {
+    return "Indiquez un numéro de téléphone valide (10 à 15 chiffres).";
+  }
 
   if (message.includes("Invalid login credentials")) {
     return "Adresse e-mail ou mot de passe incorrect.";
@@ -85,6 +90,7 @@ export default function AuthPage({ mode = "connexion" }) {
         const data = await signUp({
           fullName: form.fullName,
           email: form.email,
+          phone: form.phone,
           password: form.password,
         });
 
@@ -202,6 +208,25 @@ export default function AuthPage({ mode = "connexion" }) {
                 required
               />
             </label>
+
+            {isSignUp && (
+              <label className="auth-field">
+                <span>Numéro de téléphone professionnel</span>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={form.phone}
+                  onChange={updateField}
+                  autoComplete="tel"
+                  inputMode="tel"
+                  minLength="10"
+                  maxLength="20"
+                  placeholder="06 12 34 56 78"
+                  required
+                />
+                <small>Obligatoire à l’inscription. Ce numéro n’est pas vérifié par SMS.</small>
+              </label>
+            )}
 
             <PasswordField
                 label="Mot de passe"

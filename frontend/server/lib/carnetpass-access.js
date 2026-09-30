@@ -53,6 +53,7 @@ export function toPublicCarnetPass(carnetPass) {
   }
 
   const identity = carnetPass.identity ?? {};
+  const contact = carnetPass.publicContact;
 
   return {
     // Le numéro métier reste visible.
@@ -62,6 +63,12 @@ export function toPublicCarnetPass(carnetPass) {
     // du modèle et de conserver le fonctionnement de l'IA documentaire.
     equipmentId: publicText(carnetPass.equipmentId),
     manufacturerReference: publicText(carnetPass.manufacturerReference),
+    publicContact: contact && typeof contact === "object" && !Array.isArray(contact) ? {
+      companyName: publicText(contact.companyName),
+      phone: publicText(contact.phone),
+      email: publicText(contact.email),
+      website: publicText(contact.website),
+    } : null,
 
     identity: {
       brand: publicText(identity.brand),

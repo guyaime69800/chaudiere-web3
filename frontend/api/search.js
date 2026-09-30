@@ -147,6 +147,7 @@ async function findPublicCarnetPass(carnetPassId) {
     carnetPassId: publicCarnetPass.carnetPassId,
     equipmentId: publicCarnetPass.equipmentId,
     manufacturerReference: publicCarnetPass.manufacturerReference,
+    publicContact: publicCarnetPass.publicContact,
     identity: publicCarnetPass.identity,
   };
 }
