@@ -6,6 +6,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/public-shiba",
+      "destination": "/api/carnetpass?public_shiba_route=1"
+    },
+    {
       "source": "/api/account",
       "destination": "/api/verify-company?account_route=1"
     },
