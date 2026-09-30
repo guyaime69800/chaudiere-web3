@@ -347,6 +347,21 @@
   gap: 8px;
 }
 
+.pro-qr-contact-options {
+  margin: 24px 0;
+  padding: 18px 20px;
+  border: 1px solid #e7d2c7;
+  border-radius: 16px;
+}
+
+.pro-qr-contact-options legend { padding: 0 8px; font-weight: 750; }
+.pro-qr-contact-options p { margin: 0 0 14px; }
+.pro-qr-contact-options__choice { display: flex; align-items: center; gap: 10px; margin: 10px 0; cursor: pointer; }
+.pro-qr-contact-options__choice input[type="checkbox"] { width: 18px; height: 18px; min-height: 18px; margin: 0; flex: 0 0 auto; accent-color: #c93608; }
+.pro-qr-contact-options__choice input:disabled { cursor: not-allowed; }
+.pro-qr-contact-options__website { display: grid; gap: 8px; max-width: 480px; margin-top: 12px; }
+.pro-qr-contact-options__website input { width: 100%; min-height: 48px; padding: 0 12px; border: 1px solid #dfd1cb; border-radius: 10px; }
+
 .pro-form label > span {
   color: #392721;
   font-size: 14px;

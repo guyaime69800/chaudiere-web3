@@ -147,3 +147,16 @@ export async function createCompanyCarnetPass(equipment, publicContacts = {}) {
 
   return result;
 }
+
+export async function updateCompanyCarnetPassContacts(carnetPassId, publicContacts) {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data?.session?.access_token) throw new Error("Reconnectez-vous avant de modifier ce QR code.");
+  const response = await fetch("/api/carnetpass", {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${data.session.access_token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ carnetPassId, publicContacts }),
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || result?.ok !== true) throw new Error(result?.error || "Impossible de modifier les contacts publics.");
+  return result;
+}

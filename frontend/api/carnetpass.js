@@ -741,6 +741,48 @@ async function createCarnetPass(req, res) {
   }
 }
 
+async function updatePublicContact(req, res) {
+  const creator = await requireVerifiedCompany(req, res);
+  if (!creator) return;
+  const carnetPassId = req.body?.carnetPassId;
+  const requestedContacts = req.body?.publicContacts;
+  if (typeof carnetPassId !== "string" || !/^CP-\d{4}-\d{6}$/.test(carnetPassId)
+      || !requestedContacts || typeof requestedContacts !== "object" || Array.isArray(requestedContacts)
+      || Object.keys(requestedContacts).some((key) => !["phone", "email", "website"].includes(key))) {
+    return res.status(400).json({ ok: false, error: "Coordonnées publiques invalides." });
+  }
+  const key = `carnetpass:${carnetPassId}`;
+  const carnet = await redis.get(key);
+  if (!carnet || carnet.status !== "active" || carnet.createdByCompanyId !== creator.companyId) {
+    return res.status(404).json({ ok: false, error: "CarnetPass introuvable pour cette entreprise." });
+  }
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+  if (!url || !secret) return res.status(503).json({ ok: false, error: "Vérification des coordonnées indisponible." });
+  const db = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { data: company, error } = await db.from("companies").select("name, phone, email").eq("id", creator.companyId).maybeSingle();
+  if (error || !company) return res.status(503).json({ ok: false, error: "Vérification des coordonnées indisponible." });
+  const phone = requestedContacts.phone ? String(requestedContacts.phone).trim() : null;
+  const email = requestedContacts.email ? String(requestedContacts.email).trim() : null;
+  if ((phone && phone !== String(company.phone || "").trim()) || (email && email.toLowerCase() !== String(company.email || "").trim().toLowerCase())
+      || (requestedContacts.phone && !phone) || (requestedContacts.email && !email)) {
+    return res.status(400).json({ ok: false, error: "Les coordonnées sélectionnées ne correspondent pas à votre entreprise." });
+  }
+  let website = null;
+  if (requestedContacts.website) {
+    try {
+      const parsed = new URL(String(requestedContacts.website));
+      if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.href.length > 2048) throw new Error("invalid");
+      website = parsed.href;
+    } catch {
+      return res.status(400).json({ ok: false, error: "Le site public doit être une adresse HTTPS valide." });
+    }
+  }
+  const publicContact = phone || email || website ? { companyName: String(company.name || "").slice(0, 160), phone, email, website } : null;
+  await redis.set(key, { ...carnet, publicContact, updatedAt: new Date().toISOString() });
+  return res.status(200).json({ ok: true, publicContact });
+}
+
 async function getCarnetPass(req, res) {
   if (!(await checkRateLimit(readingRateLimit, req, res))) return;
 
@@ -830,6 +872,9 @@ export default async function handler(req, res) {
     if (req.query?.public_shiba_route === "1") {
       return await publicShibaQuestion(req, res);
     }
+    if (req.method === "PATCH") {
+      return await updatePublicContact(req, res);
+    }
     if (req.method === "POST") {
       return await createCarnetPass(req, res);
     }
@@ -838,7 +883,7 @@ export default async function handler(req, res) {
       return await getCarnetPass(req, res);
     }
 
-    res.setHeader("Allow", "GET, POST");
+    res.setHeader("Allow", "GET, POST, PATCH");
 
     return res.status(405).json({
       ok: false,

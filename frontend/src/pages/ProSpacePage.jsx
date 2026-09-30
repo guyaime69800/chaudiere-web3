@@ -17,6 +17,7 @@ import {
 import {
   createCompanyCarnetPass,
   getCompanyCarnetPassStatuses,
+  updateCompanyCarnetPassContacts,
 } from "../services/carnetPassService";
 import EquipmentWorkspace from "../components/EquipmentWorkspace";
 import CarnetPassCreatedModal from "../components/CarnetPassCreatedModal";
@@ -1003,6 +1004,7 @@ export default function ProSpacePage() {
   const [boilerCertificatesLoading, setBoilerCertificatesLoading] =
     useState(true);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
+  const contactSelectionRef = useRef("");
   const [carnetPassPreview, setCarnetPassPreview] = useState(null);
   const [createdCarnetPass, setCreatedCarnetPass] = useState(null);
   const [publicContactOptions, setPublicContactOptions] = useState({ phone: false, email: false, website: false, websiteUrl: "" });
@@ -1458,10 +1460,41 @@ export default function ProSpacePage() {
   }
 
   function handleSelectEquipment(equipment) {
+    contactSelectionRef.current = equipment.id;
     setSelectedEquipmentId(equipment.id);
     setEquipmentFormOpen(false);
     setEquipmentError("");
     setEquipmentMessage("");
+    setPublicContactOptions({ phone: false, email: false, website: false, websiteUrl: "" });
+    const status = carnetPassStatuses[equipment.id];
+    if (status?.status === "active" && status.carnetPassId) {
+      fetch(`/api/carnetpass?id=${encodeURIComponent(status.carnetPassId)}`)
+        .then((response) => response.ok ? response.json() : null)
+        .then((result) => {
+          if (!result?.carnetPass || contactSelectionRef.current !== equipment.id) return;
+          const contact = result.carnetPass.publicContact;
+          setPublicContactOptions({ phone: Boolean(contact?.phone), email: Boolean(contact?.email), website: Boolean(contact?.website), websiteUrl: contact?.website || "" });
+        })
+        .catch(() => {});
+    } else {
+      setPublicContactOptions({ phone: false, email: false, website: false, websiteUrl: "" });
+    }
+  }
+
+  async function handleSavePublicContacts() {
+    const status = carnetPassStatuses[selectedEquipmentId];
+    if (status?.status !== "active" || !status.carnetPassId || equipmentSubmitting) return;
+    setEquipmentSubmitting(true);
+    setEquipmentError("");
+    setEquipmentMessage("");
+    try {
+      await updateCompanyCarnetPassContacts(status.carnetPassId, selectedPublicContacts());
+      setEquipmentMessage("Coordonnées publiques mises à jour sur ce QR code. Ouvrez la fiche pour vérifier.");
+    } catch (error) {
+      setEquipmentError(error.message);
+    } finally {
+      setEquipmentSubmitting(false);
+    }
   }
 
   async function handleOpenCarnetPass(equipment) {
@@ -2126,13 +2159,15 @@ export default function ProSpacePage() {
             </form>
           )}
 
-          <fieldset className="pro-form" style={{ marginTop: "1rem" }}>
-            <legend>Coordonnées visibles sur les nouveaux QR codes</legend>
-            <p>Choisissez librement plusieurs moyens de contact. Aucun n’est publié par défaut. Les numéros d’urgence restent distincts.</p>
-            <label><input type="checkbox" checked={publicContactOptions.phone} disabled={!company?.phone} onChange={(event) => setPublicContactOptions((current) => ({ ...current, phone: event.target.checked }))} /> Téléphone {company?.phone ? `(${company.phone})` : "— à renseigner dans Mon entreprise"}</label>
-            <label><input type="checkbox" checked={publicContactOptions.email} disabled={!company?.email} onChange={(event) => setPublicContactOptions((current) => ({ ...current, email: event.target.checked }))} /> E-mail {company?.email ? `(${company.email})` : "— à renseigner dans Mon entreprise"}</label>
-            <label><input type="checkbox" checked={publicContactOptions.website} onChange={(event) => setPublicContactOptions((current) => ({ ...current, website: event.target.checked }))} /> Site internet</label>
-            {publicContactOptions.website && <label>Adresse du site (https://)<input type="url" value={publicContactOptions.websiteUrl} onChange={(event) => setPublicContactOptions((current) => ({ ...current, websiteUrl: event.target.value }))} placeholder="https://exemple.fr" maxLength={2048} /></label>}
+          <fieldset className="pro-qr-contact-options">
+            <legend>Coordonnées visibles sur le QR code</legend>
+            <p>Sélectionnez un appareil ci-dessous, puis choisissez les contacts à publier. Aucun n’est publié par défaut. Les numéros d’urgence restent distincts.</p>
+            {(!company?.phone || !company?.email) && <p>Pour activer le téléphone ou l’e-mail, renseignez-les d’abord dans la carte « Mon entreprise » en haut de cette page. L’e-mail de connexion n’est jamais rendu public automatiquement.</p>}
+            <label className="pro-qr-contact-options__choice"><input type="checkbox" checked={publicContactOptions.phone} disabled={!company?.phone} onChange={(event) => setPublicContactOptions((current) => ({ ...current, phone: event.target.checked }))} /><span>Téléphone {company?.phone ? `(${company.phone})` : "— à renseigner dans Mon entreprise"}</span></label>
+            <label className="pro-qr-contact-options__choice"><input type="checkbox" checked={publicContactOptions.email} disabled={!company?.email} onChange={(event) => setPublicContactOptions((current) => ({ ...current, email: event.target.checked }))} /><span>E-mail {company?.email ? `(${company.email})` : "— à renseigner dans Mon entreprise"}</span></label>
+            <label className="pro-qr-contact-options__choice"><input type="checkbox" checked={publicContactOptions.website} onChange={(event) => setPublicContactOptions((current) => ({ ...current, website: event.target.checked }))} /><span>Site internet</span></label>
+            {publicContactOptions.website && <label className="pro-qr-contact-options__website">Adresse du site (https://)<input type="url" value={publicContactOptions.websiteUrl} onChange={(event) => setPublicContactOptions((current) => ({ ...current, websiteUrl: event.target.value }))} placeholder="https://exemple.fr" maxLength={2048} /></label>}
+            {carnetPassStatuses[selectedEquipmentId]?.status === "active" && <button className="pro-primary-button" type="button" onClick={handleSavePublicContacts} disabled={equipmentSubmitting}>Enregistrer les contacts sur ce QR</button>}
           </fieldset>
 
           {equipments.length > 0 && (
