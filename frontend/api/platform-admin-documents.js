@@ -7,7 +7,7 @@ import { handleUploadPresigned } from "@vercel/blob/client";
 import platformCatalogDocuments from "../server/lib/platform-catalog-documents.js";
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
-const maximumSizeInBytes = 10 * 1024 * 1024;
+const maximumSizeInBytes = 30 * 1024 * 1024;
 const catalogCategories = new Set(["boiler", "heat_pump_indoor", "heat_pump_outdoor", "air_conditioning_indoor", "air_conditioning_outdoor", "burner", "water_heater", "regulation", "heat_pump_water_heater", "vmc"]);
 const fail = (res, status, error) => res.status(status).json({ ok: false, error });
 const enabled = () => process.env.VERCEL_ENV === "preview"

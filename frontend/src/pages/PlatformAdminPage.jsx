@@ -97,8 +97,8 @@ export default function PlatformAdminPage() {
     if (documentFile.type !== "application/pdf" && !documentFile.name.toLowerCase().endsWith(".pdf")) {
       setDocumentNotice({ text: "Le fichier sélectionné doit être un PDF.", kind: "error" }); return;
     }
-    if (!documentFile.size || documentFile.size > 10 * 1024 * 1024) {
-      setDocumentNotice({ text: `Ce PDF pèse ${(documentFile.size / 1024 / 1024).toFixed(1)} Mo. La limite est de 10 Mo ; utilisez une version compressée avant de réessayer.`, kind: "error" }); return;
+    if (!documentFile.size || documentFile.size > 30 * 1024 * 1024) {
+      setDocumentNotice({ text: `Ce PDF pèse ${(documentFile.size / 1024 / 1024).toFixed(1)} Mo. La limite est de 30 Mo ; utilisez une version compressée avant de réessayer.`, kind: "error" }); return;
     }
     if (newHotlinePhone.trim() && (!/^[+0-9(). -]{6,32}$/.test(newHotlinePhone.trim())
       || (newHotlinePhone.match(/\d/g) || []).length < 6)) {
@@ -317,7 +317,7 @@ export default function PlatformAdminPage() {
           <label>Référence exacte du modèle <input required minLength={2} maxLength={160} value={modelReference} onChange={(event) => setModelReference(event.target.value)} /></label>
           <label>Titre du document <input required minLength={2} maxLength={200} value={documentTitle} onChange={(event) => setDocumentTitle(event.target.value)} /></label>
           <label>Hotline <input type="tel" value={newHotlinePhone} onChange={(event) => setNewHotlinePhone(event.target.value)} placeholder="Numéro de téléphone (facultatif)" maxLength={32} /></label>
-          <label>Fichier PDF, 10 Mo maximum <input ref={documentFileInput} type="file" accept="application/pdf,.pdf" required onChange={(event) => { setDocumentFile(event.target.files?.[0] || null); setDocumentNotice(null); }} /></label>
+          <label>Fichier PDF, 30 Mo maximum <input ref={documentFileInput} type="file" accept="application/pdf,.pdf" required onChange={(event) => { setDocumentFile(event.target.files?.[0] || null); setDocumentNotice(null); }} /></label>
           <button disabled={busy} type="submit">Déposer le document</button>
           <button disabled={busy} type="button" onClick={() => loadDocuments().catch((cause) => setError(cause.message))}>Actualiser la liste</button>
         </form>
