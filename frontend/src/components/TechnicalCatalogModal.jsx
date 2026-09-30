@@ -38,18 +38,19 @@ const CATEGORY_BRANDS = {
 const normalize = (value) => String(value || "").normalize("NFD")
   .replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("fr");
 
-export default function TechnicalCatalogModal({ open, onClose, catalog = [], session, initialMode = "catalog", initialQuestion = "" }) {
+export default function TechnicalCatalogModal({ open, onClose, catalog = [], session, initialMode = "catalog", initialQuestion = "", initialSource = "documents" }) {
   if (!open) return null;
-  return <TechnicalCatalogContent onClose={onClose} catalog={catalog} session={session} initialMode={initialMode} initialQuestion={initialQuestion} />;
+  return <TechnicalCatalogContent onClose={onClose} catalog={catalog} session={session} initialMode={initialMode} initialQuestion={initialQuestion} initialSource={initialSource} />;
 }
 
-function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initialQuestion }) {
+function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initialQuestion, initialSource }) {
   const [step, setStep] = useState(initialMode === "assistant" ? "assistant-picker" : "category");
   const [type, setType] = useState("");
   const [brand, setBrand] = useState("");
   const [query, setQuery] = useState("");
   const [model, setModel] = useState(null);
   const [documents, setDocuments] = useState([]);
+  const [indexedDocumentCount, setIndexedDocumentCount] = useState(0);
   const [publishedDocuments, setPublishedDocuments] = useState([]);
   const [support, setSupport] = useState(null);
   const [documentsBusy, setDocumentsBusy] = useState(false);
@@ -57,7 +58,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   const [previewDocument, setPreviewDocument] = useState(null);
   const [previewBusyId, setPreviewBusyId] = useState(null);
   const [question, setQuestion] = useState(initialQuestion);
-  const [searchSource, setSearchSource] = useState("auto");
+  const [searchSource, setSearchSource] = useState(initialSource === "web" ? "web" : "documents");
   const [assistantOrigin, setAssistantOrigin] = useState(false);
   const [answer, setAnswer] = useState("");
   const [answerSource, setAnswerSource] = useState("");
@@ -118,7 +119,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
 
   function clearModel({ preserveQuestion = false } = {}) {
     documentRequest.current += 1; aiRequest.current += 1;
-    setModel(null); setDocuments([]); setSupport(null); setDocumentsBusy(false); setDocumentsError("");
+    setModel(null); setDocuments([]); setIndexedDocumentCount(0); setSupport(null); setDocumentsBusy(false); setDocumentsError("");
     setPreviewDocument(null); setPreviewBusyId(null); if (!preserveQuestion) setQuestion(""); setAnswer(""); setAnswerSource(""); setAnswerSources([]); setAnswerCitations([]); setWebFallbackAvailable(false); setBusy(false); setError("");
   }
   function toCategory() { clearModel({ preserveQuestion: true }); setType(""); setBrand(""); setQuery(""); setStep("category"); }
@@ -137,7 +138,9 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
     try {
       const library = await getEquipmentDocumentLibrary(item.equipmentId);
       if (request === documentRequest.current) {
-        setDocuments([...(Array.isArray(library?.documents) ? library.documents : []), ...(item.publishedDocuments || [])]);
+        const indexedDocuments = Array.isArray(library?.documents) ? library.documents : [];
+        setDocuments([...indexedDocuments, ...(item.publishedDocuments || [])]);
+        setIndexedDocumentCount(indexedDocuments.length);
         setSupport(item.hotlinePhone ? { ...(library?.support || {}), hotline: { label: "Hotline", phone: item.hotlinePhone } } : library?.support ?? null);
       }
     } catch (loadError) {
@@ -186,7 +189,12 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
   async function askShiba(event, forcedSource = "") {
     event.preventDefault();
     if (!question.trim() || !model || documentsBusy || busy) return;
-    const useDocumentation = (forcedSource || searchSource) !== "web" && Boolean(model.equipmentId && documents.length);
+    const selectedSource = forcedSource || searchSource;
+    if (selectedSource === "documents" && !indexedDocumentCount) {
+      setError("Ce modèle n’a pas encore de document indexé pour Shiba. Choisissez la recherche Web.");
+      return;
+    }
+    const useDocumentation = selectedSource === "documents";
     const request = ++aiRequest.current;
     setBusy(true); setError(""); setAnswer(""); setAnswerSources([]); setAnswerCitations([]); setAnswerSource(""); setWebFallbackAvailable(false);
     try {
@@ -331,9 +339,10 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
               <form onSubmit={askShiba}>
                 <label htmlFor="technical-catalog-source">Source de la réponse</label>
                 <select id="technical-catalog-source" value={searchSource} onChange={(event) => { setSearchSource(event.target.value); setAnswer(""); setError(""); }}>
-                  <option value="auto">Automatique : documentation indexée si disponible, sinon Web</option>
+                  <option value="documents">Documents du modèle indexés pour Shiba</option>
                   <option value="web">Recherche Web avec sources</option>
                 </select>
+                {searchSource === "documents" && !documentsBusy && !indexedDocumentCount && <p>Ce modèle n’a pas encore de document indexé pour Shiba. Choisissez le Web pour poser la question.</p>}
                 <label htmlFor="technical-catalog-question">Votre question</label><textarea id="technical-catalog-question" value={question} onChange={(event) => { setQuestion(event.target.value); setAnswer(""); setError(""); setAnswerSources([]); setAnswerCitations([]); }} placeholder="Ex. Quelle est la référence de cette pièce ?" rows={4} autoFocus /><button type="submit" disabled={!question.trim() || documentsBusy || busy}>{busy ? "Recherche…" : "Interroger Shiba Bot"}</button>
               </form>
               {error && <p role="alert" className="technical-catalog-error">{error}</p>}

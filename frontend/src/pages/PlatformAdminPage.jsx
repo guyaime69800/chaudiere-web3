@@ -44,6 +44,7 @@ export default function PlatformAdminPage() {
   const [manufacturer, setManufacturer] = useState("");
   const [modelReference, setModelReference] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
+  const [newHotlinePhone, setNewHotlinePhone] = useState("");
   const [documents, setDocuments] = useState([]);
   const [publicationReady, setPublicationReady] = useState(false);
   const [hotlineReady, setHotlineReady] = useState(false);
@@ -86,15 +87,20 @@ export default function PlatformAdminPage() {
     if (!documentFile || documentFile.type !== "application/pdf" || documentFile.size > 10 * 1024 * 1024) {
       setError("Sélectionnez un PDF de 10 Mo maximum."); return;
     }
+    if (newHotlinePhone.trim() && (!/^[+0-9(). -]{6,32}$/.test(newHotlinePhone.trim())
+      || (newHotlinePhone.match(/\d/g) || []).length < 6)) {
+      setError("Indiquez un numéro de hotline valide."); return;
+    }
     setBusy(true); setError(""); setMessage("");
     try {
       await uploadPresigned(`platform-documents/${crypto.randomUUID()}.pdf`, documentFile, {
         access: "private", handleUploadUrl: "/api/platform-admin-documents",
         clientPayload: JSON.stringify({ accessToken: session.access_token, manufacturer, modelReference,
-          title: documentTitle, filename: documentFile.name }),
+          title: documentTitle, hotlinePhone: newHotlinePhone.trim(), filename: documentFile.name }),
       });
-      setMessage("PDF déposé. La validation et l'indexation dans le catalogue restent à effectuer.");
+      setMessage("PDF déposé dans les documents classés. Ouvrez la liste pour le valider et le publier.");
       setDocumentFile(null);
+      setNewHotlinePhone("");
       window.setTimeout(() => loadDocuments().catch(() => {}), 1500);
     } catch (cause) { setError(cause.message || "Import impossible."); }
     finally { setBusy(false); }
@@ -183,8 +189,7 @@ export default function PlatformAdminPage() {
   const company = data?.selectedCompanyId === selected
     ? data.companies?.find((entry) => entry.id === selected)
     : null;
-  const pendingDocuments = documents.filter((entry) => entry.status === "pending_review");
-  const archivedDocuments = documents.filter((entry) => entry.status !== "pending_review");
+  const pendingCount = documents.filter((entry) => entry.status === "pending_review").length;
   function renderDocument(entry) {
     return <li key={entry.id}>
       {entry.manufacturer} · {entry.model_reference} · {entry.title} · {entry.original_filename} · {entry.status === "approved" ? "Publié dans le catalogue" : entry.status === "rejected" ? "Rejeté" : "En attente de validation"}
@@ -270,14 +275,13 @@ export default function PlatformAdminPage() {
           <label>Fabricant <input required minLength={2} maxLength={120} value={manufacturer} onChange={(event) => setManufacturer(event.target.value)} /></label>
           <label>Référence exacte du modèle <input required minLength={2} maxLength={160} value={modelReference} onChange={(event) => setModelReference(event.target.value)} /></label>
           <label>Titre du document <input required minLength={2} maxLength={200} value={documentTitle} onChange={(event) => setDocumentTitle(event.target.value)} /></label>
+          <label>Hotline <input type="tel" value={newHotlinePhone} onChange={(event) => setNewHotlinePhone(event.target.value)} placeholder="Numéro de téléphone (facultatif)" maxLength={32} /></label>
           <label>Fichier PDF, 10 Mo maximum <input type="file" accept="application/pdf,.pdf" required onChange={(event) => setDocumentFile(event.target.files?.[0] || null)} /></label>
           <button disabled={busy} type="submit">Déposer le document</button>
           <button disabled={busy} type="button" onClick={() => loadDocuments().catch((cause) => setError(cause.message))}>Actualiser la liste</button>
         </form>
-        <h3>Notices à traiter ({pendingDocuments.length})</h3>
-        {pendingDocuments.length ? <ul>{pendingDocuments.map(renderDocument)}</ul> : <p>Aucune notice en attente.</p>}
-        <details><summary>Notices classées ({archivedDocuments.length})</summary>
-          <ul>{archivedDocuments.map(renderDocument)}</ul>
+        <details><summary>Documents déposés ({documents.length}) · {pendingCount} en attente de validation</summary>
+          <ul>{documents.map(renderDocument)}</ul>
         </details>
       </section>
       {data.role === "founder" && <section><h2>Collaborateurs internes</h2>

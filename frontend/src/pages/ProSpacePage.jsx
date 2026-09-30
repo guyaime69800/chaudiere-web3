@@ -1004,6 +1004,7 @@ export default function ProSpacePage() {
   const [createdCarnetPass, setCreatedCarnetPass] = useState(null);
   const [technicalCatalogOpen, setTechnicalCatalogOpen] = useState(false);
   const [shibaQuestion, setShibaQuestion] = useState("");
+  const [shibaSource, setShibaSource] = useState("documents");
   const [catalogMode, setCatalogMode] = useState("catalog");
   useEffect(() => {
     let active = true;
@@ -1937,6 +1938,10 @@ export default function ProSpacePage() {
           </div>
           <ShibaUsage session={session} />
           <form className="pro-technical-catalog-form" onSubmit={(event) => { event.preventDefault(); if (!shibaQuestion.trim()) return; setCatalogMode("assistant"); setTechnicalCatalogOpen(true); }}>
+            <fieldset className="pro-shiba-source-choice"><legend>Choisir la source</legend>
+              <label><input type="radio" name="pro-shiba-source" value="documents" checked={shibaSource === "documents"} onChange={() => setShibaSource("documents")} /> Documents du modèle</label>
+              <label><input type="radio" name="pro-shiba-source" value="web" checked={shibaSource === "web"} onChange={() => setShibaSource("web")} /> Recherche Web avec sources</label>
+            </fieldset>
             <label htmlFor="pro-shiba-question">Votre question</label>
             <div className="pro-technical-catalog-question-row">
               <input id="pro-shiba-question" value={shibaQuestion} onChange={(event) => setShibaQuestion(event.target.value)} placeholder="Ex. Que signifie le défaut F28 ?" />
@@ -2191,7 +2196,7 @@ export default function ProSpacePage() {
           )}
         </article>
       </section>
-      <TechnicalCatalogModal open={technicalCatalogOpen} onClose={() => setTechnicalCatalogOpen(false)} initialMode={catalogMode} initialQuestion={catalogMode === "assistant" ? shibaQuestion : ""} session={session} catalog={equipmentIndex.equipments.map((item) => ({ ...item, type: item.type || "boiler" }))} />
+      <TechnicalCatalogModal open={technicalCatalogOpen} onClose={() => setTechnicalCatalogOpen(false)} initialMode={catalogMode} initialQuestion={catalogMode === "assistant" ? shibaQuestion : ""} initialSource={shibaSource} session={session} catalog={equipmentIndex.equipments.map((item) => ({ ...item, type: item.type || "boiler" }))} />
       {selectedEquipment && (
         <EquipmentWorkspace
           key={selectedEquipment.id}

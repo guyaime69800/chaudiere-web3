@@ -58,6 +58,7 @@ async function completeUpload({ blob, tokenPayload }) {
     manufacturer: metadata.manufacturer,
     model_reference: metadata.modelReference,
     title: metadata.title,
+    hotline_phone: metadata.hotlinePhone || null,
     original_filename: metadata.filename,
     blob_pathname: pathname,
     size_bytes: size,
@@ -175,13 +176,15 @@ export default async function handler(req, res) {
     const manufacturer = clean(payload.manufacturer, 120);
     const modelReference = clean(payload.modelReference, 160);
     const title = clean(payload.title, 200);
+    const hotlinePhone = String(payload.hotlinePhone || "").trim();
     const filename = String(payload.filename || "").trim();
     if (!user || !manufacturer || !modelReference || !title || !filename.toLowerCase().endsWith(".pdf")
+      || (hotlinePhone && (!/^[+0-9(). -]{6,32}$/.test(hotlinePhone) || (hotlinePhone.match(/\d/g) || []).length < 6))
       || filename.length > 255 || body.payload?.multipart === true
       || !/^platform-documents\/[0-9a-f-]{36}\.pdf$/i.test(body.payload?.pathname || "")) {
       return fail(res, 403, "Envoi refusé.");
     }
-    authorization = { userId: user.id, manufacturer, modelReference, title, filename, pathname: body.payload.pathname };
+    authorization = { userId: user.id, manufacturer, modelReference, title, hotlinePhone, filename, pathname: body.payload.pathname };
   }
   try {
     const result = await handleUploadPresigned({
