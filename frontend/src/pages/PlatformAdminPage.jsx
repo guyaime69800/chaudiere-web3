@@ -50,6 +50,11 @@ export default function PlatformAdminPage() {
   const [hotlineReady, setHotlineReady] = useState(false);
   const [hotlineInputs, setHotlineInputs] = useState({});
   const [aliasInputs, setAliasInputs] = useState({});
+  const [documentNotice, setDocumentNotice] = useState(null);
+  const [entryNotices, setEntryNotices] = useState({});
+  function setEntryNotice(id, action, text, kind = "success") {
+    setEntryNotices((previous) => ({ ...previous, [`${id}:${action}`]: { text, kind } }));
+  }
   const [reviewCategories, setReviewCategories] = useState({});
   const [distributionConfirmed, setDistributionConfirmed] = useState({});
   const loadDocuments = useCallback(async () => {
@@ -59,6 +64,7 @@ export default function PlatformAdminPage() {
     setDocuments(result.documents || []);
     setPublicationReady(result.publicationReady === true);
     setHotlineReady(result.hotlineReady === true);
+    return result.documents || [];
   }, [session.access_token]);
   const load = useCallback(async () => {
     const result = await request(session.access_token, null, search, selected);
@@ -85,24 +91,34 @@ export default function PlatformAdminPage() {
   async function importDocument(event) {
     event.preventDefault();
     if (!documentFile || documentFile.type !== "application/pdf" || documentFile.size > 10 * 1024 * 1024) {
-      setError("Sélectionnez un PDF de 10 Mo maximum."); return;
+      setDocumentNotice({ text: "Sélectionnez un PDF de 10 Mo maximum.", kind: "error" }); return;
     }
     if (newHotlinePhone.trim() && (!/^[+0-9(). -]{6,32}$/.test(newHotlinePhone.trim())
       || (newHotlinePhone.match(/\d/g) || []).length < 6)) {
-      setError("Indiquez un numéro de hotline valide."); return;
+      setDocumentNotice({ text: "Indiquez un numéro de hotline valide.", kind: "error" }); return;
     }
     setBusy(true); setError(""); setMessage("");
+    setDocumentNotice({ text: "Envoi du PDF en cours…", kind: "progress" });
     try {
-      await uploadPresigned(`platform-documents/${crypto.randomUUID()}.pdf`, documentFile, {
+      const pathname = `platform-documents/${crypto.randomUUID()}.pdf`;
+      await uploadPresigned(pathname, documentFile, {
         access: "private", handleUploadUrl: "/api/platform-admin-documents",
         clientPayload: JSON.stringify({ accessToken: session.access_token, manufacturer, modelReference,
           title: documentTitle, hotlinePhone: newHotlinePhone.trim(), filename: documentFile.name }),
       });
-      setMessage("PDF déposé dans les documents classés. Ouvrez la liste pour le valider et le publier.");
+      setDocumentNotice({ text: "PDF envoyé. Vérification de son enregistrement…", kind: "progress" });
       setDocumentFile(null);
       setNewHotlinePhone("");
-      window.setTimeout(() => loadDocuments().catch(() => {}), 1500);
-    } catch (cause) { setError(cause.message || "Import impossible."); }
+      let recorded = false;
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1500));
+        const entries = await loadDocuments();
+        if (entries.some((entry) => entry.blob_pathname === pathname)) { recorded = true; break; }
+      }
+      setDocumentNotice(recorded
+        ? { text: "PDF enregistré dans Documents déposés. Ouvrez la liste pour le valider et le publier.", kind: "success" }
+        : { text: "PDF envoyé, mais son enregistrement n’est pas encore confirmé. Cliquez sur Actualiser la liste dans quelques instants.", kind: "progress" });
+    } catch (cause) { setDocumentNotice({ text: cause.message || "Import impossible.", kind: "error" }); }
     finally { setBusy(false); }
   }
 
@@ -147,6 +163,7 @@ export default function PlatformAdminPage() {
   async function saveHotline(entry) {
     const phone = hotlineInputs[entry.id] ?? entry.hotline_phone ?? "";
     setBusy(true); setError(""); setMessage("");
+    setEntryNotice(entry.id, "hotline", "Enregistrement de la hotline…", "progress");
     try {
       const response = await fetch("/api/platform-admin-documents", {
         method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
@@ -154,15 +171,22 @@ export default function PlatformAdminPage() {
       });
       const result = await response.json().catch(() => null);
       if (!response.ok) throw new Error(result?.error || "Hotline indisponible.");
-      setMessage("Hotline enregistrée dans le catalogue.");
-      await loadDocuments();
-    } catch (cause) { setError(cause.message); }
+      const entries = await loadDocuments();
+      if ((entries.find((item) => item.id === entry.id)?.hotline_phone || "") !== phone.trim()) {
+        throw new Error("La hotline n’a pas pu être confirmée dans le catalogue.");
+      }
+      setEntryNotice(entry.id, "hotline", phone.trim()
+        ? `Hotline enregistrée dans le catalogue : ${phone.trim()}.`
+        : "Hotline supprimée du catalogue.");
+      setHotlineInputs((previous) => { const next = { ...previous }; delete next[entry.id]; return next; });
+    } catch (cause) { setEntryNotice(entry.id, "hotline", cause.message, "error"); }
     finally { setBusy(false); }
   }
 
   async function saveAliases(entry) {
     const aliases = aliasInputs[entry.id] ?? (entry.model_aliases || []).join(", ");
     setBusy(true); setError(""); setMessage("");
+    setEntryNotice(entry.id, "aliases", "Enregistrement des références…", "progress");
     try {
       const response = await fetch("/api/platform-admin-documents", {
         method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
@@ -170,9 +194,10 @@ export default function PlatformAdminPage() {
       });
       const result = await response.json().catch(() => null);
       if (!response.ok) throw new Error(result?.error || "Références indisponibles.");
-      setMessage("Références associées enregistrées dans le catalogue.");
       await loadDocuments();
-    } catch (cause) { setError(cause.message); }
+      setEntryNotice(entry.id, "aliases", "Références enregistrées dans le catalogue.");
+      setAliasInputs((previous) => { const next = { ...previous }; delete next[entry.id]; return next; });
+    } catch (cause) { setEntryNotice(entry.id, "aliases", cause.message, "error"); }
     finally { setBusy(false); }
   }
 
@@ -197,8 +222,10 @@ export default function PlatformAdminPage() {
       {hotlineReady && entry.status === "approved" && <div>
         <label>Hotline <input type="tel" value={hotlineInputs[entry.id] ?? entry.hotline_phone ?? ""} onChange={(event) => setHotlineInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="Numéro de téléphone" maxLength={32} /></label>
         <button type="button" disabled={busy} onClick={() => saveHotline(entry)}>Enregistrer la hotline</button>
+        {entryNotices[`${entry.id}:hotline`] && <p role={entryNotices[`${entry.id}:hotline`].kind === "error" ? "alert" : "status"} className={`platform-admin-inline-${entryNotices[`${entry.id}:hotline`].kind}`}>{entryNotices[`${entry.id}:hotline`].text}</p>}
         <label>Autres références couvertes par le PDF <input value={aliasInputs[entry.id] ?? (entry.model_aliases || []).join(", ")} onChange={(event) => setAliasInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="Autre référence du modèle" maxLength={1620} /></label>
         <button type="button" disabled={busy} onClick={() => saveAliases(entry)}>Enregistrer les références</button>
+        {entryNotices[`${entry.id}:aliases`] && <p role={entryNotices[`${entry.id}:aliases`].kind === "error" ? "alert" : "status"} className={`platform-admin-inline-${entryNotices[`${entry.id}:aliases`].kind}`}>{entryNotices[`${entry.id}:aliases`].text}</p>}
       </div>}
       {publicationReady && entry.status === "pending_review" && <div>
         <label>Catégorie du catalogue <select value={reviewCategories[entry.id] || ""} onChange={(event) => setReviewCategories((previous) => ({ ...previous, [entry.id]: event.target.value }))}>
@@ -280,6 +307,7 @@ export default function PlatformAdminPage() {
           <button disabled={busy} type="submit">Déposer le document</button>
           <button disabled={busy} type="button" onClick={() => loadDocuments().catch((cause) => setError(cause.message))}>Actualiser la liste</button>
         </form>
+        {documentNotice && <p role={documentNotice.kind === "error" ? "alert" : "status"} className={`platform-admin-inline-${documentNotice.kind}`}>{documentNotice.text}</p>}
         <details><summary>Documents déposés ({documents.length}) · {pendingCount} en attente de validation</summary>
           <ul>{documents.map(renderDocument)}</ul>
         </details>
