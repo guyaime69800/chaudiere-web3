@@ -1,5 +1,6 @@
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
+import { createClient } from "@supabase/supabase-js";
 
 const limiter = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL && process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN
   ? new Ratelimit({ redis: new Redis({ url: process.env.UPSTASH_REDIS_REST_KV_REST_API_URL, token: process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN }), limiter: Ratelimit.slidingWindow(3, "1 h"), prefix: "carnetpass:enterprise-quote" })
@@ -50,9 +51,34 @@ export default async function enterpriseQuoteHandler(req, res) {
   }
   if (!process.env.RESEND_API_KEY) return res.status(503).json({ error: "L’envoi des demandes n’est pas encore configuré. Réessayez plus tard." });
 
+  let linkedCompany = null;
+  const token = /^Bearer ([^\s]+)$/i.exec(req.headers.authorization || "")?.[1];
+  if (token) {
+    const url = process.env.VITE_SUPABASE_URL;
+    const publicKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const secretKey = process.env.SUPABASE_SECRET_KEY;
+    if (!url || !publicKey || !secretKey) return res.status(503).json({ error: "Impossible de rattacher la demande à votre compte." });
+    const options = { auth: { persistSession: false, autoRefreshToken: false } };
+    const auth = createClient(url, publicKey, options);
+    const { data: { user }, error: authError } = await auth.auth.getUser(token);
+    if (authError || !user?.email_confirmed_at) return res.status(401).json({ error: "Reconnectez-vous pour envoyer la demande." });
+    const admin = createClient(url, secretKey, options);
+    const { data: memberships, error: memberError } = await admin.from("company_members")
+      .select("company_id").eq("user_id", user.id).limit(2);
+    if (memberError) return res.status(503).json({ error: "Impossible de vérifier votre entreprise." });
+    if (memberships?.length === 1) {
+      const { data: companyRow, error: companyError } = await admin.from("companies")
+        .select("id, name, siret").eq("id", memberships[0].company_id).single();
+      if (companyError) return res.status(503).json({ error: "Impossible de vérifier votre entreprise." });
+      linkedCompany = companyRow;
+    }
+  }
+
   const text = [
     "Nouvelle demande de formule Entreprise CarnetPass",
     `Entreprise : ${company}`,
+    `Entreprise CarnetPass liée : ${linkedCompany ? `${linkedCompany.name} — ${linkedCompany.id}` : "aucune"}`,
+    `SIRET enregistré : ${linkedCompany?.siret || "absent"}`,
     `Contact : ${name}`,
     `E-mail : ${email}`,
     `Téléphone : ${phone || "Non renseigné"}`,

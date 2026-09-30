@@ -4,7 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import "./EnterpriseQuotePage.css";
 
 export default function EnterpriseQuotePage() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [form, setForm] = useState({ company: "", name: "", email: user?.email || "", phone: "", technicians: "", equipment: "", needs: "", timing: "", website: "" });
   const [state, setState] = useState("idle");
   const [error, setError] = useState("");
@@ -20,7 +20,7 @@ export default function EnterpriseQuotePage() {
     try {
       const response = await fetch("/api/enterprise-quote", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
         body: JSON.stringify(form),
       });
       const result = await response.json();

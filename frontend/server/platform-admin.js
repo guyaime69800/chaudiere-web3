@@ -57,20 +57,25 @@ export default async function platformAdminHandler(req, res) {
     if (collabError) return send(res, 503, "Collaborateurs indisponibles.");
     let members = [];
     let memberCount = 0;
+    let memberLoadError = false;
     const selectedCompany = String(req.query?.companyId || "");
     if (selectedCompany) {
       if (!/^[0-9a-f-]{36}$/i.test(selectedCompany)) return send(res, 400, "Entreprise invalide.");
       const { data: rows, count, error: memberError } = await admin.from("company_members")
         .select("user_id, role", { count: "exact" }).eq("company_id", selectedCompany)
-        .order("created_at", { ascending: true }).limit(100);
-      if (memberError) return send(res, 503, "Équipe indisponible.");
-      memberCount = count || 0;
-      members = await Promise.all((rows || []).map(async (row) => {
-        const { data: found } = await admin.auth.admin.getUserById(row.user_id);
-        return { ...row, email: found?.user?.email || null };
-      }));
+        .limit(100);
+      if (memberError) {
+        console.error("Platform admin company members lookup failed", { code: memberError.code, message: memberError.message });
+        memberLoadError = true;
+      } else {
+        memberCount = count || 0;
+        members = await Promise.all((rows || []).map(async (row) => {
+          const { data: found } = await admin.auth.admin.getUserById(row.user_id);
+          return { ...row, email: found?.user?.email || null };
+        }));
+      }
     }
-    return send(res, 200, "OK", { role: operator.role, companies, events, collaborators, members, memberCount, selectedCompanyId: selectedCompany });
+    return send(res, 200, "OK", { role: operator.role, companies, events, collaborators, members, memberCount, memberLoadError, selectedCompanyId: selectedCompany });
   }
 
   let body;

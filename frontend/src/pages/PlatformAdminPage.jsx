@@ -70,12 +70,13 @@ export default function PlatformAdminPage() {
   const load = useCallback(async () => {
     const result = await request(session.access_token, null, search, selected);
     setData(result);
+    setError("");
   }, [session.access_token, search, selected]);
 
   useEffect(() => {
     let active = true;
     request(session.access_token, null, search, selected)
-      .then((result) => { if (active) setData(result); })
+      .then((result) => { if (active) { setData(result); setError(""); } })
       .catch((cause) => { if (active) setError(cause.message); });
     return () => { active = false; };
   }, [session.access_token, search, selected]);
@@ -307,6 +308,8 @@ export default function PlatformAdminPage() {
       {selected && data.selectedCompanyId !== selected && <p role="status">Chargement de la fiche entreprise…</p>}
       {company && <section><h2>{company.name}</h2>
         <p>Référence entreprise : {company.id}</p>
+        {data.memberLoadError && <p role="alert" className="platform-admin-error">La liste de l’équipe est momentanément indisponible. L’activation est bloquée par sécurité. <button type="button" onClick={() => load().catch((cause) => setError(cause.message))}>Réessayer</button></p>}
+        {(!/^\d{14}$/.test(company.siret || "") || company.company_verifications?.status !== "approved") && <p role="status">Avant d’activer l’offre Entreprise, le responsable doit enregistrer son SIRET et faire valider l’entreprise dans son espace professionnel. Vérifiez ensuite le contrat et le règlement.</p>}
         <p>Vérification : {company.company_verifications?.status || "inconnue"}. Formule : {company.subscriptions?.plan || "—"}.
           Échéance : {company.subscriptions?.current_period_end ? new Date(company.subscriptions.current_period_end).toLocaleDateString("fr-FR") : "aucune"}.
           Comptes : {data.memberCount}/{company.subscriptions?.enterprise_seat_limit || "non défini"} (responsable compris).</p>
@@ -319,7 +322,7 @@ export default function PlatformAdminPage() {
           <label>Référence du règlement vérifié <input required minLength={3} maxLength={120} value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} /></label>
           <label>Comptes prévus au contrat, responsable compris <input type="number" min={Math.max(1, data.memberCount)} max="10000" required value={seatLimit} onChange={(event) => setSeatLimit(event.target.value)} /></label>
           <label>Note interne <textarea maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} /></label>
-          <button disabled={busy || company.company_verifications?.status !== "approved"} type="submit">Activer Entreprise</button>
+          <button disabled={busy || data.memberLoadError || !/^\d{14}$/.test(company.siret || "") || company.company_verifications?.status !== "approved"} type="submit">Activer Entreprise</button>
           <button disabled={busy || company.subscriptions?.plan !== "enterprise" || company.subscriptions?.status !== "active"}
             type="button" onClick={() => { if (window.confirm(`Suspendre l'accès de ${company.name} ?`)) act({ action: "suspend", companyId: selected, note }); }}>Suspendre</button>
           <button disabled={busy || company.subscriptions?.plan !== "enterprise" || company.subscriptions?.status !== "active"}
@@ -330,7 +333,7 @@ export default function PlatformAdminPage() {
           <p>Le technicien doit avoir créé et confirmé son compte CarnetPass. Il ne peut appartenir à une autre entreprise.</p>
           <form onSubmit={(event) => { event.preventDefault(); if (window.confirm(`Ajouter ${technicianEmail} à ${company.name} ?`)) act({ action: "add-technician", companyId: selected, email: technicianEmail, note }); }}>
             <label>E-mail du technicien <input type="email" required value={technicianEmail} onChange={(event) => setTechnicianEmail(event.target.value)} /></label>
-            <button disabled={busy || data.memberCount >= company.subscriptions?.enterprise_seat_limit}>Ajouter ce technicien</button>
+            <button disabled={busy || data.memberLoadError || data.memberCount >= company.subscriptions?.enterprise_seat_limit}>Ajouter ce technicien</button>
           </form>
           <ul>{data.members.map((member) => <li key={member.user_id}>
             {member.email || member.user_id} · {member.role}
