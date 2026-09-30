@@ -17,6 +17,10 @@ const stripeTestKey = () => process.env.STRIPE_TEST_SECRET_KEY || process.env.ST
 const portalReturnUrl = "https://test.carnetpass.fr/parametres-compte#formule";
 const portalConfigMarker = "carnetpass_preview_plan_changes_v2";
 
+export function hasBillingSiret(siret) {
+  return typeof siret === "string" && /^\d{14}$/.test(siret);
+}
+
 function send(res, status, message, extra = {}) {
   return res.status(status).json({ ok: status < 400, message, ...extra });
 }
@@ -251,6 +255,14 @@ export default async function billingHandler(req, res) {
   const { data: access, error: accessError } = await admin.from("subscriptions")
     .select("plan, status").eq("company_id", companyId).single();
   if (accessError) return send(res, 503, "Formule indisponible.");
+  if (body.action === "checkout") {
+    const { data: company, error: companyError } = await admin.from("companies")
+      .select("siret").eq("id", companyId).single();
+    if (companyError) return send(res, 503, "Impossible de vérifier le SIRET de l'entreprise.");
+    if (!hasBillingSiret(company.siret)) {
+      return send(res, 409, "Renseignez le SIRET de l'entreprise (14 chiffres) avant de choisir une formule payante.");
+    }
+  }
   if (body.action === "checkout" && access.plan === "enterprise" && access.status === "active") {
     return send(res, 409, "Votre accès Entreprise est géré par CarnetPass. Contactez l'équipe pour modifier votre contrat.");
   }

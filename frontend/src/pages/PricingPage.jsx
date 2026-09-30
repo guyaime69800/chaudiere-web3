@@ -48,6 +48,7 @@ export default function PricingPage() {
   const [error, setError] = useState("");
   const [errorPlan, setErrorPlan] = useState("");
   const [currentPlan, setCurrentPlan] = useState(undefined);
+  const [companySiret, setCompanySiret] = useState("");
   const [testSubscription, setTestSubscription] = useState(null);
   const testBilling = import.meta.env.VITE_STRIPE_TEST_BILLING_ENABLED === "true";
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function PricingPage() {
       .then(async (company) => {
         if (!active) return;
         setCurrentPlan(company?.subscription?.plan || null);
+        setCompanySiret(company?.siret || "");
         if (company?.id && testBilling) {
           const stripeTest = await getStripeTestSubscription(company.id);
           if (active) setTestSubscription(stripeTest);
@@ -98,7 +100,8 @@ export default function PricingPage() {
             ) : offer.name === "Entreprise" ? (
               <Link to="/demande-entreprise">Demander cette formule <span aria-hidden="true">→</span></Link>
             ) : user && testBilling && offer.plan ? (
-              <><button type="button" disabled={busy} onClick={() => choose(offer.plan)}>Choisir ou modifier la formule <span aria-hidden="true">→</span></button>
+              <><button type="button" disabled={busy || !/^\d{14}$/.test(companySiret)} onClick={() => choose(offer.plan)}>Choisir ou modifier la formule <span aria-hidden="true">→</span></button>
+                {!/^\d{14}$/.test(companySiret) && <p className="pricing-error">Le SIRET de l’entreprise est obligatoire avant l’abonnement. <Link to="/espace-pro">Renseigner le SIRET</Link></p>}
                 {error && errorPlan === offer.plan && <p className="pricing-error" role="alert">{error}</p>}</>
             ) : user && offer.name !== "Découverte" ? (
               <a href={`mailto:contact@carnetpass.fr?subject=${encodeURIComponent(`Demande de formule ${offer.name} — CarnetPass`)}&body=${encodeURIComponent(`Bonjour,\n\nJe souhaite être informé de l'ouverture de la formule ${offer.name} pour mon compte ${user.email}.\n\nMerci.`)}`}>Demander cette formule <span aria-hidden="true">→</span></a>

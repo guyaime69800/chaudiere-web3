@@ -7,6 +7,18 @@ function getCompanyErrorMessage(error) {
     return "Le SIRET doit contenir exactement 14 chiffres.";
   }
 
+  if (message.includes("Découverte déjà utilisée")) {
+    return "Cet essai a déjà été utilisé. Renseignez un SIRET pour créer l’entreprise sans nouvel essai, puis choisissez une formule payante.";
+  }
+
+  if (message.includes("SIRET est déjà rattaché")) {
+    return "Ce SIRET est déjà lié à une entreprise CarnetPass. Reprenez ce compte ou contactez l’assistance.";
+  }
+
+  if (message.includes("Confirmez votre adresse e-mail")) {
+    return "Confirmez votre adresse e-mail avant de commencer l’essai Découverte.";
+  }
+
   if (message.includes("appartenez déjà")) {
     return "Votre compte est déjà rattaché à une entreprise.";
   }
