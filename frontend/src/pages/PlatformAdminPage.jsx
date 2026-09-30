@@ -124,7 +124,7 @@ export default function PlatformAdminPage() {
         if (entries.some((entry) => entry.blob_pathname === pathname)) { recorded = true; break; }
       }
       setDocumentNotice(recorded
-        ? { text: "PDF enregistré dans Documents déposés. Ouvrez la liste pour le valider et le publier.", kind: "success" }
+        ? { text: "PDF enregistré dans Documents à valider. Validez-le pour lancer son indexation Shiba.", kind: "success" }
         : { text: "PDF envoyé, mais son enregistrement n’est pas encore confirmé. Cliquez sur Actualiser la liste dans quelques instants.", kind: "progress" });
     } catch (cause) { setDocumentNotice({ text: cause.message || "Import impossible.", kind: "error" }); }
     finally { setBusy(false); }
@@ -162,7 +162,10 @@ export default function PlatformAdminPage() {
       });
       const result = await response.json().catch(() => null);
       if (!response.ok) throw new Error(result?.error || "Validation impossible.");
-      setMessage(action === "approve" ? "Notice validée et publiée dans le catalogue." : "Notice rejetée.");
+      setMessage(action === "approve"
+        ? result.indexStatus === "ready" ? "Document publié et prêt pour Shiba."
+          : `Document publié ; indexation Shiba : ${result.indexStatus === "needs_ocr" ? "OCR nécessaire" : result.indexStatus === "failed" ? "échec, réessayez dans l'archive" : result.indexStatus === "pending" ? "migration Preview à appliquer" : "en cours"}.`
+        : "Document rejeté.");
       await loadDocuments();
     } catch (cause) { setError(cause.message); }
     finally { setBusy(false); }
@@ -188,6 +191,26 @@ export default function PlatformAdminPage() {
         : "Hotline supprimée du catalogue.");
       setHotlineInputs((previous) => { const next = { ...previous }; delete next[entry.id]; return next; });
     } catch (cause) { setEntryNotice(entry.id, "hotline", cause.message, "error"); }
+    finally { setBusy(false); }
+  }
+
+  async function indexDocument(entry) {
+    setBusy(true);
+    setEntryNotice(entry.id, "index", "Indexation en cours : lecture du PDF et préparation des pages…", "progress");
+    try {
+      const response = await fetch("/api/platform-admin-documents", {
+        method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, action: "index" }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Indexation impossible.");
+      setEntryNotice(entry.id, "index", result.indexStatus === "ready"
+        ? "Document prêt pour Shiba."
+        : result.indexStatus === "indexing" ? "L'indexation est encore en cours. Réessayez dans quelques minutes."
+        : result.indexStatus === "needs_ocr" ? "Ce PDF est scanné : un OCR est nécessaire avant son indexation."
+          : result.indexError || "Indexation non terminée.", result.indexStatus === "ready" ? "success" : result.indexStatus === "indexing" ? "progress" : "error");
+      await loadDocuments();
+    } catch (cause) { setEntryNotice(entry.id, "index", cause.message, "error"); }
     finally { setBusy(false); }
   }
 
@@ -230,6 +253,11 @@ export default function PlatformAdminPage() {
       <p className="platform-admin-document-name"><strong>{entry.manufacturer} · {entry.model_reference}</strong> · {entry.title} <span>({entry.status === "approved" ? "Publié" : entry.status === "rejected" ? "Rejeté" : "À valider"})</span></p>
       <p className="platform-admin-document-filename">{entry.original_filename}</p>
       <button type="button" onClick={() => downloadDocument(entry)}>Télécharger le PDF</button>
+      {entry.status === "approved" && <div className="platform-admin-document-index">
+        <p>Shiba : {entry.rag_status === "ready" ? "prêt" : entry.rag_status === "needs_ocr" ? "OCR nécessaire" : entry.rag_status === "failed" ? "échec de l'indexation" : entry.rag_status === "indexing" ? "indexation en cours" : "à indexer"}{entry.rag_error ? ` — ${entry.rag_error}` : ""}</p>
+        {entry.rag_status !== "ready" && entry.rag_status !== "needs_ocr" && <button type="button" disabled={busy} onClick={() => indexDocument(entry)}>{entry.rag_status === "indexing" ? "Vérifier ou relancer l'indexation" : "Indexer pour Shiba"}</button>}
+        {entryNotices[`${entry.id}:index`] && <p role={entryNotices[`${entry.id}:index`].kind === "error" ? "alert" : "status"} className={`platform-admin-inline-${entryNotices[`${entry.id}:index`].kind}`}>{entryNotices[`${entry.id}:index`].text}</p>}
+      </div>}
       {hotlineReady && entry.status === "approved" && <div>
         <label>Hotline <input type="tel" value={hotlineInputs[entry.id] ?? entry.hotline_phone ?? ""} onChange={(event) => setHotlineInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="Numéro de téléphone" maxLength={32} /></label>
         <button type="button" disabled={busy} onClick={() => saveHotline(entry)}>Enregistrer la hotline</button>
@@ -310,7 +338,7 @@ export default function PlatformAdminPage() {
         {new Date(event.created_at).toLocaleString("fr-FR")} · {event.action} · {data.companies.find((entry) => entry.id === event.company_id)?.name || event.company_id} · {event.payment_reference || "sans référence"}
       </li>)}</ul></section>
       <section><h2>Importer un document technique</h2>
-        <p>Le PDF reste privé et en attente de validation. Son dépôt ne le rend pas encore disponible dans le catalogue ou dans l'assistant.</p>
+        <p>Le PDF reste privé et en attente de validation. Sa publication lance l'indexation pour Shiba ; un document scanné peut nécessiter un OCR.</p>
         {!publicationReady && <p>La publication attend l’activation du catalogue dans la base Preview.</p>}
         <form onSubmit={importDocument}>
           <label>Fabricant <input required minLength={2} maxLength={120} value={manufacturer} onChange={(event) => setManufacturer(event.target.value)} /></label>

@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/platform-admin-documents.js": {
+      "maxDuration": 300
+    }
+  },
   "rewrites": [
     {
       "source": "/api/account",

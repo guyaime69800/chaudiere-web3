@@ -5,6 +5,9 @@ import { createClient } from "@supabase/supabase-js";
 import { del, get, issueSignedToken } from "@vercel/blob";
 import { handleUploadPresigned } from "@vercel/blob/client";
 import platformCatalogDocuments from "../server/lib/platform-catalog-documents.js";
+import { indexPlatformDocument } from "../server/lib/platform-document-rag.js";
+
+export const maxDuration = 300;
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const maximumSizeInBytes = 30 * 1024 * 1024;
@@ -81,7 +84,7 @@ export default async function handler(req, res) {
     if (!user) return fail(res, 403, "Accès refusé.");
     const { id, action, category, distributionConfirmed } = req.body || {};
     if (typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id)
-      || !["approve", "reject", "set-hotline", "set-aliases"].includes(action)
+      || !["approve", "reject", "set-hotline", "set-aliases", "index"].includes(action)
       || (action === "approve" && (!catalogCategories.has(category) || distributionConfirmed !== true))) {
       return fail(res, 400, "Validation incomplète.");
     }
@@ -107,10 +110,22 @@ export default async function handler(req, res) {
       if (error || !updated) return fail(res, 503, "Enregistrement des références impossible.");
       return res.status(200).json({ ok: true });
     }
-    const { data: entry, error: lookupError } = await db.from("platform_document_intake")
-      .select("id, blob_pathname, size_bytes, sha256, status")
+    let { data: entry, error: lookupError } = await db.from("platform_document_intake")
+      .select("id, blob_pathname, size_bytes, sha256, status, title, rag_status, rag_started_at")
       .eq("id", id).maybeSingle();
+    if (lookupError) {
+      const fallback = await db.from("platform_document_intake")
+        .select("id, blob_pathname, size_bytes, sha256, status, title").eq("id", id).maybeSingle();
+      entry = fallback.data; lookupError = fallback.error;
+    }
     if (lookupError || !entry) return fail(res, 404, "Document introuvable.");
+    if (action === "index") {
+      if (entry.rag_status === undefined) return fail(res, 503, "Appliquez d'abord la migration d'indexation dans Supabase Preview.");
+      if (entry.status !== "approved") return fail(res, 409, "Publiez le document avant son indexation.");
+      if (entry.rag_status === "ready") return res.status(200).json({ ok: true, indexStatus: "ready" });
+      const result = await indexPlatformDocument(db, entry);
+      return res.status(200).json({ ok: true, indexStatus: result.status, indexError: result.error || null });
+    }
     if (entry.status !== "pending_review") return fail(res, 409, "Document déjà traité.");
     if (action === "approve") {
       const stored = await get(entry.blob_pathname, { access: "private", useCache: false });
@@ -130,6 +145,11 @@ export default async function handler(req, res) {
       .eq("id", id).eq("status", "pending_review").select("id").maybeSingle();
     if (error) return fail(res, 503, "Validation indisponible.");
     if (!updated) return fail(res, 409, "Document déjà traité.");
+    if (action === "approve") {
+      if (entry.rag_status === undefined) return res.status(200).json({ ok: true, indexStatus: "pending" });
+      const result = await indexPlatformDocument(db, { ...entry, status: "approved" });
+      return res.status(200).json({ ok: true, indexStatus: result.status, indexError: result.error || null });
+    }
     return res.status(200).json({ ok: true });
   }
   if (req.method === "GET") {
@@ -154,14 +174,14 @@ export default async function handler(req, res) {
       return;
     }
     const { data, error } = await service().from("platform_document_intake")
-      .select("id, blob_pathname, manufacturer, model_reference, title, original_filename, size_bytes, status, catalog_category, hotline_phone, model_aliases, created_at")
+      .select("id, blob_pathname, manufacturer, model_reference, title, original_filename, size_bytes, status, catalog_category, hotline_phone, model_aliases, rag_status, rag_error, rag_started_at, rag_indexed_at, created_at")
       .order("created_at", { ascending: false }).limit(50);
     if (!error) return res.status(200).json({ ok: true, documents: data, publicationReady: true, hotlineReady: true });
     const fallback = await service().from("platform_document_intake")
-      .select("id, blob_pathname, manufacturer, model_reference, title, original_filename, size_bytes, status, catalog_category, created_at")
+      .select("id, blob_pathname, manufacturer, model_reference, title, original_filename, size_bytes, status, catalog_category, hotline_phone, model_aliases, created_at")
       .order("created_at", { ascending: false }).limit(50);
     return fallback.error ? fail(res, 503, "Documents indisponibles.")
-      : res.status(200).json({ ok: true, documents: fallback.data, publicationReady: true, hotlineReady: false });
+      : res.status(200).json({ ok: true, documents: fallback.data, publicationReady: true, hotlineReady: true });
   }
   if (req.method !== "POST") return fail(res, 405, "Méthode non autorisée.");
   const body = req.body;

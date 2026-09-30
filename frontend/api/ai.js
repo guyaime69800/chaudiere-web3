@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { createClient } from "@supabase/supabase-js";
 
 import { getEquipmentConfig } from "../server/lib/equipment-registry.js";
 
@@ -139,7 +140,9 @@ export default async function handler(
       body?.question ?? ""
     ).trim();
 
-    if (!equipmentId || !question) {
+    const platformDocumentIds = Array.isArray(body?.platformDocumentIds) ? [...new Set(body.platformDocumentIds)] : [];
+    if ((!equipmentId && !platformDocumentIds.length) || !question || platformDocumentIds.length > 20
+      || platformDocumentIds.some((id) => typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id))) {
       return response.status(400).json({
         error:
           "Équipement ou question manquant",
@@ -154,8 +157,50 @@ export default async function handler(
     // correspondant à l'identifiant reçu
     // par CarnetPass.
 
-    const equipmentConfig =
+    let equipmentConfig =
       getEquipmentConfig(equipmentId);
+
+    if (platformDocumentIds.length) {
+      const previewEnabled = process.env.VERCEL_ENV === "preview"
+        && process.env.VERCEL_GIT_COMMIT_REF === "feature/documentation-multi-docs"
+        && process.env.VITE_SUPABASE_URL === "https://bqqzzbwqmiyxcotvqtoc.supabase.co";
+      if (!previewEnabled) return response.status(404).json({ error: "Documentation indisponible." });
+      const professional = await requireVerifiedCompany(request, response);
+      if (!professional) return;
+      const db = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SECRET_KEY,
+        { auth: { persistSession: false, autoRefreshToken: false } });
+      const { data: indexed, error: indexError } = await db.from("platform_document_intake")
+        .select("id, manufacturer, model_reference, title, hotline_phone, rag_data")
+        .in("id", platformDocumentIds).eq("status", "approved").eq("rag_status", "ready")
+        .not("distribution_confirmed_at", "is", null);
+      if (indexError) throw indexError;
+      if (!indexed?.length || indexed.length !== platformDocumentIds.length
+        || indexed.some((item) => !Array.isArray(item.rag_data?.items) || !item.rag_data.items.length)) {
+        return response.status(409).json({ error: "Un document n'est pas encore indexé pour Shiba." });
+      }
+      const sameModel = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+      const first = indexed[0];
+      if (indexed.some((item) => sameModel(item.manufacturer) !== sameModel(first.manufacturer)
+        || sameModel(item.model_reference) !== sameModel(first.model_reference))
+        || (equipmentConfig && (sameModel(first.model_reference) !== sameModel(equipmentConfig.equipmentData.identity?.manufacturerReference)
+          || sameModel(first.manufacturer) !== sameModel(equipmentConfig.equipmentData.identity?.brand)))) {
+        return response.status(400).json({ error: "Documents de modèles différents." });
+      }
+      const sources = (value) => Array.isArray(value) ? value : Array.isArray(value?.documents) ? value.documents : value ? [value] : [];
+      const dynamicDocuments = indexed.map((item) => ({ documentId: item.id, title: item.title, storage: "private" }));
+      const base = equipmentConfig?.equipmentData || { identity: {
+        brand: first.manufacturer, model: first.model_reference, manufacturerReference: first.model_reference,
+      } };
+      equipmentConfig = {
+        equipmentData: {
+          ...base,
+          documents: [...(base.documents || []), ...dynamicDocuments],
+          support: base.support?.hotline?.phone ? base.support : indexed.find((item) => item.hotline_phone)?.hotline_phone
+            ? { hotline: { label: "Hotline constructeur", phone: indexed.find((item) => item.hotline_phone).hotline_phone } } : base.support,
+        },
+        ragEmbeddingData: [...sources(equipmentConfig?.ragEmbeddingData), ...indexed.map((item) => item.rag_data)],
+      };
+    }
 
     if (!equipmentConfig) {
       return response.status(404).json({
@@ -273,15 +318,7 @@ export default async function handler(
     // Pour le moment, la demande d'une liste complète
     // utilise encore l'index structuré existant.
 
-    if (
-      wantsErrorCodeList &&
-      !equipmentData.errorCodeIndex
-    ) {
-      return response.status(404).json({
-        error:
-          "Liste des codes défaut introuvable pour cet équipement",
-      });
-    }
+    const hasStructuredCodeList = wantsErrorCodeList && Boolean(equipmentData.errorCodeIndex);
 
     // -----------------------------------------------------
     // 7. DECISION DU MODE DE RECHERCHE
@@ -306,7 +343,7 @@ export default async function handler(
     // -----------------------------------------------------
 
     const shouldUseRag =
-      !wantsErrorCodeList &&
+      !hasStructuredCodeList &&
       !errorCode;
 
     // -----------------------------------------------------
@@ -534,7 +571,7 @@ Recherche uniquement les passages qui concernent réellement ce code ou l'une de
     // -----------------------------------------------------
 
     const context =
-      wantsErrorCodeList
+      hasStructuredCodeList
         ? {
             requestType:
               "error_code_list",
@@ -656,7 +693,7 @@ Recherche uniquement les passages qui concernent réellement ce code ou l'une de
     // LISTE DES CODES
     // -----------------------------------------------------
 
-    if (wantsErrorCodeList) {
+    if (hasStructuredCodeList) {
       aiInstructions = `
 Tu es l'assistant technique de CarnetPass.
 

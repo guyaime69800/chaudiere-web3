@@ -99,7 +99,8 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
     if (document.hotline_phone) item.hotlinePhone = document.hotline_phone;
     item.searchAliases = [...new Set([...(item.searchAliases || []), ...(document.model_aliases || [])])];
     item.publishedDocuments.push({ documentId: document.id, title: document.title,
-      sourceName: document.manufacturer, storage: "platform-private", documentCode: document.model_reference });
+      sourceName: document.manufacturer, storage: "platform-private", documentCode: document.model_reference,
+      ragStatus: document.rag_status || "pending" });
   }
   const category = CATEGORIES.find((item) => item.id === type);
   // Une entrée PAC/clim ne rejoint une unité que si sa position est renseignée.
@@ -131,7 +132,10 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
     clearModel({ preserveQuestion: true });
     const request = ++documentRequest.current;
     setAssistantOrigin(fromAssistant); setModel(item); setStep(fromAssistant ? "assistant" : "model");
-    if (item.publishedDocuments) setDocuments(item.publishedDocuments);
+    if (item.publishedDocuments) {
+      setDocuments(item.publishedDocuments);
+      setIndexedDocumentCount(item.publishedDocuments.filter((document) => document.ragStatus === "ready").length);
+    }
     if (item.hotlinePhone) setSupport({ hotline: { label: "Hotline", phone: item.hotlinePhone } });
     if (!item.equipmentId) return;
     setDocumentsBusy(true);
@@ -140,7 +144,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
       if (request === documentRequest.current) {
         const indexedDocuments = Array.isArray(library?.documents) ? library.documents : [];
         setDocuments([...indexedDocuments, ...(item.publishedDocuments || [])]);
-        setIndexedDocumentCount(indexedDocuments.length);
+        setIndexedDocumentCount(indexedDocuments.length + (item.publishedDocuments || []).filter((document) => document.ragStatus === "ready").length);
         setSupport(item.hotlinePhone ? { ...(library?.support || {}), hotline: { label: "Hotline", phone: item.hotlinePhone } } : library?.support ?? null);
       }
     } catch (loadError) {
@@ -202,7 +206,8 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
         method: "POST",
         headers: { "Content-Type": "application/json", ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
         body: JSON.stringify(useDocumentation
-          ? { equipmentId: model.equipmentId, question: question.trim() }
+          ? { equipmentId: model.equipmentId, platformDocumentIds: (model.publishedDocuments || [])
+            .filter((document) => document.ragStatus === "ready").map((document) => document.documentId), question: question.trim() }
           : { brand: model.brand, model: model.model, reference: model.manufacturerReference, category: category?.label || model.type, question: question.trim() }),
       });
       const result = await response.json();
@@ -335,7 +340,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
               <ShibaUsage session={session} />
               {documentsBusy && <p role="status">Vérification de la documentation…</p>}
               {documentsError && <p role="alert" className="technical-catalog-error">{documentsError}</p>}
-              {!documentsBusy && (!model.equipmentId || !documents.length) && <p className="technical-catalog-empty">Recherche sur le Web : les informations trouvées seront accompagnées de leurs sources et restent à vérifier sur l’appareil.</p>}
+              {!documentsBusy && !indexedDocumentCount && <p className="technical-catalog-empty">Aucun document de ce modèle n'est encore prêt pour Shiba. La recherche Web reste disponible avec ses sources.</p>}
               <form onSubmit={askShiba}>
                 <label htmlFor="technical-catalog-source">Source de la réponse</label>
                 <select id="technical-catalog-source" value={searchSource} onChange={(event) => { setSearchSource(event.target.value); setAnswer(""); setError(""); }}>
@@ -346,7 +351,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
                 <label htmlFor="technical-catalog-question">Votre question</label><textarea id="technical-catalog-question" value={question} onChange={(event) => { setQuestion(event.target.value); setAnswer(""); setError(""); setAnswerSources([]); setAnswerCitations([]); }} placeholder="Ex. Quelle est la référence de cette pièce ?" rows={4} autoFocus /><button type="submit" disabled={!question.trim() || documentsBusy || busy}>{busy ? "Recherche…" : "Interroger Shiba Bot"}</button>
               </form>
               {error && <p role="alert" className="technical-catalog-error">{error}</p>}
-              {answer && <div className="technical-catalog-answer" aria-live="polite"><div className="technical-catalog-answer-heading"><img src={shibaTechnicien} alt="" /><strong>Réponse de Shiba Bot {answerSource === "web" ? "· Recherche Web" : "· Documentation constructeur"}</strong></div>{answerSource === "web" ? <div className="technical-catalog-answer-body">{renderWebAnswer()}</div> : <div className="technical-catalog-answer-body"><ReactMarkdown>{answer}</ReactMarkdown></div>}{answerSource === "documents" && !!documents.length && <div className="technical-catalog-sources"><strong>Vérifier dans les documents</strong><ul>{documents.map((item) => <li key={item.documentId}><button type="button" disabled={Boolean(previewBusyId)} onClick={() => openDocumentPreview(item)}>{previewBusyId === item.documentId ? "Ouverture…" : item.title}</button></li>)}</ul><small>Vérifiez la référence et la variante exacte avant toute intervention.</small></div>}{answerSource === "web" && !!answerSources.length && <div className="technical-catalog-sources"><strong>Sources consultées</strong><ul>{answerSources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || source.url}</a></li>)}</ul><small>Vérifiez les informations techniques dans la notice du modèle exact.</small></div>}</div>}
+              {answer && <div className="technical-catalog-answer" aria-live="polite"><div className="technical-catalog-answer-heading"><img src={shibaTechnicien} alt="" /><strong>Réponse de Shiba Bot {answerSource === "web" ? "· Recherche Web" : "· Documentation constructeur"}</strong></div>{answerSource === "web" ? <div className="technical-catalog-answer-body">{renderWebAnswer()}</div> : <div className="technical-catalog-answer-body"><ReactMarkdown>{answer}</ReactMarkdown></div>}{answerSource === "documents" && !!indexedDocumentCount && <div className="technical-catalog-sources"><strong>Vérifier dans les documents indexés</strong><ul>{documents.filter((item) => item.storage !== "platform-private" || item.ragStatus === "ready").map((item) => <li key={item.documentId}><button type="button" disabled={Boolean(previewBusyId)} onClick={() => openDocumentPreview(item)}>{previewBusyId === item.documentId ? "Ouverture…" : item.title}</button></li>)}</ul><small>Vérifiez la référence et la variante exacte avant toute intervention.</small></div>}{answerSource === "web" && !!answerSources.length && <div className="technical-catalog-sources"><strong>Sources consultées</strong><ul>{answerSources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || source.url}</a></li>)}</ul><small>Vérifiez les informations techniques dans la notice du modèle exact.</small></div>}</div>}
               {webFallbackAvailable && <button type="button" className="technical-catalog-back" disabled={busy} onClick={(event) => askShiba(event, "web")}>Rechercher aussi sur le Web avec des sources →</button>}
             </section>}
           </>}
