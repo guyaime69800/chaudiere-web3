@@ -38,12 +38,12 @@ const CATEGORY_BRANDS = {
 const normalize = (value) => String(value || "").normalize("NFD")
   .replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("fr");
 
-export default function TechnicalCatalogModal({ open, onClose, catalog = [], session, initialMode = "catalog", initialQuestion = "", initialSource = "documents" }) {
+export default function TechnicalCatalogModal({ open, onClose, onAddEquipment, canAddEquipment = false, catalog = [], session, initialMode = "catalog", initialQuestion = "", initialSource = "documents" }) {
   if (!open) return null;
-  return <TechnicalCatalogContent onClose={onClose} catalog={catalog} session={session} initialMode={initialMode} initialQuestion={initialQuestion} initialSource={initialSource} />;
+  return <TechnicalCatalogContent onClose={onClose} onAddEquipment={onAddEquipment} canAddEquipment={canAddEquipment} catalog={catalog} session={session} initialMode={initialMode} initialQuestion={initialQuestion} initialSource={initialSource} />;
 }
 
-function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initialQuestion, initialSource }) {
+function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, catalog, session, initialMode, initialQuestion, initialSource }) {
   const [step, setStep] = useState(initialMode === "assistant" ? "assistant-picker" : "category");
   const [type, setType] = useState("");
   const [brand, setBrand] = useState("");
@@ -324,6 +324,7 @@ function TechnicalCatalogContent({ onClose, catalog, session, initialMode, initi
                 <button type="button" className="technical-catalog-card" onClick={() => setStep("documents")}><strong>Documents constructeur</strong><span>{documents.length} document{documents.length > 1 ? "s" : ""} disponible{documents.length > 1 ? "s" : ""} →</span></button>
                 )}
                 <button type="button" className="technical-catalog-card" onClick={() => setStep("assistant")}><strong className="technical-catalog-shiba-label"><img src={shibaTechnicien} alt="" /> Interroger Shiba Bot</strong><span>Documents indexés ou recherche Web avec sources →</span></button>
+                {onAddEquipment && <button type="button" className="technical-catalog-card" disabled={!canAddEquipment} onClick={() => onAddEquipment(model)}><strong>Ajouter un équipement de ce modèle</strong><span>{canAddEquipment ? "Préremplir le formulaire, puis vérifier et confirmer →" : "Ajout indisponible avec votre accès actuel"}</span></button>}
               </div>}
             </>}
             {step === "documents" && <section aria-label={`Documentation ${model.brand} ${model.model}`}>

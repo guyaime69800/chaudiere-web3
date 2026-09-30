@@ -21,6 +21,7 @@ import {
 import EquipmentWorkspace from "../components/EquipmentWorkspace";
 import CarnetPassCreatedModal from "../components/CarnetPassCreatedModal";
 import TechnicalCatalogModal from "../components/TechnicalCatalogModal";
+import { catalogEquipmentPrefill } from "../lib/catalogEquipmentPrefill.js";
 import ShibaUsage from "../components/ShibaUsage";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import { DISCOVERY_EQUIPMENT_LIMIT, getDiscoveryAccess } from "../../shared/discovery-access.js";
@@ -983,6 +984,7 @@ export default function ProSpacePage() {
   const [equipmentLoading, setEquipmentLoading] = useState(false);
   const [equipmentLoadError, setEquipmentLoadError] = useState("");
   const [equipmentFormOpen, setEquipmentFormOpen] = useState(false);
+  const equipmentFormRef = useRef(null);
   const [equipmentForm, setEquipmentForm] = useState(EMPTY_EQUIPMENT_FORM);
   const [equipmentError, setEquipmentError] = useState("");
   const [equipmentMessage, setEquipmentMessage] = useState("");
@@ -1350,6 +1352,15 @@ export default function ProSpacePage() {
     }));
     setEquipmentError("");
     setEquipmentMessage("");
+  }
+
+  function handleAddCatalogEquipment(model) {
+    setEquipmentForm(catalogEquipmentPrefill(model));
+    setEquipmentFormOpen(true);
+    setEquipmentError("");
+    setEquipmentMessage("Formulaire prérempli depuis le catalogue. Vérifiez la référence sur l'appareil avant de confirmer l'ajout.");
+    setTechnicalCatalogOpen(false);
+    window.requestAnimationFrame(() => equipmentFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }
 
   async function handleEquipmentSubmit(event) {
@@ -2015,6 +2026,7 @@ export default function ProSpacePage() {
 
           {equipmentFormOpen && companyCanCreateEquipment && (
             <form
+              ref={equipmentFormRef}
               className="pro-form pro-equipment-form"
               onSubmit={handleEquipmentSubmit}
               aria-busy={equipmentSubmitting}
@@ -2196,7 +2208,7 @@ export default function ProSpacePage() {
           )}
         </article>
       </section>
-      <TechnicalCatalogModal open={technicalCatalogOpen} onClose={() => setTechnicalCatalogOpen(false)} initialMode={catalogMode} initialQuestion={catalogMode === "assistant" ? shibaQuestion : ""} initialSource={shibaSource} session={session} catalog={equipmentIndex.equipments.map((item) => ({ ...item, type: item.type || "boiler" }))} />
+      <TechnicalCatalogModal open={technicalCatalogOpen} onClose={() => setTechnicalCatalogOpen(false)} onAddEquipment={handleAddCatalogEquipment} canAddEquipment={companyCanCreateEquipment} initialMode={catalogMode} initialQuestion={catalogMode === "assistant" ? shibaQuestion : ""} initialSource={shibaSource} session={session} catalog={equipmentIndex.equipments.map((item) => ({ ...item, type: item.type || "boiler" }))} />
       {selectedEquipment && (
         <EquipmentWorkspace
           key={selectedEquipment.id}
