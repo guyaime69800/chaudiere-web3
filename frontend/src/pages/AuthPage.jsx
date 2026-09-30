@@ -211,7 +211,7 @@ export default function AuthPage({ mode = "connexion" }) {
 
             {isSignUp && (
               <label className="auth-field">
-                <span>Numéro de téléphone professionnel</span>
+                <span>Numéro de téléphone professionnel *</span>
                 <input
                   type="tel"
                   name="phone"
@@ -224,7 +224,6 @@ export default function AuthPage({ mode = "connexion" }) {
                   placeholder="06 12 34 56 78"
                   required
                 />
-                <small>Obligatoire à l’inscription. Ce numéro n’est pas vérifié par SMS.</small>
               </label>
             )}
 
