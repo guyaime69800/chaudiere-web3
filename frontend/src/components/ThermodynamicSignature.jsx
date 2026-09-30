@@ -16,7 +16,10 @@ export default function ThermodynamicSignature({ label, value, onChange }) {
   }
   function move(event) {
     if (!activeStroke) return;
-    setActiveStroke((current) => [...current, position(event)].slice(0, 300));
+    // React may run a state updater after the pointer event has finished.
+    // Read currentTarget while the event is still active.
+    const point = position(event);
+    setActiveStroke((current) => current ? [...current, point].slice(0, 300) : current);
   }
   function finish() {
     if (activeStroke?.length > 1) setField("strokes", [...strokes, activeStroke].slice(0, 30));
