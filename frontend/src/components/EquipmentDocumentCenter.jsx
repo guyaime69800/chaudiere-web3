@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { getEquipmentDocumentLibrary } from "../services/equipmentKnowledge";
+import { getPlatformDocumentsForEquipment } from "../services/platformDocumentLibrary.js";
 import {
   deleteEquipmentAttachment,
   downloadEquipmentAttachment,
@@ -161,6 +162,10 @@ function EquipmentDocumentCenterContent({
   const { session } = useAuth();
   const [technicalDocuments, setTechnicalDocuments] = useState([]);
   const [technicalEquipmentId, setTechnicalEquipmentId] = useState("");
+  const indexedPlatformDocumentIds = technicalDocuments.filter(
+    (document) => document.storage === "platform-private" && document.ragStatus === "ready",
+  ).map((document) => document.documentId);
+  const canAskAi = Boolean(technicalEquipmentId || indexedPlatformDocumentIds.length);
   const [aiQuestion, setAiQuestion] = useState("");
   const [aiAnswer, setAiAnswer] = useState("");
   const [aiError, setAiError] = useState("");
@@ -227,18 +232,21 @@ function EquipmentDocumentCenterContent({
 
     onTechnicalDocumentCountChange?.(0);
 
-    getEquipmentDocumentLibrary({
+    Promise.all([getEquipmentDocumentLibrary({
       brand: equipment.brand,
       model: equipment.model,
       product_reference: equipment.product_reference,
       carnetPassId,
-    })
-      .then((library) => {
+    }), getPlatformDocumentsForEquipment(equipment, session?.access_token)])
+      .then(([library, publishedDocuments]) => {
         if (!active) return;
 
-        setTechnicalDocuments(library.documents);
+        const documents = [...library.documents, ...publishedDocuments.filter(
+          (document) => !library.documents.some((existing) => existing.documentId === document.documentId),
+        )];
+        setTechnicalDocuments(documents);
         setTechnicalEquipmentId(library.catalogueEquipment?.equipmentId || "");
-        onTechnicalDocumentCountChange?.(library.documents.length);
+        onTechnicalDocumentCountChange?.(documents.length);
       })
       .catch((error) => {
         console.error("Chargement de la documentation impossible :", error);
@@ -265,6 +273,7 @@ function EquipmentDocumentCenterContent({
     equipment.id,
     equipment.model,
     equipment.product_reference,
+    session?.access_token,
     onTechnicalDocumentCountChange,
   ]);
 
@@ -351,7 +360,7 @@ function EquipmentDocumentCenterContent({
     }
   }
   async function handleTechnicalDocumentOpen(technicalDocument) {
-    if (technicalDocument.storage !== "private") {
+    if (technicalDocument.storage !== "private" && technicalDocument.storage !== "platform-private") {
       setSelectedDocument(technicalDocument);
       return;
     }
@@ -361,9 +370,11 @@ function EquipmentDocumentCenterContent({
         throw new Error("Connecte-toi pour consulter ce document.");
       }
 
-      const pathname = new URL(technicalDocument.documentUrl).pathname.slice(1);
+      const endpoint = technicalDocument.storage === "platform-private"
+        ? `/api/platform-catalog-documents?id=${encodeURIComponent(technicalDocument.documentId)}`
+        : `/api/technical-document?pathname=${encodeURIComponent(new URL(technicalDocument.documentUrl).pathname.slice(1))}`;
       const response = await fetch(
-        `/api/technical-document?pathname=${encodeURIComponent(pathname)}`,
+        endpoint,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -388,7 +399,7 @@ function EquipmentDocumentCenterContent({
   }
   async function handleAskAi(event) {
     event.preventDefault();
-    if (aiBusy || !technicalEquipmentId || !aiQuestion.trim()) return;
+    if (aiBusy || !canAskAi || !aiQuestion.trim()) return;
 
     const requestId = ++aiRequestId.current;
     setAiBusy(true);
@@ -408,6 +419,7 @@ function EquipmentDocumentCenterContent({
         },
         body: JSON.stringify({
           equipmentId: technicalEquipmentId,
+          platformDocumentIds: indexedPlatformDocumentIds,
           question: aiQuestion.trim(),
         }),
       });
@@ -665,12 +677,12 @@ function EquipmentDocumentCenterContent({
               maxLength={1000}
               placeholder="Ex. Quelle est la référence du capteur de pression dans la vue éclatée ?"
             />
-            <button type="submit" disabled={aiBusy || !technicalEquipmentId || !aiQuestion.trim()}>
+            <button type="submit" disabled={aiBusy || !canAskAi || !aiQuestion.trim()}>
               {aiBusy ? "Shiba recherche…" : "Demander à Shiba Bot"}
             </button>
           </form>
-          {!technicalEquipmentId && (
-            <p role="alert">L’identifiant technique du modèle est introuvable.</p>
+          {!canAskAi && (
+            <p role="alert">Aucun document de ce modèle n’est encore indexé pour Shiba.</p>
           )}
           {aiError && <p className="equipment-workspace__ai-error" role="alert">{aiError}</p>}
           {aiAnswer && (
