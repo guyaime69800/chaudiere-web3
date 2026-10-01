@@ -110,7 +110,7 @@ export default function MaintenanceReminders({ equipment, session, interventions
     }
     const dueOn = parseReminderDate(shibaRequest, parisToday());
     if (!dueOn || dueOn <= parisToday()) {
-      setError("Shiba n’a pas trouvé de date future non ambiguë. Indiquez par exemple « dans onze mois » ou « le 15/09/2027 ». Le formulaire reste disponible.");
+      setError("Shiba n’a pas trouvé de date future non ambiguë. Indiquez « rappel le JJ/MM/AAAA » ou « rappel dans X jours/mois ». La saisie manuelle reste disponible.");
       return;
     }
     setProposal({ kind: isUpdate ? "update" : "create", dueOn, recipientEmail,
@@ -232,11 +232,11 @@ export default function MaintenanceReminders({ equipment, session, interventions
         <form className="maintenance-reminders__shiba-form" onSubmit={prepareShiba}>
           <label htmlFor="shiba-reminder-request">Votre demande</label>
           <div className="maintenance-reminders__shiba-row">
-            <input id="shiba-reminder-request" type="text" value={shibaRequest} onChange={(event) => setShibaRequest(event.target.value)} placeholder="Rappelle-moi l’entretien dans onze mois" maxLength={300} />
+            <input id="shiba-reminder-request" type="text" value={shibaRequest} onChange={(event) => setShibaRequest(event.target.value)} placeholder="Écrivez ici votre demande de rappel" maxLength={300} aria-describedby="shiba-reminder-hint" />
             <button className="pro-primary-button" type="submit" disabled={!shibaRequest.trim() || busy}>Préparer avec Shiba</button>
           </div>
         </form>
-        <small>Dates explicites ou « dans X jours/mois ». Aucune instruction d’un document ne déclenche une action.</small>
+        <small id="shiba-reminder-hint">Saisissez votre demande pour activer le bouton. Formats reconnus : « rappel le JJ/MM/AAAA » ou « rappel dans X jours/mois ». Aucune instruction d’un document ne déclenche une action.</small>
       </div>}
       {!proposal && <button className="maintenance-reminders__manual-link" type="button" onClick={() => {
         setEditing(null); setForm(emptyForm()); setError(""); setManualOpen(true);
