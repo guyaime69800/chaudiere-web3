@@ -33,8 +33,49 @@
 .maintenance-reminders__proposal {
   padding: 16px; border: 1px solid #db7b55; border-radius: 12px; background: white;
 }
+.maintenance-reminders__shiba {
+  margin-top: 20px; padding: 20px; border: 1px solid #e8c1ad;
+  border-radius: 15px; background: linear-gradient(125deg, #fff, #fff0e8);
+}
+.maintenance-reminders__shiba-heading { display: flex; align-items: center; gap: 14px; }
+.maintenance-reminders__shiba-heading img { width: 54px; height: 54px; object-fit: contain; }
+.maintenance-reminders__shiba-heading h4 { margin-bottom: 4px; font-size: 20px; }
+.maintenance-reminders__shiba-heading p { margin: 0; }
+.maintenance-reminders__shiba-form { margin-top: 18px; }
+.maintenance-reminders__shiba-form label { display: block; margin-bottom: 7px; font-weight: 700; }
+.maintenance-reminders__shiba-row { display: flex; gap: 10px; }
+.maintenance-reminders__shiba-row input {
+  flex: 1; min-width: 0; min-height: 46px; padding: 10px 12px;
+  border: 1px solid #dec9bf; border-radius: 9px; background: white; font: inherit;
+}
+.maintenance-reminders__shiba-row .pro-primary-button { width: auto; margin: 0; white-space: nowrap; }
+.maintenance-reminders__shiba small { display: block; margin-top: 10px; color: var(--pro-muted); }
+.maintenance-reminders .maintenance-reminders__manual-link {
+  min-height: 0; margin-top: 12px; padding: 4px 0; border: 0;
+  background: transparent; color: #a9330b; font-size: 13px;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.maintenance-reminders__dialog {
+  width: min(560px, calc(100% - 30px)); max-height: min(90vh, 800px);
+  padding: 24px; border: 1px solid #ead9d0; border-radius: 18px;
+  color: var(--pro-ink, #261c18); background: #fffaf7;
+  box-shadow: 0 24px 80px rgba(39, 19, 10, .24);
+}
+.maintenance-reminders__dialog::backdrop { background: rgba(30, 19, 14, .58); }
+.maintenance-reminders__dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.maintenance-reminders__dialog-heading h3 { margin: 0; }
+.maintenance-reminders__dialog-heading button {
+  border: 0; background: transparent; color: #6b574d; font-size: 26px; cursor: pointer;
+}
+.maintenance-reminders__dialog .maintenance-reminders__form { margin-top: 12px; }
+.maintenance-reminders__dialog .maintenance-reminders__form label { width: 100%; }
+.maintenance-reminders__dialog .maintenance-reminders__form .pro-primary-button { margin: 0; }
 @media (max-width: 640px) {
   .maintenance-reminders { padding: 16px; }
   .maintenance-reminders__list li { align-items: stretch; flex-direction: column; }
   .maintenance-reminders__actions { flex-wrap: wrap; }
+  .maintenance-reminders__shiba-heading { align-items: flex-start; }
+  .maintenance-reminders__shiba-row { flex-direction: column; }
+  .maintenance-reminders__shiba-row .pro-primary-button { width: 100%; }
+  .maintenance-reminders__dialog { padding: 18px; }
 }

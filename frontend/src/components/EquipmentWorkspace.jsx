@@ -140,6 +140,7 @@ export default function EquipmentWorkspace({
     boilerCertificatesLoading = false,
     onClose,
     onOpenCarnetPass,
+    onOpenModelReminders,
     onInterventionCreated,
     onCertificatesChange,
     promptReminder = false,
@@ -327,6 +328,13 @@ export default function EquipmentWorkspace({
                 </div>
 
                 <div className="equipment-workspace__header-actions">
+                    {onOpenModelReminders && <button
+                        className="equipment-workspace__reminders-button"
+                        type="button"
+                        onClick={onOpenModelReminders}
+                        aria-label={`Voir les rappels du modèle ${equipment.brand} ${equipment.model}`}
+                        title="Rappels de ce modèle"
+                    >🔔</button>}
                     <button
                         className="pro-primary-button"
                         type="button"

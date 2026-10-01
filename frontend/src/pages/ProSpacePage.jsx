@@ -20,6 +20,7 @@ import {
   updateCompanyCarnetPassContacts,
 } from "../services/carnetPassService";
 import EquipmentWorkspace from "../components/EquipmentWorkspace";
+import ModelRemindersContents from "../components/ModelRemindersContents";
 import CarnetPassCreatedModal from "../components/CarnetPassCreatedModal";
 import TechnicalCatalogModal from "../components/TechnicalCatalogModal";
 import { catalogEquipmentPrefill } from "../lib/catalogEquipmentPrefill.js";
@@ -1004,6 +1005,7 @@ export default function ProSpacePage() {
   const [boilerCertificatesLoading, setBoilerCertificatesLoading] =
     useState(true);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
+  const [modelReminderEquipment, setModelReminderEquipment] = useState(null);
   const [reminderPromptEquipmentId, setReminderPromptEquipmentId] = useState("");
   const contactSelectionRef = useRef("");
   const [carnetPassPreview, setCarnetPassPreview] = useState(null);
@@ -2247,6 +2249,13 @@ export default function ProSpacePage() {
                         </strong>
                       </div>
                     </button>
+                    {["owner", "admin"].includes(company.role) && <button
+                      className="pro-equipment-reminders-button"
+                      type="button"
+                      onClick={() => setModelReminderEquipment(equipment)}
+                      aria-label={`Voir les rappels du modèle ${equipment.brand} ${equipment.model}`}
+                      title="Rappels du modèle"
+                    >🔔</button>}
                   </li>
                 );
               })}
@@ -2270,6 +2279,9 @@ export default function ProSpacePage() {
           boilerCertificates={boilerCertificates}
           boilerCertificatesLoading={boilerCertificatesLoading}
           onOpenCarnetPass={() => handleOpenCarnetPass(selectedEquipment)}
+          onOpenModelReminders={["owner", "admin"].includes(company.role)
+            ? () => setModelReminderEquipment(selectedEquipment)
+            : undefined}
           onClose={() => setSelectedEquipmentId("")}
           onInterventionCreated={() =>
             setInterventionRefreshKey((currentKey) => currentKey + 1)
@@ -2281,6 +2293,18 @@ export default function ProSpacePage() {
           promptReminder={selectedEquipment.id === reminderPromptEquipmentId}
         />
       )}
+      <ModalShell
+        open={Boolean(modelReminderEquipment)}
+        onClose={() => setModelReminderEquipment(null)}
+        dialogId="model-reminders-modal"
+        titleId="model-reminders-modal-title"
+        eyebrow="Rappels d’entretien"
+        title={`🔔 ${modelReminderEquipment?.brand || ""} ${modelReminderEquipment?.model || ""}`}
+        description="Tous les rappels en cours pour ce modèle, sur les appareils de votre entreprise."
+        className="pro-model-reminders-modal"
+      >
+        {modelReminderEquipment && <ModelRemindersContents equipment={modelReminderEquipment} session={session} />}
+      </ModalShell>
       <ModalShell
         open={Boolean(carnetPassPreview?.id)}
         onClose={() => setCarnetPassPreview(null)}

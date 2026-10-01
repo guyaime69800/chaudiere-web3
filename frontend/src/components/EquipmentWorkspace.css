@@ -98,6 +98,20 @@
   gap: 10px;
 }
 
+.equipment-workspace__reminders-button {
+  min-width: 48px;
+  border: 1px solid var(--pro-line);
+  border-radius: 12px;
+  background: #fff8f3;
+  font-size: 22px;
+  cursor: pointer;
+}
+.equipment-workspace__reminders-button:hover,
+.equipment-workspace__reminders-button:focus-visible {
+  background: var(--pro-orange-light);
+  outline-color: var(--pro-orange);
+}
+
 .equipment-workspace__header-actions .pro-primary-button,
 .equipment-workspace__header-actions .pro-action-card-button {
   width: auto;

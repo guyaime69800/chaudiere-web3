@@ -1077,6 +1077,8 @@
 }
 
 .pro-equipment-list li {
+  display: flex;
+  align-items: stretch;
   padding: 0;
   border: 1px solid var(--pro-line);
   border-radius: 13px;
@@ -1086,10 +1088,12 @@
 
 .pro-equipment-open-button {
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  width: 100%;
+  min-width: 0;
+  width: auto;
   padding: 14px;
   border: 0;
   color: inherit;
@@ -1100,6 +1104,20 @@
   transition:
     background-color 160ms ease,
     transform 160ms ease;
+}
+
+.pro-equipment-reminders-button {
+  flex: 0 0 58px;
+  border: 0;
+  border-left: 1px solid var(--pro-line);
+  background: #fff8f3;
+  font-size: 22px;
+  cursor: pointer;
+}
+.pro-equipment-reminders-button:hover,
+.pro-equipment-reminders-button:focus-visible {
+  background: var(--pro-orange-light);
+  outline-color: var(--pro-orange);
 }
 
 .pro-equipment-open-button:hover:not(:disabled),
@@ -1160,7 +1178,7 @@
   }
 
   .pro-equipment-list li {
-    display: block;
+    display: flex;
   }
 
   .pro-equipment-open-button {

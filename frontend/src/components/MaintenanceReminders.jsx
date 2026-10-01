@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../services/supabaseClient";
 import { parseReminderDate } from "../lib/reminder-date.js";
+import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import "./MaintenanceReminders.css";
 
 const emptyForm = () => ({ dueOn: "", lastMaintenanceOn: "", leadDays: "30" });
@@ -23,8 +24,17 @@ export default function MaintenanceReminders({ equipment, session, interventions
   const [editing, setEditing] = useState(null);
   const [proposal, setProposal] = useState(null);
   const [shibaRequest, setShibaRequest] = useState("");
+  const [manualOpen, setManualOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
+  const manualDialogRef = useRef(null);
+
+  useEffect(() => {
+    const dialog = manualDialogRef.current;
+    if (!dialog) return;
+    if (manualOpen && !dialog.open) dialog.showModal();
+    if (!manualOpen && dialog.open) dialog.close();
+  }, [manualOpen]);
 
   async function reload() {
     const { data, error: loadError } = await supabase.from("maintenance_reminders")
@@ -76,6 +86,7 @@ export default function MaintenanceReminders({ equipment, session, interventions
       confirmationKey: editing ? null : crypto.randomUUID(),
       editing: editing ? { id: editing.id, version: editing.version } : null,
     });
+    setManualOpen(false);
   }
 
   function prepareShiba(event) {
@@ -200,15 +211,43 @@ export default function MaintenanceReminders({ equipment, session, interventions
     }
   }
 
-  return <section className="maintenance-reminders" aria-labelledby="maintenance-reminders-title">
+  return <>
+  <section className="maintenance-reminders" aria-labelledby="maintenance-reminders-title">
     <h3 id="maintenance-reminders-title">Entretien et rappels</h3>
     {promptAfterCreation && <p className="maintenance-reminders__prompt">Équipement enregistré. Souhaitez-vous programmer son prochain entretien ?</p>}
     <p>Dernier entretien validé : {validatedMaintenance ? new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeZone: "Europe/Paris" }).format(new Date(validatedMaintenance.interventionAt)) : "aucun"}. {declaredMaintenance ? `Date déclarée séparément : ${readableDate(declaredMaintenance)}.` : ""} La date d’installation ne compte pas comme entretien.</p>
     <p>Prochaine échéance : {active.length ? `${readableDate(active[0].due_on)} (${sourceLabel(active[0].due_source)})` : "à définir"}.</p>
     {loading && <p role="status">Chargement des rappels…</p>}
-    {error && <p className="pro-form-error" role="alert">{error}</p>}
+    {error && !manualOpen && <p className="pro-form-error" role="alert">{error}</p>}
     {message && <p className="pro-form-success" role="status">{message}</p>}
     {!loading && <>
+      {!proposal && <div className="maintenance-reminders__shiba">
+        <div className="maintenance-reminders__shiba-heading">
+          <img src={shibaTechnicien} alt="" />
+          <div>
+            <h4>Programmer avec Shiba Bot</h4>
+            <p>Décrivez le rappel souhaité pour cet appareil. Shiba prépare la date ; vous vérifiez et confirmez avant tout enregistrement.</p>
+          </div>
+        </div>
+        <form className="maintenance-reminders__shiba-form" onSubmit={prepareShiba}>
+          <label htmlFor="shiba-reminder-request">Votre demande</label>
+          <div className="maintenance-reminders__shiba-row">
+            <input id="shiba-reminder-request" type="text" value={shibaRequest} onChange={(event) => setShibaRequest(event.target.value)} placeholder="Rappelle-moi l’entretien dans onze mois" maxLength={300} />
+            <button className="pro-primary-button" type="submit" disabled={!shibaRequest.trim() || busy}>Préparer avec Shiba</button>
+          </div>
+        </form>
+        <small>Dates explicites ou « dans X jours/mois ». Aucune instruction d’un document ne déclenche une action.</small>
+      </div>}
+      {!proposal && <button className="maintenance-reminders__manual-link" type="button" onClick={() => {
+        setEditing(null); setForm(emptyForm()); setError(""); setManualOpen(true);
+      }}>Saisir un rappel manuellement →</button>}
+      {proposal && <div className="maintenance-reminders__proposal" role="group" aria-label="Confirmation du rappel">
+        <strong>Confirmer cette action ?</strong>
+        <p>{proposal.kind === "cancel" ? "Annuler le rappel" : proposal.editing ? "Modifier le rappel" : "Créer le rappel"} · {equipment.brand} {equipment.model} · {readableDate(proposal.dueOn)} · {proposal.kind === "cancel" ? active[0]?.recipient_email || recipientEmail : proposal.recipientEmail}{proposal.kind === "cancel" ? "" : ` · e-mail ${proposal.leadDays} jour(s) avant`}.</p>
+        <p>{proposal.kind === "cancel" ? "Une notification déjà envoyée ne peut pas être rappelée." : "Origine : date choisie par vous. Aucun message n’est envoyé maintenant."}</p>
+        <button className="pro-primary-button" type="button" disabled={busy} onClick={confirm}>{busy ? "Enregistrement…" : "Confirmer"}</button>
+        <button type="button" disabled={busy} onClick={() => setProposal(null)}>Annuler</button>
+      </div>}
       {active.length > 0 && <ul className="maintenance-reminders__list">
         {active.map((reminder) => <li key={reminder.id}>
           <div><strong>{readableDate(reminder.due_on)}</strong> · {sourceLabel(reminder.due_source)}<br />
@@ -218,36 +257,31 @@ export default function MaintenanceReminders({ equipment, session, interventions
           <div className="maintenance-reminders__actions">
             {previewEmailTestEnabled && <button type="button" disabled={busy} onClick={() => sendTest(reminder)}>E-mail test Preview</button>}
             <button type="button" disabled={busy} onClick={() => {
-              setEditing(reminder); setProposal(null);
+              setEditing(reminder); setProposal(null); setError(""); setManualOpen(true);
               setForm({ dueOn: reminder.due_on, lastMaintenanceOn: reminder.last_maintenance_on || "", leadDays: String(reminder.lead_days) });
             }}>Modifier</button>
             <button type="button" disabled={busy} onClick={() => cancel(reminder)}>Annuler</button>
           </div>
         </li>)}
       </ul>}
-      {!proposal && <form className="maintenance-reminders__form" onSubmit={prepare}>
-        <h4>{editing ? "Modifier ce rappel" : "Programmer un rappel"}</h4>
-        <p>Aucune périodicité n’est supposée. Choisissez la date du prochain entretien ; la documentation n’est pas obligatoire.</p>
-        <label>Date du dernier entretien, si connue <input type="date" value={form.lastMaintenanceOn} max={form.dueOn || undefined} onChange={(event) => setForm({ ...form, lastMaintenanceOn: event.target.value })} /></label>
-        <label>Prochaine échéance * <input type="date" required min={parisToday()} value={form.dueOn} onChange={(event) => setForm({ ...form, dueOn: event.target.value })} /></label>
-        <label>Prévenir combien de jours avant ? <input type="number" required min="0" max="365" value={form.leadDays} onChange={(event) => setForm({ ...form, leadDays: event.target.value })} /></label>
-        <p>Destinataire : <strong>{recipientEmail || "adresse indisponible"}</strong> (adresse du compte confirmée). Canal : e-mail et rappel dans CarnetPass.</p>
-        <button className="pro-primary-button" type="submit" disabled={busy || !emailConfirmed}>Préparer le rappel</button>
-        {editing && <button type="button" onClick={() => { setEditing(null); setForm(emptyForm()); }}>Abandonner la modification</button>}
-      </form>}
-      {!proposal && <form className="maintenance-reminders__form" onSubmit={prepareShiba}>
-        <h4>Demander à Shiba Bot</h4>
-        <p>Shiba reconnaît ici une date explicite ou « dans X jours/mois ». Le calcul est fait par l’application, puis l’action doit être confirmée. Aucune instruction d’un PDF ne peut déclencher un rappel.</p>
-        <label>Votre demande <input type="text" value={shibaRequest} onChange={(event) => setShibaRequest(event.target.value)} placeholder="Rappelle-moi l’entretien dans onze mois" maxLength={300} /></label>
-        <button type="submit" disabled={!shibaRequest.trim() || busy}>Préparer avec Shiba</button>
-      </form>}
-      {proposal && <div className="maintenance-reminders__proposal" role="group" aria-label="Confirmation du rappel">
-        <strong>Confirmer cette action ?</strong>
-        <p>{proposal.kind === "cancel" ? "Annuler le rappel" : proposal.editing ? "Modifier le rappel" : "Créer le rappel"} · {equipment.brand} {equipment.model} · {readableDate(proposal.dueOn)} · {proposal.kind === "cancel" ? active[0]?.recipient_email || recipientEmail : proposal.recipientEmail}{proposal.kind === "cancel" ? "" : ` · e-mail ${proposal.leadDays} jour(s) avant`}.</p>
-        <p>{proposal.kind === "cancel" ? "Une notification déjà envoyée ne peut pas être rappelée." : "Origine : date choisie par vous. Aucun message n’est envoyé maintenant."}</p>
-        <button className="pro-primary-button" type="button" disabled={busy} onClick={confirm}>{busy ? "Enregistrement…" : "Confirmer"}</button>
-        <button type="button" disabled={busy} onClick={() => setProposal(null)}>Annuler</button>
-      </div>}
     </>}
-  </section>;
+  </section>
+  <dialog ref={manualDialogRef} className="maintenance-reminders__dialog" aria-labelledby="manual-reminder-title" onClose={() => {
+    setManualOpen(false); setEditing(null); setForm(emptyForm());
+  }}>
+    <div className="maintenance-reminders__dialog-heading">
+      <h3 id="manual-reminder-title">{editing ? "Modifier le rappel" : "Saisir un rappel manuellement"}</h3>
+      <button type="button" aria-label="Fermer la saisie manuelle" onClick={() => setManualOpen(false)}>×</button>
+    </div>
+    <p>Choisissez vous-même une date pour {equipment.brand} {equipment.model}. Aucune périodicité n’est supposée ; la documentation n’est pas obligatoire.</p>
+    {error && manualOpen && <p className="pro-form-error" role="alert">{error}</p>}
+    <form className="maintenance-reminders__form" onSubmit={prepare}>
+      <label>Date du dernier entretien, si connue <input type="date" value={form.lastMaintenanceOn} max={form.dueOn || undefined} onChange={(event) => setForm({ ...form, lastMaintenanceOn: event.target.value })} /></label>
+      <label>Prochaine échéance * <input type="date" required min={parisToday()} value={form.dueOn} onChange={(event) => setForm({ ...form, dueOn: event.target.value })} /></label>
+      <label>Prévenir combien de jours avant ? <input type="number" required min="0" max="365" value={form.leadDays} onChange={(event) => setForm({ ...form, leadDays: event.target.value })} /></label>
+      <p>Destinataire : <strong>{recipientEmail || "adresse indisponible"}</strong> (adresse du compte confirmée). Canal : e-mail et rappel dans CarnetPass.</p>
+      <button className="pro-primary-button" type="submit" disabled={busy || !emailConfirmed}>Préparer le rappel</button>
+    </form>
+  </dialog>
+  </>;
 }
