@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { QRCodeCanvas } from "qrcode.react";
+import { publicQrUrl } from "../lib/public-qr-url.js";
 import "./CarnetPassCreatedModal.css";
 
 export default function CarnetPassCreatedModal({ carnetPass, onClose }) {
@@ -54,7 +55,7 @@ export default function CarnetPassCreatedModal({ carnetPass, onClose }) {
 
   if (!carnetPass || typeof document === "undefined") return null;
 
-  const publicUrl = `${window.location.origin}/appareil/${encodeURIComponent(carnetPass.qrToken)}`;
+  const publicUrl = publicQrUrl(window.location.origin, carnetPass.qrToken);
 
   return createPortal(
     <div className="created-carnetpass-overlay" role="presentation">

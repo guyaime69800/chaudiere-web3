@@ -4,6 +4,7 @@
 
 import { Scanner } from "@yudiel/react-qr-scanner";
 import { useState } from "react";
+import { isTrustedCarnetPassQrOrigin } from "./lib/public-qr-url.js";
 
 const CUIVRE = "#B87333";
 
@@ -42,16 +43,7 @@ function extraireId(valeur, origineCourante) {
     // Aucun identifiant de connexion n'est attendu dans une adresse QR.
     if (url.username || url.password) return null;
 
-    const originesAutorisees = new Set([
-      "https://carnetpass.fr",
-      "https://www.carnetpass.fr",
-      "https://carnetpass.com",
-      "https://www.carnetpass.com",
-      "https://test.carnetpass.fr",
-      origineCourante,
-    ]);
-
-    if (!originesAutorisees.has(url.origin)) return null;
+    if (!isTrustedCarnetPassQrOrigin(url.origin, origineCourante)) return null;
 
     // Une seule partie après /appareil/ ; une barre finale est tolérée.
     const correspondance = url.pathname.match(/^\/appareil\/([^/]+)\/?$/);

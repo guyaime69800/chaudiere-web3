@@ -10,6 +10,7 @@ import EquipmentRegistryABI from "./blockchain/EquipmentRegistry.json";
 import { useWallet } from "./blockchain/useWallet";
 import { loadEquipmentKnowledge } from "./services/equipmentKnowledge";
 import { getPublicUserManual } from "./lib/public-user-manuals.js";
+import { publicQrUrl } from "./lib/public-qr-url.js";
 import CarnetPassCreatedModal from "./components/CarnetPassCreatedModal";
 import shibaTechnicien from "./assets/carnetpass-shiba-technicien.png";
 import HomeLanding from "./components/HomeLanding";
@@ -539,9 +540,7 @@ function App({ initialMode = "public" }) {
 
           // Le jeton provient du lien ouvert, jamais d'une recherche par numéro.
           // origin = adresse de base de l'application actuellement ouverte.
-          publicQrUrl: `${window.location.origin}/appareil/${encodeURIComponent(
-            identifiantQr
-          )}`,
+          publicQrUrl: publicQrUrl(window.location.origin, identifiantQr),
 
           // Les API publiques ne fournissent pas les données privées du carnet.
           publicTechnicalOnly: true,
