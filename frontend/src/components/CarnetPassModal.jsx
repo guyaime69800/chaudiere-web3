@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { QRCodeCanvas } from "qrcode.react";
+import { publicQrUrl } from "../lib/public-qr-url.js";
 import "./CarnetPassModal.css";
 
-export default function CarnetPassModal({
+function CarnetPassModalContents({
   open,
   onOpenChange,
   onOpenDocuments,
@@ -33,8 +35,6 @@ export default function CarnetPassModal({
 
     const previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    setLoading(true);
-
     const focusFrame = window.requestAnimationFrame(() => {
       closeButtonRef.current?.focus();
     });
@@ -79,9 +79,7 @@ export default function CarnetPassModal({
     };
   }, [open, onOpenChange]);
 
-  if (!open || !carnetPassId || typeof document === "undefined") {
-    return null;
-  }
+  const publicUrl = publicQrUrl(window.location.origin, carnetPassId);
 
   return createPortal(
     <div
@@ -140,6 +138,20 @@ export default function CarnetPassModal({
         </div>
 
         <div className="carnetpass-modal__viewer">
+          <aside className="carnetpass-modal__qr" aria-label="QR de la fiche publique">
+            <div>
+              <strong>QR de la fiche particulier</strong>
+              <p>Scannez-le avec votre téléphone pour contrôler les informations publiées.</p>
+            </div>
+            <QRCodeCanvas
+              value={publicUrl}
+              size={172}
+              level="M"
+              includeMargin
+              role="img"
+              aria-label={`QR vers la fiche publique du CarnetPass ${carnetPassId}`}
+            />
+          </aside>
           {loading && (
             <div
               className="carnetpass-modal__loading"
@@ -162,8 +174,8 @@ export default function CarnetPassModal({
 
         <footer className="carnetpass-modal__footer">
           <p>
-            Aperçu de la fiche visible après le scan du QR code. Les notices et
-            l’assistant technique sont dans l’onglet Documents du dossier professionnel.
+            Le QR ouvre cette fiche publique sur téléphone. Les documents et
+            l’assistant réservés aux professionnels restent dans l’onglet Documents.
           </p>
 
           <div>
@@ -196,4 +208,9 @@ export default function CarnetPassModal({
     </div>,
     document.body,
   );
+}
+
+export default function CarnetPassModal(props) {
+  if (!props.open || !props.carnetPassId || typeof document === "undefined") return null;
+  return <CarnetPassModalContents key={props.carnetPassId} {...props} />;
 }
