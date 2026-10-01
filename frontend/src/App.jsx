@@ -1634,12 +1634,6 @@ function App({ initialMode = "public" }) {
                   </button>
                 ) : null}
               </div>}
-              {boiler.carnetPassId && mode === "public" && <details className="public-qr-share">
-                <summary>Partager ou remplacer le QR de cette fiche</summary>
-                <p>Ce nouveau QR pointe vers l’adresse de test stable de la fiche publique. Si votre ancien QR contient une adresse de déploiement Vercel, remplacez-le par celui-ci.</p>
-                <QRCodeCanvas id={`qr-${boiler.equipmentId}`} value={boiler.publicQrUrl} size={160} level="M" includeMargin />
-                <button className="btn btn-ghost" type="button" onClick={() => telechargerQR(boiler.equipmentId)}>Télécharger le nouveau QR</button>
-              </details>}
               {/* ---------- DOCUMENTATION TECHNIQUE ---------- */}
               {!boiler.carnetPassId && equipmentKnowledge?.data?.documents?.length > 0 && (
                 <div className="technical-docs">
