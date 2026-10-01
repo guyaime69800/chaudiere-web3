@@ -1,0 +1,40 @@
+.maintenance-reminders {
+  margin-top: 24px;
+  padding: 22px;
+  border: 1px solid #ead9d0;
+  border-radius: 18px;
+  background: #fffaf7;
+  color: var(--pro-ink, #261c18);
+}
+
+.maintenance-reminders h3,
+.maintenance-reminders h4 { margin: 0 0 12px; }
+.maintenance-reminders p { line-height: 1.55; }
+.maintenance-reminders__prompt { font-weight: 700; color: #a9330b; }
+.maintenance-reminders__list { padding: 0; list-style: none; }
+.maintenance-reminders__list li {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  margin-top: 10px; padding: 14px; border: 1px solid #ead9d0;
+  border-radius: 12px; background: white; line-height: 1.6;
+}
+.maintenance-reminders__actions { display: flex; gap: 8px; }
+.maintenance-reminders button:not(.pro-primary-button) {
+  min-height: 42px; padding: 8px 12px; border: 1px solid #d94713;
+  border-radius: 9px; background: white; color: #a9330b; cursor: pointer;
+}
+.maintenance-reminders button:disabled { opacity: .55; cursor: not-allowed; }
+.maintenance-reminders__form,
+.maintenance-reminders__proposal { display: grid; justify-items: start; gap: 12px; margin-top: 18px; }
+.maintenance-reminders__form label { display: grid; gap: 6px; width: min(100%, 340px); font-weight: 650; }
+.maintenance-reminders__form input {
+  width: 100%; min-height: 42px; padding: 8px 10px; border: 1px solid #dec9bf;
+  border-radius: 9px; background: white; font: inherit;
+}
+.maintenance-reminders__proposal {
+  padding: 16px; border: 1px solid #db7b55; border-radius: 12px; background: white;
+}
+@media (max-width: 640px) {
+  .maintenance-reminders { padding: 16px; }
+  .maintenance-reminders__list li { align-items: stretch; flex-direction: column; }
+  .maintenance-reminders__actions { flex-wrap: wrap; }
+}

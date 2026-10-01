@@ -1004,6 +1004,7 @@ export default function ProSpacePage() {
   const [boilerCertificatesLoading, setBoilerCertificatesLoading] =
     useState(true);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
+  const [reminderPromptEquipmentId, setReminderPromptEquipmentId] = useState("");
   const contactSelectionRef = useRef("");
   const [carnetPassPreview, setCarnetPassPreview] = useState(null);
   const [createdCarnetPass, setCreatedCarnetPass] = useState(null);
@@ -1424,6 +1425,8 @@ export default function ProSpacePage() {
       setEquipmentForm(EMPTY_EQUIPMENT_FORM);
       setEquipmentFormOpen(false);
       setEquipmentRefreshKey((currentKey) => currentKey + 1);
+      setSelectedEquipmentId(savedEquipment.id);
+      setReminderPromptEquipmentId(savedEquipment.id);
 
       if (!reference) {
         setEquipmentMessage("Équipement enregistré. Ajoutez une référence produit pour créer son CarnetPass.");
@@ -1460,6 +1463,7 @@ export default function ProSpacePage() {
   }
 
   function handleSelectEquipment(equipment) {
+    if (equipment.id !== reminderPromptEquipmentId) setReminderPromptEquipmentId("");
     contactSelectionRef.current = equipment.id;
     setSelectedEquipmentId(equipment.id);
     setEquipmentFormOpen(false);
@@ -2033,6 +2037,11 @@ export default function ProSpacePage() {
               {equipmentMessage}
             </p>
           )}
+          {equipmentMessage && reminderPromptEquipmentId && (
+            <p className="pro-form-success">
+              Souhaitez-vous programmer son prochain entretien ? Ouvrez l’onglet « Entretien et rappels » du dossier affiché ci-dessous.
+            </p>
+          )}
 
           {equipmentLoadError && (
             <p className="pro-form-error" role="alert">
@@ -2269,6 +2278,7 @@ export default function ProSpacePage() {
             setBoilerCertificates(certificates);
             setBoilerCertificatesLoading(false);
           }}
+          promptReminder={selectedEquipment.id === reminderPromptEquipmentId}
         />
       )}
       <ModalShell

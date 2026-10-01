@@ -18,6 +18,7 @@ import { CookiesPage, FaqPage, LegalNoticePage, PrivacyPage, SalesTermsPage, Ter
 import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
 import AccountSettingsPage from "./pages/AccountSettingsPage.jsx";
 import PlatformAdminPage from "./pages/PlatformAdminPage.jsx";
+import PublicMaintenanceReminderPage from "./pages/PublicMaintenanceReminderPage.jsx";
 import { registerSW } from "virtual:pwa-register";
 const updateSW = registerSW({
   immediate: true,
@@ -84,6 +85,8 @@ createRoot(document.getElementById("root")).render(
           />
           <Route path="/parametres-compte" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
           <Route path="/administration-interne" element={<ProtectedRoute><PlatformAdminPage /></ProtectedRoute>} />
+          <Route path="/rappel/activer" element={<PublicMaintenanceReminderPage mode="activate" />} />
+          <Route path="/rappel/gerer" element={<PublicMaintenanceReminderPage mode="manage" />} />
 
           {/* Fiche ouverte depuis un QR code */}
           <Route path="/appareil/:id" element={<App />} />

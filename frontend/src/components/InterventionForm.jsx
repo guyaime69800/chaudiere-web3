@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createInterventionPdf } from "../services/interventionPdfService";
 import DocumentPreviewModal from "./DocumentPreviewModal";
+import { supabase } from "../services/supabaseClient";
 const EMPTY_INTERVENTION_FORM = {
   equipmentId: "",
   interventionType: "maintenance",
@@ -105,6 +106,7 @@ export default function InterventionForm({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [pdfGeneratingId, setPdfGeneratingId] = useState("");
+  const [maintenanceValidatingId, setMaintenanceValidatingId] = useState("");
   const [pdfPreview, setPdfPreview] = useState(null);
 
   const boilerCertificateByInterventionId = useMemo(
@@ -246,6 +248,26 @@ export default function InterventionForm({
       );
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleConfirmMaintenance(intervention) {
+    if (maintenanceValidatingId || !window.confirm(
+      "Confirmez-vous que cet entretien a réellement été effectué ? Les rappels futurs de cet appareil seront suspendus jusqu’à ce que leur date soit réévaluée."
+    )) return;
+    setMaintenanceValidatingId(intervention.id);
+    setError(""); setSuccess("");
+    try {
+      const { error: validationError } = await supabase.rpc("confirm_completed_maintenance", {
+        p_intervention_id: intervention.id,
+      });
+      if (validationError) throw validationError;
+      setSuccess("Entretien confirmé. Les rappels concernés doivent maintenant être réévalués ; aucune nouvelle date n’a été inventée.");
+      onInterventionCreated?.();
+    } catch {
+      setError("La confirmation de l’entretien a échoué ou n’est pas autorisée. Vérifiez votre accès et la preuve Polygon.");
+    } finally {
+      setMaintenanceValidatingId("");
     }
   }
   async function handleOpenPdfPreview(intervention, equipment) {
@@ -679,6 +701,17 @@ export default function InterventionForm({
                                 : "📄 Voir le rapport"}
                             </button>
                           )}
+                          {intervention.interventionType === "maintenance"
+                            && intervention.polygonState === "confirmed"
+                            && !intervention.maintenanceVerifiedAt
+                            && (["owner", "admin"].includes(company?.role)
+                              || (company?.role === "technician" && intervention.technicianId === session?.user?.id))
+                            && <button className="pro-action-card-button" type="button"
+                              disabled={Boolean(maintenanceValidatingId)}
+                              onClick={() => handleConfirmMaintenance(intervention)}>
+                              {maintenanceValidatingId === intervention.id ? "Confirmation…" : "Confirmer l’entretien effectué"}
+                            </button>}
+                          {intervention.maintenanceVerifiedAt && <span className="is-confirmed">Entretien effectué confirmé</span>}
                           {hasBoilerCertificate &&
                             !boilerCertificatesLoading && (
                               <button

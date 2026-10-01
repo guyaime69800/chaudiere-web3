@@ -45,6 +45,7 @@ const RESULT_STATUSES = new Set([
 const INTERVENTION_READ_COLUMNS = [
     "id",
     "equipment_id",
+    "technician_id",
     "carnet_pass_id",
     "intervention_at",
     "intervention_type",
@@ -56,6 +57,8 @@ const INTERVENTION_READ_COLUMNS = [
     "measurements",
     "result_status",
     "validation_status",
+    "validated_at",
+    "maintenance_verified_at",
     "polygon_state",
     "polygon_chain_id",
     "polygon_transaction_hash",
@@ -734,6 +737,7 @@ function serializeIntervention(intervention) {
     return {
         id: intervention.id,
         equipmentId: intervention.equipment_id,
+        technicianId: intervention.technician_id,
         carnetPassId: intervention.carnet_pass_id,
         interventionAt: intervention.intervention_at,
         interventionType: intervention.intervention_type,
@@ -745,6 +749,8 @@ function serializeIntervention(intervention) {
         measurements: intervention.measurements,
         resultStatus: intervention.result_status,
         validationStatus: intervention.validation_status,
+        validatedAt: intervention.validated_at,
+        maintenanceVerifiedAt: intervention.maintenance_verified_at,
         polygonState: intervention.polygon_state,
         polygonChainId: intervention.polygon_chain_id,
         polygonTransactionHash:

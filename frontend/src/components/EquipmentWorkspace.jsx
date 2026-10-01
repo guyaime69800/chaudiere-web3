@@ -4,10 +4,12 @@ import CarnetPassModal from "./CarnetPassModal";
 import EquipmentDocumentCenter from "./EquipmentDocumentCenter";
 import InterventionForm from "./InterventionForm";
 import ThermodynamicDocuments from "./ThermodynamicDocuments";
+import MaintenanceReminders from "./MaintenanceReminders";
 import "./EquipmentWorkspace.css";
 
 const WORKSPACE_TABS = [
     { id: "summary", label: "Synthèse" },
+    { id: "reminders", label: "Entretien et rappels" },
     { id: "history", label: "Interventions" },
     { id: "regulatory", label: "Attestations / CERFA" },
     { id: "documents", label: "Documents" },
@@ -140,8 +142,9 @@ export default function EquipmentWorkspace({
     onOpenCarnetPass,
     onInterventionCreated,
     onCertificatesChange,
+    promptReminder = false,
 }) {
-    const [activeTab, setActiveTab] = useState("summary");
+    const [activeTab, setActiveTab] = useState(promptReminder ? "reminders" : "summary");
     const [requestedInterventionId, setRequestedInterventionId] = useState("");
     const [carnetPassModalOpen, setCarnetPassModalOpen] = useState(false);
     const [technicalDocumentCount, setTechnicalDocumentCount] = useState(0);
@@ -222,7 +225,7 @@ export default function EquipmentWorkspace({
         return () => controller.abort();
     }, [equipment.id, equipment.equipment_type, session?.access_token]);
     useEffect(() => {
-        setActiveTab("summary");
+        setActiveTab(promptReminder ? "reminders" : "summary");
         setRequestedInterventionId("");
         setCarnetPassModalOpen(false);
         setTechnicalDocumentCount(0);
@@ -234,7 +237,7 @@ export default function EquipmentWorkspace({
                 block: "start",
             });
         });
-    }, [equipment.id]);
+    }, [equipment.id, promptReminder]);
 
     function handleCarnetPassAction() {
         if (activeCarnetPassId) {
@@ -450,6 +453,15 @@ export default function EquipmentWorkspace({
                         interventionLoadError={interventionLoadError}
                         onOpenRegulatoryDocument={openRegulatoryDocument}
                         onInterventionCreated={onInterventionCreated}
+                    />
+                )}
+
+                {activeTab === "reminders" && (
+                    <MaintenanceReminders
+                        equipment={equipment}
+                        session={session}
+                        interventions={equipmentInterventions}
+                        promptAfterCreation={promptReminder}
                     />
                 )}
 

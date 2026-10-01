@@ -17,6 +17,7 @@ import ReactMarkdown from "react-markdown";
 import "./App.css";
 import { supabase } from "./services/supabaseClient";
 const GENERIC_EQUIPMENT_ID_PREFIX = "generic-";
+const publicReminderOfferEnabled = import.meta.env.VITE_PUBLIC_REMINDERS_ENABLED === "true";
 
 function hasTechnicalDocumentation(equipmentId) {
   return typeof equipmentId === "string"
@@ -125,6 +126,11 @@ function App({ initialMode = "public" }) {
   const [aiAnswer, setAiAnswer] = useState("");
   const [publicFaultQuestion, setPublicFaultQuestion] = useState("");
   const [publicFaultResponse, setPublicFaultResponse] = useState("");
+  const [publicReminderEmail, setPublicReminderEmail] = useState("");
+  const [publicReminderDueOn, setPublicReminderDueOn] = useState("");
+  const [publicReminderLeadDays, setPublicReminderLeadDays] = useState("30");
+  const [publicReminderMessage, setPublicReminderMessage] = useState("");
+  const [publicReminderBusy, setPublicReminderBusy] = useState(false);
   const [publicGuideTopic, setPublicGuideTopic] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
 
@@ -1773,6 +1779,34 @@ function App({ initialMode = "public" }) {
                   <strong>Historique vérifiable de cet appareil.</strong>
                   <span>Les interventions confirmées ci-dessous disposent d’une empreinte enregistrée sur Polygon. Elle permet de vérifier qu’une preuve existe et que son empreinte n’a pas été modifiée après validation ; elle ne certifie pas à elle seule la qualité des travaux.</span>
                 </div>
+                {publicReminderOfferEnabled && <section className="public-reminder-offer" aria-labelledby="public-reminder-title">
+                  <h3 id="public-reminder-title">Recevoir un rappel d’entretien</h3>
+                  <p>Le QR identifie l’appareil, pas son propriétaire. Choisissez votre propre échéance : aucune périodicité constructeur ou obligation n’est déduite automatiquement.</p>
+                  <p>Après vérification de votre adresse par un lien valable une heure, un e-mail sera prévu avant cette échéance. Vous pourrez modifier ou annuler le rappel avec un lien privé. Aucun accès aux données privées de l’appareil n’est accordé.</p>
+                  <form onSubmit={async (event) => {
+                    event.preventDefault();
+                    setPublicReminderMessage("");
+                    setPublicReminderBusy(true);
+                    try {
+                      const response = await fetch("/api/public-maintenance-reminders", {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ operation: "request", carnetPassId: boiler.carnetPassId,
+                          email: publicReminderEmail, dueOn: publicReminderDueOn,
+                          leadDays: Number(publicReminderLeadDays) }),
+                      });
+                      const result = await response.json();
+                      setPublicReminderMessage(result.message || result.error || "Service momentanément indisponible.");
+                    } catch {
+                      setPublicReminderMessage("Service momentanément indisponible.");
+                    } finally { setPublicReminderBusy(false); }
+                  }}>
+                    <label>Votre e-mail <input type="email" required maxLength={254} value={publicReminderEmail} onChange={(event) => setPublicReminderEmail(event.target.value)} placeholder="vous@exemple.fr" /></label>
+                    <label>Prochaine échéance choisie par vous <input type="date" required value={publicReminderDueOn} onChange={(event) => setPublicReminderDueOn(event.target.value)} /></label>
+                    <label>Prévenir combien de jours avant ? <input type="number" required min="0" max="365" value={publicReminderLeadDays} onChange={(event) => setPublicReminderLeadDays(event.target.value)} /></label>
+                    <button className="btn" type="submit" disabled={publicReminderBusy}>{publicReminderBusy ? "Demande en cours…" : "Recevoir le lien de vérification"}</button>
+                  </form>
+                  {publicReminderMessage && <p role="status">{publicReminderMessage}</p>}
+                </section>}
                 <div className="public-fault-assistant">
                   <div className="public-fault-assistant__heading">
                     <img src={shibaTechnicien} alt="Shiba Inu chauffagiste CarnetPass" width="64" height="70" />

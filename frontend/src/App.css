@@ -270,3 +270,19 @@ body {
   font-size: 16px;
   z-index: 1000;
 }
+.public-reminder-offer {
+  margin: 22px 0;
+  padding: 20px;
+  border: 1px solid #e6bda9;
+  border-radius: 16px;
+  background: #fff9f6;
+}
+.public-reminder-offer h3 { margin: 0 0 10px; }
+.public-reminder-offer p { line-height: 1.55; }
+.public-reminder-offer form { display: grid; gap: 12px; }
+.public-reminder-offer label { display: grid; gap: 5px; font-weight: 650; }
+.public-reminder-offer input {
+  width: 100%; min-height: 42px; padding: 8px 10px;
+  border: 1px solid #dec9bf; border-radius: 9px; background: #fff; font: inherit;
+}
+.public-reminder-offer button { width: fit-content; min-height: 44px; }

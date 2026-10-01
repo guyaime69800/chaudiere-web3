@@ -1,0 +1,16 @@
+.public-reminder-page {
+  width: min(650px, calc(100% - 32px)); margin: 40px auto; padding: 28px;
+  border: 1px solid #ead9d0; border-radius: 20px; background: #fffaf7;
+  color: #261c18; box-shadow: 0 18px 45px #3d1e1117;
+}
+.public-reminder-page h1 { font-size: clamp(27px, 5vw, 40px); }
+.public-reminder-page p { line-height: 1.6; }
+.public-reminder-page form, .public-reminder-page label { display: grid; gap: 12px; }
+.public-reminder-page form { margin-top: 24px; }
+.public-reminder-page label { font-weight: 650; }
+.public-reminder-page input { min-height: 44px; padding: 8px 12px; border: 1px solid #dec9bf; border-radius: 9px; font: inherit; }
+.public-reminder-page button { min-height: 44px; padding: 10px 16px; border: 1px solid #ba320a; border-radius: 9px; background: white; color: #a9330b; font: inherit; cursor: pointer; }
+.public-reminder-page button[type="submit"] { background: #c73708; color: white; }
+.public-reminder-page button:disabled { opacity: .55; cursor: not-allowed; }
+.public-reminder-page__error { color: #b91c1c; }
+.public-reminder-page__success { color: #166534; }

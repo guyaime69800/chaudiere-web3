@@ -1,10 +1,27 @@
 {
   "functions": {
+    "api/carnetpass.js": {
+      "maxDuration": 300
+    },
     "api/platform-admin-documents.js": {
       "maxDuration": 300
     }
   },
+  "crons": [
+    {
+      "path": "/api/maintenance-reminders",
+      "schedule": "0 8 * * *"
+    }
+  ],
   "rewrites": [
+    {
+      "source": "/api/public-maintenance-reminders",
+      "destination": "/api/carnetpass?public_reminder_route=1"
+    },
+    {
+      "source": "/api/maintenance-reminders",
+      "destination": "/api/carnetpass?maintenance_route=1"
+    },
     {
       "source": "/api/public-shiba",
       "destination": "/api/carnetpass?public_shiba_route=1"
