@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { generatedEquipmentRegistry } from "../server/lib/equipment-registry.generated.js";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import maintenanceReminderDispatch from "../server/maintenance-reminder-dispatch.js";
+import modelReminders from "../server/model-reminders.js";
 import publicMaintenanceReminders from "../server/public-maintenance-reminders.js";
 import {
   buildEquipmentProof,
@@ -876,6 +877,9 @@ export default async function handler(req, res) {
     }
     if (req.query?.maintenance_route === "1") {
       return await maintenanceReminderDispatch(req, res);
+    }
+    if (req.query?.model_reminders_route === "1") {
+      return await modelReminders(req, res);
     }
     if (req.query?.public_shiba_route === "1") {
       return await publicShibaQuestion(req, res);

@@ -23,6 +23,10 @@
       "destination": "/api/carnetpass?maintenance_route=1"
     },
     {
+      "source": "/api/model-reminders",
+      "destination": "/api/carnetpass?model_reminders_route=1"
+    },
+    {
       "source": "/api/public-shiba",
       "destination": "/api/carnetpass?public_shiba_route=1"
     },

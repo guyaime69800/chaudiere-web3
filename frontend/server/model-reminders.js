@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
-import { summarizeModelReminders } from "../server/model-reminder-summary.js";
+import { requireVerifiedCompany } from "./lib/require-verified-company.js";
+import { summarizeModelReminders } from "./model-reminder-summary.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PAGE_SIZE = 500;
@@ -32,7 +32,7 @@ async function readForEquipmentIds(db, table, companyId, ids) {
   return rows;
 }
 
-export default async function handler(req, res) {
+export default async function modelReminders(req, res) {
   res.setHeader("Cache-Control", "private, no-store");
   res.setHeader("Vary", "Authorization");
   if (req.method !== "GET") return res.status(405).json({ error: "Méthode non autorisée." });
@@ -60,14 +60,12 @@ export default async function handler(req, res) {
     if (equipmentError) throw equipmentError;
     if (!equipment) return res.status(404).json({ error: "Équipement introuvable dans votre entreprise." });
 
-    const equipments = await readAll(() => {
-      return db.from("equipments")
-        .select("id,serial_number")
-        .eq("company_id", professional.companyId)
-        .eq("equipment_type", equipment.equipment_type)
-        .eq("brand", equipment.brand)
-        .eq("model", equipment.model);
-    });
+    const equipments = await readAll(() => db.from("equipments")
+      .select("id,serial_number")
+      .eq("company_id", professional.companyId)
+      .eq("equipment_type", equipment.equipment_type)
+      .eq("brand", equipment.brand)
+      .eq("model", equipment.model));
     const ids = equipments.map((item) => item.id);
     const [professionalReminders, publicReminders] = await Promise.all([
       readForEquipmentIds(db, "maintenance_reminders", professional.companyId, ids),
