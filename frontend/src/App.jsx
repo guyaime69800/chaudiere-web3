@@ -9,6 +9,7 @@ import { RPC_URL, CONTRACT_ADDRESS } from "./blockchain/config";
 import EquipmentRegistryABI from "./blockchain/EquipmentRegistry.json";
 import { useWallet } from "./blockchain/useWallet";
 import { loadEquipmentKnowledge } from "./services/equipmentKnowledge";
+import { getPublicUserManual } from "./lib/public-user-manuals.js";
 import CarnetPassCreatedModal from "./components/CarnetPassCreatedModal";
 import shibaTechnicien from "./assets/carnetpass-shiba-technicien.png";
 import HomeLanding from "./components/HomeLanding";
@@ -62,76 +63,21 @@ function formatPublicInterventionDate(value) {
   }).format(date);
 }
 
-// La fiche publique ne consulte jamais l'API IA professionnelle ni les PDF privés.
-// Les explications publiées ici doivent être validées pour chaque référence constructeur.
-function publicFaultAnswer(question, manufacturerReference) {
-  const codeMatch = question.trim().toUpperCase().match(/^(?:F\s*\.?\s*)?0*(\d{1,3})$/);
-  if (!codeMatch) {
-    return "Indiquez uniquement le code affiché, par exemple F.28 ou 28.";
-  }
-  const code = `F.${String(Number(codeMatch[1])).padStart(2, "0")}`;
-  if (manufacturerReference === "0010021497") {
-    // Résumés validés sur la notice constructeur 0020238207_05.
-    // Aucun geste de dépannage réservé au professionnel n'est publié ici.
-    const knownCodes = {
-      "F.00": ["sonde de température du départ de chauffage non raccordée ou défectueuse", 32],
-      "F.01": ["sonde de température de retour non raccordée ou défectueuse", 32],
-      "F.20": ["mise en sécurité liée à une température trop élevée", 32],
-      "F.22": ["mise en sécurité liée à un manque d’eau ou à une pression trop basse", 32],
-      "F.23": ["mise en sécurité liée à un écart de température trop élevé et à une circulation d’eau insuffisante", 33],
-      "F.24": ["mise en sécurité liée à une montée en température trop rapide", 33],
-      "F.27": ["mise en sécurité liée à un signal de flamme anormal", 33],
-      "F.28": ["échec de l’allumage au démarrage", 33],
-      "F.29": ["échec du rallumage après une interruption temporaire de l’alimentation en gaz", 33],
-      "F.32": ["défaut du ventilateur", 33],
-      "F.73": ["signal trop faible du capteur de pression d’eau", 34],
-      "F.74": ["signal trop fort du capteur de pression d’eau", 34],
-    };
-    const entry = knownCodes[code];
-    if (entry) {
-      return `${code} : ${entry[0]}. Le code ne permet pas de déterminer seul la cause. Source : notice d’installation et de maintenance Saunier Duval ThemaPlus Condens, tableau des codes défaut, page ${entry[1]}. Contactez un professionnel si le défaut persiste.`;
-    }
-  }
-  if (manufacturerReference === "0010017417") {
-    // Notice d'installation et de maintenance ThemaFast Condens 0020238209_04,
-    // pages 32 à 34. Les causes et réparations restent du ressort du professionnel.
-    const knownCodes = {
-      "F.00": ["sonde de température du départ de chauffage défectueuse ou non raccordée", 32],
-      "F.01": ["sonde de température de retour défectueuse ou non raccordée", 32],
-      "F.20": ["mise en sécurité liée à une température trop élevée", 32],
-      "F.22": ["mise en sécurité liée à un manque d’eau ou à une pression trop basse", 32],
-      "F.23": ["mise en sécurité liée à un écart de température trop élevé et à une circulation d’eau insuffisante", 33],
-      "F.24": ["mise en sécurité liée à une montée en température trop rapide", 33],
-      "F.27": ["mise en sécurité liée à un signal de flamme anormal", 33],
-      "F.28": ["échec de l’allumage au démarrage", 33],
-      "F.29": ["échec du rallumage après une interruption temporaire de l’alimentation en gaz", 33],
-      "F.32": ["défaut du ventilateur", 33],
-      "F.73": ["signal du capteur de pression d’eau indiquant une pression insuffisante", 34],
-      "F.74": ["pression d’eau trop élevée signalée par le capteur", 34],
-    };
-    const entry = knownCodes[code];
-    if (entry) {
-      return `${code} : ${entry[0]}. Le code ne permet pas de déterminer seul la cause. Source : notice d’installation et de maintenance Saunier Duval ThemaFast Condens 0020238209_04, tableau des codes défaut, page ${entry[1]}. Contactez un professionnel si le défaut persiste.`;
-    }
-  }
-  return `${code} : explication publique non vérifiée pour ce modèle. Relevez le code exact et contactez un professionnel ; ne démontez pas l’appareil.`;
-}
-
 function App({ initialMode = "public" }) {
   // Mode d'affichage : "public" (consultation, sans wallet) ou "pro" (technicien, avec wallet)
-  const [mode, setMode] = useState(initialMode);
+  const [selectedMode, setMode] = useState(initialMode);
   const [technicalResult, setTechnicalResult] = useState(null);
   const [equipmentKnowledge, setEquipmentKnowledge] = useState(null);
   const [aiQuestion, setAiQuestion] = useState("");
   const [aiAnswer, setAiAnswer] = useState("");
   const [publicFaultQuestion, setPublicFaultQuestion] = useState("");
   const [publicFaultResponse, setPublicFaultResponse] = useState("");
+  const [publicFaultSource, setPublicFaultSource] = useState("");
   const [publicReminderEmail, setPublicReminderEmail] = useState("");
   const [publicReminderDueOn, setPublicReminderDueOn] = useState("");
   const [publicReminderLeadDays, setPublicReminderLeadDays] = useState("30");
   const [publicReminderMessage, setPublicReminderMessage] = useState("");
   const [publicReminderBusy, setPublicReminderBusy] = useState(false);
-  const [publicGuideTopic, setPublicGuideTopic] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
 
 
@@ -141,6 +87,8 @@ function App({ initialMode = "public" }) {
   // NOUVEAU (routeur) : si l'URL est /appareil/CHAUD-DEMO, on recupere l'ID ici.
   // Sur la page d'accueil "/", idDepuisURL vaut undefined (c'est normal).
   const { id: idDepuisURL } = useParams();
+  // A QR route is always public, even when this component was already in pro mode.
+  const mode = idDepuisURL ? "public" : selectedMode;
   // NOUVEAU (scan) : navigation interne + ouverture/fermeture de la camera
   const navigate = useNavigate();
   const location = useLocation();
@@ -233,6 +181,10 @@ function App({ initialMode = "public" }) {
   const hasPrivateDocumentation = equipmentKnowledge?.data?.documents?.some(
     (document) => document.storage === "private"
   ) ?? false;
+  const publicUserManual = getPublicUserManual(boiler);
+  const publicCatalogueManual = equipmentKnowledge?.data?.documents?.find((document) =>
+    document.documentType === "user_manual" && document.storage === "public" && document.documentUrl
+  );
   // NOUVEAU (perf) : useMemo = "fabrique-le UNE fois, puis reutilise".
   // Sans ca, la connexion blockchain etait recreee a chaque lettre tapee dans un champ.
   const provider = useMemo(() => new ethers.JsonRpcProvider(RPC_URL), []);
@@ -536,6 +488,9 @@ function App({ initialMode = "public" }) {
       setSearchResults([]);
       setSelectedEquipment(null);
       setAiAnswer("");
+      setPublicFaultQuestion("");
+      setPublicFaultResponse("");
+      setPublicFaultSource("");
 
       if (!response.ok || !result.ok) {
         throw new Error(
@@ -1142,7 +1097,7 @@ function App({ initialMode = "public" }) {
 
       {/* ---------- HERO + RECHERCHE (toujours visible) ---------- */}
       <section className="hero" id="rechercher-appareil">
-        {location.pathname === "/" ? <h2>Retrouver un appareil</h2> : <h1>Le carnet d'entretien de votre équipement</h1>}
+        {location.pathname === "/" ? <h2>Retrouver un appareil</h2> : <h1>Fiche publique de votre appareil</h1>}
         <p>Saisissez un identifiant CarnetPass ou scannez le QR code pour ouvrir la fiche de l’appareil.</p>
 
         <div className="search">
@@ -1571,12 +1526,18 @@ function App({ initialMode = "public" }) {
             <div className="appareil">
               <div className="appareil-head">
                 <div>
-                  <span className="appareil-type">Équipement</span>
-                  <h2 className="appareil-name">{boiler.equipmentId}</h2>
-                  <p className="appareil-loc">{boiler.brand} · {boiler.model}</p>
+                  <span className="appareil-type">{boiler.carnetPassId ? "Fiche publique CarnetPass" : "Équipement"}</span>
+                  <h2 className="appareil-name">{boiler.carnetPassId ? `${boiler.brand} ${boiler.model}` : boiler.equipmentId}</h2>
+                  <p className="appareil-loc">{boiler.carnetPassId ? `CarnetPass ${boiler.carnetPassId}` : `${boiler.brand} · ${boiler.model}`}</p>
                 </div>
                 <span className="badge-verified">✔ Vérifié</span>
               </div>
+
+              {boiler.carnetPassId && <nav className="public-appliance-nav" aria-label="Rubriques de la fiche publique">
+                <a href="#notice-utilisation-publique">Notice d’utilisation</a>
+                <a href="#historique-interventions">Historique des interventions</a>
+                <a href="#shiba-notice-publique">Shiba Bot</a>
+              </nav>}
 
               <div className="appareil-grid">
                 <div>
@@ -1609,7 +1570,7 @@ function App({ initialMode = "public" }) {
 
               {/* NOUVEAU (QR) : le QR code physique a coller sur l'appareil.
                 Il pointe vers l'adresse EN LIGNE de la fiche -> scannable depuis n'importe quel telephone. */}
-              <div className="qr-zone">
+              {(!boiler.carnetPassId || mode === "pro") && <div className="qr-zone">
                 <p className="qr-title">
                   {boiler.publicQrUrl
                     ? "QR individuel de l'appareil"
@@ -1673,7 +1634,7 @@ function App({ initialMode = "public" }) {
                     📲 Installer CarnetPass
                   </button>
                 ) : null}
-              </div>
+              </div>}
               {/* ---------- DOCUMENTATION TECHNIQUE ---------- */}
               {!boiler.carnetPassId && equipmentKnowledge?.data?.documents?.length > 0 && (
                 <div className="technical-docs">
@@ -1762,20 +1723,13 @@ function App({ initialMode = "public" }) {
               <>
                 <div className="technical-docs" id="notice-utilisation-publique">
                   <h3>Notice d’utilisation</h3>
-                  {equipmentKnowledge?.data?.documents?.filter((document) =>
-                    document.documentType === "user_manual"
-                    && document.storage === "public"
-                    && document.documentUrl
-                  ).map((document) => (
-                    <a key={document.documentId} className="btn btn-ghost" href={document.documentUrl} target="_blank" rel="noopener noreferrer">Ouvrir la notice d’utilisation · {document.title}</a>
-                  ))}
-                  {!equipmentKnowledge?.data?.documents?.some((document) =>
-                    document.documentType === "user_manual"
-                    && document.storage === "public"
-                    && document.documentUrl
-                  ) && <p>Notice d’utilisation non publiée pour ce modèle. Demandez-la à l’entreprise intervenante ou au fabricant.</p>}
+                  {publicUserManual
+                    ? <><p>Notice officielle du fabricant correspondant à ce modèle. Le lien ouvre la partie française « Manuel de propriétaire » ; le PDF contient aussi une partie installation réservée aux professionnels.</p><a className="btn btn-ghost" href={`${publicUserManual.url}#page=40`} target="_blank" rel="noopener noreferrer">Ouvrir la notice Airwell ↗</a></>
+                    : publicCatalogueManual
+                      ? <a className="btn btn-ghost" href={publicCatalogueManual.documentUrl} target="_blank" rel="noopener noreferrer">Ouvrir la notice d’utilisation · {publicCatalogueManual.title}</a>
+                      : <p>Notice d’utilisation publique non vérifiée pour ce modèle. Demandez-la à l’entreprise intervenante ou au fabricant.</p>}
                 </div>
-                <div className="documentation-optional-notice" role="note">
+              <div className="documentation-optional-notice" role="note">
                   <strong>Historique vérifiable de cet appareil.</strong>
                   <span>Les interventions confirmées ci-dessous disposent d’une empreinte enregistrée sur Polygon. Elle permet de vérifier qu’une preuve existe et que son empreinte n’a pas été modifiée après validation ; elle ne certifie pas à elle seule la qualité des travaux.</span>
                 </div>
@@ -1807,67 +1761,40 @@ function App({ initialMode = "public" }) {
                   </form>
                   {publicReminderMessage && <p role="status">{publicReminderMessage}</p>}
                 </section>}
-                <div className="public-fault-assistant">
+                <div className="public-fault-assistant" id="shiba-notice-publique">
                   <div className="public-fault-assistant__heading">
                     <img src={shibaTechnicien} alt="Shiba Inu chauffagiste CarnetPass" width="64" height="70" />
-                    <div><strong>Shiba Bot · aide au particulier</strong><p>Retrouvez vos entretiens, la notice d’utilisation disponible et les contacts de sécurité. Pour une réparation, contactez l’entreprise qui suit votre appareil.</p></div>
+                    <div><strong>Shiba Bot · notice d’utilisation</strong><p>Posez une question sur l’usage de cet appareil. Shiba répond uniquement à partir des points vérifiés de la notice d’utilisation publique, avec la page source. Pour une intervention technique, contactez un professionnel.</p></div>
                   </div>
-                  <div className="public-fault-assistant__choices" aria-label="Aide au particulier">
-                    <button className="btn btn-ghost" type="button" onClick={() => setPublicGuideTopic("maintenance")}>Mes entretiens</button>
-                    <button className="btn btn-ghost" type="button" onClick={() => setPublicGuideTopic("manual")}>Notice d’utilisation</button>
-                    <button className="btn btn-ghost" type="button" onClick={() => setPublicGuideTopic("emergency")}>Urgence</button>
-                  </div>
-                  {publicGuideTopic === "maintenance" && <p role="status">Les interventions confirmées sont affichées dans l’historique d’entretien plus bas sur cette fiche. Pour une question sur les travaux, contactez l’entreprise intervenante.</p>}
-                  {publicGuideTopic === "manual" && <p role="status">Seules les notices d’utilisation autorisées à la publication peuvent être ouvertes ici. Si aucune notice n’apparaît ci-dessous, demandez-la à l’entreprise intervenante ou au fabricant.</p>}
-                  {publicGuideTopic === "emergency" && <p role="status">En cas de danger immédiat, éloignez-vous et appelez le 112. Les autres contacts de sécurité sont indiqués en haut de cette fiche.</p>}
-                  <p>Un code défaut ne suffit pas à établir un diagnostic. Cinq questions par mois sont possibles pour chaque visiteur et chaque appareil. Les entretiens, notices disponibles et contacts d’urgence restent accessibles sans cette limite.</p>
+                  {publicUserManual ? <><p>Cinq questions par mois sont possibles pour chaque visiteur et chaque appareil. La notice et l’historique restent accessibles sans cette limite.</p>
                   <form onSubmit={async (event) => {
                     event.preventDefault();
-                    if (!/^(?:F\s*\.?\s*)?0*\d{1,3}$/i.test(publicFaultQuestion.trim())) {
-                      setPublicFaultResponse("Indiquez uniquement le code affiché, par exemple F.28 ou 28.");
+                    if (!publicFaultQuestion.trim()) {
+                      setPublicFaultResponse("Saisissez une question sur l’utilisation de l’appareil.");
                       return;
                     }
                     try {
                       const response = await fetch("/api/public-shiba", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ carnetPassId: boiler.carnetPassId, question: publicFaultQuestion }) });
                       const result = await response.json();
-                      setPublicFaultResponse(result.ok ? `${publicFaultAnswer(publicFaultQuestion, boiler.manufacturerReference)} (${result.remaining} question(s) restante(s) ce mois-ci.)` : result.error || "Shiba Bot est momentanément indisponible.");
+                      setPublicFaultResponse(result.ok ? `${result.answer}${result.page ? ` (Notice d’utilisation, p. ${result.page}.)` : ""} ${result.remaining} question(s) restante(s) ce mois-ci.` : result.error || "Shiba Bot est momentanément indisponible.");
+                      setPublicFaultSource(result.ok && result.pdfPage ? `${result.manualUrl}#page=${result.pdfPage}` : "");
                     } catch {
                       setPublicFaultResponse("Shiba Bot est momentanément indisponible. Les contacts d’urgence restent accessibles.");
+                      setPublicFaultSource("");
                     }
                   }}>
-                    <label htmlFor="public-fault-code">Code défaut affiché</label>
-                    <input id="public-fault-code" value={publicFaultQuestion} maxLength={8} onChange={(event) => {
+                    <label htmlFor="public-fault-code">Votre question</label>
+                    <input id="public-fault-code" value={publicFaultQuestion} maxLength={220} onChange={(event) => {
                       setPublicFaultQuestion(event.target.value);
                       setPublicFaultResponse("");
-                    }} placeholder="Ex. F.28" />
-                    <button className="btn" type="submit">Comprendre ce code</button>
+                      setPublicFaultSource("");
+                    }} placeholder="Ex. Comment nettoyer le filtre ?" />
+                    <button className="btn" type="submit">Demander à Shiba</button>
                   </form>
                   {publicFaultResponse && <p role="status">{publicFaultResponse}</p>}
-                  {boiler.manufacturerReference === "0010021497" && (
-                    <div className="public-fault-assistant__tips">
-                      <strong>Vérifications accessibles à l’utilisateur · ThemaPlus Condens 25-A</strong>
-                      <ul>
-                        <li>Vérifiez la pression une fois par mois, sans demande de chauffage ni d’eau chaude. La notice recommande 1 à 1,5 bar (notice d’emploi, p. 9).</li>
-                        <li>Si elle est trop basse, faites un appoint uniquement si votre installateur vous a montré le robinet et confirmé que l’eau convient à l’installation. Ouvrez-le lentement, surveillez l’écran et refermez-le dès que la pression atteint 1 à 1,5 bar (notice d’emploi, p. 10).</li>
-                        <li>Si le chauffage ou l’eau chaude ne fonctionne pas, vérifiez le mode choisi, les températures réglées et la programmation du régulateur. La notice évoque aussi la purge des radiateurs en présence d’air ; faites-la uniquement si vous savez utiliser vos purgeurs (notice d’emploi, p. 15).</li>
-                        <li>Si l’écran affiche un défaut, la notice indique d’appuyer sur la touche de réinitialisation et d’attendre cinq secondes. Si le défaut ne disparaît pas ou revient, contactez un professionnel (notice d’emploi, p. 16).</li>
-                        <li>Si la pression clignote à 2,5 bar ou plus, si le défaut revient ou en cas de fuite, contactez un professionnel (notice d’emploi, p. 15–16).</li>
-                      </ul>
-                    </div>
-                  )}
-                  {boiler.manufacturerReference === "0010017417" && (
-                    <div className="public-fault-assistant__tips">
-                      <strong>Vérifications accessibles à l’utilisateur · ThemaFast Condens 30-A</strong>
-                      <ul>
-                        <li>Vérifiez la pression une fois par mois, sans demande de chauffage ni d’eau chaude. La notice recommande 1 à 1,5 bar (notice d’emploi 0020200493_01, p. 9).</li>
-                        <li>Si elle est trop basse, ne faites un appoint que si l’installateur vous a indiqué le robinet et confirmé que l’eau convient à votre installation. Ouvrez-le lentement, surveillez l’écran et refermez-le dès que la pression atteint 1 à 1,5 bar (notice d’emploi, p. 10).</li>
-                        <li>Si le chauffage ou l’eau chaude ne fonctionne pas, vérifiez le mode choisi, les températures réglées et la programmation du régulateur. La notice mentionne la purge des radiateurs en présence d’air ; faites-la uniquement si vous savez utiliser vos purgeurs (notice d’emploi, p. 10–11 et 15).</li>
-                        <li>Si l’écran indique un défaut, appuyez une fois sur la touche de réinitialisation et attendez cinq secondes. Si le défaut persiste ou revient, contactez un professionnel (notice d’emploi, p. 16).</li>
-                        <li>Si la pression clignote à 2,5 bar ou plus, ou si vous constatez une fuite, contactez un professionnel (notice d’emploi, p. 16).</li>
-                      </ul>
-                    </div>
-                  )}
-                  <p><strong>Les réparations et interventions techniques sur cet appareil doivent être réalisées par un professionnel qualifié.</strong> En cas d’odeur de gaz, éloignez-vous et contactez les services d’urgence.</p>
+                  {publicFaultSource && <a href={publicFaultSource} target="_blank" rel="noopener noreferrer">Voir la page source dans la notice ↗</a>}</>
+                  : <p>Shiba n’est pas disponible tant qu’une notice d’utilisation publique de ce modèle n’a pas été vérifiée. L’historique et les contacts restent accessibles.</p>}
+                  <p><strong>Les réparations et interventions techniques sur cet appareil doivent être réalisées par un professionnel qualifié.</strong> En cas de danger immédiat, éloignez-vous et contactez les services d’urgence.</p>
                 </div>
               </>
             ) : hasPrivateDocumentation ? (
@@ -1886,9 +1813,9 @@ function App({ initialMode = "public" }) {
             )}
             {/* Historique public sécurisé du CarnetPass */}
             {boiler.carnetPassId && (
-              <div className="carnet">
+              <div className="carnet" id="historique-interventions">
                 <p className="carnet-title">
-                  Historique d’entretien vérifié
+                  Historique des interventions vérifiées
                 </p>
 
                 <p className="muted">
@@ -1930,17 +1857,7 @@ function App({ initialMode = "public" }) {
                               intervention.resultStatus
                             )}
                           </p>
-                          <p className="tl-desc">
-                            {intervention.workPerformed ||
-                              "Travail effectué non renseigné."}
-                          </p>
-                          {Array.isArray(intervention.partsReplaced) &&
-                            intervention.partsReplaced.length > 0 && (
-                              <p className="tl-part">
-                                Pièces remplacées :{" "}
-                                {intervention.partsReplaced.join(", ")}
-                              </p>
-                            )}
+                          <p className="tl-desc">Le compte rendu détaillé reste privé. Pour en savoir plus, contactez l’entreprise intervenante.</p>
                           <p className="tl-part">
                             ✓ Preuve Polygon confirmée
                           </p>

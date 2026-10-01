@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { serializePublicIntervention } from "../server/lib/public-intervention.js";
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
@@ -64,6 +65,9 @@ const INTERVENTION_READ_COLUMNS = [
     "polygon_transaction_hash",
     "polygon_block_number",
     "polygon_confirmed_at",
+].join(", ");
+const PUBLIC_INTERVENTION_READ_COLUMNS = [
+    "id", "intervention_at", "intervention_type", "result_status", "polygon_confirmed_at",
 ].join(", ");
 const ALLOWED_BODY_FIELDS = new Set([
     "equipmentId",
@@ -831,7 +835,7 @@ async function readInterventions(req, res) {
 
         const { data, error, count } = await supabase
             .from("interventions")
-            .select(INTERVENTION_READ_COLUMNS, {
+            .select(PUBLIC_INTERVENTION_READ_COLUMNS, {
                 count: "exact",
             })
             .eq("carnet_pass_id", carnetPassId)
@@ -852,7 +856,7 @@ async function readInterventions(req, res) {
         return res.status(200).json({
             ok: true,
             total: count ?? interventions.length,
-            interventions: interventions.map(serializeIntervention),
+            interventions: interventions.map(serializePublicIntervention),
         });
     }
 

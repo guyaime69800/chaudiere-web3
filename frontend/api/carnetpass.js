@@ -3,6 +3,7 @@ import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 import { createClient } from "@supabase/supabase-js";
 import { generatedEquipmentRegistry } from "../server/lib/equipment-registry.generated.js";
+import { answerFromPublicUserManual, getPublicUserManual } from "../src/lib/public-user-manuals.js";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import maintenanceReminderDispatch from "../server/maintenance-reminder-dispatch.js";
 import modelReminders from "../server/model-reminders.js";
@@ -918,13 +919,19 @@ async function publicShibaQuestion(req, res) {
   const carnetPassId = req.body?.carnetPassId;
   const question = req.body?.question;
   if (typeof carnetPassId !== "string" || !/^CP-\d{4}-\d{6}$/.test(carnetPassId)
-      || typeof question !== "string" || question.length > 8
-      || !/^(?:F\s*\.?\s*)?0*\d{1,3}$/i.test(question.trim())) {
-    return res.status(400).json({ ok: false, error: "Indiquez un code défaut valide." });
+      || typeof question !== "string" || !question.trim() || question.length > 220
+      || /[\u0000-\u001f\u007f]/.test(question)) {
+    return res.status(400).json({ ok: false, error: "Saisissez une question de 220 caractères maximum." });
   }
   try {
     const carnet = await redis.get(`carnetpass:${carnetPassId}`);
     if (!carnet || carnet.status !== "active") return res.status(404).json({ ok: false, error: "CarnetPass indisponible." });
+    const manual = getPublicUserManual({
+      brand: carnet.identity?.brand,
+      model: carnet.identity?.model,
+      manufacturerReference: carnet.manufacturerReference,
+    });
+    if (!manual) return res.status(409).json({ ok: false, error: "Shiba sera disponible lorsque la notice d’utilisation publique de ce modèle aura été vérifiée." });
     const ip = String(req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || "unknown").split(",")[0].trim();
     const visitor = createHash("sha256").update(`${ip}:${carnetPassId}`).digest("hex");
     const now = new Date();
@@ -935,8 +942,12 @@ async function publicShibaQuestion(req, res) {
       const expiresAt = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1) / 1000;
       await redis.expireat(key, expiresAt);
     }
-    if (count > 5) return res.status(429).json({ ok: false, remaining: 0, error: "Vous avez utilisé vos cinq questions Shiba Bot pour ce mois. Les entretiens, la notice disponible et les numéros d’urgence restent consultables. Pour cet appareil, contactez l’entreprise intervenante." });
-    return res.status(200).json({ ok: true, remaining: 5 - count });
+    if (count > 5) return res.status(429).json({ ok: false, remaining: 0, error: "Vous avez utilisé vos cinq questions Shiba Bot pour ce mois. La notice et l’historique restent consultables." });
+    const matched = answerFromPublicUserManual(manual, question);
+    return res.status(200).json({ ok: true, remaining: 5 - count,
+      answer: matched?.answer || "Je ne trouve pas cette réponse dans la notice d’utilisation publique de ce modèle. Consultez la notice ou contactez l’entreprise intervenante.",
+      page: matched?.page || null, pdfPage: matched?.pdfPage || null,
+      manualUrl: manual.url, manualTitle: manual.title });
   } catch {
     return res.status(503).json({ ok: false, error: "Shiba Bot est momentanément indisponible. Les informations de sécurité restent accessibles." });
   }
