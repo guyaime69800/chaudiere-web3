@@ -1,21 +1,26 @@
-# Rappels d'entretien — état du pilote Preview
+# Rappels — état du pilote Preview
 
-Ce pilote reste désactivé tant que les migrations `20261001_02` à `20261001_07`
-ne sont pas appliquées dans l'ordre à la base Supabase
-**de test**. Ne pas les appliquer à la base de production pour valider la Preview.
+Les migrations `20261001_02` à `20261001_07` portent le pilote déjà testé.
+La description libre et le type des rappels professionnels exigent en plus
+`20261001_08_reminder_description.sql` dans la base Supabase **de test**,
+avant de déployer l'interface correspondante. Cette migration conserve les
+rappels existants avec l'objet et le type « Entretien ». Ne pas l'appliquer à la base de
+production pour valider la Preview.
 
 ## Parcours disponible après migration
 
 1. Créer un équipement dans l'espace professionnel : son dossier s'ouvre sur
    « Entretien et rappels ».
-2. Choisir explicitement la prochaine échéance, et éventuellement déclarer la
+2. Décrire l'objet et choisir le type du rappel (entretien, dépannage,
+   installation, démontage ou autre action), choisir explicitement sa date et, si pertinent, déclarer la
    date du dernier entretien. L'installation et une intervention en attente ne
    sont pas considérées comme un entretien confirmé.
-3. Vérifier l'adresse du compte, l'équipement, la date et l'anticipation dans
-   la proposition, puis confirmer. Seule l'adresse déjà vérifiée du compte
+3. Vérifier l'objet, l'adresse du compte, l'équipement, la date et l'anticipation
+   dans la proposition, puis confirmer. Seule l'adresse déjà vérifiée du compte
    connecté est acceptée.
-4. Retrouver le rappel dans la fiche ; le modifier ou l'annuler. Le serveur et
-   la base refusent les accès hors entreprise et les modifications concurrentes.
+4. Retrouver le rappel dans la fiche et la cloche du modèle ; le modifier ou
+   l'annuler. Le serveur et la base refusent les accès hors entreprise et les
+   modifications concurrentes.
 5. En Preview uniquement, un bouton permet un e-mail de test. Il ne modifie
    pas l'état de la notification normale. « Accepté par Resend » n'implique pas
    « livré » ni « lu ».
@@ -28,8 +33,9 @@ ne sont pas appliquées dans l'ordre à la base Supabase
    date explicite sont reconnus ; les demandes ambiguës sont refusées. La
    confirmation et les contrôles d'accès restent assurés par la base.
 8. Après confirmation humaine d'un entretien réellement effectué et d'une
-   preuve Polygon confirmée, les rappels futurs de l'appareil passent à
-   « à réévaluer ». Aucune prochaine date n'est inventée. Les réparations,
+   preuve Polygon confirmée, seuls les rappels professionnels de type
+   « Entretien » et les rappels particuliers passent à « à réévaluer ».
+   Les autres rappels restent actifs. Aucune prochaine date n'est inventée. Les réparations,
    installations, brouillons et contrôles non confirmés ne déclenchent rien.
 
 ## Configuration de test
@@ -80,8 +86,12 @@ reprise contrôlée, car l'idempotence du prestataire ne dure que 24 heures.
 
 ## Vérification avant d'annoncer la première livraison complète
 
-- Appliquer les six migrations au projet Supabase de test et tester les RPC
-  avec un membre autorisé, un autre membre et un visiteur anonyme.
+- Appliquer `20261001_08` au projet Supabase de test et tester les nouvelles RPC
+  avec un membre autorisé, un autre membre et un visiteur anonyme. Vérifier que
+  les anciens rappels affichent « Entretien » sans être modifiés.
+- Tester un objet « dépannage » créé via Shiba, modifié manuellement, affiché
+  dans la fiche et la cloche, puis présent dans l'e-mail de test Preview.
+- Tester qu'un entretien validé ne met pas un rappel « Dépannage » à réévaluer.
 - Tester date manquante, fin de mois, changement d'e-mail, révocation du membre,
   double clic, modification concurrente, annulation juste avant envoi.
 - Tester un envoi Resend vers `REMINDER_TEST_EMAIL` et un échec simulé.
@@ -89,5 +99,5 @@ reprise contrôlée, car l'idempotence du prestataire ne dure que 24 heures.
   token et la révocation après suppression ou transfert de l'équipement.
 - Vérifier le rendu mobile et la fiche QR, puis terminer le flux particulier.
 
-Le dépôt local n'a ni CLI Supabase ni serveur PostgreSQL disponibles dans cet
-environnement ; les migrations ne sont donc pas marquées comme appliquées.
+Ce document ne prouve pas qu'une migration a été appliquée : contrôler le
+schéma du projet Preview avant le déploiement et exécuter une lecture test.

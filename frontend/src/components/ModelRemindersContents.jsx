@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { REMINDER_TYPE_LABELS } from "../lib/reminder-description.js";
 import "./ModelRemindersContents.css";
 
 function readableDate(value) {
@@ -14,9 +15,10 @@ function stateLabel(reminder) {
   return "Prévu, non envoyé";
 }
 
-export default function ModelRemindersContents({ equipment, session }) {
+export default function ModelRemindersContents({ equipment, session, onOpenEquipment }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [selectedReminderId, setSelectedReminderId] = useState("");
 
   useEffect(() => {
     if (!equipment?.id || !session?.access_token) return undefined;
@@ -43,16 +45,30 @@ export default function ModelRemindersContents({ equipment, session }) {
     {result.reminders.length === 0
       ? <p>Aucun rappel en cours pour ce modèle.</p>
       : <ul className="model-reminders__list">
-        {result.reminders.map((reminder, index) => <li key={`${reminder.equipmentId}-${reminder.audience}-${index}`}>
-          <div>
-            <strong>{readableDate(reminder.dueOn)}</strong>
-            <span>{reminder.audience === "individual" ? "Particulier · adresse vérifiée" : "Compte professionnel"}</span>
-          </div>
-          <div>
-            <span>{reminder.serialNumber ? `N° de série : ${reminder.serialNumber}` : `Appareil réf. ${reminder.equipmentId.slice(0, 8)}`}</span>
-            <span>Préavis : {reminder.leadDays} jour(s) · {stateLabel(reminder)}</span>
-          </div>
-        </li>)}
+        {result.reminders.map((reminder) => {
+          const key = `${reminder.audience}-${reminder.id}`;
+          const expanded = selectedReminderId === key;
+          return <li key={key}>
+            <button type="button" className="model-reminders__entry" aria-expanded={expanded} onClick={() => setSelectedReminderId(expanded ? "" : key)}>
+              <div>
+                <strong>{reminder.description} · {readableDate(reminder.dueOn)}</strong>
+                <span>{reminder.audience === "individual" ? "Particulier · adresse vérifiée" : "Compte professionnel"}</span>
+              </div>
+              <div>
+                <span>{reminder.serialNumber ? `N° de série : ${reminder.serialNumber}` : `Appareil réf. ${reminder.equipmentId.slice(0, 8)}`}</span>
+                <span>Préavis : {reminder.leadDays} jour(s) · {stateLabel(reminder)}</span>
+              </div>
+            </button>
+            {expanded && <div className="model-reminders__details">
+              <p><strong>Objet :</strong> {reminder.description}</p>
+              <p><strong>Type :</strong> {REMINDER_TYPE_LABELS[reminder.reminderType] || "Autre"}</p>
+              <p><strong>Échéance :</strong> {readableDate(reminder.dueOn)} · <strong>État :</strong> {stateLabel(reminder)}</p>
+              <button type="button" onClick={() => onOpenEquipment?.(reminder.equipmentId, reminder.audience === "professional" ? reminder.id : null)}>
+                {reminder.audience === "professional" ? "Ouvrir ce rappel →" : "Ouvrir le dossier de cet appareil →"}
+              </button>
+            </div>}
+          </li>;
+        })}
       </ul>}
   </div>;
 }

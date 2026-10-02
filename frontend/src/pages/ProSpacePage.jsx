@@ -1007,6 +1007,7 @@ export default function ProSpacePage() {
   const [selectedEquipmentId, setSelectedEquipmentId] = useState("");
   const [modelReminderEquipment, setModelReminderEquipment] = useState(null);
   const [reminderPromptEquipmentId, setReminderPromptEquipmentId] = useState("");
+  const [reminderNavigation, setReminderNavigation] = useState(null);
   const contactSelectionRef = useRef("");
   const [carnetPassPreview, setCarnetPassPreview] = useState(null);
   const [createdCarnetPass, setCreatedCarnetPass] = useState(null);
@@ -1466,6 +1467,7 @@ export default function ProSpacePage() {
 
   function handleSelectEquipment(equipment) {
     if (equipment.id !== reminderPromptEquipmentId) setReminderPromptEquipmentId("");
+    setReminderNavigation(null);
     contactSelectionRef.current = equipment.id;
     setSelectedEquipmentId(equipment.id);
     setEquipmentFormOpen(false);
@@ -2266,7 +2268,7 @@ export default function ProSpacePage() {
       <TechnicalCatalogModal open={technicalCatalogOpen} onClose={() => setTechnicalCatalogOpen(false)} onAddEquipment={handleAddCatalogEquipment} canAddEquipment={companyCanCreateEquipment} initialMode={catalogMode} initialQuestion={catalogMode === "assistant" ? shibaQuestion : ""} initialSource={shibaSource} session={session} catalog={equipmentIndex.equipments.map((item) => ({ ...item, type: item.type || "boiler" }))} />
       {selectedEquipment && (
         <EquipmentWorkspace
-          key={selectedEquipment.id}
+          key={`${selectedEquipment.id}:${selectedEquipment.id === reminderPromptEquipmentId ? "new" : ""}:${selectedEquipment.id === reminderNavigation?.equipmentId ? reminderNavigation.requestId : ""}`}
           session={session}
           company={company}
           equipment={selectedEquipment}
@@ -2291,6 +2293,7 @@ export default function ProSpacePage() {
             setBoilerCertificatesLoading(false);
           }}
           promptReminder={selectedEquipment.id === reminderPromptEquipmentId}
+          openRemindersRequest={selectedEquipment.id === reminderNavigation?.equipmentId ? reminderNavigation : null}
         />
       )}
       <ModalShell
@@ -2298,12 +2301,18 @@ export default function ProSpacePage() {
         onClose={() => setModelReminderEquipment(null)}
         dialogId="model-reminders-modal"
         titleId="model-reminders-modal-title"
-        eyebrow="Rappels d’entretien"
+        eyebrow="Rappels du modèle"
         title={`🔔 ${modelReminderEquipment?.brand || ""} ${modelReminderEquipment?.model || ""}`}
         description="Tous les rappels en cours pour ce modèle, sur les appareils de votre entreprise."
         className="pro-model-reminders-modal"
       >
-        {modelReminderEquipment && <ModelRemindersContents equipment={modelReminderEquipment} session={session} />}
+        {modelReminderEquipment && <ModelRemindersContents equipment={modelReminderEquipment} session={session} onOpenEquipment={(equipmentId, reminderId) => {
+          const target = equipments.find((item) => item.id === equipmentId);
+          if (!target) return;
+          setModelReminderEquipment(null);
+          handleSelectEquipment(target);
+          setReminderNavigation({ equipmentId: target.id, reminderId, requestId: crypto.randomUUID() });
+        }} />}
       </ModalShell>
       <ModalShell
         open={Boolean(carnetPassPreview?.id)}

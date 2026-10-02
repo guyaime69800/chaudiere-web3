@@ -6,9 +6,12 @@ export function summarizeModelReminders(equipments, professionalReminders, publi
     const equipment = equipmentById.get(reminder.equipment_id);
     if (!equipment || !visibleStatuses.has(reminder.status)) return null;
     return {
+      id: reminder.id,
       equipmentId: equipment.id,
       serialNumber: equipment.serial_number || null,
       audience,
+      description: audience === "professional" ? reminder.description || "Entretien" : "Entretien",
+      reminderType: audience === "professional" ? reminder.reminder_type || "maintenance" : "maintenance",
       dueOn: reminder.due_on,
       leadDays: reminder.lead_days,
       status: reminder.status,

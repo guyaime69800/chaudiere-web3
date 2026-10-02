@@ -23,7 +23,9 @@ async function readForEquipmentIds(db, table, companyId, ids) {
   for (let offset = 0; offset < ids.length; offset += 100) {
     const batch = ids.slice(offset, offset + 100);
     rows.push(...await readAll(() => db.from(table)
-      .select("id,equipment_id,due_on,lead_days,status,notification_state")
+      .select(table === "maintenance_reminders"
+        ? "id,equipment_id,description,reminder_type,due_on,lead_days,status,notification_state"
+        : "id,equipment_id,due_on,lead_days,status,notification_state")
       .eq("company_id", companyId)
       .in("equipment_id", batch)
       .in("status", ["active", "review_required"])));

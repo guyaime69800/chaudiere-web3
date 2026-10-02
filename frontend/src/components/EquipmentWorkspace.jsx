@@ -9,7 +9,7 @@ import "./EquipmentWorkspace.css";
 
 const WORKSPACE_TABS = [
     { id: "summary", label: "Synthèse" },
-    { id: "reminders", label: "Entretien et rappels" },
+    { id: "reminders", label: "Rappels" },
     { id: "history", label: "Interventions" },
     { id: "regulatory", label: "Attestations / CERFA" },
     { id: "documents", label: "Documents" },
@@ -144,8 +144,9 @@ export default function EquipmentWorkspace({
     onInterventionCreated,
     onCertificatesChange,
     promptReminder = false,
+    openRemindersRequest = null,
 }) {
-    const [activeTab, setActiveTab] = useState(promptReminder ? "reminders" : "summary");
+    const [activeTab, setActiveTab] = useState(promptReminder || openRemindersRequest ? "reminders" : "summary");
     const [requestedInterventionId, setRequestedInterventionId] = useState("");
     const [carnetPassModalOpen, setCarnetPassModalOpen] = useState(false);
     const [technicalDocumentCount, setTechnicalDocumentCount] = useState(0);
@@ -226,19 +227,12 @@ export default function EquipmentWorkspace({
         return () => controller.abort();
     }, [equipment.id, equipment.equipment_type, session?.access_token]);
     useEffect(() => {
-        setActiveTab(promptReminder ? "reminders" : "summary");
-        setRequestedInterventionId("");
-        setCarnetPassModalOpen(false);
-        setTechnicalDocumentCount(0);
-        setThermodynamicDocuments([]);
-
-        window.requestAnimationFrame(() => {
-            workspaceRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-            });
+        if (openRemindersRequest?.reminderId) return undefined;
+        const frame = window.requestAnimationFrame(() => {
+            workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         });
-    }, [equipment.id, promptReminder]);
+        return () => window.cancelAnimationFrame(frame);
+    }, [openRemindersRequest?.reminderId]);
 
     function handleCarnetPassAction() {
         if (activeCarnetPassId) {
@@ -470,6 +464,7 @@ export default function EquipmentWorkspace({
                         session={session}
                         interventions={equipmentInterventions}
                         promptAfterCreation={promptReminder}
+                        focusReminderRequest={openRemindersRequest}
                     />
                 )}
 

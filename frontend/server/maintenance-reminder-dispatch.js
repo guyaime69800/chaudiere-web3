@@ -88,7 +88,7 @@ async function sendPreviewTest(req, res) {
   try {
     const db = service();
     const { data: reminder, error } = await db.from("maintenance_reminders")
-      .select("id,company_id,equipment_id,recipient_user_id,recipient_email,due_on,status,version,equipments(brand,model)")
+      .select("id,company_id,equipment_id,recipient_user_id,recipient_email,description,due_on,status,version,equipments(brand,model)")
       .eq("id", reminderId).maybeSingle();
     if (error || !reminder || reminder.company_id !== user.companyId
       || reminder.recipient_user_id !== user.userId || reminder.status !== "active"
@@ -97,8 +97,8 @@ async function sendPreviewTest(req, res) {
     }
     const providerId = await sendReminderEmail({
       to: allowedEmail,
-      subject: "[TEST Preview] Rappel d’entretien CarnetPass",
-      text: `Ceci est un test Preview, pas un rappel réel.\n\nAppareil : ${reminder.equipments?.brand || ""} ${reminder.equipments?.model || ""}\nÉchéance enregistrée : ${reminder.due_on}.\n\nGérer ou annuler : https://${process.env.VERCEL_URL}/espace-pro`,
+      subject: "[TEST Preview] Rappel CarnetPass",
+      text: `Ceci est un test Preview, pas un rappel réel.\n\nObjet : ${reminder.description || "Entretien"}\nAppareil : ${reminder.equipments?.brand || ""} ${reminder.equipments?.model || ""}\nÉchéance enregistrée : ${reminder.due_on}.\n\nGérer ou annuler : https://${process.env.VERCEL_URL}/espace-pro`,
       idempotencyKey: `preview-maintenance-test-${reminder.id}-${reminder.version}`,
     });
     return res.status(200).json({ ok: true, state: "accepted_by_provider", providerMessageId: providerId });
@@ -124,7 +124,7 @@ async function runCron(req, res) {
       try {
         // Recheck revocation, email changes and cancellation immediately before send.
         const { data: current, error: currentError } = await db.from("maintenance_reminders")
-          .select("id,company_id,equipment_id,recipient_user_id,recipient_email,status,notification_state,claim_id,equipments(brand,model)")
+          .select("id,company_id,equipment_id,recipient_user_id,recipient_email,description,status,notification_state,claim_id,equipments(brand,model)")
           .eq("id", reminder.id).maybeSingle();
         const { data: member } = await db.from("company_members")
           .select("user_id").eq("company_id", reminder.company_id)
@@ -138,8 +138,8 @@ async function runCron(req, res) {
         } else {
           providerId = await sendEmailWithRetry({
             to: reminder.recipient_email,
-            subject: `Entretien à prévoir pour ${current.equipments?.brand || "votre appareil"} ${current.equipments?.model || ""}`.trim(),
-            text: `L’échéance enregistrée pour votre équipement est le ${reminder.due_on}. Cette date ne prouve pas qu’un entretien n’a pas eu lieu.\n\nConsultez, modifiez ou annulez ce rappel : https://www.carnetpass.fr/espace-pro\n\nSi vous ne souhaitez plus recevoir ce rappel, annulez-le depuis CarnetPass.`,
+            subject: `Rappel CarnetPass : ${(current.description || "Entretien").slice(0, 90)}`,
+            text: `Objet : ${current.description || "Entretien"}\nL’échéance enregistrée pour votre équipement est le ${reminder.due_on}. Ce rappel ne prouve pas qu’une intervention n’a pas eu lieu.\n\nConsultez, modifiez ou annulez ce rappel : https://www.carnetpass.fr/espace-pro\n\nSi vous ne souhaitez plus recevoir ce rappel, annulez-le depuis CarnetPass.`,
             idempotencyKey: `maintenance-${reminder.id}-${reminder.version}`,
           });
           result = "accepted";
