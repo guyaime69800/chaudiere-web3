@@ -1996,15 +1996,14 @@ export default function ProSpacePage() {
           <button className="pro-technical-catalog-link" type="button" onClick={() => { setCatalogMode("catalog"); setTechnicalCatalogOpen(true); }}>Parcourir le catalogue technique →</button>
         </article>
         <article className="pro-dashboard-card pro-equipment-card pro-equipment-card--full">
-          <div>
+          <div className="pro-equipment-card__heading">
             <span className="pro-dashboard-icon" aria-hidden="true">
               🔧
             </span>
-            <h2>Équipements de l’entreprise</h2>
-            <p>
-              Ajoutez les chaudières, pompes à chaleur, climatisations et autres
-              équipements suivis par votre entreprise.
-            </p>
+            <div>
+              <h2>Équipements de l’entreprise</h2>
+              <p>Gérez les appareils suivis par votre entreprise.</p>
+            </div>
           </div>
 
           <button
@@ -2172,16 +2171,19 @@ export default function ProSpacePage() {
             </form>
           )}
 
-          <fieldset className="pro-qr-contact-options">
-            <legend>Coordonnées visibles sur le QR code</legend>
-            <p>Sélectionnez un appareil ci-dessous, puis choisissez les contacts à publier. Aucun n’est publié par défaut. Les numéros d’urgence restent distincts.</p>
-            {(!company?.phone || !company?.email) && <p>Pour activer le téléphone ou l’e-mail, renseignez-les d’abord dans la carte « Mon entreprise » en haut de cette page. L’e-mail de connexion n’est jamais rendu public automatiquement.</p>}
-            <label className="pro-qr-contact-options__choice"><input type="checkbox" checked={publicContactOptions.phone} disabled={!company?.phone} onChange={(event) => setPublicContactOptions((current) => ({ ...current, phone: event.target.checked }))} /><span>Téléphone {company?.phone ? `(${company.phone})` : "— à renseigner dans Mon entreprise"}</span></label>
-            <label className="pro-qr-contact-options__choice"><input type="checkbox" checked={publicContactOptions.email} disabled={!company?.email} onChange={(event) => setPublicContactOptions((current) => ({ ...current, email: event.target.checked }))} /><span>E-mail {company?.email ? `(${company.email})` : "— à renseigner dans Mon entreprise"}</span></label>
-            <label className="pro-qr-contact-options__choice"><input type="checkbox" checked={publicContactOptions.website} onChange={(event) => setPublicContactOptions((current) => ({ ...current, website: event.target.checked }))} /><span>Site internet</span></label>
-            {publicContactOptions.website && <label className="pro-qr-contact-options__website">Adresse du site (https://)<input type="url" value={publicContactOptions.websiteUrl} onChange={(event) => setPublicContactOptions((current) => ({ ...current, websiteUrl: event.target.value }))} placeholder="https://exemple.fr" maxLength={2048} /></label>}
-            {carnetPassStatuses[selectedEquipmentId]?.status === "active" && <button className="pro-primary-button" type="button" onClick={handleSavePublicContacts} disabled={equipmentSubmitting}>Enregistrer les contacts sur ce QR</button>}
-          </fieldset>
+          <details className="pro-qr-contact-panel">
+            <summary>Coordonnées visibles sur le QR code</summary>
+            <fieldset className="pro-qr-contact-options">
+              <legend>Contacts publics de l’appareil sélectionné</legend>
+              <p>Sélectionnez un appareil ci-dessous, puis choisissez les contacts à publier. Aucun n’est publié par défaut. Les numéros d’urgence restent distincts.</p>
+              {(!company?.phone || !company?.email) && <p>Pour activer le téléphone ou l’e-mail, renseignez-les d’abord dans la carte « Mon entreprise » en haut de cette page. L’e-mail de connexion n’est jamais rendu public automatiquement.</p>}
+              <label className="pro-qr-contact-options__choice"><input type="checkbox" checked={publicContactOptions.phone} disabled={!company?.phone} onChange={(event) => setPublicContactOptions((current) => ({ ...current, phone: event.target.checked }))} /><span>Téléphone {company?.phone ? `(${company.phone})` : "— à renseigner dans Mon entreprise"}</span></label>
+              <label className="pro-qr-contact-options__choice"><input type="checkbox" checked={publicContactOptions.email} disabled={!company?.email} onChange={(event) => setPublicContactOptions((current) => ({ ...current, email: event.target.checked }))} /><span>E-mail {company?.email ? `(${company.email})` : "— à renseigner dans Mon entreprise"}</span></label>
+              <label className="pro-qr-contact-options__choice"><input type="checkbox" checked={publicContactOptions.website} onChange={(event) => setPublicContactOptions((current) => ({ ...current, website: event.target.checked }))} /><span>Site internet</span></label>
+              {publicContactOptions.website && <label className="pro-qr-contact-options__website">Adresse du site (https://)<input type="url" value={publicContactOptions.websiteUrl} onChange={(event) => setPublicContactOptions((current) => ({ ...current, websiteUrl: event.target.value }))} placeholder="https://exemple.fr" maxLength={2048} /></label>}
+              {carnetPassStatuses[selectedEquipmentId]?.status === "active" && <button className="pro-primary-button" type="button" onClick={handleSavePublicContacts} disabled={equipmentSubmitting}>Enregistrer les contacts sur ce QR</button>}
+            </fieldset>
+          </details>
 
           {equipments.length > 0 && (
             <ul className="pro-equipment-list">
