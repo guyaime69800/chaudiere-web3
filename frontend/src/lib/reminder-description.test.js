@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { suggestedReminderDescription, suggestedReminderType } from "./reminder-description.js";
+import { reminderAction, suggestedReminderDescription, suggestedReminderType } from "./reminder-description.js";
+
+test("Shiba ne confond pas le travail prévu avec une modification du rappel", () => {
+  assert.equal(reminderAction("rappel dépannage le 20/11/2026 changement de sonde"), "create");
+  assert.equal(reminderAction("rappel pour changer la sonde le 20/11/2026"), "create");
+  assert.equal(reminderAction("rappel démontage le 20/11/2026 puis modification du raccord"), "create");
+  assert.equal(reminderAction("modifie le rappel au 20/11/2026"), "update");
+  assert.equal(reminderAction("change la date du rappel au 20/11/2026"), "update");
+  assert.equal(reminderAction("annule ce rappel"), "cancel");
+});
 
 test("Shiba proposes the task without imposing a maintenance category", () => {
   assert.equal(suggestedReminderDescription("rappel dépannage le 6/10/2026"), "dépannage");

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../services/supabaseClient";
 import { parseReminderDate } from "../lib/reminder-date.js";
-import { REMINDER_TYPE_LABELS, suggestedReminderDescription, suggestedReminderType } from "../lib/reminder-description.js";
+import { REMINDER_TYPE_LABELS, reminderAction, suggestedReminderDescription, suggestedReminderType } from "../lib/reminder-description.js";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import "./MaintenanceReminders.css";
 
@@ -118,9 +118,9 @@ export default function MaintenanceReminders({ equipment, session, interventions
       setError("Confirmez d’abord l’adresse e-mail de votre compte.");
       return;
     }
-    const normalized = shibaRequest.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    const isCancel = /annul|supprim/.test(normalized);
-    const isUpdate = /modifi|deplac|change/.test(normalized);
+    const action = reminderAction(shibaRequest);
+    const isCancel = action === "cancel";
+    const isUpdate = action === "update";
     if ((isCancel || isUpdate) && active.length !== 1) {
       setError("Pour modifier ou annuler, ouvrez le rappel concerné : Shiba ne peut pas choisir entre plusieurs rappels.");
       return;

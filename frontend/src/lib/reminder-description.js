@@ -9,6 +9,14 @@ export const REMINDER_TYPE_LABELS = {
   other: "Autre",
 };
 
+export function reminderAction(request) {
+  const text = String(request || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const command = /^\s*(annul\w*|supprim\w*|modifi\w*|deplac\w*|chang\w*)\s+(?:(?:mon|le|la|ce|cette|un|une)\s+)?(?:rappel|echeance|date\s+(?:du|de\s+mon)\s+rappel)\b/;
+  const verb = command.exec(text)?.[1];
+  if (!verb) return "create";
+  return /^(?:annul|supprim)/.test(verb) ? "cancel" : "update";
+}
+
 export function suggestedReminderType(request) {
   const text = String(request || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const matches = [
