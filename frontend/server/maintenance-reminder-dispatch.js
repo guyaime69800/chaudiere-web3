@@ -1,11 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 import { Redis } from "@upstash/redis";
+import { randomUUID } from "node:crypto";
 import { requireVerifiedCompany } from "./lib/require-verified-company.js";
 import { createSignedPublicManageToken } from "./lib/public-reminder-link.js";
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const previewProject = "https://bqqzzbwqmiyxcotvqtoc.supabase.co";
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function previewTestIdempotencyKey(reminderId) {
+  return `preview-maintenance-test-${reminderId}-${randomUUID()}`;
+}
 
 export function previewReminderTestAllowed(environment) {
   return environment.VERCEL_ENV === "preview"
@@ -99,10 +104,11 @@ async function sendPreviewTest(req, res) {
       to: allowedEmail,
       subject: "[TEST Preview] Rappel CarnetPass",
       text: `Ceci est un test Preview, pas un rappel réel.\n\nObjet : ${reminder.description || "Entretien"}\nAppareil : ${reminder.equipments?.brand || ""} ${reminder.equipments?.model || ""}\nÉchéance enregistrée : ${reminder.due_on}.\n\nGérer ou annuler : https://${process.env.VERCEL_URL}/espace-pro`,
-      idempotencyKey: `preview-maintenance-test-${reminder.id}-${reminder.version}`,
+      idempotencyKey: previewTestIdempotencyKey(reminder.id),
     });
     return res.status(200).json({ ok: true, state: "accepted_by_provider", providerMessageId: providerId });
-  } catch {
+  } catch (error) {
+    console.error("Preview reminder email test failed", { code: error.code || error.message || "UNKNOWN" });
     return res.status(503).json({ ok: false, error: "Le service d’e-mail de test n’a pas accepté le message." });
   }
 }

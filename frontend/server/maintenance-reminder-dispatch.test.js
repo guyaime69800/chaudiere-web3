@@ -1,9 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  previewTestIdempotencyKey,
   previewReminderTestAllowed,
   productionReminderCronAllowed,
 } from "./maintenance-reminder-dispatch.js";
+
+test("chaque clic de test Preview a une clé d’envoi distincte", () => {
+  const reminderId = "00000000-0000-4000-8000-000000000001";
+  const first = previewTestIdempotencyKey(reminderId);
+  const second = previewTestIdempotencyKey(reminderId);
+  assert.match(first, /^preview-maintenance-test-00000000-0000-4000-8000-000000000001-/);
+  assert.notEqual(first, second);
+});
 
 test("l’e-mail de test est fermé hors de la Preview isolée", () => {
   const valid = {
