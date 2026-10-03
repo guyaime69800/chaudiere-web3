@@ -27,4 +27,5 @@
 .pricing-note { margin-top: 42px; padding: 30px; border-radius: 20px; background: #f2e9df; }
 .pricing-note h2 { margin: 0 0 12px; }
 .pricing-note p { max-width: 880px; color: #5a5049; line-height: 1.6; }
+.pricing-preview-recharge { margin: 0 0 20px; padding: 10px 15px; border: 1px solid #b9340a; border-radius: 9px; background: #fffaf5; color: #a43b16; font: inherit; font-weight: 700; cursor: pointer; }
 @media (max-width: 620px) { .pricing-page { padding: 20px 16px 55px; } .pricing-nav { font-size: 13px; } .pricing-intro { padding: 54px 0 25px; } .pricing-grid { grid-template-columns: 1fr; } .pricing-card > p { min-height: 0; } }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { formatShibaResetDate, shibaCreditsExhaustedMessage } from "../lib/shiba-credit-copy.js";
+import { openShibaRecharge } from "../services/shibaUsageEvents.js";
 import "./ShibaUsage.css";
 
 export default function ShibaUsage({ session }) {
@@ -17,7 +17,11 @@ export default function ShibaUsage({ session }) {
         });
         if (!response.ok) throw new Error("Compteur indisponible");
         const result = await response.json();
-        if (active) { setUsage(result); setError(false); }
+        if (active) {
+          setUsage(result);
+          setError(false);
+          if (result.enabled && result.remaining <= 0) openShibaRecharge(result);
+        }
       } catch {
         if (active) setError(true);
       }
@@ -42,18 +46,17 @@ export default function ShibaUsage({ session }) {
   const exhausted = usage.remaining <= 0;
   return (
     <div className="shiba-usage" aria-live="polite">
-      <div className="shiba-usage__line"><strong>Questions à Shiba Bot · documents et Web</strong><span>{usage.used} / {usage.limit} {usage.period === "trial" ? "pendant l’essai" : "ce mois"}</span></div>
-      <progress value={Math.min(usage.used, usage.limit)} max={usage.limit} aria-label="Questions à Shiba Bot utilisées" />
+      <div className="shiba-usage__line"><strong>Shiba Bot · documents et Web</strong><span>{exhausted ? "Crédits épuisés" : "Disponible"}</span></div>
       {exhausted ? (
         <>
           <p className="shiba-usage__exhausted">{shibaCreditsExhaustedMessage(usage.period)}</p>
           {usage.period === "month" && reset && <small>Réinitialisation prévue le {reset} (heure de Paris).</small>}
           {usage.period === "trial" && reset && <small>Fin de l’essai le {reset} (heure de Paris), sans réinitialisation automatique.</small>}
-          <Link className="shiba-usage__recharge" to="/tarifs#credits">Recharger mes crédits</Link>
+          <button className="shiba-usage__recharge" type="button" onClick={() => openShibaRecharge(usage, true)}>Recharger mes crédits</button>
           <small>La recharge est en préparation et n’est pas encore achetable.</small>
         </>
       ) : (
-        <small>{usage.remaining} question{usage.remaining > 1 ? "s" : ""} restante{usage.remaining > 1 ? "s" : ""} · {usage.period === "trial" ? "fin de l’essai le" : "remise à zéro le"} {reset || "date non disponible"}. Vos carnets, documents et historiques restent accessibles.</small>
+        <small>{usage.period === "trial" ? "Fin de l’essai le" : "Prochaine réinitialisation le"} {reset || "date non disponible"}. Vos carnets, documents et historiques restent accessibles.</small>
       )}
       {exhausted && <small>Vos carnets, documents et historiques restent accessibles.</small>}
     </div>

@@ -14,7 +14,7 @@ import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import "./EquipmentDocumentCenter.css";
 import { useAuth } from "../hooks/useAuth";
 import ShibaUsage from "./ShibaUsage";
-import { refreshShibaUsage } from "../services/shibaUsageEvents";
+import { openShibaRecharge, refreshShibaUsage } from "../services/shibaUsageEvents";
 
 const DOCUMENT_FILTERS = [
   { id: "all", label: "Tous" },
@@ -425,6 +425,7 @@ function EquipmentDocumentCenterContent({
       });
       const result = await response.json();
       refreshShibaUsage();
+      if (result?.code === "SHIBA_QUOTA_REACHED") openShibaRecharge(result.usage, true);
 
       if (!response.ok || !result?.ok) {
         throw new Error(result?.message || result?.error || "Réponse IA indisponible.");

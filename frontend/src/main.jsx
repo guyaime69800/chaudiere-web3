@@ -18,6 +18,7 @@ import { CookiesPage, FaqPage, LegalNoticePage, PrivacyPage, SalesTermsPage, Ter
 import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
 import AccountSettingsPage from "./pages/AccountSettingsPage.jsx";
 import PlatformAdminPage from "./pages/PlatformAdminPage.jsx";
+import ShibaRechargeModal from "./components/ShibaRechargeModal.jsx";
 import PublicMaintenanceReminderPage from "./pages/PublicMaintenanceReminderPage.jsx";
 import { registerSW } from "virtual:pwa-register";
 const updateSW = registerSW({
@@ -91,6 +92,7 @@ createRoot(document.getElementById("root")).render(
           {/* Fiche ouverte depuis un QR code */}
           <Route path="/appareil/:id" element={<App />} />
         </Routes>
+        <ShibaRechargeModal />
         <SiteFooter />
       </BrowserRouter>
     </AuthProvider>

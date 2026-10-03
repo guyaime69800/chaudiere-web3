@@ -1,0 +1,18 @@
+.shiba-recharge-dialog { width: min(460px, calc(100vw - 32px)); max-height: min(90vh, 760px); padding: 0; border: 1px solid #ead9ce; border-radius: 24px; background: #fffdfb; color: #241c18; box-shadow: 0 24px 80px #26190f40; }
+.shiba-recharge-dialog::backdrop { background: #2015109c; backdrop-filter: blur(4px); }
+.shiba-recharge-dialog__content { position: relative; padding: 32px; }
+.shiba-recharge-dialog__close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border: 1px solid #ecd7c7; border-radius: 50%; background: #fff8f3; font-size: 25px; line-height: 1; cursor: pointer; }
+.shiba-recharge-dialog__icon { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 14px; border-radius: 16px; background: #fff0e6; font-size: 28px; }
+.shiba-recharge-dialog__eyebrow { margin: 0 0 6px; color: #b9340a; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.shiba-recharge-dialog h2 { margin: 0 0 12px; font-size: clamp(26px, 5vw, 34px); line-height: 1.1; }
+.shiba-recharge-dialog p { line-height: 1.5; }
+.shiba-recharge-dialog__reset { color: #6e625a; font-size: 14px; }
+.shiba-recharge-dialog__packs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 24px 0 18px; }
+.shiba-recharge-dialog__pack { display: flex; flex-direction: column; gap: 6px; padding: 18px 14px; border: 2px solid #e8d9cf; border-radius: 14px; background: #fff; color: inherit; text-align: left; cursor: pointer; }
+.shiba-recharge-dialog__pack.is-selected { border-color: #c2410c; background: #fff5ef; }
+.shiba-recharge-dialog__pack strong { font-size: 22px; }
+.shiba-recharge-dialog__pack span { color: #685b53; font-size: 13px; }
+.shiba-recharge-dialog__pack:focus-visible, .shiba-recharge-dialog__close:focus-visible { outline: 3px solid #ef916c; outline-offset: 2px; }
+.shiba-recharge-dialog__pay { width: 100%; padding: 15px; border: 0; border-radius: 12px; background: #b9b3ae; color: #fff; font: inherit; font-weight: 700; cursor: not-allowed; }
+.shiba-recharge-dialog__notice { margin-bottom: 0; color: #6e625a; font-size: 13px; }
+@media (max-width: 480px) { .shiba-recharge-dialog__content { padding: 24px 18px; } }

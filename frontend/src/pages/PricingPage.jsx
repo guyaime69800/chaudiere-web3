@@ -4,6 +4,8 @@ import { useAuth } from "../hooks/useAuth";
 import { startBilling } from "../services/billingService";
 import { getMyCompany } from "../services/companyService";
 import { activeStripeTestPlan, getStripeTestSubscription } from "../services/stripeTestSubscription";
+import { openShibaRecharge } from "../services/shibaUsageEvents.js";
+import { SHIBA_RECHARGE_PACKS } from "../lib/shiba-recharge-packs.js";
 import "./PricingPage.css";
 
 const offers = [
@@ -12,7 +14,7 @@ const offers = [
     audience: "Pour découvrir CarnetPass sur le terrain",
     price: "Gratuit",
     priceDetail: "pendant 5 jours",
-    features: ["Essai gratuit de 5 jours", "Jusqu’à 5 équipements", "Carnet et rapports", "20 questions à Shiba Bot pendant l’essai"],
+    features: ["Essai gratuit de 5 jours", "Jusqu’à 5 équipements", "Carnet et rapports", "Découvrez Shiba Bot pendant votre essai"],
   },
   {
     name: "CarnetPass Pro",
@@ -21,7 +23,7 @@ const offers = [
     price: "28 € TTC",
     taxDetail: "23,33 € HT + 4,67 € de TVA (20 %, arrondis)",
     priceDetail: "par utilisateur et par mois",
-    features: ["Équipements et interventions sans plafond métier", "Documents et attestations", "Catalogue technique disponible", "200 questions à Shiba Bot par mois et par utilisateur, documentation et recherche Web comprises"],
+    features: ["Équipements et interventions sans plafond métier", "Documents et attestations", "Catalogue technique disponible", "Shiba Bot à vos côtés pour avancer plus vite, des notices techniques à la recherche Web"],
     featured: true,
   },
 ];
@@ -95,7 +97,7 @@ export default function PricingPage() {
           </article>
         ))}
       </section>
-      <aside className="pricing-note" id="credits"><h2>Option : 100 crédits IA</h2><p>10 € TTC pour 100 questions supplémentaires à Shiba Bot, en achat ponctuel et non en abonnement. Les questions sur la documentation et les recherches Web utiliseront les mêmes crédits. Cette option est en préparation : aucun achat de crédits n’est encore possible.</p><h2>Votre travail reste accessible.</h2><p>Atteindre la limite de questions à Shiba Bot suspend actuellement les nouvelles questions IA. La formule professionnelle se réinitialise chaque mois ; l’essai Découverte ne se réinitialise pas. Les carnets, documents et historiques restent accessibles. Le compteur est testé uniquement en Preview ; les crédits supplémentaires ne sont pas encore disponibles.</p><p>« Sans plafond métier » ne signifie pas stockage illimité : une limite raisonnable pour les fichiers envoyés reste à définir.</p></aside>
+      <aside className="pricing-note" id="credits"><h2>Recharges Shiba Bot</h2><p>Lorsque les crédits inclus sont épuisés, vous pourrez choisir une recharge ponctuelle : {SHIBA_RECHARGE_PACKS[0].credits} crédits IA pour {SHIBA_RECHARGE_PACKS[0].euros} € TTC ou {SHIBA_RECHARGE_PACKS[1].credits} crédits IA pour {SHIBA_RECHARGE_PACKS[1].euros} € TTC. Les questions sur la documentation et les recherches Web utiliseront les mêmes crédits. Ces recharges sont en préparation : aucun achat de crédits n’est encore possible.</p>{user && testBilling && <button type="button" className="pricing-preview-recharge" onClick={() => openShibaRecharge({ demo: true }, true)}>Voir l’aperçu de la recharge</button>}<h2>Votre travail reste accessible.</h2><p>Atteindre la limite de questions à Shiba Bot suspend actuellement les nouvelles questions IA. La formule professionnelle se réinitialise chaque mois ; l’essai Découverte ne se réinitialise pas. Les carnets, documents et historiques restent accessibles. Le compteur est testé uniquement en Preview ; les crédits supplémentaires ne sont pas encore disponibles.</p><p>« Sans plafond métier » ne signifie pas stockage illimité : une limite raisonnable pour les fichiers envoyés reste à définir.</p></aside>
     </main>
   );
 }
