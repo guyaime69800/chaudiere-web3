@@ -47,12 +47,13 @@ test("les packs correspondent aux deux prix Stripe ponctuels", () => {
   assert.equal(validatePaidRecharge(paidCheckout(20).session, paidCheckout(20).lines).credits, 200);
 });
 
-test("le diagnostic isole le champ Stripe refusé sans assouplir la TVA", () => {
+test("le diagnostic accepte un tarif non précisé avec une TVA explicite incluse", () => {
   const pack = rechargePack(10);
   const price = paidCheckout().lines.data[0].price;
   const rate = { livemode: false, active: true, inclusive: true, percentage: 20, country: "FR" };
   assert.equal(rechargeConfigurationIssue(price, rate, pack), null);
-  assert.equal(rechargeConfigurationIssue({ ...price, tax_behavior: "unspecified" }, rate, pack), "PRICE_TAX_BEHAVIOR");
+  assert.equal(rechargeConfigurationIssue({ ...price, tax_behavior: "unspecified" }, rate, pack), null);
+  assert.equal(rechargeConfigurationIssue({ ...price, tax_behavior: "exclusive" }, rate, pack), "PRICE_TAX_BEHAVIOR");
   assert.equal(rechargeConfigurationIssue(price, { ...rate, country: null }, pack), "TAX_RATE_COUNTRY");
   assert.equal(rechargeConfigurationIssue(price, { ...rate, inclusive: false }, pack), "TAX_RATE_DETAILS");
   assert.equal(rechargeConfigurationIssue({ ...price, unit_amount: 900 }, rate, pack), "PRICE_DETAILS");
@@ -85,7 +86,7 @@ test("Checkout test vérifie prix et TVA avant de créer une session ponctuelle"
       calls.push({ url, init });
       const data = url.includes("/prices/") ? {
         id: pack.priceId, livemode: false, active: true, currency: "eur", type: "one_time",
-        recurring: null, unit_amount: pack.cents, tax_behavior: "inclusive",
+        recurring: null, unit_amount: pack.cents, tax_behavior: "unspecified",
       } : url.includes("/tax_rates/") ? {
         livemode: false, active: true, inclusive: true, percentage: 20, country: "FR",
       } : { url: "https://checkout.stripe.com/test" };
@@ -126,6 +127,7 @@ test("un paiement non confirmé, un autre prix ou une autre TVA n'attribue aucun
   assert.equal(validatePaidRecharge({ ...session, amount_total: 1100 }, lines), null);
   assert.equal(validatePaidRecharge(session, { ...lines, data: [{ ...lines.data[0], price: { ...lines.data[0].price, id: "price_other" } }] }), null);
   assert.equal(validatePaidRecharge(session, { ...lines, data: [{ ...lines.data[0], price: { ...lines.data[0].price, tax_behavior: "exclusive" } }] }), null);
+  assert.equal(validatePaidRecharge(session, { ...lines, data: [{ ...lines.data[0], price: { ...lines.data[0].price, tax_behavior: "unspecified" } }] }).credits, 100);
 });
 
 test("le webhook ajoute une recharge payée une fois, même si Stripe renvoie la session", async () => {

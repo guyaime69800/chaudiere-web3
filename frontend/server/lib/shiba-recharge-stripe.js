@@ -14,14 +14,16 @@ export function rechargePack(euros) {
 export function validateRechargePrice(price, pack, { requireActive = true } = {}) {
   return Boolean(pack && price && !price.livemode && (!requireActive || price.active) && price.id === pack.priceId
     && price.currency === "eur" && price.type === "one_time" && price.recurring === null
-    && price.unit_amount === pack.cents && price.tax_behavior === "inclusive");
+    && price.unit_amount === pack.cents && ["inclusive", "unspecified"].includes(price.tax_behavior));
 }
 
 export function rechargeConfigurationIssue(price, rate, pack) {
   if (!price || price.id !== pack?.priceId || price.livemode) return "PRICE_ID_OR_MODE";
   if (!price.active || price.currency !== "eur" || price.type !== "one_time"
     || price.recurring !== null || price.unit_amount !== pack.cents) return "PRICE_DETAILS";
-  if (price.tax_behavior !== "inclusive") return "PRICE_TAX_BEHAVIOR";
+  // Checkout applies the verified inclusive tax rate explicitly to this line item.
+  // A Price with unspecified tax behavior can therefore still be sold TTC.
+  if (!["inclusive", "unspecified"].includes(price.tax_behavior)) return "PRICE_TAX_BEHAVIOR";
   if (!rate || rate.livemode || !rate.active) return "TAX_RATE_OR_MODE";
   if (!rate.inclusive || rate.percentage !== 20) return "TAX_RATE_DETAILS";
   if (rate.country !== "FR") return "TAX_RATE_COUNTRY";
