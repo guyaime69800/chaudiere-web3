@@ -82,13 +82,14 @@ export default function PlatformAdminPage() {
   }, [session.access_token, search, selected]);
 
   useEffect(() => {
+    if (data?.environment !== "preview") return;
     let active = true;
     fetch("/api/platform-admin-documents", { headers: { Authorization: `Bearer ${session.access_token}` } })
       .then((response) => response.ok ? response.json() : null)
       .then((result) => { if (active && result) { setDocuments(result.documents || []); setPublicationReady(result.publicationReady === true); setHotlineReady(result.hotlineReady === true); } })
       .catch(() => {});
     return () => { active = false; };
-  }, [session.access_token]);
+  }, [session.access_token, data?.environment]);
 
   async function importDocument(event) {
     event.preventDefault();
@@ -290,7 +291,8 @@ export default function PlatformAdminPage() {
   return <main className="platform-admin">
     <Link to="/espace-pro">← Retour à CarnetPass</Link>
     <h1>Administration CarnetPass</h1>
-    <p>Accès interne en Preview. Vérifiez le règlement et le contrat avant d'activer une entreprise ou de modifier son équipe.</p>
+    {data?.environment === "preview" && <p className="platform-admin-environment-preview">Environnement de test (Preview) : les modifications effectuées ici ne changent pas les données de production.</p>}
+    {data?.environment === "production" && <p className="platform-admin-environment-production">Production — données réelles : chaque modification concerne les clients. Vérifiez le contrat, le règlement et l'entreprise avant de confirmer une action.</p>}
     {error && <p role="alert" className="platform-admin-error">{error}</p>}
     {message && <p role="status" className="platform-admin-success">{message}</p>}
     {data && <>
@@ -346,7 +348,7 @@ export default function PlatformAdminPage() {
       <section><h2>Historique récent</h2><ul>{data.events.map((event, index) => <li key={`${event.created_at}-${index}`}>
         {new Date(event.created_at).toLocaleString("fr-FR")} · {event.action} · {data.companies.find((entry) => entry.id === event.company_id)?.name || event.company_id} · {event.payment_reference || "sans référence"}
       </li>)}</ul></section>
-      <section><h2>Importer un document technique</h2>
+      {data.environment === "preview" && <section><h2>Importer un document technique</h2>
         <p>Le PDF reste privé et en attente de validation. Sa publication lance l'indexation pour Shiba ; un document scanné peut nécessiter un OCR.</p>
         {!publicationReady && <p>La publication attend l’activation du catalogue dans la base Preview.</p>}
         <form onSubmit={importDocument}>
@@ -369,7 +371,7 @@ export default function PlatformAdminPage() {
             </details>
           </li>)}</ul>
         </details>}
-      </section>
+      </section>}
       {data.role === "founder" && <section><h2>Collaborateurs internes</h2>
         <p>Le collaborateur doit déjà avoir créé et confirmé son compte CarnetPass. Seul le fondateur peut accorder ou retirer ce rôle.</p>
         <form onSubmit={(event) => { event.preventDefault(); act({ action: "add-collaborator", email }); }}>

@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { platformAdminEnvironment } from "./lib/platform-admin-environment.js";
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const send = (res, status, message, extra = {}) => res.status(status).json({ ok: status < 400, message, ...extra });
@@ -18,13 +19,8 @@ export default async function platformAdminHandler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Allow", "GET, POST");
   if (!["GET", "POST"].includes(req.method)) return send(res, 405, "Méthode non autorisée.");
-  if (process.env.VERCEL_ENV !== "preview"
-    || process.env.VERCEL_GIT_COMMIT_REF !== "feature/documentation-multi-docs") {
-    return send(res, 404, "Fonction indisponible.");
-  }
-  if (process.env.VITE_SUPABASE_URL !== "https://bqqzzbwqmiyxcotvqtoc.supabase.co") {
-    return send(res, 503, "Administration en attente d'une base Preview séparée.");
-  }
+  const environment = platformAdminEnvironment(process.env);
+  if (environment.status) return send(res, environment.status, environment.message);
   const url = process.env.VITE_SUPABASE_URL;
   const publicKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   const secretKey = process.env.SUPABASE_SECRET_KEY;
@@ -75,7 +71,7 @@ export default async function platformAdminHandler(req, res) {
         }));
       }
     }
-    return send(res, 200, "OK", { role: operator.role, companies, events, collaborators, members, memberCount, memberLoadError, selectedCompanyId: selectedCompany });
+    return send(res, 200, "OK", { environment: environment.name, role: operator.role, companies, events, collaborators, members, memberCount, memberLoadError, selectedCompanyId: selectedCompany });
   }
 
   let body;

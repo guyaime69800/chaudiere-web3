@@ -9,6 +9,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "audit:environments": "node scripts/audit-environments.mjs",
     "test": "node --test"
   },
   "dependencies": {
