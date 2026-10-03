@@ -15,30 +15,14 @@ const offers = [
     features: ["Essai gratuit de 5 jours", "Jusqu’à 5 équipements", "Carnet et rapports", "20 questions à Shiba Bot pendant l’essai"],
   },
   {
-    name: "Pro",
+    name: "CarnetPass Pro",
     plan: "pro",
-    audience: "Pour un artisan indépendant",
+    audience: "Une seule formule professionnelle, facturée par utilisateur",
     price: "28 € TTC",
     taxDetail: "23,33 € HT + 4,67 € de TVA (20 %, arrondis)",
-    priceDetail: "par mois · 1 technicien",
-    features: ["Un compte technicien", "Équipements et interventions sans plafond métier", "Documents et attestations", "Catalogue technique disponible", "200 questions IA par mois"],
+    priceDetail: "par utilisateur et par mois",
+    features: ["Équipements et interventions sans plafond métier", "Documents et attestations", "Catalogue technique disponible", "200 questions à Shiba Bot par mois et par utilisateur, documentation et recherche Web comprises"],
     featured: true,
-  },
-  {
-    name: "Équipe",
-    plan: "team",
-    audience: "Pour une équipe de 5 personnes",
-    price: "38 € TTC",
-    taxDetail: "31,67 € HT + 6,33 € de TVA (20 %, arrondis)",
-    priceDetail: "par mois · une seule facture pour l’équipe",
-    features: ["Fonctions Pro", "Jusqu’à 5 comptes et droits d’équipe", "Une seule facture", "Suivi partagé", "200 questions IA par mois et par technicien", "Accompagnement au démarrage"],
-  },
-  {
-    name: "Entreprise",
-    audience: "Pour un réseau ou un grand compte",
-    price: "Sur étude",
-    priceDetail: "proposition personnalisée",
-    features: ["Volume et besoins étudiés ensemble", "Accompagnement adapté", "Conditions définies sur devis"],
   },
 ];
 
@@ -79,15 +63,15 @@ export default function PricingPage() {
     <main className="pricing-page">
       <nav className="pricing-nav" aria-label="Navigation"><Link to={user ? "/parametres-compte#formule" : "/"}>← {user ? "Mes paramètres" : "CarnetPass"}</Link><Link to={user ? "/espace-pro" : "/connexion"}>Accéder à l’application</Link></nav>
       <header className="pricing-intro">
-        <span className="pricing-eyebrow">{testBilling ? "Paiement en mode test" : "Offres en préparation"}</span>
-        <h1>Une formule adaptée à votre façon de travailler.</h1>
-        <p>{testBilling ? "Les prix TTC ci-dessous supposent une TVA de 20 %. Le paiement reste en mode test : vérifiez le montant et la TVA affichés par Stripe avant de confirmer. Aucun paiement réel ne sera prélevé et vos droits CarnetPass ne changent pas pendant ce test." : "Voici les offres et tarifs proposés pour CarnetPass. Vous pouvez demander un changement de formule ; aucun paiement ni changement automatique de droits n’est encore ouvert."}</p>
+        <span className="pricing-eyebrow">{testBilling ? "Paiement en mode test" : "Abonnement en préparation"}</span>
+        <h1>Une seule formule professionnelle, 28 € par utilisateur.</h1>
+        <p>{testBilling ? "Les prix TTC ci-dessous supposent une TVA de 20 %. Le paiement reste en mode test pour un utilisateur : vérifiez le montant et la TVA affichés par Stripe avant de confirmer. Aucun paiement réel ne sera prélevé et vos droits CarnetPass ne changent pas pendant ce test." : "Voici le tarif proposé pour CarnetPass. La facturation par utilisateur et l’achat de crédits IA ne sont pas encore ouverts en production."}</p>
         {error && <p role="alert" className="pricing-error">{error}</p>}
       </header>
-      <section className="pricing-grid" aria-label="Offres proposées">
+      <section className="pricing-grid" aria-label="Essai et abonnement proposés">
         {offers.map((offer) => (
           <article className={`pricing-card${offer.featured ? " pricing-card--featured" : ""}`} key={offer.name}>
-            <div className="pricing-card__top"><h2>{offer.name}</h2>{offer.featured && <span>Offre principale proposée</span>}</div>
+            <div className="pricing-card__top"><h2>{offer.name}</h2>{offer.featured && <span>Formule professionnelle</span>}</div>
             <p>{offer.audience}</p>
             <div className="pricing-card__price"><strong>{offer.price}</strong><span>{offer.priceDetail}</span>{offer.taxDetail && <span>{offer.taxDetail}</span>}</div>
             <ul>{offer.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
@@ -97,8 +81,6 @@ export default function PricingPage() {
               <span className="pricing-current" aria-label="Formule d'accès actuelle">Accès actuel : Découverte</span>
             ) : user && testBilling && offer.plan === testPlan ? (
               <span className="pricing-current" aria-label="Abonnement de test actif">Abonnement test actif : {offer.name}</span>
-            ) : offer.name === "Entreprise" ? (
-              <Link to="/demande-entreprise">Demander cette formule <span aria-hidden="true">→</span></Link>
             ) : user && testBilling && offer.plan ? (
               <><button type="button" disabled={busy || !/^\d{14}$/.test(companySiret)} onClick={() => choose(offer.plan)}>Choisir ou modifier la formule <span aria-hidden="true">→</span></button>
                 {!/^\d{14}$/.test(companySiret) && <p className="pricing-error">Le SIRET de l’entreprise est obligatoire avant l’abonnement. <Link to="/espace-pro">Renseigner le SIRET</Link></p>}
@@ -113,7 +95,7 @@ export default function PricingPage() {
           </article>
         ))}
       </section>
-      <aside className="pricing-note"><h2>Votre travail reste accessible.</h2><p>Atteindre la limite de questions à Shiba Bot suspend seulement les nouvelles questions IA jusqu’au renouvellement du compteur. Les carnets et les documents restent accessibles. Les volumes proposés sont testés en Preview et peuvent évoluer avant lancement.</p><p>« Sans plafond métier » ne signifie pas stockage illimité : une limite raisonnable pour les fichiers envoyés reste à définir.</p></aside>
+      <aside className="pricing-note"><h2>Option : 100 crédits IA</h2><p>10 € TTC pour 100 questions supplémentaires à Shiba Bot, en achat ponctuel et non en abonnement. Les questions sur la documentation et les recherches Web utiliseront les mêmes crédits. Cette option est en préparation : aucun achat de crédits n’est encore possible.</p><h2>Votre travail reste accessible.</h2><p>Atteindre la limite de questions à Shiba Bot suspend actuellement les nouvelles questions IA jusqu’au renouvellement du compteur. Les carnets et les documents restent accessibles. Le compteur est testé uniquement en Preview ; les crédits supplémentaires ne sont pas encore disponibles.</p><p>« Sans plafond métier » ne signifie pas stockage illimité : une limite raisonnable pour les fichiers envoyés reste à définir.</p></aside>
     </main>
   );
 }

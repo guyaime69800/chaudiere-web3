@@ -6,7 +6,7 @@
 .pricing-eyebrow { color: #a43b16; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .pricing-intro h1 { margin: 14px 0 18px; font-size: clamp(38px, 5vw, 65px); line-height: 1.05; letter-spacing: -.045em; }
 .pricing-intro p { color: #625951; font-size: 18px; line-height: 1.6; }
-.pricing-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.pricing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 850px; margin: 0 auto; }
 .pricing-card { display: flex; flex-direction: column; padding: 25px 22px; border: 1px solid #e3d8cf; border-radius: 20px; background: #fffdfa; }
 .pricing-card--featured { border-color: #c2410c; box-shadow: 0 12px 30px #a8401420; }
 .pricing-card__top { min-height: 68px; }
@@ -27,5 +27,4 @@
 .pricing-note { margin-top: 42px; padding: 30px; border-radius: 20px; background: #f2e9df; }
 .pricing-note h2 { margin: 0 0 12px; }
 .pricing-note p { max-width: 880px; color: #5a5049; line-height: 1.6; }
-@media (max-width: 1050px) { .pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 620px) { .pricing-page { padding: 20px 16px 55px; } .pricing-nav { font-size: 13px; } .pricing-intro { padding: 54px 0 25px; } .pricing-grid { grid-template-columns: 1fr; } .pricing-card > p { min-height: 0; } }

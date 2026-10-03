@@ -31,7 +31,7 @@ export default function ShibaUsage({ session }) {
   const reset = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" }).format(new Date(usage.resetAt));
   return (
     <div className="shiba-usage" aria-live="polite">
-      <div className="shiba-usage__line"><strong>Questions à Shiba Bot</strong><span>{usage.used} / {usage.limit} {usage.period === "trial" ? "pendant l’essai" : "ce mois"}</span></div>
+      <div className="shiba-usage__line"><strong>Questions à Shiba Bot · documents et Web</strong><span>{usage.used} / {usage.limit} {usage.period === "trial" ? "pendant l’essai" : "ce mois"}</span></div>
       <progress value={Math.min(usage.used, usage.limit)} max={usage.limit} aria-label="Questions à Shiba Bot utilisées" />
       <small>{usage.remaining ? `${usage.remaining} question${usage.remaining > 1 ? "s" : ""} restante${usage.remaining > 1 ? "s" : ""}` : "Limite atteinte : nouvelles questions suspendues"} · {usage.period === "trial" ? "fin de l’essai le" : "remise à zéro le"} {reset}. Vos carnets et documents restent accessibles.</small>
     </div>

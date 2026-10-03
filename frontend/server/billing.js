@@ -15,10 +15,14 @@ const priceToPlan = Object.fromEntries([LEGACY_PRICES, PRICES]
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const stripeTestKey = () => process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
 const portalReturnUrl = "https://test.carnetpass.fr/parametres-compte#formule";
-const portalConfigMarker = "carnetpass_preview_plan_changes_v2";
+const portalConfigMarker = "carnetpass_preview_single_plan_v3";
 
 export function hasBillingSiret(siret) {
   return typeof siret === "string" && /^\d{14}$/.test(siret);
+}
+
+export function isNewPreviewPlan(plan) {
+  return plan === "pro";
 }
 
 function send(res, status, message, extra = {}) {
@@ -63,7 +67,7 @@ async function testPortalConfiguration() {
     && configuration.features?.invoice_history?.enabled);
   if (existing) return existing.id;
 
-  const [pro, team] = await Promise.all([validateTestPrice("pro"), validateTestPrice("team")]);
+  const pro = await validateTestPrice("pro");
   const configuration = await stripe("billing_portal/configurations", {
     "metadata[carnetpass_preview]": portalConfigMarker,
     "features[invoice_history][enabled]": "true",
@@ -79,8 +83,6 @@ async function testPortalConfiguration() {
     "features[subscription_update][proration_behavior]": "always_invoice",
     "features[subscription_update][products][0][product]": pro.product,
     "features[subscription_update][products][0][prices][0]": PRICES.pro,
-    "features[subscription_update][products][1][product]": team.product,
-    "features[subscription_update][products][1][prices][0]": PRICES.team,
   });
   return configuration.id;
 }
@@ -250,6 +252,9 @@ export default async function billingHandler(req, res) {
   }
   if (!["owner", "admin"].includes(memberships[0].role)) {
     return send(res, 403, "Seul le responsable d'une entreprise peut gérer sa formule.");
+  }
+  if (body.action === "checkout" && !isNewPreviewPlan(body.plan)) {
+    return send(res, 400, "Seule la formule professionnelle est proposée pour un nouvel abonnement de test.");
   }
   const companyId = memberships[0].company_id;
   const { data: access, error: accessError } = await admin.from("subscriptions")
