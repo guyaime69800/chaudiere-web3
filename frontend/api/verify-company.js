@@ -6,6 +6,7 @@ import accountHandler from "../server/account.js";
 import billingHandler from "../server/billing.js";
 import enterpriseQuoteHandler from "../server/enterprise-quote.js";
 import platformAdminHandler from "../server/platform-admin.js";
+import shibaRechargeHandler from "../server/shiba-recharge.js";
 import { runInternalMonitoring } from "../server/system-health.js";
 
 export const config = { api: { bodyParser: false } };
@@ -103,6 +104,7 @@ export default async function handler(req, res) {
   if (req.query?.billing_route === "1") return billingHandler(req, res);
   if (req.query?.enterprise_quote_route === "1") return enterpriseQuoteHandler(req, res);
   if (req.query?.platform_admin_route === "1") return platformAdminHandler(req, res);
+  if (req.query?.shiba_recharge_route === "1") return shibaRechargeHandler(req, res);
   res.setHeader("Allow", "POST");
 
   if (req.method !== "POST") {

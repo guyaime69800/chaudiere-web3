@@ -39,6 +39,10 @@
       "destination": "/api/verify-company?billing_route=1"
     },
     {
+      "source": "/api/shiba-recharge",
+      "destination": "/api/verify-company?shiba_recharge_route=1"
+    },
+    {
       "source": "/api/stripe-webhook",
       "destination": "/api/verify-company?billing_route=1&webhook=1"
     },
