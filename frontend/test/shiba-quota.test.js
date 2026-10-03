@@ -4,7 +4,7 @@ import test from "node:test";
 process.env.UPSTASH_REDIS_REST_KV_REST_API_URL ||= "https://example.invalid";
 process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN ||= "test-only";
 
-const { readShibaUsage, refundShibaQuestion, reserveShibaQuestion, shibaQuotaEnabled, shibaQuotaLimit } = await import("../server/lib/shiba-quota.js");
+const { grantShibaRecharge, readShibaUsage, refundShibaQuestion, reserveShibaQuestion, shibaQuotaEnabled, shibaQuotaLimit } = await import("../server/lib/shiba-quota.js");
 const { formatShibaResetDate, shibaCreditsExhaustedMessage } = await import("../src/lib/shiba-credit-copy.js");
 
 function fakeRedis() {
@@ -12,18 +12,32 @@ function fakeRedis() {
   return {
     values,
     async get(key) { return values.get(key) ?? null; },
-    async eval(script, [key, legacyKey], args) {
+    async eval(script, [key, legacyKey, bonusKey], args) {
+      if (script.includes("INCRBY")) {
+        if (values.has(legacyKey)) return [0, values.get(key) || 0];
+        const balance = (values.get(key) || 0) + args[0];
+        values.set(key, balance);
+        values.set(legacyKey, 1);
+        return [1, balance];
+      }
+      if (script.includes("ARGV[1] == 'bonus'")) {
+        const target = args[0] === "bonus" ? legacyKey : key;
+        const balance = Math.max(0, (values.get(target) || 0) + (args[0] === "bonus" ? 1 : -1));
+        values.set(target, balance);
+        return balance;
+      }
       if (legacyKey && !values.has(key) && values.has(legacyKey)) {
         values.set(key, values.get(legacyKey));
       }
       const used = values.get(key) || 0;
-      if (script.includes("DECR")) {
-        values.set(key, Math.max(0, used - 1));
-        return values.get(key);
+      const bonus = values.get(bonusKey) || 0;
+      if (used >= args[0]) {
+        if (bonus <= 0) return [0, used, bonus, 0];
+        values.set(bonusKey, bonus - 1);
+        return [1, used, bonus - 1, 1];
       }
-      if (used >= args[0]) return [0, used];
       values.set(key, used + 1);
-      return [1, used + 1];
+      return [1, used + 1, bonus, 0];
     },
   };
 }
@@ -95,6 +109,24 @@ test("le quota Pro passe à la nouvelle période une seule fois à minuit UTC", 
   assert.equal((await readShibaUsage(alice, "pro", { redis, now: november })).used, 1);
   assert.equal((await reserveShibaQuestion(alice, "pro", { redis, now: november })).used, 2);
   assert.equal((await readShibaUsage(bob, "pro", { redis, now: november })).used, 0);
+});
+
+test("une recharge payée s'ajoute une seule fois, persiste au changement de mois et rembourse un échec", async () => {
+  const redis = fakeRedis();
+  const october = new Date("2026-10-31T23:59:59.000Z");
+  for (let index = 0; index < 200; index += 1) await reserveShibaQuestion(alice, "pro", { redis, now: october });
+  assert.equal((await readShibaUsage(alice, "pro", { redis, now: october })).remaining, 0);
+  assert.deepEqual(await grantShibaRecharge(alice, 100, "cs_test_first", { redis }), { granted: true, bonusRemaining: 100 });
+  assert.deepEqual(await grantShibaRecharge(alice, 100, "cs_test_first", { redis }), { granted: false, bonusRemaining: 100 });
+  const reservation = await reserveShibaQuestion(alice, "pro", { redis, now: october });
+  assert.equal(reservation.bonusSource, true);
+  assert.equal(reservation.remaining, 99);
+  await refundShibaQuestion(reservation, { redis });
+  assert.equal((await readShibaUsage(alice, "pro", { redis, now: october })).bonusRemaining, 100);
+  assert.deepEqual(await grantShibaRecharge(alice, 200, "cs_test_second", { redis }), { granted: true, bonusRemaining: 300 });
+  const november = new Date("2026-11-01T00:00:00.000Z");
+  assert.equal((await readShibaUsage(alice, "pro", { redis, now: november })).remaining, 500);
+  assert.equal((await readShibaUsage(bob, "pro", { redis, now: november })).bonusRemaining, 0);
 });
 
 test("le message d'épuisement ne promet pas de réinitialisation pour Découverte", () => {

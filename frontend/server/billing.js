@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { fulfillRechargeSession } from "./lib/shiba-recharge-stripe.js";
 
 const PRICES = {
   pro: "price_1UL0nM8Wefijgtt281qKbtMQ",
@@ -207,7 +208,11 @@ export default async function billingHandler(req, res) {
     catch { return send(res, 400, "Événement invalide."); }
     if (!event || event.livemode) return send(res, 400, "Signature invalide.");
     try {
-      if (event.type === "checkout.session.completed" && event.data.object.mode === "subscription") {
+      if (["checkout.session.completed", "checkout.session.async_payment_succeeded"].includes(event.type)
+        && event.data.object.mode === "payment") {
+        const result = await fulfillRechargeSession(event.data.object.id);
+        if (result?.granted) return send(res, 200, "Crédits test attribués.");
+      } else if (event.type === "checkout.session.completed" && event.data.object.mode === "subscription") {
         const id = event.data.object.subscription;
         if (typeof id === "string") await syncSubscription(admin, await stripe(`subscriptions/${encodeURIComponent(id)}`, null, "GET"));
       } else if (["customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"].includes(event.type)) {

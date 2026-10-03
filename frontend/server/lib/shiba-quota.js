@@ -1,10 +1,14 @@
 import { Redis } from "@upstash/redis";
 import { createClient } from "@supabase/supabase-js";
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_KV_REST_API_URL,
-  token: process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN,
-});
+let redis;
+function defaultRedis() {
+  redis ||= new Redis({
+    url: process.env.UPSTASH_REDIS_REST_KV_REST_API_URL,
+    token: process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN,
+  });
+  return redis;
+}
 
 export const shibaQuotaEnabled = () => process.env.VERCEL_ENV === "preview";
 
@@ -22,6 +26,10 @@ function period(now = new Date()) {
     key: `${year}-${String(month + 1).padStart(2, "0")}`,
     resetAt: new Date(Date.UTC(year, month + 1, 1)),
   };
+}
+
+function bonusKey(professional) {
+  return `carnetpass:shiba:bonus:v1:${professional.companyId}:${professional.userId}`;
 }
 
 export async function getShibaPlan(request, professional) {
@@ -68,10 +76,12 @@ function quotaContext(professional, plan, now) {
 export async function readShibaUsage(professional, plan, options = {}) {
   const context = quotaContext(professional, plan, options.now || new Date());
   if (context.limit === null) return { enabled: false };
-  const store = options.redis || redis;
-  const current = await store.get(context.key);
+  const store = options.redis || defaultRedis();
+  const [current, purchased] = await Promise.all([store.get(context.key), store.get(bonusKey(professional))]);
   const used = Number(current ?? (context.legacyKey ? await store.get(context.legacyKey) : 0) ?? 0);
-  return { enabled: true, used, limit: context.limit, remaining: Math.max(0, context.limit - used), resetAt: context.resetAt, period: context.period };
+  const bonusRemaining = Math.max(0, Number(purchased || 0));
+  return { enabled: true, used, limit: context.limit, bonusRemaining,
+    remaining: Math.max(0, context.limit - used) + bonusRemaining, resetAt: context.resetAt, period: context.period };
 }
 
 const RESERVE_SCRIPT = `
@@ -84,27 +94,37 @@ if KEYS[2] and KEYS[2] ~= '' and redis.call('EXISTS', KEYS[1]) == 0 then
 end
 local used = tonumber(redis.call('GET', KEYS[1]) or '0')
 local limit = tonumber(ARGV[1])
-if used >= limit then return {0, used} end
-used = redis.call('INCR', KEYS[1])
-redis.call('EXPIREAT', KEYS[1], tonumber(ARGV[2]))
-return {1, used}
+local bonus = tonumber(redis.call('GET', KEYS[3]) or '0')
+if used < limit then
+  used = redis.call('INCR', KEYS[1])
+  redis.call('EXPIREAT', KEYS[1], tonumber(ARGV[2]))
+  return {1, used, bonus, 0}
+end
+if bonus > 0 then
+  bonus = redis.call('DECR', KEYS[3])
+  return {1, used, bonus, 1}
+end
+return {0, used, bonus, 0}
 `;
 
 export async function reserveShibaQuestion(professional, plan, options = {}) {
   const context = quotaContext(professional, plan, options.now || new Date());
   if (context.limit === null) return { allowed: true, enforced: false };
-  const [allowed, used] = await (options.redis || redis).eval(
+  const [allowed, used, purchased, bonusSource] = await (options.redis || defaultRedis()).eval(
     RESERVE_SCRIPT,
-    [context.key, context.legacyKey || ""],
+    [context.key, context.legacyKey || "", bonusKey(professional)],
     [context.limit, context.expiresAt],
   );
   return {
     allowed: Number(allowed) === 1,
     enforced: true,
     key: context.key,
+    bonusKey: bonusKey(professional),
+    bonusSource: Number(bonusSource) === 1,
     used: Number(used),
     limit: context.limit,
-    remaining: Math.max(0, context.limit - Number(used)),
+    bonusRemaining: Number(purchased),
+    remaining: Math.max(0, context.limit - Number(used)) + Number(purchased),
     resetAt: context.resetAt,
     period: context.period,
   };
@@ -112,12 +132,31 @@ export async function reserveShibaQuestion(professional, plan, options = {}) {
 
 export async function refundShibaQuestion(reservation, options = {}) {
   if (!reservation?.allowed || !reservation?.enforced) return;
-  const store = options.redis || redis;
+  const store = options.redis || defaultRedis();
   await store.eval(
-    "local used = tonumber(redis.call('GET', KEYS[1]) or '0'); if used > 0 then return redis.call('DECR', KEYS[1]) end; return 0",
-    [reservation.key],
-    [],
+    "if ARGV[1] == 'bonus' then return redis.call('INCR', KEYS[2]) end; local used = tonumber(redis.call('GET', KEYS[1]) or '0'); if used > 0 then return redis.call('DECR', KEYS[1]) end; return 0",
+    [reservation.key, reservation.bonusKey],
+    [reservation.bonusSource ? "bonus" : "base"],
   );
+}
+
+const GRANT_BONUS_SCRIPT = `
+if redis.call('EXISTS', KEYS[2]) == 1 then return {0, tonumber(redis.call('GET', KEYS[1]) or '0')} end
+local balance = redis.call('INCRBY', KEYS[1], tonumber(ARGV[1]))
+redis.call('SET', KEYS[2], '1')
+return {1, balance}
+`;
+
+export async function grantShibaRecharge(professional, credits, checkoutSessionId, options = {}) {
+  if (!Number.isSafeInteger(credits) || credits <= 0 || !/^cs_test_[A-Za-z0-9]+$/.test(checkoutSessionId)) {
+    throw new Error("Invalid recharge grant");
+  }
+  const [granted, balance] = await (options.redis || defaultRedis()).eval(
+    GRANT_BONUS_SCRIPT,
+    [bonusKey(professional), `carnetpass:shiba:recharge:v1:${checkoutSessionId}`],
+    [credits],
+  );
+  return { granted: Number(granted) === 1, bonusRemaining: Number(balance) };
 }
 
 export function setShibaUsageHeaders(response, usage) {

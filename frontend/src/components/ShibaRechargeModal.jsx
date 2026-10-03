@@ -3,6 +3,7 @@ import { useAuth } from "../hooks/useAuth.js";
 import { formatShibaResetDate, shibaCreditsExhaustedMessage } from "../lib/shiba-credit-copy.js";
 import { SHIBA_RECHARGE_PACKS } from "../lib/shiba-recharge-packs.js";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
+import { startShibaRecharge } from "../services/shibaRechargeService.js";
 import "./ShibaRechargeModal.css";
 
 function dismissalKey(userId, usage) {
@@ -20,10 +21,13 @@ function rememberDismissal(key) {
 }
 
 export default function ShibaRechargeModal() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const dialogRef = useRef(null);
   const [usage, setUsage] = useState(null);
   const [selected, setSelected] = useState(SHIBA_RECHARGE_PACKS[0].euros);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const testBilling = import.meta.env.VITE_STRIPE_TEST_BILLING_ENABLED === "true";
 
   useEffect(() => {
     function onRechargeRequested(event) {
@@ -52,6 +56,20 @@ export default function ShibaRechargeModal() {
     setUsage(null);
   }
 
+  async function checkout() {
+    if (!session?.access_token || !testBilling || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const url = await startShibaRecharge(session.access_token, selected);
+      if (user?.id && usage) rememberDismissal(dismissalKey(user.id, usage));
+      window.location.assign(url);
+    } catch (requestError) {
+      setError(requestError.message);
+      setBusy(false);
+    }
+  }
+
   const reset = formatShibaResetDate(usage?.resetAt);
   const pack = SHIBA_RECHARGE_PACKS.find((item) => item.euros === selected);
 
@@ -73,8 +91,13 @@ export default function ShibaRechargeModal() {
             <strong>{item.euros} € TTC</strong><span>{item.credits} crédits IA</span>
           </button>)}
         </div>
-        <button type="button" className="shiba-recharge-dialog__pay" disabled>Recharger pour {pack.euros} €</button>
-        <p className="shiba-recharge-dialog__notice">Paiement en préparation : aucun achat ni ajout de crédits n’est encore possible. Vous pourrez continuer à consulter vos carnets, documents et historiques.</p>
+        <button type="button" className="shiba-recharge-dialog__pay" disabled={!testBilling || busy} onClick={checkout}>
+          {busy ? "Ouverture du paiement test…" : `Recharger pour ${pack.euros} €`}
+        </button>
+        {error && <p className="shiba-recharge-dialog__error" role="alert">{error}</p>}
+        <p className="shiba-recharge-dialog__notice">{testBilling
+          ? "Paiement Stripe en mode test uniquement : aucun débit réel. Les crédits sont ajoutés après confirmation serveur du paiement, jamais au simple retour sur CarnetPass."
+          : "Paiement en préparation : aucun achat ni ajout de crédits n’est encore possible."} Vos carnets, documents et historiques restent accessibles.</p>
       </div>}
     </dialog>
   );

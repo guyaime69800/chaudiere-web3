@@ -14,6 +14,8 @@
 .shiba-recharge-dialog__pack strong { font-size: 22px; }
 .shiba-recharge-dialog__pack span { color: #685b53; font-size: 13px; }
 .shiba-recharge-dialog__pack:focus-visible, .shiba-recharge-dialog__close:focus-visible { outline: 3px solid #ef916c; outline-offset: 2px; }
-.shiba-recharge-dialog__pay { width: 100%; padding: 15px; border: 0; border-radius: 12px; background: #b9b3ae; color: #fff; font: inherit; font-weight: 700; cursor: not-allowed; }
+.shiba-recharge-dialog__pay { width: 100%; padding: 15px; border: 0; border-radius: 12px; background: #bf3509; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.shiba-recharge-dialog__pay:disabled { background: #b9b3ae; cursor: not-allowed; }
+.shiba-recharge-dialog__error { color: #a62313; font-weight: 700; }
 .shiba-recharge-dialog__notice { margin-bottom: 0; color: #6e625a; font-size: 13px; }
 @media (max-width: 480px) { .shiba-recharge-dialog__content { padding: 24px 18px; } }
