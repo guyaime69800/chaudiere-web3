@@ -56,6 +56,7 @@ export default function ShibaUsage({ session }) {
   const exhausted = usage.remaining <= 0;
   const includedRemaining = Math.max(0, usage.limit - usage.used);
   const purchasedRemaining = Math.max(0, Number(usage.bonusRemaining) || 0);
+  const testBilling = import.meta.env.VITE_STRIPE_TEST_BILLING_ENABLED === "true";
   return (
     <div className="shiba-usage" aria-live="polite">
       <div className="shiba-usage__line"><strong>Shiba Bot · documents et Web</strong><span>{exhausted ? "Crédits épuisés" : "Disponible"}</span></div>
@@ -70,12 +71,15 @@ export default function ShibaUsage({ session }) {
           {usage.period === "month" && reset && <small>Réinitialisation prévue le {reset} (heure de Paris).</small>}
           {usage.period === "trial" && reset && <small>Fin de l’essai le {reset} (heure de Paris), sans réinitialisation automatique.</small>}
           <button className="shiba-usage__recharge" type="button" onClick={() => openShibaRecharge(usage, true)}>Recharger mes crédits</button>
-          <small>{import.meta.env.VITE_STRIPE_TEST_BILLING_ENABLED === "true"
+          <small>{testBilling
             ? "La recharge Stripe est disponible uniquement en mode test Preview."
             : "La recharge est en préparation et n’est pas encore achetable."}</small>
         </>
       ) : (
-        <small>{usage.period === "trial" ? "Fin de l’essai le" : "Prochaine réinitialisation le"} {reset || "date non disponible"}. Vos carnets, documents et historiques restent accessibles.</small>
+        <>
+          <small>{usage.period === "trial" ? "Fin de l’essai le" : "Prochaine réinitialisation le"} {reset || "date non disponible"}. Vos carnets, documents et historiques restent accessibles.</small>
+          {testBilling && <button className="shiba-usage__recharge" type="button" onClick={() => openShibaRecharge(usage, true)}>Recharger mes crédits</button>}
+        </>
       )}
       {exhausted && <small>Vos carnets, documents et historiques restent accessibles.</small>}
     </div>

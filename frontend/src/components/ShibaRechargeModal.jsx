@@ -79,9 +79,13 @@ export default function ShibaRechargeModal() {
       {usage && <div className="shiba-recharge-dialog__content">
         <button type="button" className="shiba-recharge-dialog__close" aria-label="Fermer" onClick={() => dialogRef.current?.close()}>×</button>
         <div className="shiba-recharge-dialog__icon" aria-hidden="true"><img src={shibaTechnicien} alt="" /></div>
-        <p className="shiba-recharge-dialog__eyebrow">{usage.demo ? "Aperçu Preview" : "Shiba Bot"}</p>
+        <p className="shiba-recharge-dialog__eyebrow">{usage.demo ? "Paiement test Preview" : "Shiba Bot"}</p>
         <h2 id="shiba-recharge-title">Recharger Shiba Bot</h2>
-        <p>{usage.demo ? "Cette fenêtre apparaîtra lorsque les crédits Shiba Bot seront épuisés." : shibaCreditsExhaustedMessage(usage.period)}</p>
+        <p>{usage.demo
+          ? "Choisissez une recharge ponctuelle. Les crédits achetés s’ajoutent à votre solde et restent disponibles après le renouvellement de votre abonnement."
+          : usage.remaining > 0
+            ? "Vous pouvez acheter une recharge à tout moment. Les crédits achetés s’ajoutent à votre solde et restent disponibles après le renouvellement de votre abonnement."
+            : shibaCreditsExhaustedMessage(usage.period)}</p>
         {!usage.demo && usage.period === "month" && reset && <p className="shiba-recharge-dialog__reset">Réinitialisation prévue le {reset} (heure de Paris).</p>}
         {!usage.demo && usage.period === "trial" && <p className="shiba-recharge-dialog__reset">L’essai Découverte ne se réinitialise pas automatiquement.</p>}
         <div className="shiba-recharge-dialog__packs" role="group" aria-label="Choisir une recharge">
