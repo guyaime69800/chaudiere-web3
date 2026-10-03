@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "audit:environments": "node scripts/audit-environments.mjs",
+    "audit:production-readiness": "node scripts/audit-environments.mjs --require-production",
     "test": "node --test"
   },
   "dependencies": {

@@ -47,7 +47,7 @@ async function inspect(origin) {
     projectRefs: supabaseProjectRefs(script.body) };
 }
 
-export async function auditEnvironments() {
+export async function auditEnvironments({ requireProduction = false } = {}) {
   const [preview, production] = await Promise.all([
     inspect(previewOrigin), inspect(productionOrigin),
   ]);
@@ -57,18 +57,23 @@ export async function auditEnvironments() {
     ["API admin Production fermée (404)", production.adminStatus === 404],
     ["Base publique Preview attendue", preview.projectRefs.length === 1
       && preview.projectRefs[0] === expectedPreviewProject],
-    ["Base publique Production configurée et distincte", production.projectRefs.length === 1
-      && production.projectRefs[0] !== expectedPreviewProject],
   ];
   for (const [label, passed] of checks) {
     console.log(`${passed ? "OK" : "À VÉRIFIER"} — ${label}`);
   }
+  const productionReady = production.projectRefs.length === 1
+    && production.projectRefs[0] !== expectedPreviewProject;
+  console.log(`${productionReady ? "OK" : "EN ATTENTE"} — Base Supabase Production distincte dans l'application publiée.`);
+  if (!productionReady && production.projectRefs.length === 0) {
+    console.log("La branche main actuelle ne contient pas encore Supabase : cette absence ne prouve pas une variable Vercel manquante.");
+  }
   console.log(`Références publiques : Preview ${preview.projectRefs.join(", ") || "absente"} ; Production ${production.projectRefs.join(", ") || "absente"}.`);
   console.log("Ce contrôle public ne vérifie ni les clés serveur, ni les rôles admin, ni les migrations Supabase.");
-  return checks.every(([, passed]) => passed);
+  return checks.every(([, passed]) => passed) && (!requireProduction || productionReady);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  auditEnvironments().then((passed) => { if (!passed) process.exitCode = 1; })
+  auditEnvironments({ requireProduction: process.argv.includes("--require-production") })
+    .then((passed) => { if (!passed) process.exitCode = 1; })
     .catch((error) => { console.error(`Audit indisponible : ${error.message}`); process.exitCode = 2; });
 }
