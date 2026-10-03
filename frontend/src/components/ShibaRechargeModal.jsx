@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../hooks/useAuth.js";
 import { formatShibaResetDate, shibaCreditsExhaustedMessage } from "../lib/shiba-credit-copy.js";
 import { SHIBA_RECHARGE_PACKS } from "../lib/shiba-recharge-packs.js";
+import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import "./ShibaRechargeModal.css";
 
 function dismissalKey(userId, usage) {
@@ -59,7 +60,7 @@ export default function ShibaRechargeModal() {
       onClose={dismiss} onClick={(event) => { if (event.target === dialogRef.current) dialogRef.current.close(); }}>
       {usage && <div className="shiba-recharge-dialog__content">
         <button type="button" className="shiba-recharge-dialog__close" aria-label="Fermer" onClick={() => dialogRef.current?.close()}>×</button>
-        <div className="shiba-recharge-dialog__icon" aria-hidden="true">🐕</div>
+        <div className="shiba-recharge-dialog__icon" aria-hidden="true"><img src={shibaTechnicien} alt="" /></div>
         <p className="shiba-recharge-dialog__eyebrow">{usage.demo ? "Aperçu Preview" : "Shiba Bot"}</p>
         <h2 id="shiba-recharge-title">Recharger Shiba Bot</h2>
         <p>{usage.demo ? "Cette fenêtre apparaîtra lorsque les crédits Shiba Bot seront épuisés." : shibaCreditsExhaustedMessage(usage.period)}</p>
