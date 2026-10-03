@@ -4,3 +4,5 @@
 .shiba-usage progress { display: block; width: 100%; height: 8px; margin: 10px 0; accent-color: #c2410c; }
 .shiba-usage small { display: block; line-height: 1.45; }
 .shiba-usage--error { color: #9c2f16; }
+.shiba-usage__exhausted { margin: 8px 0; font-weight: 700; color: #9c2f16; }
+.shiba-usage__recharge { display: inline-block; margin: 8px 0 4px; color: #a43b16; font-weight: 700; }

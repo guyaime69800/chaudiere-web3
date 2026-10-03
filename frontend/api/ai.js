@@ -10,6 +10,7 @@ import { requireVerifiedCompany } from "../server/lib/require-verified-company.j
 import { getShibaPlan, refundShibaQuestion, reserveShibaQuestion, setShibaUsageHeaders, shibaQuotaEnabled } from "../server/lib/shiba-quota.js";
 import { reportAnomaly } from "../server/lib/anomaly-alert.js";
 import { checkDocumentGrounding, UNVERIFIED_ANSWER } from "../server/lib/shiba-grounding.js";
+import { shibaCreditsExhaustedMessage } from "../src/lib/shiba-credit-copy.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -480,8 +481,8 @@ export default async function handler(
         if (!quotaReservation.allowed) {
           return response.status(429).json({
             code: "SHIBA_QUOTA_REACHED",
-            error: "Le quota mensuel Shiba Bot est atteint. Vos carnets et documents restent accessibles.",
-            usage: { used: quotaReservation.used, limit: quotaReservation.limit, remaining: 0, resetAt: quotaReservation.resetAt },
+            error: shibaCreditsExhaustedMessage(quotaReservation.period),
+            usage: { used: quotaReservation.used, limit: quotaReservation.limit, remaining: 0, resetAt: quotaReservation.resetAt, period: quotaReservation.period },
           });
         }
       } catch (error) {

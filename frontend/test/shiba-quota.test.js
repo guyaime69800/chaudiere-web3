@@ -5,6 +5,7 @@ process.env.UPSTASH_REDIS_REST_KV_REST_API_URL ||= "https://example.invalid";
 process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN ||= "test-only";
 
 const { readShibaUsage, refundShibaQuestion, reserveShibaQuestion, shibaQuotaEnabled, shibaQuotaLimit } = await import("../server/lib/shiba-quota.js");
+const { formatShibaResetDate, shibaCreditsExhaustedMessage } = await import("../src/lib/shiba-credit-copy.js");
 
 function fakeRedis() {
   const values = new Map();
@@ -76,4 +77,34 @@ test("le contrôle mensuel ne s'active que dans une Preview Vercel", () => {
     if (previous === undefined) delete process.env.VERCEL_ENV;
     else process.env.VERCEL_ENV = previous;
   }
+});
+
+test("le quota Pro passe à la nouvelle période une seule fois à minuit UTC", async () => {
+  const redis = fakeRedis();
+  const october = new Date("2026-10-31T23:59:59.000Z");
+  for (let index = 0; index < 200; index += 1) {
+    assert.equal((await reserveShibaQuestion(alice, "pro", { redis, now: october })).allowed, true);
+  }
+  const blocked = await reserveShibaQuestion(alice, "pro", { redis, now: october });
+  assert.equal(blocked.allowed, false);
+  assert.equal(blocked.resetAt, "2026-11-01T00:00:00.000Z");
+
+  const november = new Date("2026-11-01T00:00:00.000Z");
+  assert.equal((await readShibaUsage(alice, "pro", { redis, now: november })).used, 0);
+  assert.equal((await reserveShibaQuestion(alice, "pro", { redis, now: november })).used, 1);
+  assert.equal((await readShibaUsage(alice, "pro", { redis, now: november })).used, 1);
+  assert.equal((await reserveShibaQuestion(alice, "pro", { redis, now: november })).used, 2);
+  assert.equal((await readShibaUsage(bob, "pro", { redis, now: november })).used, 0);
+});
+
+test("le message d'épuisement ne promet pas de réinitialisation pour Découverte", () => {
+  assert.equal(shibaCreditsExhaustedMessage("month"),
+    "Vos crédits Shiba Bot sont épuisés. Rechargez vos crédits ou attendez leur prochaine réinitialisation.");
+  assert.doesNotMatch(shibaCreditsExhaustedMessage("trial"), /prochaine réinitialisation/);
+});
+
+test("l'affichage convertit la frontière UTC en heure de Paris", () => {
+  assert.match(formatShibaResetDate("2026-11-01T00:00:00.000Z"), /01:00/);
+  assert.match(formatShibaResetDate("2026-07-01T00:00:00.000Z"), /02:00/);
+  assert.equal(formatShibaResetDate(null), null);
 });
