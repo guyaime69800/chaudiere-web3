@@ -17,6 +17,17 @@ export function validateRechargePrice(price, pack, { requireActive = true } = {}
     && price.unit_amount === pack.cents && price.tax_behavior === "inclusive");
 }
 
+export function rechargeConfigurationIssue(price, rate, pack) {
+  if (!price || price.id !== pack?.priceId || price.livemode) return "PRICE_ID_OR_MODE";
+  if (!price.active || price.currency !== "eur" || price.type !== "one_time"
+    || price.recurring !== null || price.unit_amount !== pack.cents) return "PRICE_DETAILS";
+  if (price.tax_behavior !== "inclusive") return "PRICE_TAX_BEHAVIOR";
+  if (!rate || rate.livemode || !rate.active) return "TAX_RATE_OR_MODE";
+  if (!rate.inclusive || rate.percentage !== 20) return "TAX_RATE_DETAILS";
+  if (rate.country !== "FR") return "TAX_RATE_COUNTRY";
+  return null;
+}
+
 export function validatePaidRecharge(session, lines) {
   const pack = rechargePack(Number(session?.metadata?.euros));
   const line = lines?.data?.[0];
@@ -70,8 +81,12 @@ export async function createRechargeCheckout(professional, euros) {
     rechargeStripe(`prices/${pack.priceId}`),
     rechargeStripe(`tax_rates/${TEST_TAX_RATE}`),
   ]);
-  if (!validateRechargePrice(price, pack) || rate.livemode || !rate.active || !rate.inclusive
-    || rate.percentage !== 20 || rate.country !== "FR") throw new Error("Invalid Preview price or tax");
+  const issue = rechargeConfigurationIssue(price, rate, pack);
+  if (issue) {
+    const error = new Error(`Invalid Preview price or tax: ${issue}`);
+    error.code = issue;
+    throw error;
+  }
   return rechargeStripe("checkout/sessions", {
     mode: "payment",
     "payment_method_types[0]": "card",

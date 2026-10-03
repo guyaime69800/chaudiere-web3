@@ -31,6 +31,9 @@ export default async function shibaRechargeHandler(request, response) {
     return response.status(200).json({ url: checkout.url });
   } catch (error) {
     console.error("Stripe recharge checkout failed", error);
-    return response.status(503).json({ error: "Recharge test momentanément indisponible." });
+    return response.status(503).json({
+      error: "Recharge test momentanément indisponible.",
+      diagnostic: /^[A-Z_]+$/.test(error?.code || "") ? error.code : undefined,
+    });
   }
 }

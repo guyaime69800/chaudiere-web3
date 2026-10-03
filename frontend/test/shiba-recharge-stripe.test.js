@@ -4,7 +4,7 @@ import test from "node:test";
 process.env.UPSTASH_REDIS_REST_KV_REST_API_URL ||= "https://example.invalid";
 process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN ||= "test-only";
 
-const { createRechargeCheckout, fulfillRechargeSession, rechargePack, rechargeStripeAvailable, validatePaidRecharge, validateRechargePrice } =
+const { createRechargeCheckout, fulfillRechargeSession, rechargeConfigurationIssue, rechargePack, rechargeStripeAvailable, validatePaidRecharge, validateRechargePrice } =
   await import("../server/lib/shiba-recharge-stripe.js");
 
 const companyId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -45,6 +45,17 @@ test("les packs correspondent aux deux prix Stripe ponctuels", () => {
   assert.equal(validateRechargePrice(lines.data[0].price, rechargePack(10)), true);
   assert.equal(validatePaidRecharge(session, lines).credits, 100);
   assert.equal(validatePaidRecharge(paidCheckout(20).session, paidCheckout(20).lines).credits, 200);
+});
+
+test("le diagnostic isole le champ Stripe refusé sans assouplir la TVA", () => {
+  const pack = rechargePack(10);
+  const price = paidCheckout().lines.data[0].price;
+  const rate = { livemode: false, active: true, inclusive: true, percentage: 20, country: "FR" };
+  assert.equal(rechargeConfigurationIssue(price, rate, pack), null);
+  assert.equal(rechargeConfigurationIssue({ ...price, tax_behavior: "unspecified" }, rate, pack), "PRICE_TAX_BEHAVIOR");
+  assert.equal(rechargeConfigurationIssue(price, { ...rate, country: null }, pack), "TAX_RATE_COUNTRY");
+  assert.equal(rechargeConfigurationIssue(price, { ...rate, inclusive: false }, pack), "TAX_RATE_DETAILS");
+  assert.equal(rechargeConfigurationIssue({ ...price, unit_amount: 900 }, rate, pack), "PRICE_DETAILS");
 });
 
 test("la recharge Stripe ne s'ouvre jamais en production", () => {
@@ -96,7 +107,8 @@ test("Checkout test vérifie prix et TVA avant de créer une session ponctuelle"
           recurring: null, unit_amount: pack.cents, tax_behavior: "exclusive" }
         : { livemode: false, active: true, inclusive: true, percentage: 20, country: "FR" } };
     };
-    await assert.rejects(createRechargeCheckout({ companyId, userId, email: "test@example.com" }, 10));
+    await assert.rejects(createRechargeCheckout({ companyId, userId, email: "test@example.com" }, 10),
+      { code: "PRICE_TAX_BEHAVIOR" });
     assert.equal(calls.length, 2);
   } finally {
     globalThis.fetch = beforeFetch;
