@@ -6,6 +6,20 @@ const PACKS = Object.freeze({
 });
 const TEST_TAX_RATE = "txr_1UL13C8Wefijgtt2XG8pN2le";
 const SOURCE = "carnetpass_shiba_recharge_v1";
+const PREVIEW_RETURN_HOST = /^chaudiere-web3-[a-z0-9-]+-chaudiere-web3\.vercel\.app$/;
+
+export function rechargeReturnOrigin(request) {
+  const host = String(request?.headers?.host || "").toLowerCase();
+  const origin = request?.headers?.origin;
+  const expectedOrigin = `https://${host}`;
+  if ((host !== "test.carnetpass.fr" && !PREVIEW_RETURN_HOST.test(host))
+    || (origin && origin !== expectedOrigin)) {
+    const error = new Error("Invalid Preview return origin");
+    error.code = "RETURN_ORIGIN";
+    throw error;
+  }
+  return expectedOrigin;
+}
 
 export function rechargePack(euros) {
   return PACKS[euros] || null;
@@ -76,7 +90,7 @@ export async function rechargeStripe(path, params, method = "GET") {
   return data;
 }
 
-export async function createRechargeCheckout(professional, euros) {
+export async function createRechargeCheckout(professional, euros, returnOrigin = "https://test.carnetpass.fr") {
   const pack = rechargePack(euros);
   if (!pack || !professional?.email) throw new Error("Invalid recharge request");
   const [price, rate] = await Promise.all([
@@ -101,8 +115,11 @@ export async function createRechargeCheckout(professional, euros) {
     "metadata[company_id]": professional.companyId,
     "metadata[user_id]": professional.userId,
     "metadata[euros]": String(euros),
-    success_url: "https://test.carnetpass.fr/espace-pro?recharge=retour",
-    cancel_url: "https://test.carnetpass.fr/espace-pro?recharge=annule",
+    "metadata[credits]": String(pack.credits),
+    "payment_intent_data[description]": `Recharge Shiba Bot - ${pack.credits} crédits IA`,
+    "payment_intent_data[metadata][credits]": String(pack.credits),
+    success_url: `${returnOrigin}/espace-pro?recharge=retour`,
+    cancel_url: `${returnOrigin}/espace-pro?recharge=annule`,
   }, "POST");
 }
 

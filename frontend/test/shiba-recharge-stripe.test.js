@@ -4,7 +4,7 @@ import test from "node:test";
 process.env.UPSTASH_REDIS_REST_KV_REST_API_URL ||= "https://example.invalid";
 process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN ||= "test-only";
 
-const { createRechargeCheckout, fulfillRechargeSession, rechargeConfigurationIssue, rechargePack, rechargeStripeAvailable, validatePaidRecharge, validateRechargePrice } =
+const { createRechargeCheckout, fulfillRechargeSession, rechargeConfigurationIssue, rechargePack, rechargeReturnOrigin, rechargeStripeAvailable, validatePaidRecharge, validateRechargePrice } =
   await import("../server/lib/shiba-recharge-stripe.js");
 
 const companyId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -70,6 +70,14 @@ test("la recharge Stripe ne s'ouvre jamais en production", () => {
   }
 });
 
+test("le retour Stripe garde le domaine Preview connecté sans redirection externe", () => {
+  const host = "chaudiere-web3-ciwpbds0k-chaudiere-web3.vercel.app";
+  assert.equal(rechargeReturnOrigin({ headers: { host, origin: `https://${host}` } }), `https://${host}`);
+  assert.equal(rechargeReturnOrigin({ headers: { host: "test.carnetpass.fr", origin: "https://test.carnetpass.fr" } }), "https://test.carnetpass.fr");
+  assert.throws(() => rechargeReturnOrigin({ headers: { host, origin: "https://evil.example" } }), { code: "RETURN_ORIGIN" });
+  assert.throws(() => rechargeReturnOrigin({ headers: { host: "carnetpass.fr", origin: "https://carnetpass.fr" } }), { code: "RETURN_ORIGIN" });
+});
+
 test("Checkout test vérifie prix et TVA avant de créer une session ponctuelle", async () => {
   const names = ["VERCEL_ENV", "STRIPE_TEST_SECRET_KEY", "STRIPE_TEST_WEBHOOK_SECRET",
     "UPSTASH_REDIS_REST_KV_REST_API_URL", "UPSTASH_REDIS_REST_KV_REST_API_TOKEN"];
@@ -92,14 +100,20 @@ test("Checkout test vérifie prix et TVA avant de créer une session ponctuelle"
       } : { url: "https://checkout.stripe.com/test" };
       return { ok: true, json: async () => data };
     };
-    await createRechargeCheckout({ companyId, userId, email: "test@example.com" }, 10);
+    const returnOrigin = "https://chaudiere-web3-ciwpbds0k-chaudiere-web3.vercel.app";
+    await createRechargeCheckout({ companyId, userId, email: "test@example.com" }, 10, returnOrigin);
     assert.equal(calls.length, 3);
     const posted = new URLSearchParams(calls[2].init.body);
     assert.equal(posted.get("mode"), "payment");
     assert.equal(posted.get("line_items[0][price]"), pack.priceId);
     assert.equal(posted.get("line_items[0][tax_rates][0]"), "txr_1UL13C8Wefijgtt2XG8pN2le");
+    assert.equal(posted.get("success_url"), `${returnOrigin}/espace-pro?recharge=retour`);
+    assert.equal(posted.get("cancel_url"), `${returnOrigin}/espace-pro?recharge=annule`);
     assert.equal(posted.get("metadata[user_id]"), userId);
     assert.equal(posted.get("metadata[company_id]"), companyId);
+    assert.equal(posted.get("metadata[credits]"), "100");
+    assert.equal(posted.get("payment_intent_data[description]"), "Recharge Shiba Bot - 100 crédits IA");
+    assert.equal(posted.get("payment_intent_data[metadata][credits]"), "100");
     calls.length = 0;
     globalThis.fetch = async (url, init) => {
       calls.push({ url, init });

@@ -54,9 +54,16 @@ export default function ShibaUsage({ session }) {
   if (!usage) return <p className="shiba-usage">Chargement du compteur Shiba Bot…</p>;
   const reset = formatShibaResetDate(usage.resetAt);
   const exhausted = usage.remaining <= 0;
+  const includedRemaining = Math.max(0, usage.limit - usage.used);
+  const purchasedRemaining = Math.max(0, Number(usage.bonusRemaining) || 0);
   return (
     <div className="shiba-usage" aria-live="polite">
       <div className="shiba-usage__line"><strong>Shiba Bot · documents et Web</strong><span>{exhausted ? "Crédits épuisés" : "Disponible"}</span></div>
+      <div className="shiba-usage__balances">
+        <span>Crédits inclus disponibles : <strong>{includedRemaining}</strong></span>
+        <span>Crédits achetés disponibles : <strong>{purchasedRemaining}</strong></span>
+        <span>Total disponible : <strong>{usage.remaining}</strong></span>
+      </div>
       {exhausted ? (
         <>
           <p className="shiba-usage__exhausted">{shibaCreditsExhaustedMessage(usage.period)}</p>

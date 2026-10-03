@@ -1,5 +1,5 @@
 import { requireVerifiedCompany } from "./lib/require-verified-company.js";
-import { createRechargeCheckout, rechargePack, rechargeStripeAvailable } from "./lib/shiba-recharge-stripe.js";
+import { createRechargeCheckout, rechargePack, rechargeReturnOrigin, rechargeStripeAvailable } from "./lib/shiba-recharge-stripe.js";
 
 async function readRechargeAmount(request) {
   const chunks = [];
@@ -26,7 +26,7 @@ export default async function shibaRechargeHandler(request, response) {
   const professional = await requireVerifiedCompany(request, response);
   if (!professional) return;
   try {
-    const checkout = await createRechargeCheckout(professional, euros);
+    const checkout = await createRechargeCheckout(professional, euros, rechargeReturnOrigin(request));
     if (!checkout?.url?.startsWith("https://checkout.stripe.com/")) throw new Error("Invalid checkout URL");
     return response.status(200).json({ url: checkout.url });
   } catch (error) {

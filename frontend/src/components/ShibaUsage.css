@@ -1,6 +1,8 @@
 .shiba-usage { margin: 13px 0; padding: 14px 16px; border: 1px solid #e7d8ca; border-radius: 11px; background: #fffaf5; color: #53463d; font-size: 13px; }
 .shiba-usage__line { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
 .shiba-usage__line strong { color: #7e300f; }
+.shiba-usage__balances { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 9px 0; }
+.shiba-usage__balances strong { color: #7e300f; }
 .shiba-usage small { display: block; line-height: 1.45; }
 .shiba-usage--error { color: #9c2f16; }
 .shiba-usage__exhausted { margin: 8px 0; font-weight: 700; color: #9c2f16; }
