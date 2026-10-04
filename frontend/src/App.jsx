@@ -14,6 +14,7 @@ import { publicQrUrl } from "./lib/public-qr-url.js";
 import CarnetPassCreatedModal from "./components/CarnetPassCreatedModal";
 import shibaTechnicien from "./assets/carnetpass-shiba-technicien.png";
 import HomeLanding from "./components/HomeLanding";
+import InstallCarnetPass from "./components/InstallCarnetPass";
 import EmergencyContacts from "./components/EmergencyContacts";
 import ReactMarkdown from "react-markdown";
 import "./App.css";
@@ -94,75 +95,6 @@ function App({ initialMode = "public" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [scanOuvert, setScanOuvert] = useState(false);
-  // Installation PWA : mémorise la proposition d'installation du navigateur.
-  const [installPrompt, setInstallPrompt] = useState(null);
-
-  // Permet de savoir si CarnetPass est déjà installé comme application.
-  const [isAppInstalled, setIsAppInstalled] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    return (
-      window.matchMedia("(display-mode: standalone)").matches ||
-      window.navigator.standalone === true
-    );
-  });
-  // Détecte si CarnetPass peut être installé comme application PWA.
-  useEffect(() => {
-
-    // Chrome/Android déclenche cet événement lorsque la PWA
-    // peut être installée.
-    function handleBeforeInstallPrompt(event) {
-      event.preventDefault();
-      setInstallPrompt(event);
-    }
-
-    // Déclenché une fois l'installation terminée.
-    function handleAppInstalled() {
-      setIsAppInstalled(true);
-      setInstallPrompt(null);
-    }
-
-    window.addEventListener(
-      "beforeinstallprompt",
-      handleBeforeInstallPrompt
-    );
-
-    window.addEventListener(
-      "appinstalled",
-      handleAppInstalled
-    );
-
-    return () => {
-      window.removeEventListener(
-        "beforeinstallprompt",
-        handleBeforeInstallPrompt
-      );
-
-      window.removeEventListener(
-        "appinstalled",
-        handleAppInstalled
-      );
-    };
-  }, []);
-  // Lance réellement la fenêtre d'installation de CarnetPass.
-  async function installerCarnetPass() {
-    if (!installPrompt) {
-      return;
-    }
-
-    // Demande à Chrome d'afficher sa fenêtre officielle d'installation.
-    await installPrompt.prompt();
-
-    // Attend le choix de l'utilisateur : installer ou annuler.
-    const choice = await installPrompt.userChoice;
-
-    if (choice.outcome === "accepted") {
-      setInstallPrompt(null);
-    }
-  }
-
   const [boiler, setBoiler] = useState(null);
   const [searchId, setSearchId] = useState(() => idDepuisURL ?? "");
   const [message, setMessage] = useState("");
@@ -1098,6 +1030,9 @@ function App({ initialMode = "public" }) {
       <section className="hero" id="rechercher-appareil">
         {location.pathname === "/" ? <h2>Retrouver un appareil</h2> : <h1>Fiche publique de votre appareil</h1>}
         <p>Saisissez un identifiant CarnetPass ou scannez le QR code pour ouvrir la fiche de l’appareil.</p>
+        {location.pathname.startsWith("/appareil/") && (
+          <InstallCarnetPass className="install-carnetpass--qr" />
+        )}
 
         <div className="search">
           <input
@@ -1621,18 +1556,6 @@ function App({ initialMode = "public" }) {
                   📤 Partager cette fiche
                 </button>
 
-                {isAppInstalled ? (
-                  <button className="btn btn-ghost" disabled>
-                    ✅ CarnetPass installé
-                  </button>
-                ) : installPrompt ? (
-                  <button
-                    className="btn btn-primary"
-                    onClick={installerCarnetPass}
-                  >
-                    📲 Installer CarnetPass
-                  </button>
-                ) : null}
               </div>}
               {/* ---------- DOCUMENTATION TECHNIQUE ---------- */}
               {!boiler.carnetPassId && equipmentKnowledge?.data?.documents?.length > 0 && (
