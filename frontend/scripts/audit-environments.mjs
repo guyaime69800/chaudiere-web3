@@ -59,7 +59,8 @@ export async function auditEnvironments({ requireProduction = false } = {}) {
   const checks = [
     ["Lien d'administration Preview disponible (200)", preview.adminPageStatus === 200],
     ["API admin Preview protégée (401 sans session)", preview.adminStatus === 401],
-    ["API admin Production fermée (404)", production.adminStatus === 404],
+    [requireProduction ? "API admin Production protégée (401 sans session)" : "API admin Production contrôlée (401 ou 404)",
+      requireProduction ? production.adminStatus === 401 : [401, 404].includes(production.adminStatus)],
     ["Base publique Preview attendue", preview.projectRefs.length === 1
       && preview.projectRefs[0] === expectedPreviewProject],
   ];
