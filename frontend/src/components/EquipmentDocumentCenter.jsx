@@ -270,6 +270,7 @@ function EquipmentDocumentCenterContent({
   }, [
     carnetPassId,
     equipment.brand,
+    equipment,
     equipment.id,
     equipment.model,
     equipment.product_reference,

@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { del, get, issueSignedToken } from "@vercel/blob";
 import { handleUploadPresigned } from "@vercel/blob/client";
 import platformCatalogDocuments from "../server/lib/platform-catalog-documents.js";
+import { platformDocumentEnvironment, platformDocumentPathname } from "../server/lib/platform-document-environment.js";
 import { indexPlatformDocument } from "../server/lib/platform-document-rag.js";
 
 export const maxDuration = 300;
@@ -13,9 +14,6 @@ const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const maximumSizeInBytes = 30 * 1024 * 1024;
 const catalogCategories = new Set(["boiler", "heat_pump_indoor", "heat_pump_outdoor", "air_conditioning_indoor", "air_conditioning_outdoor", "burner", "water_heater", "regulation", "heat_pump_water_heater", "vmc"]);
 const fail = (res, status, error) => res.status(status).json({ ok: false, error });
-const enabled = () => process.env.VERCEL_ENV === "preview"
-  && process.env.VERCEL_GIT_COMMIT_REF === "feature/documentation-multi-docs"
-  && process.env.VITE_SUPABASE_URL === "https://bqqzzbwqmiyxcotvqtoc.supabase.co";
 const service = () => createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SECRET_KEY, options);
 
 async function authorize(token) {
@@ -35,7 +33,9 @@ function clean(value, max) {
 async function completeUpload({ blob, tokenPayload }) {
   const metadata = JSON.parse(tokenPayload || "{}");
   const pathname = blob?.pathname;
-  if (!pathname || pathname !== metadata.pathname || !/^platform-documents\/[0-9a-f-]{36}\.pdf$/i.test(pathname)) return;
+  const environment = platformDocumentEnvironment(process.env);
+  if (environment.status || pathname !== metadata.pathname
+    || !platformDocumentPathname(pathname, environment.name)) return;
   const found = await get(pathname, { access: "private", useCache: false });
   if (!found?.stream || found.blob?.size < 1 || found.blob.size > maximumSizeInBytes
     || found.blob.contentType !== "application/pdf") {
@@ -73,7 +73,8 @@ async function completeUpload({ blob, tokenPayload }) {
 export default async function handler(req, res) {
   if (req.query?.catalog_route === "1") return platformCatalogDocuments(req, res);
   res.setHeader("Cache-Control", "no-store");
-  if (!enabled()) return fail(res, 404, "Fonction indisponible.");
+  const environment = platformDocumentEnvironment(process.env);
+  if (environment.status) return fail(res, environment.status, "Fonction indisponible.");
   if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_PUBLISHABLE_KEY
     || !process.env.SUPABASE_SECRET_KEY || !process.env.BLOB_WEBHOOK_PUBLIC_KEY) {
     return fail(res, 503, "Configuration de l'import indisponible.");
@@ -84,8 +85,9 @@ export default async function handler(req, res) {
     if (!user) return fail(res, 403, "Accès refusé.");
     const { id, action, category, distributionConfirmed } = req.body || {};
     if (typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id)
-      || !["approve", "reject", "set-hotline", "set-aliases", "index"].includes(action)
-      || (action === "approve" && (!catalogCategories.has(category) || distributionConfirmed !== true))) {
+      || !["approve", "publish-imported", "reject", "set-hotline", "set-aliases", "index"].includes(action)
+      || (["approve", "publish-imported"].includes(action)
+        && (!catalogCategories.has(category) || distributionConfirmed !== true))) {
       return fail(res, 400, "Validation incomplète.");
     }
     const db = service();
@@ -111,7 +113,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
     let { data: entry, error: lookupError } = await db.from("platform_document_intake")
-      .select("id, blob_pathname, size_bytes, sha256, status, title, rag_status, rag_started_at")
+      .select("id, blob_pathname, size_bytes, sha256, status, title, rag_status, rag_started_at, distribution_confirmed_at")
       .eq("id", id).maybeSingle();
     if (lookupError) {
       const fallback = await db.from("platform_document_intake")
@@ -120,14 +122,21 @@ export default async function handler(req, res) {
     }
     if (lookupError || !entry) return fail(res, 404, "Document introuvable.");
     if (action === "index") {
-      if (entry.rag_status === undefined) return fail(res, 503, "Appliquez d'abord la migration d'indexation dans Supabase Preview.");
+      if (entry.rag_status === undefined) return fail(res, 503, "Indexation indisponible dans cette base Supabase.");
       if (entry.status !== "approved") return fail(res, 409, "Publiez le document avant son indexation.");
       if (entry.rag_status === "ready") return res.status(200).json({ ok: true, indexStatus: "ready" });
       const result = await indexPlatformDocument(db, entry);
       return res.status(200).json({ ok: true, indexStatus: result.status, indexError: result.error || null });
     }
-    if (entry.status !== "pending_review") return fail(res, 409, "Document déjà traité.");
-    if (action === "approve") {
+    if (action === "publish-imported" && (environment.name !== "production"
+      || entry.status !== "approved" || entry.distribution_confirmed_at !== null
+      || entry.rag_status !== "ready")) {
+      return fail(res, 409, "Ce document n'est pas en attente de publication.");
+    }
+    if (action !== "publish-imported" && entry.status !== "pending_review") {
+      return fail(res, 409, "Document déjà traité.");
+    }
+    if (action === "approve" || action === "publish-imported") {
       const stored = await get(entry.blob_pathname, { access: "private", useCache: false });
       if (!stored?.stream || stored.blob?.size !== entry.size_bytes || stored.blob?.contentType !== "application/pdf") {
         return fail(res, 409, "PDF indisponible ou modifié.");
@@ -137,6 +146,16 @@ export default async function handler(req, res) {
       if (hash.digest("hex") !== entry.sha256) return fail(res, 409, "PDF modifié depuis son dépôt.");
     }
     const now = new Date().toISOString();
+    if (action === "publish-imported") {
+      const { data: published, error: publishError } = await db.from("platform_document_intake")
+        .update({ catalog_category: category, distribution_confirmed_at: now,
+          reviewed_by: user.id, reviewed_at: now })
+        .eq("id", id).eq("status", "approved").is("distribution_confirmed_at", null)
+        .eq("rag_status", "ready").select("id").maybeSingle();
+      if (publishError) return fail(res, 503, "Publication indisponible.");
+      if (!published) return fail(res, 409, "Document déjà publié ou modifié.");
+      return res.status(200).json({ ok: true, indexStatus: "ready" });
+    }
     const { data: updated, error } = await db.from("platform_document_intake")
       .update({ status: action === "approve" ? "approved" : "rejected",
         catalog_category: action === "approve" ? category : null,
@@ -174,7 +193,7 @@ export default async function handler(req, res) {
       return;
     }
     const { data, error } = await service().from("platform_document_intake")
-      .select("id, blob_pathname, manufacturer, model_reference, title, original_filename, size_bytes, status, catalog_category, hotline_phone, model_aliases, rag_status, rag_error, rag_started_at, rag_indexed_at, created_at")
+      .select("id, blob_pathname, manufacturer, model_reference, title, original_filename, size_bytes, status, catalog_category, distribution_confirmed_at, hotline_phone, model_aliases, rag_status, rag_error, rag_started_at, rag_indexed_at, created_at")
       .order("created_at", { ascending: false }).limit(50);
     if (!error) return res.status(200).json({ ok: true, documents: data, publicationReady: true, hotlineReady: true });
     const fallback = await service().from("platform_document_intake")
@@ -201,7 +220,7 @@ export default async function handler(req, res) {
     if (!user || !manufacturer || !modelReference || !title || !filename.toLowerCase().endsWith(".pdf")
       || (hotlinePhone && (!/^[+0-9(). -]{6,32}$/.test(hotlinePhone) || (hotlinePhone.match(/\d/g) || []).length < 6))
       || filename.length > 255 || body.payload?.multipart === true
-      || !/^platform-documents\/[0-9a-f-]{36}\.pdf$/i.test(body.payload?.pathname || "")) {
+      || !platformDocumentPathname(body.payload?.pathname, environment.name)) {
       return fail(res, 403, "Envoi refusé.");
     }
     authorization = { userId: user.id, manufacturer, modelReference, title, hotlinePhone, filename, pathname: body.payload.pathname };

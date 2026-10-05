@@ -256,6 +256,8 @@ export default function BoilerMaintenanceCertificateForm({
 
   useEffect(() => {
     if (!session?.access_token) {
+      // Clear private certificates immediately when the session disappears.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCertificates([]);
       return undefined;
     }
@@ -322,6 +324,8 @@ export default function BoilerMaintenanceCertificateForm({
     );
 
     if (!intervention) {
+      // A parent request drives this form after interventions finish loading.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(
         "Cette intervention ne permet pas de créer une attestation chaudière.",
       );

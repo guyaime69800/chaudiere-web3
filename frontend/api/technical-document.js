@@ -3,6 +3,8 @@ import elmLeblanc from "../src/data/equipment/elm-leblanc-7716704261.json" with 
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
+import { technicalDocumentBlobLocation } from "../server/lib/technical-document-store.js";
+import { platformDocumentCatalogAllowed, platformDocumentEnvironment } from "../server/lib/platform-document-environment.js";
 import mcr2 from "../src/data/equipment/de-dietrich-7841749.json" with { type: "json" };
 import naia from "../src/data/equipment/atlantic-021272.json" with { type: "json" };
 import mira25 from "../src/data/equipment/chaffoteaux-3310543.json" with { type: "json" };
@@ -55,6 +57,11 @@ export default async function handler(req, res) {
 
   const professional = await requireVerifiedCompany(req, res);
   if (!professional) return;
+  const environment = platformDocumentEnvironment(process.env);
+  if (environment.status) return res.status(environment.status).json({ error: "Documents indisponibles." });
+  if (!platformDocumentCatalogAllowed(environment.name, professional.accessKind)) {
+    return res.status(403).json({ error: "Documents réservés aux professionnels vérifiés." });
+  }
 
   const pathname = req.query?.pathname;
   if (typeof pathname !== "string" || !DOCUMENTS.has(pathname)) {
@@ -68,7 +75,7 @@ export default async function handler(req, res) {
       ?? NAIA_DOCUMENT_URLS.get(pathname)
       ?? CHAFFOTEAUX_DOCUMENT_URLS.get(pathname)
       ?? pathname;
-    const result = await get(documentUrl, { access: "private" });
+    const result = await get(technicalDocumentBlobLocation(documentUrl, process.env), { access: "private" });
 
     if (!result?.stream || result.statusCode !== 200) {
       return res.status(404).json({ error: "Document introuvable." });

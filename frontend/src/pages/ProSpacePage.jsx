@@ -21,6 +21,7 @@ import {
 } from "../services/carnetPassService";
 import EquipmentWorkspace from "../components/EquipmentWorkspace";
 import ModelRemindersContents from "../components/ModelRemindersContents";
+import { professionalRemindersAvailable } from "../lib/professional-reminders-availability.js";
 import CarnetPassCreatedModal from "../components/CarnetPassCreatedModal";
 import TechnicalCatalogModal from "../components/TechnicalCatalogModal";
 import { catalogEquipmentPrefill } from "../lib/catalogEquipmentPrefill.js";
@@ -31,6 +32,8 @@ import { DISCOVERY_EQUIPMENT_LIMIT, getDiscoveryAccess } from "../../shared/disc
 import equipmentIndex from "../data/equipment-index.json";
 import "./ProSpacePage.css";
 import "./ProShibaPrompt.css";
+
+const remindersEnabled = professionalRemindersAvailable(import.meta.env);
 
 const EMPTY_FORM = {
   name: "",
@@ -1429,7 +1432,7 @@ export default function ProSpacePage() {
       setEquipmentFormOpen(false);
       setEquipmentRefreshKey((currentKey) => currentKey + 1);
       setSelectedEquipmentId(savedEquipment.id);
-      setReminderPromptEquipmentId(savedEquipment.id);
+      if (remindersEnabled) setReminderPromptEquipmentId(savedEquipment.id);
 
       if (!reference) {
         setEquipmentMessage("Équipement enregistré. Ajoutez une référence produit pour créer son CarnetPass.");
@@ -2040,7 +2043,7 @@ export default function ProSpacePage() {
               {equipmentMessage}
             </p>
           )}
-          {equipmentMessage && reminderPromptEquipmentId && (
+          {remindersEnabled && equipmentMessage && reminderPromptEquipmentId && (
             <p className="pro-form-success">
               Souhaitez-vous programmer son prochain entretien ? Ouvrez l’onglet « Entretien et rappels » du dossier affiché ci-dessous.
             </p>
@@ -2253,7 +2256,7 @@ export default function ProSpacePage() {
                         </strong>
                       </div>
                     </button>
-                    {["owner", "admin"].includes(company.role) && <button
+                    {remindersEnabled && ["owner", "admin"].includes(company.role) && <button
                       className="pro-equipment-reminders-button"
                       type="button"
                       onClick={() => setModelReminderEquipment(equipment)}
@@ -2283,7 +2286,7 @@ export default function ProSpacePage() {
           boilerCertificates={boilerCertificates}
           boilerCertificatesLoading={boilerCertificatesLoading}
           onOpenCarnetPass={() => handleOpenCarnetPass(selectedEquipment)}
-          onOpenModelReminders={["owner", "admin"].includes(company.role)
+          onOpenModelReminders={remindersEnabled && ["owner", "admin"].includes(company.role)
             ? () => setModelReminderEquipment(selectedEquipment)
             : undefined}
           onClose={() => setSelectedEquipmentId("")}
@@ -2298,7 +2301,7 @@ export default function ProSpacePage() {
           openRemindersRequest={selectedEquipment.id === reminderNavigation?.equipmentId ? reminderNavigation : null}
         />
       )}
-      <ModalShell
+      {remindersEnabled && <ModalShell
         open={Boolean(modelReminderEquipment)}
         onClose={() => setModelReminderEquipment(null)}
         dialogId="model-reminders-modal"
@@ -2315,7 +2318,7 @@ export default function ProSpacePage() {
           handleSelectEquipment(target);
           setReminderNavigation({ equipmentId: target.id, reminderId, requestId: crypto.randomUUID() });
         }} />}
-      </ModalShell>
+      </ModalShell>}
       <ModalShell
         open={Boolean(carnetPassPreview?.id)}
         onClose={() => setCarnetPassPreview(null)}

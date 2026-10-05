@@ -58,6 +58,7 @@ export default function PlatformAdminPage() {
   }
   const [reviewCategories, setReviewCategories] = useState({});
   const [distributionConfirmed, setDistributionConfirmed] = useState({});
+  const environmentName = data?.environment;
   const loadDocuments = useCallback(async () => {
     const response = await fetch("/api/platform-admin-documents", { headers: { Authorization: `Bearer ${session.access_token}` } });
     const result = await response.json().catch(() => null);
@@ -82,14 +83,14 @@ export default function PlatformAdminPage() {
   }, [session.access_token, search, selected]);
 
   useEffect(() => {
-    if (data?.environment !== "preview") return;
+    if (!["preview", "production"].includes(environmentName)) return;
     let active = true;
     fetch("/api/platform-admin-documents", { headers: { Authorization: `Bearer ${session.access_token}` } })
       .then((response) => response.ok ? response.json() : null)
       .then((result) => { if (active && result) { setDocuments(result.documents || []); setPublicationReady(result.publicationReady === true); setHotlineReady(result.hotlineReady === true); } })
       .catch(() => {});
     return () => { active = false; };
-  }, [session.access_token, data?.environment]);
+  }, [session.access_token, environmentName]);
 
   async function importDocument(event) {
     event.preventDefault();
@@ -148,12 +149,12 @@ export default function PlatformAdminPage() {
   }
 
   async function reviewDocument(entry, action) {
-    const category = reviewCategories[entry.id];
-    if (action === "approve" && (!category || !distributionConfirmed[entry.id])) {
+    const category = reviewCategories[entry.id] || entry.catalog_category;
+    if (["approve", "publish-imported"].includes(action) && (!category || !distributionConfirmed[entry.id])) {
       setError("Choisissez une catégorie et confirmez le droit de diffuser ce PDF.");
       return;
     }
-    if (!window.confirm(action === "approve"
+    if (!window.confirm(["approve", "publish-imported"].includes(action)
       ? `Publier ${entry.title} pour tous les comptes CarnetPass ?`
       : `Rejeter ${entry.title} ?`)) return;
     setBusy(true); setError(""); setMessage("");
@@ -164,7 +165,7 @@ export default function PlatformAdminPage() {
       });
       const result = await response.json().catch(() => null);
       if (!response.ok) throw new Error(result?.error || "Validation impossible.");
-      setMessage(action === "approve"
+      setMessage(["approve", "publish-imported"].includes(action)
         ? result.indexStatus === "ready" ? "Document publié et prêt pour Shiba."
           : `Document publié ; indexation Shiba : ${result.indexStatus === "needs_ocr" ? "OCR nécessaire" : result.indexStatus === "failed" ? "échec, réessayez dans l'archive" : result.indexStatus === "pending" ? "migration Preview à appliquer" : "en cours"}.`
         : "Document rejeté.");
@@ -257,8 +258,11 @@ export default function PlatformAdminPage() {
     return groups;
   }, {}));
   function renderDocument(entry) {
+    const awaitingPublication = data.environment === "production" && entry.status === "approved"
+      && entry.distribution_confirmed_at == null;
+    const category = reviewCategories[entry.id] || entry.catalog_category || "";
     const content = <>
-      <p className="platform-admin-document-name"><strong>{entry.manufacturer} · {entry.model_reference}</strong> · {entry.title} <span>({entry.status === "approved" ? "Publié" : entry.status === "rejected" ? "Rejeté" : "À valider"})</span></p>
+      <p className="platform-admin-document-name"><strong>{entry.manufacturer} · {entry.model_reference}</strong> · {entry.title} <span>({awaitingPublication ? "En attente de diffusion" : entry.status === "approved" ? "Publié" : entry.status === "rejected" ? "Rejeté" : "À valider"})</span></p>
       <p className="platform-admin-document-filename">{entry.original_filename}</p>
       <button type="button" onClick={() => downloadDocument(entry)}>Télécharger le PDF</button>
       {entry.status === "approved" && <div className="platform-admin-document-index">
@@ -283,9 +287,18 @@ export default function PlatformAdminPage() {
         <button type="button" disabled={busy || !reviewCategories[entry.id] || !distributionConfirmed[entry.id]} onClick={() => reviewDocument(entry, "approve")}>Valider et publier</button>
         <button type="button" disabled={busy} onClick={() => reviewDocument(entry, "reject")}>Rejeter</button>
       </div>}
+      {publicationReady && awaitingPublication && <div>
+        <p>Fiche transférée : le PDF reste invisible tant que sa diffusion n'est pas confirmée.</p>
+        <label>Catégorie du catalogue <select value={category} onChange={(event) => setReviewCategories((previous) => ({ ...previous, [entry.id]: event.target.value }))}>
+          <option value="">Choisir une catégorie</option>
+          {catalogCategories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </select></label>
+        <label><input type="checkbox" checked={distributionConfirmed[entry.id] === true} onChange={(event) => setDistributionConfirmed((previous) => ({ ...previous, [entry.id]: event.target.checked }))} /> J'ai vérifié la référence et le droit de diffuser ce PDF aux professionnels CarnetPass.</label>
+        <button type="button" disabled={busy || !category || !distributionConfirmed[entry.id] || entry.rag_status !== "ready"} onClick={() => reviewDocument(entry, "publish-imported")}>Confirmer la diffusion</button>
+      </div>}
     </>;
     return <li key={entry.id} className="platform-admin-document-item">
-      {entry.status === "pending_review" ? content : <details><summary>{entry.manufacturer} · {entry.model_reference} · {entry.title} ({entry.status === "approved" ? "Publié" : "Rejeté"})</summary>{content}</details>}
+      {entry.status === "pending_review" ? content : <details><summary>{entry.manufacturer} · {entry.model_reference} · {entry.title} ({awaitingPublication ? "En attente de diffusion" : entry.status === "approved" ? "Publié" : "Rejeté"})</summary>{content}</details>}
     </li>;
   }
   return <main className="platform-admin">
@@ -348,9 +361,9 @@ export default function PlatformAdminPage() {
       <section><h2>Historique récent</h2><ul>{data.events.map((event, index) => <li key={`${event.created_at}-${index}`}>
         {new Date(event.created_at).toLocaleString("fr-FR")} · {event.action} · {data.companies.find((entry) => entry.id === event.company_id)?.name || event.company_id} · {event.payment_reference || "sans référence"}
       </li>)}</ul></section>
-      {data.environment === "preview" && <section><h2>Importer un document technique</h2>
+      {(["preview", "production"].includes(data.environment)) && <section><h2>Importer un document technique</h2>
         <p>Le PDF reste privé et en attente de validation. Sa publication lance l'indexation pour Shiba ; un document scanné peut nécessiter un OCR.</p>
-        {!publicationReady && <p>La publication attend l’activation du catalogue dans la base Preview.</p>}
+        {!publicationReady && <p>La publication attend l’activation du catalogue dans cette base.</p>}
         <form onSubmit={importDocument}>
           <label>Fabricant <input required minLength={2} maxLength={120} value={manufacturer} onChange={(event) => setManufacturer(event.target.value)} /></label>
           <label>Référence exacte du modèle <input required minLength={2} maxLength={160} value={modelReference} onChange={(event) => setModelReference(event.target.value)} /></label>

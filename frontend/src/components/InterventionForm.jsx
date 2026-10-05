@@ -81,7 +81,11 @@ function parseMeasurements(value) {
 
   return measurements;
 }
-export default function InterventionForm({
+export default function InterventionForm(props) {
+  return <InterventionFormContent key={props.selectedEquipmentId || ""} {...props} />;
+}
+
+function InterventionFormContent({
   session,
   company,
   equipments,
@@ -138,17 +142,6 @@ export default function InterventionForm({
       ),
     [equipments, carnetPassStatuses, selectedEquipmentId],
   );
-
-  useEffect(() => {
-    setForm({
-      ...EMPTY_INTERVENTION_FORM,
-      equipmentId: selectedEquipmentId || "",
-    });
-    setFormOpen(false);
-    setError("");
-    setSuccess("");
-    setPdfPreview(null);
-  }, [selectedEquipmentId]);
 
   useEffect(
     () => () => {

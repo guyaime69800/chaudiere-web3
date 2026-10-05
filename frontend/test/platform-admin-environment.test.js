@@ -10,6 +10,7 @@ test("the internal administration remains on the isolated Preview branch", () =>
   const preview = { VERCEL_ENV: "preview", VERCEL_GIT_COMMIT_REF: "feature/documentation-multi-docs",
     VITE_SUPABASE_URL: previewUrl };
   assert.deepEqual(platformAdminEnvironment(preview), { name: "preview" });
+  assert.deepEqual(platformAdminEnvironment({ ...preview, VERCEL_GIT_COMMIT_REF: "release/paris2-admin-documents" }), { name: "preview" });
   assert.equal(platformAdminEnvironment({ ...preview, VERCEL_GIT_COMMIT_REF: "another-branch" }).status, 404);
   assert.equal(platformAdminEnvironment({ ...preview, VITE_SUPABASE_URL: productionUrl }).status, 503);
 });
@@ -24,5 +25,7 @@ test("production administration is off by default and requires a separate databa
   assert.equal(platformAdminEnvironment({ ...enabled, VITE_SUPABASE_URL: previewUrl }).status, 503);
   assert.equal(platformAdminEnvironment({ ...enabled, CARNETPASS_PRODUCTION_ADMIN_SUPABASE_REF: "bqqzzbwqmiyxcotvqtoc",
     VITE_SUPABASE_URL: previewUrl }).status, 503);
+  assert.equal(platformAdminEnvironment({ ...enabled, CARNETPASS_PRODUCTION_ADMIN_SUPABASE_REF: "rpwzzvreuenstsjtbzto",
+    VITE_SUPABASE_URL: "https://rpwzzvreuenstsjtbzto.supabase.co" }).status, 503);
   assert.equal(platformAdminEnvironment({ ...enabled, CARNETPASS_PRODUCTION_ADMIN_SUPABASE_REF: "" }).status, 503);
 });

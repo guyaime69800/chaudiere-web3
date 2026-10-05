@@ -5,11 +5,15 @@ import EquipmentDocumentCenter from "./EquipmentDocumentCenter";
 import InterventionForm from "./InterventionForm";
 import ThermodynamicDocuments from "./ThermodynamicDocuments";
 import MaintenanceReminders from "./MaintenanceReminders";
+import { professionalRemindersAvailable } from "../lib/professional-reminders-availability.js";
+import { previewDocumentsAvailable } from "../lib/preview-documents-availability.js";
 import "./EquipmentWorkspace.css";
 
+const remindersEnabled = professionalRemindersAvailable(import.meta.env);
+const previewDocumentsEnabled = previewDocumentsAvailable(import.meta.env);
 const WORKSPACE_TABS = [
     { id: "summary", label: "Synthèse" },
-    { id: "reminders", label: "Rappels" },
+    ...(remindersEnabled ? [{ id: "reminders", label: "Rappels" }] : []),
     { id: "history", label: "Interventions" },
     { id: "regulatory", label: "Attestations / CERFA" },
     { id: "documents", label: "Documents" },
@@ -146,7 +150,7 @@ export default function EquipmentWorkspace({
     promptReminder = false,
     openRemindersRequest = null,
 }) {
-    const [activeTab, setActiveTab] = useState(promptReminder || openRemindersRequest ? "reminders" : "summary");
+    const [activeTab, setActiveTab] = useState(remindersEnabled && (promptReminder || openRemindersRequest) ? "reminders" : "summary");
     const [requestedInterventionId, setRequestedInterventionId] = useState("");
     const [carnetPassModalOpen, setCarnetPassModalOpen] = useState(false);
     const [technicalDocumentCount, setTechnicalDocumentCount] = useState(0);
@@ -217,7 +221,7 @@ export default function EquipmentWorkspace({
             ? String(carnetPassStatus.carnetPassId)
             : "";
     useEffect(() => {
-        if (!["air_conditioning", "heat_pump"].includes(equipment.equipment_type) || !session?.access_token) return;
+        if (!previewDocumentsEnabled || !["air_conditioning", "heat_pump"].includes(equipment.equipment_type) || !session?.access_token) return;
         const controller = new AbortController();
         fetch(`/api/thermodynamic-documents?equipmentId=${encodeURIComponent(equipment.id)}`, {
             headers: { Authorization: `Bearer ${session.access_token}` }, signal: controller.signal,
@@ -322,7 +326,7 @@ export default function EquipmentWorkspace({
                 </div>
 
                 <div className="equipment-workspace__header-actions">
-                    {onOpenModelReminders && <button
+                    {remindersEnabled && onOpenModelReminders && <button
                         className="equipment-workspace__reminders-button"
                         type="button"
                         onClick={onOpenModelReminders}
@@ -458,7 +462,7 @@ export default function EquipmentWorkspace({
                     />
                 )}
 
-                {activeTab === "reminders" && (
+                {remindersEnabled && activeTab === "reminders" && (
                     <MaintenanceReminders
                         equipment={equipment}
                         session={session}
@@ -484,7 +488,7 @@ export default function EquipmentWorkspace({
                                 setActiveTab("summary");
                             }}
                         />
-                    ) : ["air_conditioning", "heat_pump"].includes(equipment.equipment_type) ? (
+                    ) : previewDocumentsEnabled && ["air_conditioning", "heat_pump"].includes(equipment.equipment_type) ? (
                         <ThermodynamicDocuments
                             equipment={equipment}
                             interventions={equipmentInterventions}
@@ -492,6 +496,11 @@ export default function EquipmentWorkspace({
                             company={company}
                             onDocumentsChange={setThermodynamicDocuments}
                         />
+                    ) : ["air_conditioning", "heat_pump"].includes(equipment.equipment_type) ? (
+                        <div className="equipment-workspace__empty-state">
+                            <h3>Documents réglementaires de l’équipement</h3>
+                            <p>Les formulaires climatisation et pompe à chaleur sont encore en validation avant leur ouverture.</p>
+                        </div>
                     ) : (
                         <div className="equipment-workspace__empty-state">
                             <h3>Documents réglementaires de l’équipement</h3>

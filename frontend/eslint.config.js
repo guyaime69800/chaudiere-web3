@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', '.vercel']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -31,7 +31,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['api/carnetpass.js'],
+    files: ['api/carnetpass.js', 'api/search.js', 'server/lib/platform-document-rag.js'],
     rules: {
       'no-control-regex': 'off',
     },

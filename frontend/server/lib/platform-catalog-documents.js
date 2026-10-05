@@ -3,18 +3,19 @@ import { get } from "@vercel/blob";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { requireVerifiedCompany } from "./require-verified-company.js";
+import { platformDocumentCatalogAllowed, platformDocumentEnvironment } from "./platform-document-environment.js";
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
-const enabled = () => process.env.VERCEL_ENV === "preview"
-  && process.env.VERCEL_GIT_COMMIT_REF === "feature/documentation-multi-docs"
-  && process.env.VITE_SUPABASE_URL === "https://bqqzzbwqmiyxcotvqtoc.supabase.co";
-
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "private, no-store");
   if (req.method !== "GET") return res.status(405).json({ error: "Méthode non autorisée." });
-  if (!enabled()) return res.status(404).json({ error: "Catalogue indisponible." });
+  const environment = platformDocumentEnvironment(process.env);
+  if (environment.status) return res.status(environment.status).json({ error: "Catalogue indisponible." });
   const professional = await requireVerifiedCompany(req, res);
   if (!professional) return;
+  if (!platformDocumentCatalogAllowed(environment.name, professional.accessKind)) {
+    return res.status(403).json({ error: "Catalogue réservé aux professionnels vérifiés." });
+  }
   if (!process.env.SUPABASE_SECRET_KEY) return res.status(503).json({ error: "Catalogue indisponible." });
   const db = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SECRET_KEY, options);
   const id = req.query?.id;
