@@ -12,6 +12,11 @@ export function supabaseProjectRefs(source) {
     .map((match) => match[1].toLowerCase()))];
 }
 
+export function configuredSupabaseProjectRefs(source) {
+  return [...new Set([...source.matchAll(/\bVITE_SUPABASE_URL\s*:\s*["'`](https:\/\/([a-z0-9]{20})\.supabase\.co)["'`]/gi)]
+    .map((match) => match[2].toLowerCase()))];
+}
+
 export function mainScriptPath(html) {
   const match = html.match(/<script\b[^>]*\bsrc=["']([^"']+\.js)["'][^>]*>/i);
   if (!match || !match[1].startsWith("/assets/")) throw new Error("Bundle principal introuvable.");
@@ -44,7 +49,7 @@ async function inspect(origin) {
   const script = await get(new URL(mainScriptPath(page.body), origin));
   if (script.status !== 200) throw new Error(`${origin} : bundle HTTP ${script.status}.`);
   return { adminStatus: admin.status, adminPageStatus: adminPage.status,
-    projectRefs: supabaseProjectRefs(script.body) };
+    projectRefs: configuredSupabaseProjectRefs(script.body) };
 }
 
 export async function auditEnvironments({ requireProduction = false } = {}) {
