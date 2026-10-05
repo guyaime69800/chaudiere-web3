@@ -250,7 +250,10 @@ export default function PlatformAdminPage() {
     : null;
   const pendingCount = documents.filter((entry) => entry.status === "pending_review").length;
   const pendingDocuments = documents.filter((entry) => entry.status === "pending_review");
-  const archivedDocuments = documents.filter((entry) => entry.status !== "pending_review");
+  const awaitingDistribution = documents.filter((entry) => data?.environment === "production"
+    && entry.status === "approved" && entry.distribution_confirmed_at == null);
+  const archivedDocuments = documents.filter((entry) => entry.status !== "pending_review"
+    && !awaitingDistribution.includes(entry));
   const archivedModels = Object.values(archivedDocuments.reduce((groups, entry) => {
     const key = `${entry.manufacturer || ""}\u0000${entry.model_reference || ""}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
     if (!groups[key]) groups[key] = { manufacturer: entry.manufacturer, reference: entry.model_reference, entries: [] };
@@ -375,8 +378,13 @@ export default function PlatformAdminPage() {
         </form>
         {documentNotice && <p role={documentNotice.kind === "error" ? "alert" : "status"} className={`platform-admin-inline-${documentNotice.kind}`}>{documentNotice.text}</p>}
         <div className="platform-admin-document-queue"><h3>Documents à valider ({pendingCount})</h3>
-          {pendingCount ? <ul>{pendingDocuments.map(renderDocument)}</ul> : <p>Aucun document en attente. Les PDF publiés restent disponibles dans le catalogue technique.</p>}
+          {pendingCount ? <ul>{pendingDocuments.map(renderDocument)}</ul> : <p>Aucun nouveau PDF à valider.</p>}
         </div>
+        {!!awaitingDistribution.length && <div className="platform-admin-document-queue">
+          <h3>Fiches importées à diffuser ({awaitingDistribution.length})</h3>
+          <p>Ces PDF sont enregistrés et indexés, mais restent privés. Vérifiez la catégorie et le droit de diffusion de chaque fiche avant de la rendre visible aux professionnels.</p>
+          <ul>{awaitingDistribution.map(renderDocument)}</ul>
+        </div>}
         {!!archivedDocuments.length && <details className="platform-admin-document-archive"><summary>Archives des modèles ({archivedModels.length}) · {archivedDocuments.length} document(s)</summary>
           <ul>{archivedModels.map((group) => <li key={`${group.manufacturer}:${group.reference}`} className="platform-admin-document-item">
             <details><summary>{group.manufacturer} · {group.reference} ({group.entries.length} document{group.entries.length > 1 ? "s" : ""})</summary>
