@@ -7,7 +7,7 @@ import { handleUploadPresigned } from "@vercel/blob/client";
 import platformCatalogDocuments from "../server/lib/platform-catalog-documents.js";
 import { platformDocumentEnvironment, platformDocumentPathname } from "../server/lib/platform-document-environment.js";
 import { indexPlatformDocument } from "../server/lib/platform-document-rag.js";
-import { verifyPlatformPdf } from "../server/lib/verify-platform-pdf.js";
+import { loadPlatformPdf } from "../server/lib/verify-platform-pdf.js";
 
 export const maxDuration = 300;
 
@@ -17,10 +17,10 @@ const catalogCategories = new Set(["boiler", "heat_pump_indoor", "heat_pump_outd
 const fail = (res, status, error) => res.status(status).json({ ok: false, error });
 const service = () => createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SECRET_KEY, options);
 
-async function loadVerifiedPdf(entry) {
+async function loadVerifiedPdf(entry, environment) {
   try {
-    const stored = await get(entry.blob_pathname, { access: "private", useCache: false });
-    return verifyPlatformPdf(stored, entry);
+    return await loadPlatformPdf(entry, environment,
+      (pathname) => get(pathname, { access: "private", useCache: false }));
   } catch (error) {
     console.error("Private document Blob read failed", { pathname: entry.blob_pathname, error });
     return { ok: false, reason: "storage" };
@@ -45,7 +45,7 @@ async function authorize(token) {
   const { data: { user }, error } = await auth.auth.getUser(token);
   if (error || !user?.email_confirmed_at) return null;
   const { data: role } = await service().from("platform_admins").select("role").eq("user_id", user.id).maybeSingle();
-  return role ? user : null;
+  return role ? { ...user, platformRole: role.role } : null;
 }
 
 function clean(value, max) {
@@ -108,7 +108,7 @@ export default async function handler(req, res) {
     if (!user) return fail(res, 403, "Accès refusé.");
     const { id, action, category, distributionConfirmed } = req.body || {};
     if (typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id)
-      || !["approve", "publish-imported", "reject", "set-hotline", "set-aliases", "index"].includes(action)
+      || !["approve", "publish-imported", "reject", "set-hotline", "set-aliases", "index", "unpublish", "delete"].includes(action)
       || (["approve", "publish-imported"].includes(action)
         && (!catalogCategories.has(category) || distributionConfirmed !== true))) {
       return fail(res, 400, "Validation incomplète.");
@@ -136,7 +136,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
     let { data: entry, error: lookupError } = await db.from("platform_document_intake")
-      .select("id, blob_pathname, size_bytes, sha256, status, title, rag_status, rag_started_at, distribution_confirmed_at")
+      .select("id, blob_pathname, size_bytes, sha256, status, title, rag_status, rag_error, rag_started_at, distribution_confirmed_at")
       .eq("id", id).maybeSingle();
     if (lookupError) {
       const fallback = await db.from("platform_document_intake")
@@ -144,6 +144,39 @@ export default async function handler(req, res) {
       entry = fallback.data; lookupError = fallback.error;
     }
     if (lookupError || !entry) return fail(res, 404, "Document introuvable.");
+    if (action === "unpublish") {
+      if (environment.name !== "production" || entry.status !== "approved"
+        || !entry.distribution_confirmed_at) return fail(res, 409, "Document non diffusé.");
+      const { data: withdrawn, error } = await db.from("platform_document_intake")
+        .update({ distribution_confirmed_at: null, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+        .eq("id", id).eq("status", "approved").not("distribution_confirmed_at", "is", null)
+        .select("id").maybeSingle();
+      if (error) return fail(res, 503, "Retrait de la diffusion impossible.");
+      if (!withdrawn) return fail(res, 409, "Document déjà retiré ou modifié.");
+      return res.status(200).json({ ok: true });
+    }
+    if (action === "delete") {
+      if (environment.name !== "production" || user.platformRole !== "founder") return fail(res, 403, "Suppression réservée au fondateur.");
+      if (entry.rag_error === "deleted_by_admin") return fail(res, 404, "Document déjà supprimé.");
+      if (entry.rag_status === "indexing") return fail(res, 409, "Attendez la fin de l'indexation avant de supprimer ce document.");
+      const { data: withdrawn, error: withdrawError } = await db.from("platform_document_intake")
+        .update({ status: "rejected", distribution_confirmed_at: null, rag_data: null,
+          reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+        .eq("id", id).select("id").maybeSingle();
+      if (withdrawError || !withdrawn) return fail(res, 503, "Retrait du catalogue impossible.");
+      try {
+        const verified = await loadVerifiedPdf(entry, environment.name);
+        if (!verified.ok && verified.reason !== "missing") return pdfFailure(res, verified.reason);
+        if (verified.ok) await del(verified.pathname);
+      } catch (error) {
+        console.error("Private document Blob deletion failed", { pathname: entry.blob_pathname, error });
+        return fail(res, 503, "Suppression du PDF indisponible. Réessayez depuis les archives.");
+      }
+      const { error: deletedError } = await db.from("platform_document_intake")
+        .update({ rag_status: "pending", rag_error: "deleted_by_admin" }).eq("id", id).eq("status", "rejected");
+      if (deletedError) return fail(res, 503, "PDF retiré, mais archivage de la suppression indisponible. Réessayez.");
+      return res.status(200).json({ ok: true });
+    }
     if (action === "index") {
       if (entry.rag_status === undefined) return fail(res, 503, "Indexation indisponible dans cette base Supabase.");
       if (entry.status !== "approved") return fail(res, 409, "Publiez le document avant son indexation.");
@@ -159,14 +192,16 @@ export default async function handler(req, res) {
     if (action !== "publish-imported" && entry.status !== "pending_review") {
       return fail(res, 409, "Document déjà traité.");
     }
+    let verified;
     if (action === "approve" || action === "publish-imported") {
-      const verified = await loadVerifiedPdf(entry);
+      verified = await loadVerifiedPdf(entry, environment.name);
       if (!verified.ok) return pdfFailure(res, verified.reason);
     }
     const now = new Date().toISOString();
     if (action === "publish-imported") {
       const { data: published, error: publishError } = await db.from("platform_document_intake")
         .update({ catalog_category: category, distribution_confirmed_at: now,
+          blob_pathname: verified.pathname,
           reviewed_by: user.id, reviewed_at: now })
         .eq("id", id).eq("status", "approved").is("distribution_confirmed_at", null)
         .eq("rag_status", "ready").select("id").maybeSingle();
@@ -178,13 +213,14 @@ export default async function handler(req, res) {
       .update({ status: action === "approve" ? "approved" : "rejected",
         catalog_category: action === "approve" ? category : null,
         distribution_confirmed_at: action === "approve" ? now : null,
+        ...(verified?.ok ? { blob_pathname: verified.pathname } : {}),
         reviewed_by: user.id, reviewed_at: now })
       .eq("id", id).eq("status", "pending_review").select("id").maybeSingle();
     if (error) return fail(res, 503, "Validation indisponible.");
     if (!updated) return fail(res, 409, "Document déjà traité.");
     if (action === "approve") {
       if (entry.rag_status === undefined) return res.status(200).json({ ok: true, indexStatus: "pending" });
-      const result = await indexPlatformDocument(db, { ...entry, status: "approved" });
+      const result = await indexPlatformDocument(db, { ...entry, blob_pathname: verified.pathname, status: "approved" });
       return res.status(200).json({ ok: true, indexStatus: result.status, indexError: result.error || null });
     }
     return res.status(200).json({ ok: true });
@@ -198,7 +234,7 @@ export default async function handler(req, res) {
       const { data: entry, error: lookupError } = await service().from("platform_document_intake")
         .select("blob_pathname, size_bytes, sha256").eq("id", req.query.id).maybeSingle();
       if (lookupError || !entry) return fail(res, 404, "Document introuvable.");
-      const verified = await loadVerifiedPdf(entry);
+      const verified = await loadVerifiedPdf(entry, environment.name);
       if (!verified.ok) return pdfFailure(res, verified.reason);
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", "attachment; filename=notice-carnetpass.pdf");
@@ -210,7 +246,7 @@ export default async function handler(req, res) {
     const { data, error } = await service().from("platform_document_intake")
       .select("id, blob_pathname, manufacturer, model_reference, title, original_filename, size_bytes, status, catalog_category, distribution_confirmed_at, hotline_phone, model_aliases, rag_status, rag_error, rag_started_at, rag_indexed_at, created_at")
       .order("created_at", { ascending: false }).limit(50);
-    if (!error) return res.status(200).json({ ok: true, documents: data, publicationReady: true, hotlineReady: true });
+    if (!error) return res.status(200).json({ ok: true, documents: data.filter((entry) => entry.rag_error !== "deleted_by_admin"), publicationReady: true, hotlineReady: true });
     const fallback = await service().from("platform_document_intake")
       .select("id, blob_pathname, manufacturer, model_reference, title, original_filename, size_bytes, status, catalog_category, hotline_phone, model_aliases, created_at")
       .order("created_at", { ascending: false }).limit(50);

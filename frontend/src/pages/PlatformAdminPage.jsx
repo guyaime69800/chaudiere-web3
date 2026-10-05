@@ -177,6 +177,26 @@ export default function PlatformAdminPage() {
     finally { setBusy(false); }
   }
 
+  async function manageDocument(entry, action) {
+    const label = `${entry.manufacturer} · ${entry.model_reference} · ${entry.title}`;
+    const question = action === "unpublish"
+      ? `Retirer « ${label} » de la diffusion ? Le PDF restera privé et pourra être diffusé à nouveau.`
+      : `Supprimer définitivement le PDF « ${label} » du Blob Store ? Cette action est irréversible et retire aussi la fiche du catalogue.`;
+    if (!window.confirm(question)) return;
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const response = await fetch("/api/platform-admin-documents", {
+        method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, action }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Action impossible.");
+      await loadDocuments();
+      setMessage(action === "unpublish" ? "Document retiré de la diffusion. Il reste privé dans les fiches à diffuser." : "PDF supprimé et fiche retirée du catalogue.");
+    } catch (cause) { setError(cause.message); }
+    finally { setBusy(false); }
+  }
+
   async function saveHotline(entry) {
     const phone = hotlineInputs[entry.id] ?? entry.hotline_phone ?? "";
     setBusy(true); setError(""); setMessage("");
@@ -302,6 +322,8 @@ export default function PlatformAdminPage() {
         <label><input type="checkbox" checked={distributionConfirmed[entry.id] === true} onChange={(event) => setDistributionConfirmed((previous) => ({ ...previous, [entry.id]: event.target.checked }))} /> J'ai vérifié la référence et le droit de diffuser ce PDF aux professionnels CarnetPass.</label>
         <button type="button" disabled={busy || !category || !distributionConfirmed[entry.id] || entry.rag_status !== "ready"} onClick={() => reviewDocument(entry, "publish-imported")}>Confirmer la diffusion</button>
       </div>}
+      {data.environment === "production" && entry.status === "approved" && !awaitingPublication && <button type="button" disabled={busy} onClick={() => manageDocument(entry, "unpublish")}>Retirer de la diffusion</button>}
+      {data.environment === "production" && data.role === "founder" && <button type="button" disabled={busy} onClick={() => manageDocument(entry, "delete")}>Supprimer le PDF et la fiche</button>}
     </>;
     return <li key={entry.id} className="platform-admin-document-item">
       {entry.status === "pending_review" ? content : <details><summary>{entry.manufacturer} · {entry.model_reference} · {entry.title} ({awaitingPublication ? "En attente de diffusion" : entry.status === "approved" ? "Publié" : "Rejeté"})</summary>{content}</details>}
