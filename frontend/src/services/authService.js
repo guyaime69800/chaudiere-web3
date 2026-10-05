@@ -1,6 +1,6 @@
 import { supabase } from "./supabaseClient";
 
-export async function signUp({ fullName, email, phone, password }) {
+export async function signUp({ fullName, email, phone, password, discoverySource }) {
   const normalizedPhone = phone.replace(/[\s().-]/g, "");
   if (!/^\+?[0-9]{10,15}$/.test(normalizedPhone)) {
     throw new Error("Invalid phone number");
@@ -13,6 +13,7 @@ export async function signUp({ fullName, email, phone, password }) {
       data: {
         full_name: fullName.trim(),
         professional_phone: normalizedPhone,
+        discovery_source: discoverySource,
       },
     },
   });

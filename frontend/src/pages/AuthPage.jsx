@@ -8,6 +8,7 @@ const initialForm = {
   fullName: "",
   email: "",
   phone: "",
+  discoverySource: "",
   password: "",
   confirmation: "",
 };
@@ -91,6 +92,7 @@ export default function AuthPage({ mode = "connexion" }) {
           fullName: form.fullName,
           email: form.email,
           phone: form.phone,
+          discoverySource: form.discoverySource,
           password: form.password,
         });
 
@@ -101,7 +103,7 @@ export default function AuthPage({ mode = "connexion" }) {
         }
 
         setSuccessMessage(
-          "Compte créé ! Consultez votre boîte e-mail pour confirmer votre inscription."
+          "Si cette adresse est nouvelle, consultez votre boîte e-mail et les indésirables. Si elle est déjà liée à un compte, connectez-vous ou réinitialisez votre mot de passe."
         );
 
         setForm(initialForm);
@@ -225,6 +227,23 @@ export default function AuthPage({ mode = "connexion" }) {
                   required
                 />
               </label>
+            )}
+
+            {isSignUp && (
+              <>
+                <label className="auth-field">
+                  <span>Comment avez-vous connu CarnetPass ?</span>
+                  <select name="discoverySource" value={form.discoverySource} onChange={updateField} required>
+                    <option value="">Choisissez une r&#233;ponse</option>
+                    <option value="search">Recherche sur Internet</option>
+                    <option value="recommendation">Recommandation d’un coll&#232;gue ou d’un proche</option>
+                    <option value="social_media">R&#233;seaux sociaux</option>
+                    <option value="professional_event">Salon ou &#233;v&#233;nement professionnel</option>
+                    <option value="press_article">Article, blog ou presse</option>
+                    <option value="other">Autre</option>
+                  </select>
+                </label>
+              </>
             )}
 
             <PasswordField
