@@ -380,11 +380,11 @@ export default function PlatformAdminPage() {
         <div className="platform-admin-document-queue"><h3>Documents à valider ({pendingCount})</h3>
           {pendingCount ? <ul>{pendingDocuments.map(renderDocument)}</ul> : <p>Aucun nouveau PDF à valider.</p>}
         </div>
-        {!!awaitingDistribution.length && <div className="platform-admin-document-queue">
-          <h3>Fiches importées à diffuser ({awaitingDistribution.length})</h3>
+        {!!awaitingDistribution.length && <details className="platform-admin-document-archive">
+          <summary>Fiches importées à diffuser ({awaitingDistribution.length})</summary>
           <p>Ces PDF sont enregistrés et indexés, mais restent privés. Vérifiez la catégorie et le droit de diffusion de chaque fiche avant de la rendre visible aux professionnels.</p>
           <ul>{awaitingDistribution.map(renderDocument)}</ul>
-        </div>}
+        </details>}
         {!!archivedDocuments.length && <details className="platform-admin-document-archive"><summary>Archives des modèles ({archivedModels.length}) · {archivedDocuments.length} document(s)</summary>
           <ul>{archivedModels.map((group) => <li key={`${group.manufacturer}:${group.reference}`} className="platform-admin-document-item">
             <details><summary>{group.manufacturer} · {group.reference} ({group.entries.length} document{group.entries.length > 1 ? "s" : ""})</summary>
