@@ -138,7 +138,10 @@ export default function PlatformAdminPage() {
     try {
       const response = await fetch(`/api/platform-admin-documents?id=${encodeURIComponent(entry.id)}`,
         { headers: { Authorization: `Bearer ${session.access_token}` } });
-      if (!response.ok) throw new Error("Téléchargement impossible.");
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        throw new Error(result?.error || "Téléchargement impossible.");
+      }
       const url = URL.createObjectURL(await response.blob());
       const anchor = document.createElement("a");
       anchor.href = url;

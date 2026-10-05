@@ -7,6 +7,7 @@ import { handleUploadPresigned } from "@vercel/blob/client";
 import platformCatalogDocuments from "../server/lib/platform-catalog-documents.js";
 import { platformDocumentEnvironment, platformDocumentPathname } from "../server/lib/platform-document-environment.js";
 import { indexPlatformDocument } from "../server/lib/platform-document-rag.js";
+import { verifyPlatformPdf } from "../server/lib/verify-platform-pdf.js";
 
 export const maxDuration = 300;
 
@@ -15,6 +16,28 @@ const maximumSizeInBytes = 30 * 1024 * 1024;
 const catalogCategories = new Set(["boiler", "heat_pump_indoor", "heat_pump_outdoor", "air_conditioning_indoor", "air_conditioning_outdoor", "burner", "water_heater", "regulation", "heat_pump_water_heater", "vmc"]);
 const fail = (res, status, error) => res.status(status).json({ ok: false, error });
 const service = () => createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SECRET_KEY, options);
+
+async function loadVerifiedPdf(entry) {
+  try {
+    const stored = await get(entry.blob_pathname, { access: "private", useCache: false });
+    return verifyPlatformPdf(stored, entry);
+  } catch (error) {
+    console.error("Private document Blob read failed", { pathname: entry.blob_pathname, error });
+    return { ok: false, reason: "storage" };
+  }
+}
+
+function pdfFailure(res, reason) {
+  if (reason === "missing") return fail(res, 409, "PDF absent du Blob Store configuré pour ce site.");
+  if (reason === "storage") return fail(res, 503, "Lecture du Blob Store indisponible.");
+  return fail(res, 409, "Le PDF stocké ne correspond pas à la fiche enregistrée.");
+}
+
+function* byteChunks(bytes) {
+  for (let offset = 0; offset < bytes.length; offset += 64 * 1024) {
+    yield bytes.subarray(offset, offset + 64 * 1024);
+  }
+}
 
 async function authorize(token) {
   if (!token || token.length > 16384) return null;
@@ -137,13 +160,8 @@ export default async function handler(req, res) {
       return fail(res, 409, "Document déjà traité.");
     }
     if (action === "approve" || action === "publish-imported") {
-      const stored = await get(entry.blob_pathname, { access: "private", useCache: false });
-      if (!stored?.stream || stored.blob?.size !== entry.size_bytes || stored.blob?.contentType !== "application/pdf") {
-        return fail(res, 409, "PDF indisponible ou modifié.");
-      }
-      const hash = createHash("sha256");
-      for await (const chunk of stored.stream) hash.update(chunk);
-      if (hash.digest("hex") !== entry.sha256) return fail(res, 409, "PDF modifié depuis son dépôt.");
+      const verified = await loadVerifiedPdf(entry);
+      if (!verified.ok) return pdfFailure(res, verified.reason);
     }
     const now = new Date().toISOString();
     if (action === "publish-imported") {
@@ -178,18 +196,15 @@ export default async function handler(req, res) {
     if (req.query?.id) {
       if (typeof req.query.id !== "string" || !/^[0-9a-f-]{36}$/i.test(req.query.id)) return fail(res, 400, "Document invalide.");
       const { data: entry, error: lookupError } = await service().from("platform_document_intake")
-        .select("blob_pathname, size_bytes").eq("id", req.query.id).maybeSingle();
+        .select("blob_pathname, size_bytes, sha256").eq("id", req.query.id).maybeSingle();
       if (lookupError || !entry) return fail(res, 404, "Document introuvable.");
-      const stored = await get(entry.blob_pathname, { access: "private", useCache: false });
-      if (!stored?.stream || stored.blob?.pathname !== entry.blob_pathname
-        || stored.blob?.contentType !== "application/pdf" || stored.blob?.size !== entry.size_bytes) {
-        return fail(res, 409, "Fichier indisponible ou altéré.");
-      }
+      const verified = await loadVerifiedPdf(entry);
+      if (!verified.ok) return pdfFailure(res, verified.reason);
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", "attachment; filename=notice-carnetpass.pdf");
       res.setHeader("Content-Length", String(entry.size_bytes));
       res.setHeader("X-Content-Type-Options", "nosniff");
-      await pipeline(Readable.fromWeb(stored.stream), res);
+      await pipeline(Readable.from(byteChunks(verified.bytes)), res);
       return;
     }
     const { data, error } = await service().from("platform_document_intake")
