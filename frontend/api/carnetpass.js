@@ -693,7 +693,7 @@ async function createCarnetPass(req, res) {
           return res.status(503).json({
             ok: false,
             code: "POLYGON_REGISTRATION_FAILED",
-            error: "La preuve Polygon n'a pas été créée. Aucun CarnetPass actif n'a été publié. Réessaie plus tard.",
+            error: `La preuve Polygon n'a pas été créée. Aucun CarnetPass actif n'a été publié. Code d'assistance : ${/^[A-Z0-9_]{2,60}$/.test(diagnostic) ? diagnostic : "UNKNOWN"}.`,
           });
         }
 
