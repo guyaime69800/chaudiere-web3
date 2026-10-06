@@ -6,7 +6,7 @@ const PACKS = Object.freeze({
 });
 const TEST_TAX_RATE = "txr_1UL13C8Wefijgtt2XG8pN2le";
 const SOURCE = "carnetpass_shiba_recharge_v1";
-const PREVIEW_RETURN_HOST = /^chaudiere-web3-[a-z0-9-]+-chaudiere-web3\.vercel\.app$/;
+const PREVIEW_RETURN_HOST = /^(?:chaudiere-web3|carnetpass)-[a-z0-9-]+-chaudiere-web3\.vercel\.app$/;
 
 export function rechargeReturnOrigin(request) {
   const host = String(request?.headers?.host || "").toLowerCase();

@@ -1,4 +1,4 @@
-const previewDeploymentHost = /^chaudiere-web3-[a-z0-9]+-chaudiere-web3\.vercel\.app$/;
+const previewDeploymentHost = /^(?:chaudiere-web3|carnetpass)-[a-z0-9]+-chaudiere-web3\.vercel\.app$/;
 
 export function isTrustedCarnetPassQrOrigin(origin, currentOrigin) {
   try {

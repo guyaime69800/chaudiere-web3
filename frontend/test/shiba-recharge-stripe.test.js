@@ -73,6 +73,8 @@ test("la recharge Stripe ne s'ouvre jamais en production", () => {
 test("le retour Stripe garde le domaine Preview connecté sans redirection externe", () => {
   const host = "chaudiere-web3-ciwpbds0k-chaudiere-web3.vercel.app";
   assert.equal(rechargeReturnOrigin({ headers: { host, origin: `https://${host}` } }), `https://${host}`);
+  const renamedHost = "carnetpass-ciwpbds0k-chaudiere-web3.vercel.app";
+  assert.equal(rechargeReturnOrigin({ headers: { host: renamedHost, origin: `https://${renamedHost}` } }), `https://${renamedHost}`);
   assert.equal(rechargeReturnOrigin({ headers: { host: "test.carnetpass.fr", origin: "https://test.carnetpass.fr" } }), "https://test.carnetpass.fr");
   assert.throws(() => rechargeReturnOrigin({ headers: { host, origin: "https://evil.example" } }), { code: "RETURN_ORIGIN" });
   assert.throws(() => rechargeReturnOrigin({ headers: { host: "carnetpass.fr", origin: "https://carnetpass.fr" } }), { code: "RETURN_ORIGIN" });
