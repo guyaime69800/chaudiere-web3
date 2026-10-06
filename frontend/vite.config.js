@@ -18,7 +18,14 @@ export default defineConfig(({ mode }) => {
     VitePWA({
       registerType: 'prompt', // propose la mise à jour avant de recharger l'application
       workbox: {
-        navigateFallbackDenylist: [/^\/api\//],
+        // Navigations must reach Vercel so a 503 maintenance response cannot be
+        // replaced by a previously precached application shell.
+        navigateFallback: null,
+        runtimeCaching: [{
+          urlPattern: ({ request }) => request.mode === 'navigate',
+          handler: 'NetworkFirst',
+          options: { cacheName: 'carnetpass-pages', networkTimeoutSeconds: 10 },
+        }],
       },
       includeAssets: ['favicon.svg'],
       manifest: {
