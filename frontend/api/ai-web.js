@@ -51,9 +51,9 @@ export default async function handler(request, response) {
   }
 
   let quotaReservation;
-  if (shibaQuotaEnabled()) {
+  if (shibaQuotaEnabled() || (process.env.VERCEL_ENV === "production" && professional.accessKind === "discovery")) {
     try {
-      const plan = await getShibaPlan(request, professional);
+      const plan = process.env.VERCEL_ENV === "production" ? "free" : await getShibaPlan(request, professional);
       quotaReservation = await reserveShibaQuestion(professional, plan);
       setShibaUsageHeaders(response, quotaReservation);
       if (!quotaReservation.allowed) {

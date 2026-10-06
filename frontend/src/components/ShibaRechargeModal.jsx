@@ -57,7 +57,7 @@ export default function ShibaRechargeModal() {
   }
 
   async function checkout() {
-    if (!session?.access_token || !testBilling || busy) return;
+    if (!session?.access_token || !testBilling || busy || usage?.period === "trial") return;
     setBusy(true);
     setError("");
     try {
@@ -80,7 +80,7 @@ export default function ShibaRechargeModal() {
         <button type="button" className="shiba-recharge-dialog__close" aria-label="Fermer" onClick={() => dialogRef.current?.close()}>×</button>
         <div className="shiba-recharge-dialog__icon" aria-hidden="true"><img src={shibaTechnicien} alt="" /></div>
         <p className="shiba-recharge-dialog__eyebrow">{usage.demo ? "Paiement test Preview" : "Shiba Bot"}</p>
-        <h2 id="shiba-recharge-title">Recharger Shiba Bot</h2>
+        <h2 id="shiba-recharge-title">{usage.period === "trial" ? "Essai Découverte terminé" : "Recharger Shiba Bot"}</h2>
         <p>{usage.demo
           ? "Choisissez une recharge ponctuelle. Les crédits achetés s’ajoutent à votre solde et restent disponibles après le renouvellement de votre abonnement."
           : usage.remaining > 0
@@ -88,20 +88,22 @@ export default function ShibaRechargeModal() {
             : shibaCreditsExhaustedMessage(usage.period)}</p>
         {!usage.demo && usage.period === "month" && reset && <p className="shiba-recharge-dialog__reset">Réinitialisation prévue le {reset} (heure de Paris).</p>}
         {!usage.demo && usage.period === "trial" && <p className="shiba-recharge-dialog__reset">L’essai Découverte ne se réinitialise pas automatiquement.</p>}
-        <div className="shiba-recharge-dialog__packs" role="group" aria-label="Choisir une recharge">
+        {usage.period !== "trial" && <div className="shiba-recharge-dialog__packs" role="group" aria-label="Choisir une recharge">
           {SHIBA_RECHARGE_PACKS.map((item) => <button type="button" key={item.euros}
             className={`shiba-recharge-dialog__pack${selected === item.euros ? " is-selected" : ""}`}
             aria-pressed={selected === item.euros} onClick={() => setSelected(item.euros)}>
             <strong>{item.euros} € TTC</strong><span>{item.credits} crédits IA</span>
           </button>)}
-        </div>
-        <button type="button" className="shiba-recharge-dialog__pay" disabled={!testBilling || busy} onClick={checkout}>
+        </div>}
+        {usage.period !== "trial" && <button type="button" className="shiba-recharge-dialog__pay" disabled={!testBilling || busy} onClick={checkout}>
           {busy ? "Ouverture du paiement test…" : `Recharger pour ${pack.euros} €`}
-        </button>
+        </button>}
         {error && <p className="shiba-recharge-dialog__error" role="alert">{error}</p>}
-        <p className="shiba-recharge-dialog__notice">{testBilling
-          ? "Paiement Stripe en mode test uniquement : aucun débit réel. Les crédits sont ajoutés après confirmation serveur du paiement, jamais au simple retour sur CarnetPass."
-          : "Paiement en préparation : aucun achat ni ajout de crédits n’est encore possible."} Vos carnets, documents et historiques restent accessibles.</p>
+        <p className="shiba-recharge-dialog__notice">{usage.period === "trial"
+          ? "Les documents constructeur ne sont plus accessibles après les 20 questions de l’essai. Vos carnets et historiques restent accessibles."
+          : `${testBilling
+            ? "Paiement Stripe en mode test uniquement : aucun débit réel. Les crédits sont ajoutés après confirmation serveur du paiement, jamais au simple retour sur CarnetPass."
+            : "Paiement en préparation : aucun achat ni ajout de crédits n’est encore possible."} Vos carnets, documents et historiques restent accessibles.`}</p>
       </div>}
     </dialog>
   );

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import { getEquipmentDocumentLibrary } from "../services/equipmentKnowledge";
+import { catalogModelsWithPublishedDocuments } from "../services/platformDocumentLibrary";
 import DocumentPreviewModal from "./DocumentPreviewModal";
 import ShibaUsage from "./ShibaUsage";
 import { openShibaRecharge, refreshShibaUsage } from "../services/shibaUsageEvents";
@@ -52,6 +53,10 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
   const [documents, setDocuments] = useState([]);
   const [indexedDocumentCount, setIndexedDocumentCount] = useState(0);
   const [publishedDocuments, setPublishedDocuments] = useState([]);
+  const [publishedDocumentsBusy, setPublishedDocumentsBusy] = useState(Boolean(session?.access_token));
+  const [publishedDocumentsError, setPublishedDocumentsError] = useState("");
+  const [publishedDocumentsReload, setPublishedDocumentsReload] = useState(0);
+  const [modelReturnStep, setModelReturnStep] = useState("models");
   const [support, setSupport] = useState(null);
   const [documentsBusy, setDocumentsBusy] = useState(false);
   const [documentsError, setDocumentsError] = useState("");
@@ -78,30 +83,27 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
     const controller = new AbortController();
     fetch("/api/platform-catalog-documents", {
       headers: { Authorization: `Bearer ${session.access_token}` }, signal: controller.signal,
-    }).then((response) => response.ok ? response.json() : null)
-      .then((result) => { if (!controller.signal.aborted) setPublishedDocuments(result?.documents || []); })
-      .catch(() => {});
+    }).then(async (response) => {
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Chargement des documents publiés impossible.");
+      return result;
+    }).then((result) => {
+      if (!controller.signal.aborted) setPublishedDocuments(result?.documents || []);
+    }).catch((error) => {
+      if (!controller.signal.aborted) setPublishedDocumentsError(error.message);
+    }).finally(() => {
+      if (!controller.signal.aborted) setPublishedDocumentsBusy(false);
+    });
     return () => controller.abort();
-  }, [session?.access_token]);
+  }, [session?.access_token, publishedDocumentsReload]);
   useEffect(() => () => {
     if (previewDocument?.documentUrl?.startsWith("blob:")) URL.revokeObjectURL(previewDocument.documentUrl);
   }, [previewDocument]);
 
-  const entries = (Array.isArray(catalog) ? catalog : []).map((item) => ({ ...item }));
-  for (const document of publishedDocuments) {
-    const existing = entries.find((item) => normalize(item.brand) === normalize(document.manufacturer)
-      && normalize(item.manufacturerReference || item.model) === normalize(document.model_reference)
-      && item.type === document.catalog_category);
-    const item = existing || { brand: document.manufacturer, model: document.model_reference,
-      manufacturerReference: document.model_reference, type: document.catalog_category, publishedDocuments: [] };
-    if (!existing) entries.push(item);
-    if (!item.publishedDocuments) item.publishedDocuments = [];
-    if (document.hotline_phone) item.hotlinePhone = document.hotline_phone;
-    item.searchAliases = [...new Set([...(item.searchAliases || []), ...(document.model_aliases || [])])];
-    item.publishedDocuments.push({ documentId: document.id, title: document.title,
-      sourceName: document.manufacturer, storage: "platform-private", documentCode: document.model_reference,
-      ragStatus: document.rag_status || "pending" });
-  }
+  const entries = catalogModelsWithPublishedDocuments(catalog, publishedDocuments);
+  const publishedModels = entries.filter((item) => item.publishedDocuments?.length);
+  const matchingPublishedModels = publishedModels.filter((item) =>
+    normalize([item.brand, item.model, item.manufacturerReference, ...(item.searchAliases || [])].join(" ")).includes(normalize(query)));
   const category = CATEGORIES.find((item) => item.id === type);
   // Une entrée PAC/clim ne rejoint une unité que si sa position est renseignée.
   const categoryEntries = entries.filter((item) => item.type === type ||
@@ -125,12 +127,13 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
   }
   function toCategory() { clearModel({ preserveQuestion: true }); setType(""); setBrand(""); setQuery(""); setStep("category"); }
   function toBrands() { clearModel({ preserveQuestion: true }); setBrand(""); setQuery(""); setManualModel(""); setManualReference(""); setStep("brand"); }
-  function toModels() { clearModel(); setStep("models"); }
+  function toModels() { clearModel(); setStep(modelReturnStep); }
   function toAssistantPicker() { clearModel({ preserveQuestion: true }); setQuery(""); setStep("assistant-picker"); }
 
-  async function selectModel(item, fromAssistant = false) {
+  async function selectModel(item, fromAssistant = false, returnStep = "models") {
     clearModel({ preserveQuestion: true });
     const request = ++documentRequest.current;
+    setModelReturnStep(returnStep);
     setAssistantOrigin(fromAssistant); setModel(item); setStep(fromAssistant ? "assistant" : "model");
     if (item.publishedDocuments) {
       setDocuments(item.publishedDocuments);
@@ -284,7 +287,29 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
         <div className="technical-catalog-content">
           {step === "category" && <><h3>Choisissez un équipement</h3><div className="technical-catalog-category-grid">
             {CATEGORIES.map((item) => <button key={item.id} type="button" className="technical-catalog-category" onClick={() => { setType(item.id); setStep("brand"); }}><strong>{item.label}</strong><span>Voir les marques ›</span></button>)}
-          </div></>}
+          </div>
+            <div className="technical-catalog-published-entry">
+              <button type="button" className="technical-catalog-card" disabled={!publishedModels.length} onClick={() => { setQuery(""); setStep("published"); }}>
+                <strong>Documents ajoutés depuis l’administration</strong>
+                <span>{publishedModels.length} modèle{publishedModels.length > 1 ? "s" : ""} · {publishedDocuments.length} document{publishedDocuments.length > 1 ? "s" : ""} →</span>
+              </button>
+              {publishedDocumentsBusy && <p role="status">Chargement des documents publiés…</p>}
+              {publishedDocumentsError && <p role="alert" className="technical-catalog-error">{publishedDocumentsError} <button type="button" className="technical-catalog-back" onClick={() => { setPublishedDocumentsError(""); setPublishedDocumentsBusy(true); setPublishedDocumentsReload((value) => value + 1); }}>Réessayer</button></p>}
+            </div>
+          </>}
+          {step === "published" && <>
+            <button type="button" className="technical-catalog-back" onClick={toCategory}>← Retour aux catégories</button>
+            <h3>Documents ajoutés depuis l’administration</h3>
+            <label className="technical-catalog-search">Rechercher un fabricant ou un modèle
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex. ALFEA DUO, Airwell, 023103" autoFocus />
+            </label>
+            {matchingPublishedModels.length ? <div className="technical-catalog-list">
+              {matchingPublishedModels.map((item) => <button key={`${item.brand}-${item.manufacturerReference}-${item.type}`} type="button" className="technical-catalog-row" onClick={() => { setType(item.type); setBrand(item.brand); setQuery(""); selectModel(item, false, "published"); }}>
+                  <strong>{item.brand} · {item.model}<small>{item.publishedDocuments.length} document{item.publishedDocuments.length > 1 ? "s" : ""} · {CATEGORIES.find((category) => category.id === item.type)?.label || item.type}</small></strong>
+                  <span aria-hidden="true">›</span>
+                </button>)}
+            </div> : <p className="technical-catalog-empty">Aucun modèle ne correspond à cette recherche.</p>}
+          </>}
           {step === "assistant-picker" && <section className="technical-catalog-pick-assistant" aria-label="Choisir le modèle pour Shiba Bot">
             <button type="button" className="technical-catalog-back" onClick={toCategory}>← Parcourir le catalogue</button>
             <div className="technical-catalog-assistant-heading"><img src={shibaTechnicien} alt="" /><p>Choisissez un modèle. Shiba consulte ses documents ou recherche des sources sur le Web.</p></div>
@@ -315,7 +340,7 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
             </form>
           </>}
           {model && ["model", "documents", "assistant"].includes(step) && <>
-            <div className="technical-catalog-model-heading"><div><span className="technical-catalog-kicker">{model.brand}</span><h3>{model.model}{model.variant ? ` · ${model.variant}` : ""}</h3><p>Réf. produit : {model.manufacturerReference || "non renseignée"}</p>{!!model.searchAliases?.length && <p>Autres références couvertes : {model.searchAliases.join(", ")}</p>}{support?.hotline?.phone && <p>{support.hotline.label || "Assistance technique"} : <a href={`tel:${support.hotline.phone.replace(/\s+/g, "")}`}>{support.hotline.phone}</a></p>}</div>{step === "model" && <button type="button" className="technical-catalog-back" onClick={assistantOrigin ? toAssistantPicker : toModels}>← {assistantOrigin ? "Choisir un autre modèle" : "Tous les modèles"}</button>}</div>
+            <div className="technical-catalog-model-heading"><div><span className="technical-catalog-kicker">{model.brand}</span><h3>{model.model}{model.variant ? ` · ${model.variant}` : ""}</h3><p>Réf. produit : {model.manufacturerReference || "non renseignée"}</p>{!!model.searchAliases?.length && <p>Autres références couvertes : {model.searchAliases.join(", ")}</p>}{support?.hotline?.phone && <p>{support.hotline.label || "Assistance technique"} : <a href={`tel:${support.hotline.phone.replace(/\s+/g, "")}`}>{support.hotline.phone}</a></p>}</div>{step === "model" && <button type="button" className="technical-catalog-back" onClick={assistantOrigin ? toAssistantPicker : toModels}>← {assistantOrigin ? "Choisir un autre modèle" : modelReturnStep === "published" ? "Documents publiés" : "Tous les modèles"}</button>}</div>
             {step === "model" && <>
               {documentsBusy && <p role="status">Vérification de la documentation…</p>}
               {documentsError && <p role="alert" className="technical-catalog-error">{documentsError}</p>}

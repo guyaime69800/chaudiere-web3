@@ -23,9 +23,10 @@ test("private document paths use the same layout in separate stores", () => {
   assert.equal(platformDocumentPathname(`platform-documents/production/${documentId}.pdf`, "production"), false);
 });
 
-test("the Production catalog requires a verified professional", () => {
+test("the Production catalog allows verified and active discovery professionals", () => {
   assert.equal(platformDocumentCatalogAllowed("production", "verified"), true);
   assert.equal(platformDocumentCatalogAllowed("production", "demo"), false);
-  assert.equal(platformDocumentCatalogAllowed("production", "discovery"), false);
+  assert.equal(platformDocumentCatalogAllowed("production", "discovery"), true);
+  assert.equal(platformDocumentCatalogAllowed("production", undefined), false);
   assert.equal(platformDocumentCatalogAllowed("preview", "demo"), true);
 });

@@ -4,7 +4,7 @@ import test from "node:test";
 process.env.UPSTASH_REDIS_REST_KV_REST_API_URL ||= "https://example.invalid";
 process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN ||= "test-only";
 
-const { grantShibaRecharge, readShibaUsage, refundShibaQuestion, reserveShibaQuestion, shibaQuotaEnabled, shibaQuotaLimit } = await import("../server/lib/shiba-quota.js");
+const { discoveryDocumentsQuotaAvailable, grantShibaRecharge, readShibaUsage, refundShibaQuestion, reserveShibaQuestion, shibaQuotaEnabled, shibaQuotaLimit, shibaQuotaRequiresAccount } = await import("../server/lib/shiba-quota.js");
 const { formatShibaResetDate, shibaCreditsExhaustedMessage } = await import("../src/lib/shiba-credit-copy.js");
 
 function fakeRedis() {
@@ -12,7 +12,7 @@ function fakeRedis() {
   return {
     values,
     async get(key) { return values.get(key) ?? null; },
-    async eval(script, [key, legacyKey, bonusKey], args) {
+    async eval(script, [key, legacyKey, legacyMonthlyKey, bonusKey], args) {
       if (script.includes("INCRBY")) {
         if (values.has(legacyKey)) return [0, values.get(key) || 0];
         const balance = (values.get(key) || 0) + args[0];
@@ -26,12 +26,11 @@ function fakeRedis() {
         values.set(target, balance);
         return balance;
       }
-      if (legacyKey && !values.has(key) && values.has(legacyKey)) {
-        values.set(key, values.get(legacyKey));
-      }
-      const used = values.get(key) || 0;
+      const used = Math.max(values.get(key) || 0, values.get(legacyKey) || 0, values.get(legacyMonthlyKey) || 0);
+      values.set(key, used);
       const bonus = values.get(bonusKey) || 0;
       if (used >= args[0]) {
+        if (args[2] === 0) return [0, used, bonus, 0];
         if (bonus <= 0) return [0, used, bonus, 0];
         values.set(bonusKey, bonus - 1);
         return [1, used, bonus - 1, 1];
@@ -56,7 +55,13 @@ test("Découverte bloque la 21e question même si l’essai traverse un changeme
   assert.equal(blocked.allowed, false);
   assert.equal(blocked.remaining, 0);
   assert.equal((await readShibaUsage(alice, "free", { redis, now: september })).used, 20);
-  assert.equal((await reserveShibaQuestion(bob, "free", { redis, now: september })).allowed, true);
+  redis.values.set(`carnetpass:shiba:bonus:v1:${companyId}:alice`, 10);
+  assert.equal((await readShibaUsage(alice, "free", { redis, now: september })).remaining, 0);
+  const withBonus = await reserveShibaQuestion(alice, "free", { redis, now: september });
+  assert.equal(withBonus.allowed, false);
+  assert.equal(withBonus.remaining, 0);
+  assert.equal((await reserveShibaQuestion(bob, "free", { redis, now: september })).allowed, false);
+  assert.equal(await discoveryDocumentsQuotaAvailable({ ...bob, accessKind: "discovery" }, { redis, now: september }), false);
   assert.equal(blocked.period, "trial");
 });
 
@@ -67,6 +72,18 @@ test("un quota mensuel déjà consommé reste consommé pendant l’essai", asyn
   assert.equal((await readShibaUsage(alice, "free", { redis, now })).remaining, 0);
   assert.equal((await reserveShibaQuestion(alice, "free", { redis, now })).allowed, false);
   assert.equal((await readShibaUsage(alice, "free", { redis, now: new Date("2026-10-01T00:00:00Z") })).remaining, 0);
+});
+
+test("les anciens compteurs individuels sont repris dans le quota commun Découverte", async () => {
+  const redis = fakeRedis();
+  const now = new Date("2026-09-28T12:00:00Z");
+  const trialEnd = Date.parse(alice.discoveryEndsAt);
+  redis.values.set(`carnetpass:shiba:trial:v1:${companyId}:alice:${trialEnd}`, 19);
+  assert.equal((await readShibaUsage(alice, "free", { redis, now })).used, 19);
+  assert.equal((await reserveShibaQuestion(alice, "free", { redis, now })).used, 20);
+  assert.equal((await readShibaUsage(bob, "free", { redis, now })).used, 20);
+  assert.equal(await discoveryDocumentsQuotaAvailable({ ...bob, accessKind: "discovery" }, { redis, now }), false);
+  assert.equal(await discoveryDocumentsQuotaAvailable({ ...bob, accessKind: "verified" }, { redis, now }), true);
 });
 
 test("Pro compte 200 questions par technicien et une tentative échouée peut être remboursée", async () => {
@@ -80,17 +97,26 @@ test("Pro compte 200 questions par technicien et une tentative échouée peut ê
   assert.deepEqual(await readShibaUsage(alice, "enterprise", { redis, now }), { enabled: false });
 });
 
-test("le contrôle mensuel ne s'active que dans une Preview Vercel", () => {
+test("le quota Production s'active pour Découverte seulement", () => {
   const previous = process.env.VERCEL_ENV;
   try {
     process.env.VERCEL_ENV = "preview";
     assert.equal(shibaQuotaEnabled(), true);
     process.env.VERCEL_ENV = "production";
     assert.equal(shibaQuotaEnabled(), false);
+    assert.equal(shibaQuotaEnabled("free"), true);
+    assert.equal(shibaQuotaEnabled("pro"), false);
+    assert.equal(shibaQuotaEnabled("enterprise"), false);
   } finally {
     if (previous === undefined) delete process.env.VERCEL_ENV;
     else process.env.VERCEL_ENV = previous;
   }
+});
+
+test("l'assistant public Production fonctionne sans Bearer, les questions pro utilisent le quota", () => {
+  assert.equal(shibaQuotaRequiresAccount({ headers: {} }, "production"), false);
+  assert.equal(shibaQuotaRequiresAccount({ headers: { authorization: "Bearer essai" } }, "production"), true);
+  assert.equal(shibaQuotaRequiresAccount({ headers: {} }, "preview"), true);
 });
 
 test("le quota Pro passe à la nouvelle période une seule fois à minuit UTC", async () => {

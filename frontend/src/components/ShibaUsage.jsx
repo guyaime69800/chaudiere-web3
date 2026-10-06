@@ -21,7 +21,7 @@ export default function ShibaUsage({ session }) {
         if (active) {
           setUsage(result);
           setError(false);
-          if (result.enabled && result.remaining <= 0) openShibaRecharge(result);
+          if (result.enabled && result.remaining <= 0 && result.period !== "trial") openShibaRecharge(result);
           else if (result.enabled && result.remaining > 0) {
             try { window.sessionStorage.removeItem(`shiba-recharge-shown:${userId}:${result.period || "unknown"}:${result.resetAt || "unknown"}`); }
             catch { /* Private browsing can disable storage. */ }
@@ -70,18 +70,22 @@ export default function ShibaUsage({ session }) {
           <p className="shiba-usage__exhausted">{shibaCreditsExhaustedMessage(usage.period)}</p>
           {usage.period === "month" && reset && <small>Réinitialisation prévue le {reset} (heure de Paris).</small>}
           {usage.period === "trial" && reset && <small>Fin de l’essai le {reset} (heure de Paris), sans réinitialisation automatique.</small>}
-          <button className="shiba-usage__recharge" type="button" onClick={() => openShibaRecharge(usage, true)}>Recharger mes crédits</button>
+          {testBilling && usage.period !== "trial" && <button className="shiba-usage__recharge" type="button" onClick={() => openShibaRecharge(usage, true)}>Recharger mes crédits</button>}
           <small>{testBilling
             ? "La recharge Stripe est disponible uniquement en mode test Preview."
             : "La recharge est en préparation et n’est pas encore achetable."}</small>
         </>
       ) : (
         <>
-          <small>{usage.period === "trial" ? "Fin de l’essai le" : "Prochaine réinitialisation le"} {reset || "date non disponible"}. Vos carnets, documents et historiques restent accessibles.</small>
-          {testBilling && <button className="shiba-usage__recharge" type="button" onClick={() => openShibaRecharge(usage, true)}>Recharger mes crédits</button>}
+          <small>{usage.period === "trial"
+            ? `Accès aux documents jusqu’au ${reset || "terme de l’essai"}, ou jusqu’à la 20e question Shiba Bot.`
+            : `Prochaine réinitialisation le ${reset || "date non disponible"}. Vos carnets, documents et historiques restent accessibles.`}</small>
+          {testBilling && usage.period !== "trial" && <button className="shiba-usage__recharge" type="button" onClick={() => openShibaRecharge(usage, true)}>Recharger mes crédits</button>}
         </>
       )}
-      {exhausted && <small>Vos carnets, documents et historiques restent accessibles.</small>}
+      {exhausted && <small>{usage.period === "trial"
+        ? "Les documents constructeur ne sont plus accessibles avec cet essai. Vos carnets et historiques restent accessibles."
+        : "Vos carnets, documents et historiques restent accessibles."}</small>}
     </div>
   );
 }

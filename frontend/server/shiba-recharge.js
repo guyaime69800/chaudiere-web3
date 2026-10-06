@@ -25,6 +25,9 @@ export default async function shibaRechargeHandler(request, response) {
   if (!rechargePack(euros)) return response.status(400).json({ error: "Pack de recharge invalide." });
   const professional = await requireVerifiedCompany(request, response);
   if (!professional) return;
+  if (professional.accessKind === "discovery") {
+    return response.status(403).json({ error: "La recharge n’est pas disponible pendant l’essai Découverte." });
+  }
   try {
     const checkout = await createRechargeCheckout(professional, euros, rechargeReturnOrigin(request));
     if (!checkout?.url?.startsWith("https://checkout.stripe.com/")) throw new Error("Invalid checkout URL");

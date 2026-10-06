@@ -4,6 +4,7 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { requireVerifiedCompany } from "./require-verified-company.js";
 import { platformDocumentCatalogAllowed, platformDocumentEnvironment } from "./platform-document-environment.js";
+import { discoveryDocumentsQuotaAvailable } from "./shiba-quota.js";
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 export default async function handler(req, res) {
@@ -14,7 +15,14 @@ export default async function handler(req, res) {
   const professional = await requireVerifiedCompany(req, res);
   if (!professional) return;
   if (!platformDocumentCatalogAllowed(environment.name, professional.accessKind)) {
-    return res.status(403).json({ error: "Catalogue réservé aux professionnels vérifiés." });
+    return res.status(403).json({ error: "Catalogue indisponible pour ce compte." });
+  }
+  try {
+    if (!await discoveryDocumentsQuotaAvailable(professional)) {
+      return res.status(403).json({ code: "DISCOVERY_QUOTA_REACHED", error: "Les 20 questions de votre essai Découverte ont été utilisées. L’accès aux documents est terminé." });
+    }
+  } catch {
+    return res.status(503).json({ error: "Vérification de l’accès au catalogue momentanément indisponible." });
   }
   if (!process.env.SUPABASE_SECRET_KEY) return res.status(503).json({ error: "Catalogue indisponible." });
   const db = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SECRET_KEY, options);

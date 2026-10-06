@@ -232,14 +232,26 @@ function EquipmentDocumentCenterContent({
 
     onTechnicalDocumentCountChange?.(0);
 
-    Promise.all([getEquipmentDocumentLibrary({
+    Promise.allSettled([getEquipmentDocumentLibrary({
       brand: equipment.brand,
       model: equipment.model,
       product_reference: equipment.product_reference,
       carnetPassId,
     }), getPlatformDocumentsForEquipment(equipment, session?.access_token)])
-      .then(([library, publishedDocuments]) => {
+      .then(([libraryResult, publishedResult]) => {
         if (!active) return;
+
+        const library = libraryResult.status === "fulfilled"
+          ? libraryResult.value : { documents: [], catalogueEquipment: null };
+        const publishedDocuments = publishedResult.status === "fulfilled"
+          ? publishedResult.value : [];
+        const failures = [libraryResult, publishedResult]
+          .filter((result) => result.status === "rejected")
+          .map((result) => result.reason?.message || "La documentation technique est momentanément indisponible.");
+        setLoadError([...new Set(failures)].join(" "));
+        if (failures.length) {
+          console.error("Chargement de la documentation impossible :", failures);
+        }
 
         const documents = [...library.documents, ...publishedDocuments.filter(
           (document) => !library.documents.some((existing) => existing.documentId === document.documentId),
@@ -253,9 +265,7 @@ function EquipmentDocumentCenterContent({
 
         if (!active) return;
 
-        setLoadError(
-          "La documentation technique est momentanément indisponible.",
-        );
+        setLoadError(error?.message || "La documentation technique est momentanément indisponible.");
       })
       .finally(() => {
         if (active) {
@@ -384,7 +394,8 @@ function EquipmentDocumentCenterContent({
       );
 
       if (!response.ok) {
-        throw new Error("Impossible d’ouvrir ce document technique.");
+        const details = await response.json().catch(() => null);
+        throw new Error(details?.error || "Impossible d’ouvrir ce document technique.");
       }
 
       const pdf = await response.blob();
@@ -487,7 +498,7 @@ function EquipmentDocumentCenterContent({
 
   return (
     <div className="equipment-workspace__documents">
-      <div className={`equipment-workspace__top ${!loading && !loadError && technicalDocuments.length > 0 ? "has-assistant" : ""}`}>
+      <div className={`equipment-workspace__top ${!loading && technicalDocuments.length > 0 ? "has-assistant" : ""}`}>
       <section
         className="equipment-workspace__document-library"
         aria-labelledby="equipment-technical-documents-title"
@@ -553,7 +564,7 @@ function EquipmentDocumentCenterContent({
           </div>
         )}
 
-        {!loading && !loadError && technicalDocuments.length > 0 && (
+        {!loading && technicalDocuments.length > 0 && (
           <>
             <div
               className="equipment-workspace__document-filters"
@@ -654,7 +665,7 @@ function EquipmentDocumentCenterContent({
         )}
       </section>
 
-      {!loading && !loadError && technicalDocuments.length > 0 && (
+      {!loading && technicalDocuments.length > 0 && (
         <section className="equipment-workspace__ai" aria-labelledby="equipment-ai-title">
           <div className="equipment-workspace__ai-intro">
             <img className="equipment-workspace__ai-mascot" src={shibaTechnicien} alt="Shiba Inu chauffagiste CarnetPass avec une clé à molette" width="92" height="100" />

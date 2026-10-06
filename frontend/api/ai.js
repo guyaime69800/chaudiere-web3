@@ -7,7 +7,7 @@ import { searchRagContext } from "../server/lib/rag.js";
 
 import { aiRateLimit } from "../server/lib/rate-limit.js";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
-import { getShibaPlan, refundShibaQuestion, reserveShibaQuestion, setShibaUsageHeaders, shibaQuotaEnabled } from "../server/lib/shiba-quota.js";
+import { getShibaPlan, refundShibaQuestion, reserveShibaQuestion, setShibaUsageHeaders, shibaQuotaEnabled, shibaQuotaRequiresAccount } from "../server/lib/shiba-quota.js";
 import { reportAnomaly } from "../server/lib/anomaly-alert.js";
 import { checkDocumentGrounding, UNVERIFIED_ANSWER } from "../server/lib/shiba-grounding.js";
 import { shibaCreditsExhaustedMessage } from "../src/lib/shiba-credit-copy.js";
@@ -105,6 +105,36 @@ function buildErrorCodeVariants(
       `F${paddedCode}`,
     ]),
   ];
+}
+
+async function reserveQuestionQuota(request, response) {
+  const production = process.env.VERCEL_ENV === "production";
+  // L'assistant public du site n'envoie pas de jeton. Ses questions restent
+  // soumises à la limite IP plus bas ; elles ne consomment pas l'essai pro.
+  if (!shibaQuotaRequiresAccount(request)) return { proceed: true, reservation: null };
+  const professional = await requireVerifiedCompany(request, response);
+  if (!professional) return { proceed: false };
+  try {
+    const plan = production
+      ? (professional.accessKind === "discovery" ? "free" : null)
+      : await getShibaPlan(request, professional);
+    if (!plan || !shibaQuotaEnabled(plan)) return { proceed: true, reservation: null };
+    const reservation = await reserveShibaQuestion(professional, plan);
+    setShibaUsageHeaders(response, reservation);
+    if (!reservation.allowed) {
+      response.status(429).json({
+        code: "SHIBA_QUOTA_REACHED",
+        error: shibaCreditsExhaustedMessage(reservation.period),
+        usage: { used: reservation.used, limit: reservation.limit, remaining: 0, resetAt: reservation.resetAt, period: reservation.period },
+      });
+      return { proceed: false };
+    }
+    return { proceed: true, reservation };
+  } catch (error) {
+    console.error("Quota Shiba indisponible :", error);
+    response.status(503).json({ error: "Le compteur Shiba est momentanément indisponible." });
+    return { proceed: false };
+  }
 }
 
 // ---------------------------------------------------------
@@ -222,6 +252,10 @@ export default async function handler(
     // Récupère les données techniques
     // et les embeddings correspondant
     // uniquement à cet équipement.
+
+    const questionQuota = await reserveQuestionQuota(request, response);
+    if (!questionQuota.proceed) return;
+    quotaReservation = questionQuota.reservation;
 
     const {
       equipmentData,
@@ -423,6 +457,11 @@ export default async function handler(
       // aucun appel OpenAI n'est effectué.
 
       if (!success) {
+        if (quotaReservation?.allowed) {
+          try { await refundShibaQuestion(quotaReservation); }
+          catch (error) { console.error("Remboursement quota Shiba indisponible :", error); }
+          quotaReservation = null;
+        }
         const retryAfter = Math.max(
           1,
           Math.ceil(
@@ -447,6 +486,11 @@ export default async function handler(
           });
       }
     } catch (rateLimitError) {
+      if (quotaReservation?.allowed) {
+        try { await refundShibaQuestion(quotaReservation); }
+        catch (error) { console.error("Remboursement quota Shiba indisponible :", error); }
+        quotaReservation = null;
+      }
       console.error(
         "Erreur protection rate limiting CarnetPass :",
         rateLimitError
@@ -469,26 +513,6 @@ export default async function handler(
           message:
             "La protection de l'Assistant CarnetPass est momentanément indisponible.",
         });
-    }
-
-    if (shibaQuotaEnabled()) {
-      const professional = await requireVerifiedCompany(request, response);
-      if (!professional) return;
-      try {
-        const plan = await getShibaPlan(request, professional);
-        quotaReservation = await reserveShibaQuestion(professional, plan);
-        setShibaUsageHeaders(response, quotaReservation);
-        if (!quotaReservation.allowed) {
-          return response.status(429).json({
-            code: "SHIBA_QUOTA_REACHED",
-            error: shibaCreditsExhaustedMessage(quotaReservation.period),
-            usage: { used: quotaReservation.used, limit: quotaReservation.limit, remaining: 0, resetAt: quotaReservation.resetAt, period: quotaReservation.period },
-          });
-        }
-      } catch (error) {
-        console.error("Quota Shiba indisponible :", error);
-        return response.status(503).json({ error: "Le compteur Shiba est momentanément indisponible." });
-      }
     }
 
     // -----------------------------------------------------

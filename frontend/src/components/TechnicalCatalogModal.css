@@ -107,3 +107,6 @@
 .technical-catalog-sources button{border:0;padding:0;background:transparent;color:var(--pro-orange,#c93608);font:inherit;text-align:left;text-decoration:underline;cursor:pointer}
 .technical-catalog-sources button:disabled,.technical-catalog-document-list button:disabled{opacity:.6;cursor:wait}
 .technical-catalog-sources small{color:#765f57}
+.technical-catalog-published-entry{max-width:460px;margin:20px auto 4px}
+.technical-catalog-published-entry p{margin:10px 0;font-size:13px}
+.technical-catalog-published-entry .technical-catalog-back{margin-left:6px}

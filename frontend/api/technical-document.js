@@ -5,6 +5,7 @@ import { pipeline } from "node:stream/promises";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import { technicalDocumentBlobLocation } from "../server/lib/technical-document-store.js";
 import { platformDocumentCatalogAllowed, platformDocumentEnvironment } from "../server/lib/platform-document-environment.js";
+import { discoveryDocumentsQuotaAvailable } from "../server/lib/shiba-quota.js";
 import mcr2 from "../src/data/equipment/de-dietrich-7841749.json" with { type: "json" };
 import naia from "../src/data/equipment/atlantic-021272.json" with { type: "json" };
 import mira25 from "../src/data/equipment/chaffoteaux-3310543.json" with { type: "json" };
@@ -60,7 +61,14 @@ export default async function handler(req, res) {
   const environment = platformDocumentEnvironment(process.env);
   if (environment.status) return res.status(environment.status).json({ error: "Documents indisponibles." });
   if (!platformDocumentCatalogAllowed(environment.name, professional.accessKind)) {
-    return res.status(403).json({ error: "Documents réservés aux professionnels vérifiés." });
+    return res.status(403).json({ error: "Documents indisponibles pour ce compte." });
+  }
+  try {
+    if (!await discoveryDocumentsQuotaAvailable(professional)) {
+      return res.status(403).json({ code: "DISCOVERY_QUOTA_REACHED", error: "Les 20 questions de votre essai Découverte ont été utilisées. L’accès aux documents est terminé." });
+    }
+  } catch {
+    return res.status(503).json({ error: "Vérification de l’accès aux documents momentanément indisponible." });
   }
 
   const pathname = req.query?.pathname;
