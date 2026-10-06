@@ -26,6 +26,7 @@ export default function AccountSettingsPage() {
   const [company, setCompany] = useState(null);
   const [testSubscription, setTestSubscription] = useState(null);
   const [platformAdmin, setPlatformAdmin] = useState(false);
+  const [maintenanceAdmin, setMaintenanceAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [newEmail, setNewEmail] = useState("");
@@ -67,6 +68,9 @@ export default function AccountSettingsPage() {
     fetch("/api/platform-admin", { headers: { Authorization: `Bearer ${session.access_token}` } })
       .then((response) => { if (active) setPlatformAdmin(response.ok); })
       .catch(() => {});
+    fetch("/api/maintenance-control", { headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then((response) => { if (active) setMaintenanceAdmin(response.ok); })
+      .catch(() => {});
     return () => { active = false; };
   }, [session?.access_token]);
 
@@ -91,6 +95,7 @@ export default function AccountSettingsPage() {
     <main className="account-settings">
       <header><Link to="/espace-pro">← Retour à mon espace</Link><h1>Paramètres du compte</h1><p>{user.email}</p></header>
       {platformAdmin && <p><Link to="/administration-interne">Administration interne CarnetPass</Link></p>}
+      {maintenanceAdmin && <p><Link to="/administration-maintenance">Mode maintenance du site</Link></p>}
       {loading ? <p>Chargement…</p> : <div className="account-settings-grid">
         <section className="account-settings-card">
           <h2>Mon profil</h2>

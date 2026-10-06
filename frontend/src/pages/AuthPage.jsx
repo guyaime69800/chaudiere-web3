@@ -59,8 +59,9 @@ async function isPlatformAdmin(accessToken) {
 export default function AuthPage({ mode = "connexion" }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const destination = location.state?.from?.pathname === "/administration-interne"
-    ? "/administration-interne" : "/espace-pro";
+  const requested = location.state?.from?.pathname;
+  const destination = ["/administration-interne", "/administration-maintenance"].includes(requested)
+    ? requested : "/espace-pro";
   const isSignUp = mode === "inscription";
 
   const [form, setForm] = useState(initialForm);
@@ -119,7 +120,7 @@ export default function AuthPage({ mode = "connexion" }) {
           password: form.password,
         });
         const admin = await isPlatformAdmin(data.session?.access_token);
-        navigate(admin ? "/administration-interne" : destination);
+        navigate(destination === "/administration-maintenance" ? destination : admin ? "/administration-interne" : destination);
       }
     } catch (error) {
       setErrorMessage(getFriendlyError(error));
