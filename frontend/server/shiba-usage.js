@@ -1,5 +1,5 @@
-import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
-import { getShibaPlan, readShibaUsage, shibaQuotaEnabled } from "../server/lib/shiba-quota.js";
+import { requireVerifiedCompany } from "./lib/require-verified-company.js";
+import { getShibaPlan, readShibaUsage, shibaQuotaEnabled } from "./lib/shiba-quota.js";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") return response.status(405).json({ error: "Méthode non autorisée." });

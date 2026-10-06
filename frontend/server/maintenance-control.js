@@ -1,8 +1,20 @@
 import { createClient } from "@supabase/supabase-js";
 import { Redis } from "@upstash/redis";
-import { MAINTENANCE_KEY } from "../server/lib/maintenance-state.js";
+import { MAINTENANCE_KEY } from "./lib/maintenance-state.js";
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
+
+async function readBody(req) {
+  if (req.body && typeof req.body === "object") return req.body;
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > 2048) throw new Error("Body too large");
+    chunks.push(chunk);
+  }
+  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
@@ -32,7 +44,9 @@ export default async function handler(req, res) {
       const state = await redis.get(MAINTENANCE_KEY);
       return res.status(200).json({ ok: true, state: state || { enabled: false } });
     }
-    const body = req.body && typeof req.body === "object" ? req.body : {};
+    let body;
+    try { body = await readBody(req); }
+    catch { return res.status(400).json({ ok: false, error: "Requête invalide." }); }
     if (typeof body.enabled !== "boolean" || typeof body.message !== "string"
       || body.message.length > 300 || /[\u0000-\u001f\u007f]/.test(body.message)) {
       return res.status(400).json({ ok: false, error: "Paramètres invalides." });

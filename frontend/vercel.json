@@ -15,6 +15,14 @@
   ],
   "rewrites": [
     {
+      "source": "/api/maintenance-control",
+      "destination": "/api/verify-company?maintenance_control_route=1"
+    },
+    {
+      "source": "/api/shiba-usage",
+      "destination": "/api/verify-company?shiba_usage_route=1"
+    },
+    {
       "source": "/api/public-maintenance-reminders",
       "destination": "/api/carnetpass?public_reminder_route=1"
     },

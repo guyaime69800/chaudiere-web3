@@ -1,6 +1,8 @@
 import { next } from "@vercel/functions";
 import { MAINTENANCE_KEY, maintenanceAllowedPath, maintenanceHtml } from "./server/lib/maintenance-state.js";
 
+export const config = { runtime: "nodejs" };
+
 export default async function middleware(request) {
   if (process.env.VERCEL_ENV !== "production") return next();
   const pathname = new URL(request.url).pathname;
