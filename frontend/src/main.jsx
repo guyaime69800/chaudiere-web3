@@ -18,6 +18,7 @@ import { CookiesPage, FaqPage, LegalNoticePage, PrivacyPage, SalesTermsPage, Ter
 import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
 import AccountSettingsPage from "./pages/AccountSettingsPage.jsx";
 import PlatformAdminPage from "./pages/PlatformAdminPage.jsx";
+import MaintenanceAdminPage from "./pages/MaintenanceAdminPage.jsx";
 import ShibaRechargeModal from "./components/ShibaRechargeModal.jsx";
 import PublicMaintenanceReminderPage from "./pages/PublicMaintenanceReminderPage.jsx";
 import { registerSW } from "virtual:pwa-register";
@@ -86,6 +87,7 @@ createRoot(document.getElementById("root")).render(
           />
           <Route path="/parametres-compte" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
           <Route path="/administration-interne" element={<ProtectedRoute><PlatformAdminPage /></ProtectedRoute>} />
+          <Route path="/administration-maintenance" element={<ProtectedRoute><MaintenanceAdminPage /></ProtectedRoute>} />
           <Route path="/rappel/activer" element={<PublicMaintenanceReminderPage mode="activate" />} />
           <Route path="/rappel/gerer" element={<PublicMaintenanceReminderPage mode="manage" />} />
 
