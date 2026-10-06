@@ -137,6 +137,7 @@ export default function EquipmentWorkspace({
     carnetPassStatus,
     carnetPassStatusLoading = false,
     carnetPassStatusError = "",
+    carnetPassActionError = "",
     interventions = [],
     interventionLoading = false,
     interventionLoadError = "",
@@ -349,6 +350,7 @@ export default function EquipmentWorkspace({
                         Fermer le dossier
                     </button>
                 </div>
+                {carnetPassActionError && <p className="equipment-workspace__carnetpass-error" role="alert">{carnetPassActionError}</p>}
             </header>
 
             <nav

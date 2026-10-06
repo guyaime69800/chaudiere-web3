@@ -141,3 +141,13 @@ export async function deleteEquipmentAttachment(attachmentId) {
 
     return readApiResponse(response, "Suppression impossible.");
 }
+
+export async function submitAttachmentToCatalog(attachmentId) {
+    const headers = await getAuthHeaders();
+    const response = await fetch("/api/platform-document-submissions", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ attachmentId, rightsConfirmed: true }),
+    });
+    return readApiResponse(response, "Proposition au catalogue impossible.");
+}

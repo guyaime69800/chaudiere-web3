@@ -11,6 +11,7 @@
 
 .equipment-workspace__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 32px;
@@ -22,6 +23,17 @@
       transparent 21rem
     ),
     #ffffff;
+}
+
+.equipment-workspace__carnetpass-error {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #f2b7a7;
+  border-radius: 10px;
+  background: #fff1ec;
+  color: #9a3412;
+  line-height: 1.5;
 }
 
 .equipment-workspace__identity {

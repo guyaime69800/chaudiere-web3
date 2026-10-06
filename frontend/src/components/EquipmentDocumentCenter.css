@@ -201,6 +201,23 @@
   margin: 0;
 }
 
+.equipment-workspace__document-message {
+  flex-wrap: wrap;
+}
+
+.equipment-workspace__document-message button {
+  min-height: 40px;
+  margin-left: 60px;
+  padding: 9px 13px;
+  border: 1px solid var(--pro-orange);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--pro-orange-dark);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .equipment-workspace__document-message.is-error {
   border-color: #f0c38a;
   color: #7a4a0b;
@@ -494,6 +511,99 @@
   font-size: 11px;
 }
 
+.equipment-workspace__attachment-mode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.equipment-workspace__attachment-mode button {
+  padding: 9px 13px;
+  border: 1px solid #e7d9d3;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--pro-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.equipment-workspace__attachment-mode button.is-active {
+  border-color: var(--pro-orange);
+  background: var(--pro-orange-light);
+  color: var(--pro-orange-dark);
+  font-weight: 800;
+}
+
+.equipment-workspace__photo-inputs {
+  display: grid;
+  gap: 10px;
+}
+
+.equipment-workspace__photo-inputs small {
+  color: var(--pro-muted);
+}
+
+.equipment-workspace__photo-inputs ol {
+  margin: 0;
+  padding-left: 22px;
+}
+
+.equipment-workspace__photo-inputs li {
+  padding: 4px 0;
+}
+
+.equipment-workspace__photo-inputs li button {
+  margin-left: 8px;
+}
+
+.equipment-workspace__attachment-notice,
+.equipment-workspace__catalog-submission {
+  padding: 14px;
+  border: 1px solid #b9dfc3;
+  border-radius: 12px;
+  background: #f1faf2;
+  color: #18572b;
+  line-height: 1.5;
+}
+
+.equipment-workspace__catalog-submission {
+  display: grid;
+  flex-basis: 100%;
+  gap: 10px;
+  margin-top: 10px;
+  border-color: #e7d9d3;
+  background: #fff8f5;
+  color: var(--pro-ink);
+}
+
+.equipment-workspace__catalog-submission p {
+  margin: 0;
+}
+
+.equipment-workspace__catalog-submission label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.equipment-workspace__catalog-submission button {
+  justify-self: start;
+  padding: 10px 14px;
+  border: 1px solid var(--pro-orange);
+  border-radius: 10px;
+  background: var(--pro-orange);
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.equipment-workspace__catalog-submission button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .equipment-workspace__attachment-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -605,6 +715,7 @@
 
 .equipment-workspace__attachment-list > article {
   display: flex;
+  flex-wrap: wrap;
   min-width: 0;
   align-items: center;
   justify-content: space-between;

@@ -2292,6 +2292,7 @@ export default function ProSpacePage() {
           carnetPassStatus={carnetPassStatuses[selectedEquipment.id]}
           carnetPassStatusLoading={carnetPassStatusLoading}
           carnetPassStatusError={carnetPassStatusError}
+          carnetPassActionError={equipmentError}
           interventions={interventions}
           interventionLoading={interventionLoading}
           interventionLoadError={interventionLoadError}

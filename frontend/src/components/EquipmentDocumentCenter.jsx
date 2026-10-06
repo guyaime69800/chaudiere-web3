@@ -7,8 +7,10 @@ import {
   downloadEquipmentAttachment,
   getAttachmentFile,
   getEquipmentAttachments,
+  submitAttachmentToCatalog,
   uploadEquipmentAttachment,
 } from "../services/equipmentAttachmentsService";
+import { photosToPdf } from "../services/photosToPdf";
 import DocumentPreviewModal from "./DocumentPreviewModal";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import "./EquipmentDocumentCenter.css";
@@ -185,13 +187,19 @@ function EquipmentDocumentCenterContent({
   const [attachmentsLoading, setAttachmentsLoading] = useState(true);
   const [attachmentError, setAttachmentError] = useState("");
   const [showAttachmentForm, setShowAttachmentForm] = useState(false);
+  const [attachmentMode, setAttachmentMode] = useState("file");
   const [attachmentFile, setAttachmentFile] = useState(null);
+  const [photoFiles, setPhotoFiles] = useState([]);
   const [attachmentKind, setAttachmentKind] = useState("photo");
   const [attachmentTitle, setAttachmentTitle] = useState("");
   const [attachmentDescription, setAttachmentDescription] = useState("");
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [attachmentActionId, setAttachmentActionId] = useState("");
   const [attachmentPreview, setAttachmentPreview] = useState(null);
+  const [attachmentNotice, setAttachmentNotice] = useState("");
+  const [submissionFormId, setSubmissionFormId] = useState("");
+  const [submissionBusy, setSubmissionBusy] = useState(false);
+  const [submissionConsent, setSubmissionConsent] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -338,27 +346,33 @@ function EquipmentDocumentCenterContent({
   async function handleAttachmentUpload(event) {
     event.preventDefault();
 
-    if (!attachmentFile || !attachmentTitle.trim()) {
-      setAttachmentError("Choisis un fichier et indique un titre.");
+    if (!attachmentTitle.trim() || (attachmentMode === "photos" ? !photoFiles.length : !attachmentFile)) {
+      setAttachmentError("Choisis un fichier ou des photos et indique un titre.");
       return;
     }
 
     setAttachmentBusy(true);
     setAttachmentError("");
+    setAttachmentNotice("");
 
     try {
+      const file = attachmentMode === "photos"
+        ? await photosToPdf(photoFiles, `document-${equipment.id}.pdf`)
+        : attachmentFile;
       await uploadEquipmentAttachment({
-        file: attachmentFile,
+        file,
         equipmentId: equipment.id,
-        documentKind: attachmentKind,
+        documentKind: attachmentMode === "photos" ? "other" : attachmentKind,
         title: attachmentTitle.trim(),
         description: attachmentDescription.trim(),
       });
 
       setAttachmentFile(null);
+      setPhotoFiles([]);
       setAttachmentTitle("");
       setAttachmentDescription("");
       setShowAttachmentForm(false);
+      setAttachmentNotice("Document envoyé dans le dossier privé. Il n’apparaîtra dans le catalogue qu’après une proposition et une validation par l’administration.");
 
       // Le webhook Blob peut enregistrer les métadonnées quelques instants
       // après la fin de l'envoi. Deux actualisations couvrent ce court délai.
@@ -368,6 +382,44 @@ function EquipmentDocumentCenterContent({
       setAttachmentError(error.message || "Envoi du document impossible.");
     } finally {
       setAttachmentBusy(false);
+    }
+  }
+
+  function addPhotos(files) {
+    const incoming = Array.from(files || []);
+    if (!incoming.length) return;
+    if (photoFiles.length + incoming.length > 8) {
+      setAttachmentError("Un PDF peut contenir au maximum 8 photos. Crée un second document pour les pages suivantes.");
+      return;
+    }
+    if (incoming.some((file) => !["image/jpeg", "image/png", "image/webp"].includes(file.type))) {
+      setAttachmentError("Choisis des photos JPEG, PNG ou WebP.");
+      return;
+    }
+    setPhotoFiles((current) => [...current, ...incoming]);
+    setAttachmentError("");
+  }
+
+  async function handleSubmitToCatalog(attachment) {
+    if (!submissionConsent || !equipment.product_reference) return;
+    setSubmissionBusy(true);
+    setAttachmentError("");
+    setAttachmentNotice("");
+    try {
+      const result = await submitAttachmentToCatalog(attachment.id);
+      setAttachmentNotice(result.status === "approved"
+        ? "Ce PDF a déjà été validé par l’administration."
+        : result.status === "rejected"
+          ? "Cette version du PDF a été refusée. Corrige le document et ajoute une nouvelle pièce jointe avant de la proposer."
+          : result.alreadySubmitted
+            ? "Ce PDF est déjà en attente de validation par l’administration."
+            : "PDF proposé à l’administration. Il reste privé tant que sa diffusion n’a pas été validée.");
+      setSubmissionConsent(false);
+      setSubmissionFormId("");
+    } catch (error) {
+      setAttachmentError(error.message || "Proposition au catalogue impossible.");
+    } finally {
+      setSubmissionBusy(false);
     }
   }
   async function handleTechnicalDocumentOpen(technicalDocument) {
@@ -560,6 +612,11 @@ function EquipmentDocumentCenterContent({
                   : " cet équipement"}
                 . L’équipement reste utilisable dans CarnetPass.
               </p>
+              <button type="button" onClick={() => {
+                setAttachmentMode("photos");
+                setShowAttachmentForm(true);
+                window.setTimeout(() => document.getElementById("equipment-attachment-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+              }}>Créer un PDF avec des photos de la notice</button>
             </div>
           </div>
         )}
@@ -770,18 +827,24 @@ function EquipmentDocumentCenterContent({
         <div className="equipment-workspace__attachments">
           {showAttachmentForm && (
             <form
+              id="equipment-attachment-form"
               className="equipment-workspace__attachment-form"
               onSubmit={handleAttachmentUpload}
             >
               <div className="equipment-workspace__attachment-form-heading">
                 <div>
                   <h4>Ajouter une pièce jointe privée</h4>
-                  <p>PDF, JPEG, PNG ou WebP — 10 Mo maximum.</p>
+                  <p>Ce document reste dans le dossier de l’équipement. Une proposition au catalogue est une action distincte.</p>
                 </div>
               </div>
 
+              <div className="equipment-workspace__attachment-mode" role="group" aria-label="Source du document">
+                <button type="button" className={attachmentMode === "file" ? "is-active" : ""} aria-pressed={attachmentMode === "file"} onClick={() => setAttachmentMode("file")}>Importer un fichier</button>
+                <button type="button" className={attachmentMode === "photos" ? "is-active" : ""} aria-pressed={attachmentMode === "photos"} onClick={() => setAttachmentMode("photos")}>Photos → PDF</button>
+              </div>
+
               <div className="equipment-workspace__attachment-fields">
-                <label>
+                {attachmentMode === "file" && <label>
                   <span>Type de document</span>
                   <select
                     value={attachmentKind}
@@ -792,7 +855,7 @@ function EquipmentDocumentCenterContent({
                       <option key={kind.id} value={kind.id}>{kind.label}</option>
                     ))}
                   </select>
-                </label>
+                </label>}
 
                 <label>
                   <span>Titre</span>
@@ -819,16 +882,22 @@ function EquipmentDocumentCenterContent({
                   />
                 </label>
 
-                <label className="is-wide">
-                  <span>Fichier</span>
-                  <input
-                    type="file"
-                    accept="application/pdf,image/jpeg,image/png,image/webp"
+                {attachmentMode === "file" ? <label className="is-wide">
+                  <span>Fichier PDF ou photo · 10 Mo maximum</span>
+                  <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp"
                     onChange={(event) => setAttachmentFile(event.target.files?.[0] || null)}
-                    disabled={attachmentBusy}
-                    required
-                  />
-                </label>
+                    disabled={attachmentBusy} required />
+                </label> : <div className="is-wide equipment-workspace__photo-inputs">
+                  <label><span>Photographier une page</span><input type="file" accept="image/jpeg,image/png,image/webp" capture="environment"
+                    onChange={(event) => { addPhotos(event.target.files); event.target.value = ""; }} disabled={attachmentBusy} /></label>
+                  <label><span>Choisir plusieurs photos</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple
+                    onChange={(event) => { addPhotos(event.target.files); event.target.value = ""; }} disabled={attachmentBusy} /></label>
+                  <small>1 à 8 pages, dans l’ordre affiché. Le PDF créé est limité à 10 Mo.</small>
+                  {photoFiles.length > 0 && <ol>{photoFiles.map((file, index) => <li key={`${file.name}-${index}`}>
+                    <span>Page {index + 1} · {file.name}</span>
+                    <button type="button" onClick={() => setPhotoFiles((current) => current.filter((_, position) => position !== index))} disabled={attachmentBusy}>Retirer</button>
+                  </li>)}</ol>}
+                </div>}
               </div>
 
               <div className="equipment-workspace__attachment-form-actions">
@@ -841,11 +910,13 @@ function EquipmentDocumentCenterContent({
                   Annuler
                 </button>
                 <button type="submit" disabled={attachmentBusy}>
-                  {attachmentBusy ? "Envoi en cours…" : "Envoyer le document"}
+                  {attachmentBusy ? "Préparation et envoi…" : attachmentMode === "photos" ? "Créer et envoyer le PDF privé" : "Envoyer le document privé"}
                 </button>
               </div>
             </form>
           )}
+
+          {attachmentNotice && <p className="equipment-workspace__attachment-notice" role="status">{attachmentNotice}</p>}
 
           {attachmentError && (
             <div className="equipment-workspace__attachment-error" role="alert">
@@ -876,10 +947,25 @@ function EquipmentDocumentCenterContent({
                     <div className="equipment-workspace__attachment-actions">
                       <button type="button" disabled={busy} onClick={() => handleAttachmentAction(attachment, "view")}>Voir</button>
                       <button type="button" disabled={busy} onClick={() => handleAttachmentAction(attachment, "download")}>Télécharger</button>
+                      {attachment.mimeType === "application/pdf" && ["other", "photo"].includes(attachment.documentKind) && (
+                        <button type="button" disabled={busy || submissionBusy} onClick={() => {
+                          setSubmissionFormId((current) => current === attachment.id ? "" : attachment.id);
+                          setSubmissionConsent(false);
+                        }}>{submissionFormId === attachment.id ? "Fermer la proposition" : "Proposer au catalogue"}</button>
+                      )}
                       {attachment.canDelete && (
                         <button type="button" className="is-danger" disabled={busy} onClick={() => handleAttachmentDelete(attachment)}>Supprimer</button>
                       )}
                     </div>
+                    {submissionFormId === attachment.id && <div className="equipment-workspace__catalog-submission">
+                      <p>Ce PDF restera privé dans le dossier client. Une copie sera envoyée à l’administration pour vérification avant toute diffusion.</p>
+                      <p>Modèle proposé : <strong>{equipment.brand} · {equipment.model} · {equipment.product_reference || "référence constructeur manquante"}</strong></p>
+                      {!equipment.product_reference && <p role="alert">Renseigne d’abord la référence exacte de l’équipement.</p>}
+                      <label><input type="checkbox" checked={submissionConsent} onChange={(event) => setSubmissionConsent(event.target.checked)} /> J’ai vérifié que le PDF ne contient pas de données privées du client et que sa diffusion aux professionnels est autorisée.</label>
+                      <button type="button" disabled={!submissionConsent || !equipment.product_reference || submissionBusy} onClick={() => handleSubmitToCatalog(attachment)}>
+                        {submissionBusy ? "Envoi à l’administration…" : "Envoyer pour validation"}
+                      </button>
+                    </div>}
                   </article>
                 );
               })}

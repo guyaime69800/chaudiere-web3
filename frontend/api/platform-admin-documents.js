@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { del, get, issueSignedToken } from "@vercel/blob";
 import { handleUploadPresigned } from "@vercel/blob/client";
 import platformCatalogDocuments from "../server/lib/platform-catalog-documents.js";
+import platformDocumentSubmissions from "../server/platform-document-submissions.js";
 import { platformDocumentEnvironment, platformDocumentPathname } from "../server/lib/platform-document-environment.js";
 import { indexPlatformDocument } from "../server/lib/platform-document-rag.js";
 import { loadPlatformPdf } from "../server/lib/verify-platform-pdf.js";
@@ -95,6 +96,7 @@ async function completeUpload({ blob, tokenPayload }) {
 
 export default async function handler(req, res) {
   if (req.query?.catalog_route === "1") return platformCatalogDocuments(req, res);
+  if (req.query?.submission_route === "1") return platformDocumentSubmissions(req, res);
   res.setHeader("Cache-Control", "no-store");
   const environment = platformDocumentEnvironment(process.env);
   if (environment.status) return fail(res, environment.status, "Fonction indisponible.");

@@ -59,6 +59,10 @@
       "destination": "/api/platform-admin-documents?catalog_route=1"
     },
     {
+      "source": "/api/platform-document-submissions",
+      "destination": "/api/platform-admin-documents?submission_route=1"
+    },
+    {
       "source": "/api/thermodynamic-documents",
       "destination": "/api/interventions?thermodynamic_route=1"
     },
