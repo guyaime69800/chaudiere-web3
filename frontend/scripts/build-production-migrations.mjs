@@ -13,6 +13,7 @@ const selected = names.filter((name) => !excluded.has(name));
 const productionOnly = new Set([
   "20261004194150_private_equipment_attachments.sql",
   "20261004211830_restrict_internal_triggers.sql",
+  "20261006000800_reminder_discovery_eligibility.sql",
 ]);
 
 if (selected.length !== 37) throw new Error(`Expected 37 migrations, found ${selected.length}`);

@@ -12,6 +12,7 @@ const steps = [
   "maintenance_reminder_audit",
   "maintenance_after_validation",
   "reminder_description",
+  "reminder_discovery_eligibility",
 ];
 
 const sections = [];
@@ -27,7 +28,7 @@ for (const [index, step] of steps.entries()) {
 
 const bundle = [
   "-- CarnetPass Paris 2 production reminders: apply once in the Supabase SQL Editor.",
-  "-- All seven steps run in one transaction. Do not re-run after success.",
+  "-- All eight steps run in one transaction. Do not re-run after success.",
   "begin;",
   ...sections,
   "commit;",

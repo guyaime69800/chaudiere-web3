@@ -22,12 +22,12 @@ Deux méthodes exclusives :
 
 - **Supabase SQL Editor** : ouvrir
   `supabase-production/maintenance-reminders-rollout.sql`, copier le fichier
-  complet, l'exécuter **une seule fois** dans le projet Production. Les sept
+  complet, l'exécuter **une seule fois** dans le projet Production. Les huit
   étapes forment une seule transaction. Si une erreur apparaît, ne pas
   continuer : noter le message et vérifier qu'aucune table du lot n'a été créée.
-- **Supabase CLI** : appliquer, dans l'ordre, les sept fichiers
+- **Supabase CLI** : appliquer, dans l'ordre, les huit fichiers
   `supabase-production/migrations/20261006000100_*.sql` à
-  `20261006000700_*.sql`, avec le suivi des migrations du projet. Ne pas ensuite
+  `20261006000800_*.sql`, avec le suivi des migrations du projet. Ne pas ensuite
   exécuter le script SQL Editor. Les fichiers source du pilote Preview sous
   `supabase/migrations/20261001_02` à `_08` ont le même contenu mais des noms
   de migration antérieurs au schéma Production ; ne pas les rejouer en Production.
@@ -36,6 +36,11 @@ Le lot crée les rappels professionnels, les tentatives d'envoi, l'audit, la
 confirmation de l'entretien et les déclencheurs. Il crée aussi les tables
 et fonctions des rappels particuliers, indispensables à la compilation du
 déclencheur, sans activer leur interface ni leurs envois.
+
+Si les sept premières étapes ont déjà été appliquées en Production avant le
+correctif de l'essai Découverte, exécuter **seulement**
+`supabase-production/migrations/20261006000800_reminder_discovery_eligibility.sql`.
+Ne pas rejouer le bundle dans cette situation.
 
 Exécuter ensuite `supabase-production/verify-maintenance-reminders.sql` dans
 le même projet. Les six tables doivent indiquer `table_exists = true` et
