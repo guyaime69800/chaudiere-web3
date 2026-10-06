@@ -10,6 +10,7 @@ export default function MaintenanceAdminPage() {
   const [message, setMessage] = useState(defaultMessage);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [accessUntil, setAccessUntil] = useState(null);
   useEffect(() => {
     if (!session?.access_token) return;
     fetch("/api/maintenance-control", { headers: { Authorization: `Bearer ${session.access_token}` } })
@@ -17,7 +18,7 @@ export default function MaintenanceAdminPage() {
         if (!response.ok) throw new Error(response.status === 403 ? "Accès réservé au fondateur CarnetPass." : "Contrôle indisponible.");
         return response.json();
       })
-      .then((result) => { setState(result.state); setMessage(result.state.message || defaultMessage); })
+      .then((result) => { setState(result.state); setMessage(result.state.message || defaultMessage); setAccessUntil(result.accessUntil); })
       .catch((cause) => setError(cause.message));
   }, [session?.access_token]);
 
@@ -37,6 +38,22 @@ export default function MaintenanceAdminPage() {
     finally { setBusy(false); }
   }
 
+  async function changeAccess(grant) {
+    setBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/maintenance-control", {
+        method: grant ? "POST" : "DELETE",
+        headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        ...(grant ? { body: JSON.stringify({ action: "grant-access" }) } : {}),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Accès de vérification indisponible.");
+      setAccessUntil(result.accessUntil || null);
+    } catch (cause) { setError(cause.message); }
+    finally { setBusy(false); }
+  }
+
   return <main style={{ maxWidth: 760, margin: "64px auto", padding: 24, fontFamily: "system-ui" }}>
     <Link to="/administration-interne">← Administration CarnetPass</Link>
     <h1>Maintenance du site et de la dApp</h1>
@@ -49,6 +66,13 @@ export default function MaintenanceAdminPage() {
         rows={4} style={{ display: "block", width: "100%", margin: "12px 0 20px", padding: 12 }} />
       <button type="button" disabled={busy || state.enabled} onClick={() => change(true)}>Activer la maintenance</button>{" "}
       <button type="button" disabled={busy || !state.enabled} onClick={() => change(false)}>Rouvrir le site</button>
+      {state.enabled && <section style={{ marginTop: 28, padding: 20, border: "1px solid #ead9ce", borderRadius: 12 }}>
+        <h2>Vérifier avant de rouvrir</h2>
+        <p>Un accès temporaire réservé à ce navigateur permet de parcourir la production pendant que les visiteurs voient la page de maintenance. Il expire après une heure. Vérifiez le résultat dans une fenêtre privée pour voir ce que voient les visiteurs.</p>
+        <button type="button" disabled={busy} onClick={() => changeAccess(true)}>Activer mon accès de vérification</button>{" "}
+        <button type="button" disabled={busy || !accessUntil} onClick={() => changeAccess(false)}>Retirer mon accès</button>
+        {accessUntil && <p role="status">Accès actif jusqu’à {new Date(accessUntil).toLocaleString("fr-FR")}. <Link to="/">Ouvrir CarnetPass</Link></p>}
+      </section>}
       {state.updatedAt && <p>Dernier changement : {new Date(state.updatedAt).toLocaleString("fr-FR")}</p>}
     </>}
   </main>;

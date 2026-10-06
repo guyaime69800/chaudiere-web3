@@ -17,7 +17,10 @@ Supabase et ne remplace pas une migration compatible avec les anciennes versions
 4. Ouvrir `/administration-maintenance`, vérifier « Site ouvert », activer pour un
    contrôle court, ouvrir `/` et `/api/billing` dans une autre session, puis rouvrir.
 5. Pour un déploiement nécessitant une interruption, activer la maintenance juste avant
-   l'opération et rouvrir après vérification. Les déploiements Vercel ordinaires sont
+   l'opération, utiliser « Activer mon accès de vérification » pour contrôler le site
+   en Production depuis le navigateur fondateur, vérifier en fenêtre privée que les
+   visiteurs voient toujours la maintenance, puis rouvrir après vérification. Cet accès
+   expire après une heure et peut être retiré depuis le même écran. Les déploiements Vercel ordinaires sont
    atomiques et ne nécessitent généralement pas d'interruption.
 
 L'état est stocké dans Upstash Redis à la clé `carnetpass:production:maintenance:v1`.

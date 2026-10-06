@@ -1,4 +1,6 @@
 export const MAINTENANCE_KEY = "carnetpass:production:maintenance:v1";
+export const MAINTENANCE_ACCESS_PREFIX = "carnetpass:production:maintenance-access:v1:";
+export const MAINTENANCE_ACCESS_COOKIE = "carnetpass_maintenance_access";
 
 export function maintenanceAllowedPath(pathname) {
   return pathname === "/administration-maintenance"

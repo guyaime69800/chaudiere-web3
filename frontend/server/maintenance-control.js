@@ -1,8 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { Redis } from "@upstash/redis";
-import { MAINTENANCE_KEY } from "./lib/maintenance-state.js";
+import { createHash, randomBytes } from "node:crypto";
+import { MAINTENANCE_KEY, MAINTENANCE_ACCESS_PREFIX, MAINTENANCE_ACCESS_COOKIE } from "./lib/maintenance-state.js";
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
+const accessKey = (token) => `${MAINTENANCE_ACCESS_PREFIX}${createHash("sha256").update(token).digest("hex")}`;
+const accessCookie = (token, maxAge) => `${MAINTENANCE_ACCESS_COOKIE}=${token}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Lax`;
 
 async function readBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
@@ -19,7 +22,7 @@ async function readBody(req) {
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (process.env.VERCEL_ENV !== "production") return res.status(404).json({ ok: false });
-  if (!["GET", "POST"].includes(req.method)) return res.status(405).json({ ok: false });
+  if (!["GET", "POST", "DELETE"].includes(req.method)) return res.status(405).json({ ok: false });
   const url = process.env.VITE_SUPABASE_URL;
   const publicKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   const secretKey = process.env.SUPABASE_SECRET_KEY;
@@ -40,13 +43,28 @@ export default async function handler(req, res) {
   if (operator?.role !== "founder") return res.status(403).json({ ok: false });
   const redis = new Redis({ url: redisUrl, token: redisToken });
   try {
+    if (req.method === "DELETE") {
+      const token = /(?:^|;\s*)carnetpass_maintenance_access=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie || "")?.[1];
+      if (token) await redis.del(accessKey(token));
+      res.setHeader("Set-Cookie", accessCookie("", 0));
+      return res.status(200).json({ ok: true });
+    }
     if (req.method === "GET") {
       const state = await redis.get(MAINTENANCE_KEY);
-      return res.status(200).json({ ok: true, state: state || { enabled: false } });
+      const token = /(?:^|;\s*)carnetpass_maintenance_access=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie || "")?.[1];
+      const access = token ? await redis.get(accessKey(token)) : null;
+      return res.status(200).json({ ok: true, state: state || { enabled: false }, accessUntil: access?.expiresAt || null });
     }
     let body;
     try { body = await readBody(req); }
     catch { return res.status(400).json({ ok: false, error: "Requête invalide." }); }
+    if (body.action === "grant-access") {
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      await redis.set(accessKey(token), { founderId: user.id, expiresAt }, { ex: 3600 });
+      res.setHeader("Set-Cookie", accessCookie(token, 3600));
+      return res.status(200).json({ ok: true, accessUntil: expiresAt });
+    }
     if (typeof body.enabled !== "boolean" || typeof body.message !== "string"
       || body.message.length > 300 || /[\u0000-\u001f\u007f]/.test(body.message)) {
       return res.status(400).json({ ok: false, error: "Paramètres invalides." });
