@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../services/supabaseClient";
 import { parseReminderDate } from "../lib/reminder-date.js";
+import { reminderNotificationDate } from "../lib/reminder-notification-date.js";
 import { REMINDER_TYPE_LABELS, reminderAction, suggestedReminderDescription, suggestedReminderType } from "../lib/reminder-description.js";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import "./MaintenanceReminders.css";
@@ -193,7 +194,7 @@ export default function MaintenanceReminders({ equipment, session, interventions
       if (saveError) throw saveError;
       await reload();
       setMessage(proposal.kind === "cancel" ? "Rappel annulé et confirmé par la base."
-        : `Rappel ${proposal.editing ? "modifié" : "enregistré"} pour le ${readableDate(proposal.dueOn)}. Aucun e-mail n’a encore été envoyé.`);
+        : `Rappel ${proposal.editing ? "modifié" : "enregistré"} pour le ${readableDate(proposal.dueOn)}. Aucun e-mail immédiat ; envoi prévu le ${readableDate(reminderNotificationDate(proposal.dueOn, proposal.leadDays))} si l’accès est encore actif.`);
       setProposal(null);
       setEditing(null);
       setForm(emptyForm());
@@ -290,7 +291,7 @@ export default function MaintenanceReminders({ equipment, session, interventions
           </select>
         </label>}
         {proposal.kind !== "cancel" && <small>Seuls les rappels « Entretien » sont mis à réévaluer après un entretien validé.</small>}
-        <p>{proposal.kind === "cancel" ? "Une notification déjà envoyée ne peut pas être rappelée." : "Origine : date choisie par vous. Aucun message n’est envoyé maintenant."}</p>
+        <p>{proposal.kind === "cancel" ? "Une notification déjà envoyée ne peut pas être rappelée." : `Origine : date choisie par vous. Aucun message n’est envoyé maintenant. E-mail prévu le ${readableDate(reminderNotificationDate(proposal.dueOn, proposal.leadDays))} si la formule ou l’essai est encore actif.`}</p>
         <button className="pro-primary-button" type="button" disabled={busy || (proposal.kind !== "cancel" && (!proposal.description?.trim() || !REMINDER_TYPE_LABELS[proposal.reminderType]))} onClick={confirm}>{busy ? "Enregistrement…" : "Confirmer"}</button>
         <button type="button" disabled={busy} onClick={() => setProposal(null)}>Annuler</button>
       </div>}
@@ -298,7 +299,7 @@ export default function MaintenanceReminders({ equipment, session, interventions
         {active.map((reminder) => <li key={reminder.id} id={`reminder-${reminder.id}`} tabIndex={-1} className={focusReminderRequest?.reminderId === reminder.id ? "maintenance-reminders__focused" : ""}>
           <div><strong>{reminder.description || "Entretien"}</strong> · {readableDate(reminder.due_on)} · {sourceLabel(reminder.due_source)}<br />
             Type : {REMINDER_TYPE_LABELS[reminder.reminder_type] || "Entretien"}<br />
-            Destinataire : {reminder.recipient_email} · E-mail prévu {reminder.lead_days} jour(s) avant<br />
+            Destinataire : {reminder.recipient_email} · E-mail prévu le {readableDate(reminderNotificationDate(reminder.due_on, reminder.lead_days))}, si l’accès est encore actif<br />
             État : {reminder.status === "review_required" ? "à réévaluer après un entretien validé ; aucun nouvel envoi" : reminder.notification_state === "accepted" ? "accepté par le service e-mail" : reminder.notification_state === "failed" ? "échec d’envoi" : "prévu, non envoyé"}
           </div>
           <div className="maintenance-reminders__actions">
