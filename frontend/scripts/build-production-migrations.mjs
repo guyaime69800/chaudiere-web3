@@ -8,7 +8,6 @@ const destination = path.join(frontend, "supabase-production", "migrations");
 const names = (await readdir(source)).filter((name) => name.endsWith(".sql")).sort();
 const excluded = new Set([
   "20260928_01_stripe_test_billing.sql",
-  ...names.filter((name) => /^20261001_0[2-8]_/.test(name)),
 ]);
 const selected = names.filter((name) => !excluded.has(name));
 const productionOnly = new Set([
@@ -16,12 +15,20 @@ const productionOnly = new Set([
   "20261004211830_restrict_internal_triggers.sql",
 ]);
 
-if (selected.length !== 30) throw new Error(`Expected 30 migrations, found ${selected.length}`);
+if (selected.length !== 37) throw new Error(`Expected 37 migrations, found ${selected.length}`);
 await mkdir(destination, { recursive: true });
-const expected = selected.map((name) => {
+function productionName(name) {
   const match = /^(\d{8})_(\d{2})_(.+\.sql)$/.exec(name);
   if (!match) throw new Error(`Unexpected migration name: ${name}`);
+  // The reminder pilot is added after the existing Paris 2 production schema.
+  // Keep its seven dependent steps in order without inserting old timestamps.
+  if (match[1] === "20261001" && Number(match[2]) >= 2 && Number(match[2]) <= 8) {
+    return `20261006000${Number(match[2]) - 1}00_${match[3]}`;
+  }
   return `${match[1]}00${match[2]}00_${match[3]}`;
+}
+const expected = selected.map((name) => {
+  return productionName(name);
 });
 const existing = await readdir(destination);
 if (existing.some((name) => !expected.includes(name) && !productionOnly.has(name))) {
@@ -51,7 +58,7 @@ commit;
 `;
   }
   if (sql.includes("stripe_test_subscriptions")) throw new Error(`Stripe test dependency remains in ${name}`);
-  const output = `${match[1]}00${match[2]}00_${match[3]}`;
+  const output = productionName(name);
   await writeFile(path.join(destination, output), sql);
 }
 

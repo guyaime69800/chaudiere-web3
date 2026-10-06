@@ -62,7 +62,7 @@ export default function MaintenanceReminders({ equipment, session, interventions
       .eq("equipment_id", equipment.id).order("created_at", { ascending: false })
       .then(({ data, error: loadError }) => {
         if (!active) return;
-        if (loadError) setError("Les rappels sont indisponibles. La migration de la base de test est peut-être encore à appliquer.");
+        if (loadError) setError("Les rappels sont indisponibles pour le moment. Réessayez ou contactez l’assistance.");
         else setReminders(data || []);
         setLoading(false);
       });
