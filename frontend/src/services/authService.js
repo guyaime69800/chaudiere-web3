@@ -25,6 +25,21 @@ export async function signUp({ fullName, email, phone, password, discoverySource
   return data;
 }
 
+export async function updateProfessionalPhone(phone) {
+  const normalizedPhone = String(phone || "").replace(/[\s().-]/g, "");
+  if (!/^\+?[0-9]{10,15}$/.test(normalizedPhone)) {
+    throw new Error("Indiquez un numéro de téléphone professionnel valide (10 à 15 chiffres).");
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    data: { professional_phone: normalizedPhone },
+  });
+
+  if (error) {
+    throw new Error("Impossible d’enregistrer le téléphone du compte. Reconnectez-vous puis réessayez.");
+  }
+}
+
 export async function signIn({ email, password }) {
   const { data, error } = await supabase.auth.signInWithPassword({
     email: email.trim().toLowerCase(),

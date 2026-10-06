@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { signOut } from "../services/authService";
+import { signOut, updateProfessionalPhone } from "../services/authService";
 import { activeStripeTestPlan, getStripeTestSubscription } from "../services/stripeTestSubscription";
 import {
   createCompany,
@@ -1303,6 +1303,11 @@ export default function ProSpacePage() {
       return;
     }
 
+    if (!form.phone.trim()) {
+      setFormError("Indiquez votre téléphone professionnel pour créer l’entreprise.");
+      return;
+    }
+
     const siretDigits = form.siret.replace(/\D/g, "");
 
     if (form.siret.trim() && siretDigits.length !== 14) {
@@ -1313,6 +1318,7 @@ export default function ProSpacePage() {
     setSubmitting(true);
 
     try {
+      await updateProfessionalPhone(form.phone);
       await createCompany(form);
       setForm(EMPTY_FORM);
       setLoading(true);
@@ -1737,7 +1743,7 @@ export default function ProSpacePage() {
                 </label>
 
                 <label>
-                  <span>Téléphone professionnel</span>
+                  <span>Téléphone professionnel *</span>
                   <input
                     type="tel"
                     name="phone"
@@ -1745,6 +1751,7 @@ export default function ProSpacePage() {
                     onChange={handleChange}
                     placeholder="06 12 34 56 78"
                     autoComplete="tel"
+                    required
                   />
                 </label>
               </div>

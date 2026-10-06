@@ -232,7 +232,7 @@ export default function AuthPage({ mode = "connexion" }) {
             {isSignUp && (
               <>
                 <label className="auth-field">
-                  <span>Comment avez-vous connu CarnetPass ?</span>
+                  <span>Comment avez-vous connu CarnetPass ? *</span>
                   <select name="discoverySource" value={form.discoverySource} onChange={updateField} required>
                     <option value="">Choisissez une r&#233;ponse</option>
                     <option value="search">Recherche sur Internet</option>
