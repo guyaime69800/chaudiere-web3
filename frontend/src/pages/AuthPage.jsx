@@ -9,6 +9,7 @@ const initialForm = {
   email: "",
   phone: "",
   discoverySource: "",
+  discoverySourceOther: "",
   password: "",
   confirmation: "",
 };
@@ -18,6 +19,10 @@ function getFriendlyError(error) {
 
   if (message === "Invalid phone number") {
     return "Indiquez un numéro de téléphone valide (10 à 15 chiffres).";
+  }
+
+  if (message.includes("Précisez comment vous avez connu")) {
+    return "Précisez comment vous avez connu CarnetPass.";
   }
 
   if (message.includes("Invalid login credentials")) {
@@ -93,6 +98,7 @@ export default function AuthPage({ mode = "connexion" }) {
           email: form.email,
           phone: form.phone,
           discoverySource: form.discoverySource,
+          discoverySourceOther: form.discoverySourceOther,
           password: form.password,
         });
 
@@ -243,6 +249,20 @@ export default function AuthPage({ mode = "connexion" }) {
                     <option value="other">Autre</option>
                   </select>
                 </label>
+                {form.discoverySource === "other" && (
+                  <label className="auth-field">
+                    <span>Précisez comment vous avez connu CarnetPass *</span>
+                    <input
+                      type="text"
+                      name="discoverySourceOther"
+                      value={form.discoverySourceOther}
+                      onChange={updateField}
+                      maxLength={160}
+                      required
+                      placeholder="Ex. recherche dans un annuaire professionnel"
+                    />
+                  </label>
+                )}
               </>
             )}
 

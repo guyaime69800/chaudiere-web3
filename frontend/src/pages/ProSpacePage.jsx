@@ -974,6 +974,7 @@ function CompanyAccountCard({
 export default function ProSpacePage() {
   const { user, session } = useAuth();
   const userId = user?.id;
+  const signupPhone = user?.user_metadata?.professional_phone;
 
   const [company, setCompany] = useState(null);
   const [testSubscription, setTestSubscription] = useState(null);
@@ -983,7 +984,10 @@ export default function ProSpacePage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [loadError, setLoadError] = useState("");
   const [formError, setFormError] = useState("");
-  const [form, setForm] = useState(EMPTY_FORM);
+  const [form, setForm] = useState(() => ({
+    ...EMPTY_FORM,
+    phone: typeof signupPhone === "string" ? signupPhone : "",
+  }));
   const [submitting, setSubmitting] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [equipments, setEquipments] = useState([]);
@@ -1015,6 +1019,7 @@ export default function ProSpacePage() {
   const [carnetPassPreview, setCarnetPassPreview] = useState(null);
   const [createdCarnetPass, setCreatedCarnetPass] = useState(null);
   const [publicContactOptions, setPublicContactOptions] = useState({ phone: false, email: false, website: false, websiteUrl: "" });
+
   const selectedPublicContacts = () => ({
     phone: publicContactOptions.phone ? company?.phone || "" : null,
     email: publicContactOptions.email ? company?.email || "" : null,

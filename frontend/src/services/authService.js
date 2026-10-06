@@ -1,19 +1,26 @@
 import { supabase } from "./supabaseClient";
 
-export async function signUp({ fullName, email, phone, password, discoverySource }) {
+export async function signUp({ fullName, email, phone, password, discoverySource, discoverySourceOther }) {
   const normalizedPhone = phone.replace(/[\s().-]/g, "");
   if (!/^\+?[0-9]{10,15}$/.test(normalizedPhone)) {
     throw new Error("Invalid phone number");
   }
+  if (discoverySource === "other" && !discoverySourceOther?.trim()) {
+    throw new Error("Précisez comment vous avez connu CarnetPass.");
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email: email.trim().toLowerCase(),
     password,
     options: {
-      emailRedirectTo: new URL("/connexion", window.location.origin).href,
+      emailRedirectTo: new URL("/espace-pro", window.location.origin).href,
       data: {
         full_name: fullName.trim(),
         professional_phone: normalizedPhone,
         discovery_source: discoverySource,
+        ...(discoverySource === "other" && discoverySourceOther?.trim()
+          ? { discovery_source_details: discoverySourceOther.trim().slice(0, 160) }
+          : {}),
       },
     },
   });
