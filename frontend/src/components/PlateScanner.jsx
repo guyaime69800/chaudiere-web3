@@ -146,6 +146,7 @@ export default function PlateScanner({ onConfirm, disabled = false, initialOpen 
           {error && <p role="alert">{error}</p>}
           {analysis && (
             <>
+              {analysis.founderTest && <p role="status">Test fondateur : scan autorisé pour votre entreprise sans validation du SIRET. L’équipement enregistré reste une donnée réelle de production.</p>}
               <p>
                 Lecture incertaine à contrôler. Les valeurs absentes restent
                 vides ; aucune année n’est déduite du numéro de série.

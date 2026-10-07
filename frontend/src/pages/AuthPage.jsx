@@ -56,6 +56,13 @@ async function isPlatformAdmin(accessToken) {
   }
 }
 
+async function renewFounderAccess(accessToken) {
+  if (!accessToken) return;
+  try {
+    await fetch("/api/maintenance-control", { method: "POST", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ action: "grant-durable-access" }), signal: AbortSignal.timeout(5000) });
+  } catch { /* The maintenance control page remains available for retry. */ }
+}
+
 export default function AuthPage({ mode = "connexion" }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -108,6 +115,7 @@ export default function AuthPage({ mode = "connexion" }) {
         });
 
         if (data.session) {
+          await renewFounderAccess(data.session.access_token);
           const admin = !adminRequested && !scanRequested && await isPlatformAdmin(data.session.access_token);
           navigate(adminRequested || scanRequested ? destination : admin ? "/administration-interne" : destination);
           return;
@@ -123,6 +131,7 @@ export default function AuthPage({ mode = "connexion" }) {
           email: form.email,
           password: form.password,
         });
+        await renewFounderAccess(data.session?.access_token);
         const admin = !adminRequested && !scanRequested && await isPlatformAdmin(data.session?.access_token);
         navigate(adminRequested || scanRequested ? destination : admin ? "/administration-interne" : destination);
       }

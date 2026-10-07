@@ -61,6 +61,11 @@ export async function signIn({ email, password }) {
 }
 
 export async function signOut() {
+  const { data } = await supabase.auth.getSession();
+  if (data.session?.access_token) {
+    try { await fetch("/api/maintenance-control", { method: "DELETE", headers: { Authorization: `Bearer ${data.session.access_token}` } }); }
+    catch { /* Sign-out remains available if the maintenance service is down. */ }
+  }
   const { error } = await supabase.auth.signOut();
 
   if (error) {

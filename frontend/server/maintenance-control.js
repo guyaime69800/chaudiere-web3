@@ -58,11 +58,15 @@ export default async function handler(req, res) {
     let body;
     try { body = await readBody(req); }
     catch { return res.status(400).json({ ok: false, error: "Requête invalide." }); }
-    if (body.action === "grant-access") {
+    if (["grant-access", "grant-durable-access"].includes(body.action)) {
+      const durable = body.action === "grant-durable-access";
+      const lifetime = durable ? 30 * 24 * 3600 : 3600;
+      const previousToken = /(?:^|;\s*)carnetpass_maintenance_access=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie || "")?.[1];
+      if (previousToken) await redis.del(accessKey(previousToken));
       const token = randomBytes(32).toString("hex");
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-      await redis.set(accessKey(token), { founderId: user.id, expiresAt }, { ex: 3600 });
-      res.setHeader("Set-Cookie", accessCookie(token, 3600));
+      const expiresAt = new Date(Date.now() + lifetime * 1000).toISOString();
+      await redis.set(accessKey(token), { founderId: user.id, expiresAt, durable }, { ex: lifetime });
+      res.setHeader("Set-Cookie", accessCookie(token, lifetime));
       return res.status(200).json({ ok: true, accessUntil: expiresAt });
     }
     if (typeof body.enabled !== "boolean" || typeof body.message !== "string"

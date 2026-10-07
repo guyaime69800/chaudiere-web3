@@ -33,7 +33,19 @@ export default async function middleware(request) {
       if (response.ok) {
         const payload = await response.json();
         const access = typeof payload.result === "string" ? JSON.parse(payload.result) : payload.result;
-        if (access?.founderId && Date.parse(access.expiresAt) > Date.now()) return next();
+        if (access?.founderId && Date.parse(access.expiresAt) > Date.now()) {
+          if (!access.durable) return next();
+          // Durable founder passes are revoked when the server role is removed.
+          if (/^[a-f0-9-]{36}$/i.test(access.founderId) && process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SECRET_KEY) {
+            const roleResponse = await fetch(`${process.env.VITE_SUPABASE_URL}/rest/v1/platform_admins?user_id=eq.${encodeURIComponent(access.founderId)}&select=role`, {
+              headers: { apikey: process.env.SUPABASE_SECRET_KEY }, signal: AbortSignal.timeout(2000),
+            });
+            if (roleResponse.ok) {
+              const roles = await roleResponse.json();
+              if (roles.length === 1 && roles[0].role === "founder") return next();
+            }
+          }
+        }
       }
     } catch { /* An invalid access pass never bypasses maintenance. */ }
   }

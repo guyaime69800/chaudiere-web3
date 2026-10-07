@@ -45,7 +45,7 @@ export default function MaintenanceAdminPage() {
       const response = await fetch("/api/maintenance-control", {
         method: grant ? "POST" : "DELETE",
         headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
-        ...(grant ? { body: JSON.stringify({ action: "grant-access" }) } : {}),
+        ...(grant ? { body: JSON.stringify({ action: "grant-durable-access" }) } : {}),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Accès de vérification indisponible.");
@@ -68,7 +68,7 @@ export default function MaintenanceAdminPage() {
       <button type="button" disabled={busy || !state.enabled} onClick={() => change(false)}>Rouvrir le site</button>
       {state.enabled && <section style={{ marginTop: 28, padding: 20, border: "1px solid #ead9ce", borderRadius: 12 }}>
         <h2>Vérifier avant de rouvrir</h2>
-        <p>Un accès temporaire réservé à ce navigateur permet de parcourir la production pendant que les visiteurs voient la page de maintenance. Il expire après une heure. Vérifiez le résultat dans une fenêtre privée pour voir ce que voient les visiteurs.</p>
+        <p>L’accès fondateur est réservé à ce navigateur pendant 30 jours et renouvelé lors des connexions. Il est retiré à la déconnexion et reste contrôlé côté serveur. Les visiteurs continuent de voir la maintenance. Vérifiez leur affichage dans une fenêtre privée.</p>
         <button type="button" disabled={busy} onClick={() => changeAccess(true)}>Activer mon accès de vérification</button>{" "}
         <button type="button" disabled={busy || !accessUntil} onClick={() => changeAccess(false)}>Retirer mon accès</button>
         {accessUntil && <p role="status">Accès actif jusqu’à {new Date(accessUntil).toLocaleString("fr-FR")}. <Link to="/">Ouvrir CarnetPass</Link></p>}

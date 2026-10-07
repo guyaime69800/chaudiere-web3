@@ -133,7 +133,7 @@ export function createPlateHandler(deps = {}) {
     res.setHeader("Allow", "POST");
     try {
       if (req.method !== "POST") throw fail(405, "Méthode non autorisée.");
-      const context = await company(req, { verified: true });
+      const context = await company(req, { verified: true, founderTest: true });
       await rate(req, "plate", context.user.id, 30);
       const body = await readDevisBody(req, 3000000);
       const redis = redisClient();
@@ -160,12 +160,13 @@ export function createPlateHandler(deps = {}) {
             companyId: context.company.id,
             analysis: output,
             imageHash: image.hash,
+            founderTest: context.testAccess === true,
           },
           { ex: 7200 },
         );
         return res
           .status(200)
-          .json({ ok: true, ticket, ...output, candidates });
+          .json({ ok: true, ticket, ...output, candidates, founderTest: context.testAccess === true });
       }
       if (body.action === "confirm") {
         const stored = await redis.get(
@@ -214,7 +215,7 @@ export function createPlateHandler(deps = {}) {
               equipment_id: equipment.id,
               company_id: context.company.id,
               confirmed_by: context.user.id,
-              fields,
+              fields: { ...fields, ...(stored.founderTest ? { testContext: { founderTest: true } } : {}) },
               image_sha256: stored.imageHash,
             }),
         );

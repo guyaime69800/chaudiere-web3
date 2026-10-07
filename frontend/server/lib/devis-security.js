@@ -111,7 +111,7 @@ export async function devisOperator(req) {
 }
 export async function devisCompany(
   req,
-  { verified = false, manager = false } = {},
+  { verified = false, manager = false, founderTest = false } = {},
 ) {
   const context = await devisIdentity(req);
   const { data: members, error } = await context.db
@@ -139,9 +139,18 @@ export async function devisCompany(
   const verification = Array.isArray(company.company_verifications)
     ? company.company_verifications[0]
     : company.company_verifications;
+  let testAccess = false;
+  if (verified && founderTest && verification?.status !== "suspended" && verification?.status !== "rejected") {
+    const environment = platformAdminEnvironment(process.env);
+    if (!environment.status) {
+      const { data: operator, error: adminError } = await context.db.from("platform_admins").select("role").eq("user_id", context.user.id).maybeSingle();
+      if (adminError) throw fail(503, "Contrôle de l’accès de test indisponible.");
+      testAccess = operator?.role === "founder";
+    }
+  }
   if (
     ["suspended", "rejected"].includes(verification?.status) ||
-    (verified &&
+    (verified && !testAccess &&
       (verification?.status !== "approved" ||
         !verification.verified_at ||
         !/^\d{14}$/.test(company.siret || "") ||
@@ -151,7 +160,7 @@ export async function devisCompany(
       403,
       "Une entreprise vérifiée et non suspendue est nécessaire pour analyser une plaque.",
     );
-  return { ...context, company, member: members[0] };
+  return { ...context, company, member: members[0], testAccess };
 }
 export async function checked(
   query,
