@@ -60,8 +60,9 @@ export default function AuthPage({ mode = "connexion" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const requested = location.state?.from?.pathname;
+  const scanRequested = requested === "/espace-pro" && location.state?.from?.search === "?action=scan-plaque";
   const destination = ["/administration-interne", "/administration-maintenance"].includes(requested)
-    ? requested : "/espace-pro";
+    ? requested : scanRequested ? "/espace-pro?action=scan-plaque" : "/espace-pro";
   const isSignUp = mode === "inscription";
 
   const [form, setForm] = useState(initialForm);
@@ -105,7 +106,7 @@ export default function AuthPage({ mode = "connexion" }) {
 
         if (data.session) {
           const admin = await isPlatformAdmin(data.session.access_token);
-          navigate(admin ? "/administration-interne" : destination);
+          navigate(scanRequested ? destination : admin ? "/administration-interne" : destination);
           return;
         }
 
@@ -120,7 +121,7 @@ export default function AuthPage({ mode = "connexion" }) {
           password: form.password,
         });
         const admin = await isPlatformAdmin(data.session?.access_token);
-        navigate(destination === "/administration-maintenance" ? destination : admin ? "/administration-interne" : destination);
+        navigate(scanRequested || destination === "/administration-maintenance" ? destination : admin ? "/administration-interne" : destination);
       }
     } catch (error) {
       setErrorMessage(getFriendlyError(error));
@@ -327,7 +328,7 @@ export default function AuthPage({ mode = "connexion" }) {
           )}
           <p className="auth-switch">
             {isSignUp ? "Vous avez déjà un compte ?" : "Nouveau sur CarnetPass ?"}{" "}
-            <Link to={isSignUp ? "/connexion" : "/inscription"}>
+            <Link to={isSignUp ? "/connexion" : "/inscription"} state={location.state}>
               {isSignUp ? "Se connecter" : "Créer un compte"}
             </Link>
           </p>

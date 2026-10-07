@@ -18,7 +18,7 @@ const typeLabels = {
   rooftop: "Rooftop",
   other: "Autre",
 };
-export default function PlateScanner({ onConfirm, disabled = false }) {
+export default function PlateScanner({ onConfirm, disabled = false, initialOpen = false }) {
   const [photo, setPhoto] = useState(null),
     [analysis, setAnalysis] = useState(null),
     [values, setValues] = useState({}),
@@ -26,7 +26,7 @@ export default function PlateScanner({ onConfirm, disabled = false }) {
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [retain, setRetain] = useState(false),
-    [open, setOpen] = useState(false);
+    [open, setOpen] = useState(initialOpen);
   const fileRef = useRef(null);
   async function choose(event) {
     const file = event.target.files?.[0];

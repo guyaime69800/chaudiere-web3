@@ -138,7 +138,7 @@ export default function AccountSettingsPage() {
         </section>
         <section className="account-settings-card" id="formule">
           <h2>Formule et essai</h2>
-          {!company ? <p>Aucune entreprise associée.</p> : <>
+          {!company ? <><p>Aucune entreprise associée.</p><Link className="account-settings-plan-link" to="/espace-pro?configuration=entreprise">Renseigner mon entreprise →</Link></> : <>
             <p>Entreprise : <strong>{company.name}</strong></p>
             <p>Formule : <strong>{subscription?.plan === "free" ? "Découverte gratuite" : subscription?.plan === "team" ? "Équipe" : subscription?.plan === "pro" ? "Pro" : subscription?.plan || "Non disponible"}</strong></p>
             <p>État : <strong>{subscription?.status === "canceled" ? "arrêté" : discovery?.active ? "essai actif" : subscription?.status || "terminé"}</strong></p>

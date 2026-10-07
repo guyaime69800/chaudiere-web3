@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { signOut, updateProfessionalPhone } from "../services/authService";
 import { activeStripeTestPlan, getStripeTestSubscription } from "../services/stripeTestSubscription";
@@ -981,6 +981,8 @@ function CompanyAccountCard({
   );
 }
 export default function ProSpacePage() {
+  const [routeParams] = useSearchParams();
+  const scanRequested = routeParams.get("action") === "scan-plaque";
   const { user, session } = useAuth();
   const userId = user?.id;
   const signupPhone = user?.user_metadata?.professional_phone;
@@ -1003,8 +1005,13 @@ export default function ProSpacePage() {
   const [plateConfirmation,setPlateConfirmation] = useState(null);
   const [equipmentLoading, setEquipmentLoading] = useState(false);
   const [equipmentLoadError, setEquipmentLoadError] = useState("");
-  const [equipmentFormOpen, setEquipmentFormOpen] = useState(false);
+  const [equipmentFormOpen, setEquipmentFormOpen] = useState(() => scanRequested);
   const equipmentFormRef = useRef(null);
+  useEffect(() => {
+    if (!scanRequested || loading || !company) return;
+    const frame = window.requestAnimationFrame(() => equipmentFormRef.current?.scrollIntoView({ block: "start" }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [scanRequested, loading, company]);
   const [equipmentForm, setEquipmentForm] = useState(EMPTY_EQUIPMENT_FORM);
   const [equipmentError, setEquipmentError] = useState("");
   const [equipmentMessage, setEquipmentMessage] = useState("");
@@ -1648,6 +1655,16 @@ export default function ProSpacePage() {
     );
   }
 
+  if (!company && routeParams.get("configuration") !== "entreprise") {
+    return <main className="pro-space pro-space--center"><section className="pro-empty-state">
+      <h1>Votre espace professionnel</h1>
+      <p>Vous êtes connecté avec {user?.email}. Aucune entreprise n’est associée à ce compte.</p>
+      <p>Si vous avez déjà créé une entreprise, connectez-vous avec le compte utilisé pour sa création. Pour un nouveau compte, renseignez votre entreprise depuis les paramètres avant d’ajouter un équipement.</p>
+      <Link className="pro-primary-button" to="/parametres-compte">Ouvrir les paramètres du compte</Link>
+      <button className="pro-action-card-button" type="button" onClick={handleSignOut} disabled={signingOut}>Changer de compte</button>
+    </section></main>;
+  }
+
   if (!company) {
     return (
       <main className="pro-space">
@@ -2103,7 +2120,7 @@ export default function ProSpacePage() {
               onSubmit={handleEquipmentSubmit}
               aria-busy={equipmentSubmitting}
             >
-              <PlateScanner disabled={equipmentSubmitting} onConfirm={scan=>{
+              <PlateScanner initialOpen={scanRequested} disabled={equipmentSubmitting} onConfirm={scan=>{
                 setPlateConfirmation(scan);
                 setEquipmentForm(form=>({...form,brand:scan.fields.brand||'',model:scan.fields.model||'',productReference:scan.fields.productReference||'',serialNumber:scan.fields.serialNumber||'',equipmentType:['boiler','heat_pump','air_conditioning','vmc','rooftop','other'].includes(scan.fields.equipmentType)?scan.fields.equipmentType:'other'}));
                 setEquipmentMessage('Lecture confirmée et fiche préremplie. Vérifiez puis enregistrez l’équipement.');
