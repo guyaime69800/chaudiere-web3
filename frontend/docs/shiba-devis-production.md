@@ -53,3 +53,11 @@ npm test, build Vite, ESLint ciblé, scripts/verify-shiba-devis-sql.mjs (Postgre
 Livraison : Preview → API réelles → migration additive Production → version Production préparée → vérification → domaine. Maintenance conservée à chaque étape, contrôler réponse visiteur 503 et accès administrateur.
 
 Rollback applicatif par Vercel vers le déploiement précédent. Conserver migration additive et snapshots ; ne pas supprimer les tables. Désactiver veille/scan par variables si nécessaire. Ne jamais rouvrir automatiquement.
+
+## Livraison Production du 07/10/2026
+
+Version fonctionnelle 15c9834 publiée sur main ; déploiement Production READY associé à www.carnetpass.fr et carnetpass.fr. Migration additive appliquée sur Paris 2 et inscrite comme 20261007111436 dans l’historique existant. Permissions réelles confirmées : RLS forcée, aucun SELECT anon/authenticated, SELECT service_role. Conseiller Supabase : aucune erreur critique.
+
+137 tests réussis. Build et ESLint ciblé réussis. Questionnaire et scan contrôlés dans Chrome isolé sur ordinateur/mobile avec fixtures ; calcul public contrôlé sur une API Preview réelle. Vérification du domaine Production : visiteurs et API publiques renvoient 503 ; administration-maintenance et administration-aides renvoient 200 ; API admin non connectée 401 ; tentative de route contradictoire 400. Nouveau bundle présent. Aucune erreur serveur observée dans le contrôle initial du déploiement.
+
+La vérification Auth Preview supplémentaire n’a pas été autorisée : aucun compte client utilisé/créé. Le parcours complet connecté et la lecture IA de plaques réelles restent à confirmer par l’administrateur avec son accès de vérification. Aucun barème publié. SHIBA_DEVIS_WATCH_ENABLED=true ajouté en Production ; cette mise à jour documentaire déclenche le build qui prend en compte la nouvelle variable. Maintenance conservée, aucune réouverture effectuée. Stripe Production reste l’étape suivante, pas une fonction activée par cette livraison.
