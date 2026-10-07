@@ -14,6 +14,7 @@ import aidAdminHandler from '../server/aid-admin.js';
 import companyRgeHandler from '../server/company-rge.js';
 import plateScanHandler from '../server/plate-scan.js';
 import { runInternalMonitoring } from "../server/system-health.js";
+import { ambiguousApiRoute } from '../server/lib/api-route-flags.js';
 
 export const config = { api: { bodyParser: false } };
 
@@ -105,6 +106,7 @@ async function saveVerificationResult(
 }
 
 export default async function handler(req, res) {
+  if (ambiguousApiRoute(req.query)) return sendError(res, 400, 'AMBIGUOUS_ROUTE', 'Route invalide.');
   if (req.query?.shiba_devis_route === '1') return devisHandler(req,res);
   if (req.query?.aid_admin_route === '1') return aidAdminHandler(req,res);
   if (req.query?.company_rge_route === '1') return companyRgeHandler(req,res);
