@@ -12,6 +12,7 @@ export const EQUIPMENT_TYPES = [
   "air_conditioning",
   "water_heater",
   "vmc",
+  "rooftop",
   "other",
 ];
 const compact = (v) =>

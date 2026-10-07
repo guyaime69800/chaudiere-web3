@@ -2104,7 +2104,7 @@ export default function ProSpacePage() {
             >
               <PlateScanner disabled={equipmentSubmitting} onConfirm={scan=>{
                 setPlateConfirmation(scan);
-                setEquipmentForm(form=>({...form,brand:scan.fields.brand||'',model:scan.fields.model||'',productReference:scan.fields.productReference||'',serialNumber:scan.fields.serialNumber||'',equipmentType:scan.fields.equipmentType||'other'}));
+                setEquipmentForm(form=>({...form,brand:scan.fields.brand||'',model:scan.fields.model||'',productReference:scan.fields.productReference||'',serialNumber:scan.fields.serialNumber||'',equipmentType:['boiler','heat_pump','air_conditioning','vmc','rooftop','other'].includes(scan.fields.equipmentType)?scan.fields.equipmentType:'other'}));
                 setEquipmentMessage('Lecture confirmée et fiche préremplie. Vérifiez puis enregistrez l’équipement.');
               }}/>
               <label>

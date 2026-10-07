@@ -15,6 +15,7 @@ const typeLabels = {
   air_conditioning: "Climatisation",
   water_heater: "Chauffe-eau",
   vmc: "Ventilation",
+  rooftop: "Rooftop",
   other: "Autre",
 };
 export default function PlateScanner({ onConfirm, disabled = false }) {
