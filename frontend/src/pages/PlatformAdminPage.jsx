@@ -332,6 +332,8 @@ export default function PlatformAdminPage() {
   return <main className="platform-admin">
     <Link to="/espace-pro">← Retour à CarnetPass</Link>
     <p><Link to="/administration-maintenance">Mettre le site en maintenance</Link></p>
+    <p><Link to="/espace-pro?action=scan-plaque" style={{ display: "inline-block", padding: "16px 22px", borderRadius: 12, background: "#bf3509", color: "#fff", fontWeight: 700, textDecoration: "none" }}>📷 Ouvrir mon espace de test — scan de plaque</Link></p>
+    <p>Ce raccourci utilise votre compte connecté. L’autorisation de test sans SIRET validé est réservée au fondateur. Les équipements ajoutés restent des données réelles de votre entreprise.</p>
     <p><Link to="/administration-aides">Gérer les aides financières et vérifier les qualifications RGE</Link></p>
     <h1>Administration CarnetPass</h1>
     {data?.environment === "preview" && <p className="platform-admin-environment-preview">Environnement de test (Preview) : les modifications effectuées ici ne changent pas les données de production.</p>}
