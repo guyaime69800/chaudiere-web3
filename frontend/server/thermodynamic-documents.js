@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { del, get, put } from "@vercel/blob";
 import { createHash, randomUUID } from "node:crypto";
 import { requireVerifiedCompany } from "./lib/require-verified-company.js";
+import { platformDocumentEnvironment } from "./lib/platform-document-environment.js";
 import { buildThermodynamicPdf } from "./lib/thermodynamic-document-pdf.js";
 import { THERMODYNAMIC_KINDS, normalizeThermodynamicData, normalizeDrawnSignature, validateIssue } from "./lib/thermodynamic-document-schema.js";
 
@@ -34,10 +35,12 @@ async function linkedIntervention(db, interventionId, professional) {
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "private, no-store");
-  if (!enabled()) return fail(res, 404, "Fonction indisponible.");
+  const founderProduction = platformDocumentEnvironment(process.env).name === "production";
+  if (!enabled() && !founderProduction) return fail(res, 404, "Fonction indisponible.");
   if (!["GET", "POST", "PATCH"].includes(req.method)) return fail(res, 405, "Méthode non autorisée.");
   const professional = await requireVerifiedCompany(req, res);
   if (!professional) return;
+  if (founderProduction && professional.accessKind !== "founder_test") return fail(res, 403, "Fonction réservée au compte de test fondateur.");
   const db = adminDb();
   if (!db) return fail(res, 503, "Service documentaire indisponible.");
   let archivedPathname = "";
@@ -126,7 +129,7 @@ export default async function handler(req, res) {
     const { data, error } = await query.select("id, intervention_id, equipment_id, kind, status, form_data, operator_signature, holder_signature, issued_at, created_at").single();
     if (error) {
       if (archivedPathname) await del(archivedPathname).catch(() => {});
-      return fail(res, 503, "Enregistrement impossible. Vérifiez que la migration Preview est appliquée.");
+      return fail(res, 503, "Enregistrement du document momentanément indisponible.");
     }
     return res.status(issue ? 200 : 201).json({ ok: true, document: data });
   } catch (error) {

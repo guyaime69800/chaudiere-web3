@@ -222,7 +222,7 @@ export default function EquipmentWorkspace({
             ? String(carnetPassStatus.carnetPassId)
             : "";
     useEffect(() => {
-        if (!previewDocumentsEnabled || !["air_conditioning", "heat_pump"].includes(equipment.equipment_type) || !session?.access_token) return;
+        if (!(previewDocumentsEnabled || (company?.is_demo === true && company?.subscription?.plan === "enterprise")) || !["air_conditioning", "heat_pump"].includes(equipment.equipment_type) || !session?.access_token) return;
         const controller = new AbortController();
         fetch(`/api/thermodynamic-documents?equipmentId=${encodeURIComponent(equipment.id)}`, {
             headers: { Authorization: `Bearer ${session.access_token}` }, signal: controller.signal,
@@ -230,7 +230,7 @@ export default function EquipmentWorkspace({
             .then((result) => { if (!controller.signal.aborted) setThermodynamicDocuments(result?.documents || []); })
             .catch(() => {});
         return () => controller.abort();
-    }, [equipment.id, equipment.equipment_type, session?.access_token]);
+    }, [equipment.id, equipment.equipment_type, session?.access_token, company?.is_demo, company?.subscription?.plan]);
     useEffect(() => {
         if (openRemindersRequest?.reminderId) return undefined;
         const frame = window.requestAnimationFrame(() => {
@@ -490,7 +490,7 @@ export default function EquipmentWorkspace({
                                 setActiveTab("summary");
                             }}
                         />
-                    ) : previewDocumentsEnabled && ["air_conditioning", "heat_pump"].includes(equipment.equipment_type) ? (
+                    ) : (previewDocumentsEnabled || (company?.is_demo === true && company?.subscription?.plan === "enterprise")) && ["air_conditioning", "heat_pump"].includes(equipment.equipment_type) ? (
                         <ThermodynamicDocuments
                             equipment={equipment}
                             interventions={equipmentInterventions}
