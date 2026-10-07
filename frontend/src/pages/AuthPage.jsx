@@ -59,9 +59,12 @@ async function isPlatformAdmin(accessToken) {
 export default function AuthPage({ mode = "connexion" }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const requested = location.state?.from?.pathname;
+  const adminPaths = ["/administration-interne", "/administration-maintenance", "/administration-aides"];
+  const queryDestination = new URLSearchParams(location.search).get("destination");
+  const requested = location.state?.from?.pathname || (adminPaths.includes(queryDestination) ? queryDestination : null);
+  const adminRequested = adminPaths.includes(requested);
   const scanRequested = requested === "/espace-pro" && location.state?.from?.search === "?action=scan-plaque";
-  const destination = ["/administration-interne", "/administration-maintenance"].includes(requested)
+  const destination = adminRequested
     ? requested : scanRequested ? "/espace-pro?action=scan-plaque" : "/espace-pro";
   const isSignUp = mode === "inscription";
 
@@ -105,8 +108,8 @@ export default function AuthPage({ mode = "connexion" }) {
         });
 
         if (data.session) {
-          const admin = await isPlatformAdmin(data.session.access_token);
-          navigate(scanRequested ? destination : admin ? "/administration-interne" : destination);
+          const admin = !adminRequested && !scanRequested && await isPlatformAdmin(data.session.access_token);
+          navigate(adminRequested || scanRequested ? destination : admin ? "/administration-interne" : destination);
           return;
         }
 
@@ -120,8 +123,8 @@ export default function AuthPage({ mode = "connexion" }) {
           email: form.email,
           password: form.password,
         });
-        const admin = await isPlatformAdmin(data.session?.access_token);
-        navigate(scanRequested || destination === "/administration-maintenance" ? destination : admin ? "/administration-interne" : destination);
+        const admin = !adminRequested && !scanRequested && await isPlatformAdmin(data.session?.access_token);
+        navigate(adminRequested || scanRequested ? destination : admin ? "/administration-interne" : destination);
       }
     } catch (error) {
       setErrorMessage(getFriendlyError(error));

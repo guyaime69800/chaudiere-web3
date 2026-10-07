@@ -1661,6 +1661,7 @@ export default function ProSpacePage() {
       <p>Vous êtes connecté avec {user?.email}. Aucune entreprise n’est associée à ce compte.</p>
       <p>Si vous avez déjà créé une entreprise, connectez-vous avec le compte utilisé pour sa création. Pour un nouveau compte, renseignez votre entreprise depuis les paramètres avant d’ajouter un équipement.</p>
       <Link className="pro-primary-button" to="/parametres-compte">Ouvrir les paramètres du compte</Link>
+      <p><Link className="pro-action-card-button" to="/administration-interne">Accéder à l’administration CarnetPass</Link></p>
       <button className="pro-action-card-button" type="button" onClick={handleSignOut} disabled={signingOut}>Changer de compte</button>
     </section></main>;
   }
