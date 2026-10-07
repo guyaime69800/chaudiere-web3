@@ -170,6 +170,19 @@ test("authentication and budget rejection happen before any paid AI call", async
     assert.equal(calls, 0);
   }
 });
+test("provider permission errors do not masquerade as a user login error", async () => {
+  const res = response();
+  const handler = createPlateHandler({
+    company: async () => ({ user: { id: "u" }, company: { id: "c" } }),
+    rate: async () => {}, redis: () => ({}), reserve: async () => {},
+    image: async () => ({ dataUrl: "synthetic", hash: "hash" }),
+    analyze: async () => { throw Object.assign(new Error("Missing scopes: model.request"), { status: 401 }); },
+  });
+  await handler({ method: "POST", body: { action: "analyze", image: "synthetic" } }, res);
+  assert.equal(res.statusCode, 503);
+  assert.match(res.body.error, /service IA/);
+  assert.doesNotMatch(res.body.error, /model.request|Missing scopes/);
+});
 test("daily zero disables paid scans and reservations are atomic before analysis", async () => {
   let args;
   await assert.rejects(

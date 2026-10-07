@@ -145,7 +145,17 @@ export function createPlateHandler(deps = {}) {
           );
         const image = await imageReader(body.image);
         await reserve(redis, context.user.id);
-        const output = sanitizePlateResult(await analyze(image));
+        let analysis;
+        try {
+          analysis = await analyze(image);
+        } catch (error) {
+          // Provider credentials are server configuration, not user authentication.
+          console.error("Plate analysis provider failure", { status: error?.status, code: error?.code });
+          throw fail(503, [401, 403].includes(error?.status)
+            ? "L’analyse de la plaque est indisponible : l’accès au service IA doit être configuré par l’équipe CarnetPass. Vous pouvez remplir la fiche manuellement."
+            : "L’analyse de la plaque est momentanément indisponible. Réessayez plus tard ou remplissez la fiche manuellement.");
+        }
+        const output = sanitizePlateResult(analysis);
         const candidates = plateCandidates(
           Object.fromEntries(
             Object.entries(output.fields).map(([k, v]) => [k, v.value]),
