@@ -1,5 +1,8 @@
 // Only manufacturer-hosted or explicitly public user manuals belong here.
 // Never add a professional PDF or an installation procedure to this list.
+export const PUBLIC_USER_MANUAL_MODELS = [
+  { equipmentId: "public-airwell-hdla-022n-09m25", brand: "Airwell", model: "HDLA-022N-09M25", manufacturerReference: "HDLA-022N-09M25" },
+];
 const airwellHdlaManual = {
   id: "airwell-hdla-022n-09m25-user",
   title: "Notice d’utilisation Airwell HDLA-022N-09M25",

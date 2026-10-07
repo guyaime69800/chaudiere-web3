@@ -6,6 +6,7 @@ import { generatedEquipmentRegistry } from "../server/lib/equipment-registry.gen
 import { answerFromPublicUserManual, getPublicUserManual } from "../src/lib/public-user-manuals.js";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import maintenanceReminderDispatch from "../server/maintenance-reminder-dispatch.js";
+import {scheduledAidWatch} from '../server/lib/aid-watch.js';
 import modelReminders from "../server/model-reminders.js";
 import publicMaintenanceReminders from "../server/public-maintenance-reminders.js";
 import {
@@ -877,6 +878,7 @@ export default async function handler(req, res) {
       return await publicMaintenanceReminders(req, res);
     }
     if (req.query?.maintenance_route === "1") {
+      await scheduledAidWatch(req);
       return await maintenanceReminderDispatch(req, res);
     }
     if (req.query?.model_reminders_route === "1") {

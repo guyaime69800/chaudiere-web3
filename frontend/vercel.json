@@ -1,5 +1,8 @@
 {
   "functions": {
+    "api/verify-company.js": {
+      "maxDuration": 120
+    },
     "api/carnetpass.js": {
       "maxDuration": 300
     },
@@ -14,6 +17,10 @@
     }
   ],
   "rewrites": [
+    {"source":"/api/shiba-devis","destination":"/api/verify-company?shiba_devis_route=1"},
+    {"source":"/api/aid-admin","destination":"/api/verify-company?aid_admin_route=1"},
+    {"source":"/api/company-rge","destination":"/api/verify-company?company_rge_route=1"},
+    {"source":"/api/plate-scan","destination":"/api/verify-company?plate_scan_route=1"},
     {
       "source": "/api/maintenance-control",
       "destination": "/api/verify-company?maintenance_control_route=1"

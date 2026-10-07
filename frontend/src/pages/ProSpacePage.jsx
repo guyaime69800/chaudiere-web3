@@ -26,6 +26,11 @@ import CarnetPassCreatedModal from "../components/CarnetPassCreatedModal";
 import TechnicalCatalogModal from "../components/TechnicalCatalogModal";
 import { catalogEquipmentPrefill } from "../lib/catalogEquipmentPrefill.js";
 import ShibaUsage from "../components/ShibaUsage";
+import ShibaDevisMascot from '../components/ShibaDevisMascot';
+import PlateScanner from '../components/PlateScanner';
+import CompanyRgePanel from '../components/CompanyRgePanel';
+import {devisRequest} from '../services/shibaDevisService';
+import {uploadEquipmentAttachment} from '../services/equipmentAttachmentsService';
 import EmergencyContacts from "../components/EmergencyContacts";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import { DISCOVERY_EQUIPMENT_LIMIT, getDiscoveryAccess } from "../../shared/discovery-access.js";
@@ -498,6 +503,7 @@ function CompanyAccountCard({
             </button>
           </article>
           <article className="pro-action-card pro-compliance-card">
+            <ShibaDevisMascot size={72} decorative />
             <div className="pro-action-card-heading">
               <span className="pro-action-card-icon" aria-hidden="true">
                 ℹ️
@@ -508,11 +514,13 @@ function CompanyAccountCard({
                   Informations conformité
                 </span>
 
-                <h2>Ressources réglementaires</h2>
+                <h2>Shiba Devis &amp; aides</h2>
 
-                <p>CERFA, entretien, F-Gas et Trackdéchets</p>
+                <p>Préparation gratuite des projets, aides et devis.</p>
               </div>
             </div>
+
+            <Link className="pro-action-card-button" to="/shiba-devis?profil=professionnel">Préparer avec Shiba Devis — gratuit</Link>
 
             <button
               className="pro-action-card-button"
@@ -522,7 +530,7 @@ function CompanyAccountCard({
               aria-controls="compliance-modal"
               onClick={() => setActiveModal("compliance")}
             >
-              Consulter les ressources
+              Ressources réglementaires : CERFA, entretien, F-Gas et Trackdéchets
             </button>
           </article>
         </div>
@@ -991,6 +999,7 @@ export default function ProSpacePage() {
   const [submitting, setSubmitting] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [equipments, setEquipments] = useState([]);
+  const [plateConfirmation,setPlateConfirmation] = useState(null);
   const [equipmentLoading, setEquipmentLoading] = useState(false);
   const [equipmentLoadError, setEquipmentLoadError] = useState("");
   const [equipmentFormOpen, setEquipmentFormOpen] = useState(false);
@@ -1382,6 +1391,7 @@ export default function ProSpacePage() {
   }
 
   function handleAddCatalogEquipment(model) {
+    setPlateConfirmation(null);
     setEquipmentForm(catalogEquipmentPrefill(model));
     setEquipmentFormOpen(true);
     setEquipmentError("");
@@ -1438,6 +1448,14 @@ export default function ProSpacePage() {
         : savedEquipmentResult;
       if (!savedEquipment?.id) {
         throw new Error("Équipement enregistré, mais son identifiant est indisponible. Vérifiez votre liste avant de réessayer.");
+      }
+      if (plateConfirmation) {
+        const fields={...plateConfirmation.fields,brand:equipmentForm.brand.trim(),model:equipmentForm.model.trim(),productReference:reference,serialNumber:equipmentForm.serialNumber.trim(),equipmentType:equipmentForm.equipmentType};
+        try {
+          await devisRequest('/api/plate-scan',{body:{action:'confirm',ticket:plateConfirmation.ticket,candidateId:plateConfirmation.candidateId,equipmentId:savedEquipment.id,fields}});
+          if(plateConfirmation.photo) await uploadEquipmentAttachment({file:plateConfirmation.photo,equipmentId:savedEquipment.id,documentKind:'photo',title:'Plaque signalétique privée'});
+        } catch(scanError) { setEquipmentError(`Équipement enregistré ; conservation du relevé ou de la photo non confirmée : ${scanError.message}`); }
+        setPlateConfirmation(null);
       }
       setEquipmentForm(EMPTY_EQUIPMENT_FORM);
       setEquipmentFormOpen(false);
@@ -2084,6 +2102,11 @@ export default function ProSpacePage() {
               onSubmit={handleEquipmentSubmit}
               aria-busy={equipmentSubmitting}
             >
+              <PlateScanner disabled={equipmentSubmitting} onConfirm={scan=>{
+                setPlateConfirmation(scan);
+                setEquipmentForm(form=>({...form,brand:scan.fields.brand||'',model:scan.fields.model||'',productReference:scan.fields.productReference||'',serialNumber:scan.fields.serialNumber||'',equipmentType:scan.fields.equipmentType||'other'}));
+                setEquipmentMessage('Lecture confirmée et fiche préremplie. Vérifiez puis enregistrez l’équipement.');
+              }}/>
               <label>
                 <span>Type d’équipement *</span>
                 <select
@@ -2186,6 +2209,7 @@ export default function ProSpacePage() {
             </form>
           )}
 
+          <CompanyRgePanel equipments={equipments} />
           <details className="pro-qr-contact-panel">
             <summary>Coordonnées visibles sur le QR code</summary>
             <fieldset className="pro-qr-contact-options">

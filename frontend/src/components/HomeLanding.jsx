@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
 import InstallCarnetPass from "./InstallCarnetPass";
+import ShibaDevisEntry from "./ShibaDevisEntry.jsx";
 import "./HomeLanding.css";
 
 const benefits = [
@@ -24,6 +25,7 @@ const benefits = [
 export default function HomeLanding() {
   return (
     <div className="home-landing">
+      <ShibaDevisEntry />
       <section className="home-hero" aria-labelledby="home-title">
         <div className="home-hero__copy">
           <span className="home-eyebrow">CarnetPass · L’espace technique des équipements</span>
@@ -34,6 +36,7 @@ export default function HomeLanding() {
             l’information utile, même en déplacement.
           </p>
           <div className="home-actions">
+            <Link className="home-button home-button--secondary" to="/espace-particulier">Préparer mon projet particulier</Link>
             <Link className="home-button home-button--primary" to="/connexion">Accéder à l’application <span aria-hidden="true">→</span></Link>
             <Link className="home-button home-button--secondary" to="/inscription">Créer un espace professionnel</Link>
             <InstallCarnetPass className="install-carnetpass--home" />

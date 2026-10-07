@@ -4,6 +4,8 @@ export const MAINTENANCE_ACCESS_COOKIE = "carnetpass_maintenance_access";
 
 export function maintenanceAllowedPath(pathname) {
   return pathname === "/administration-maintenance"
+    || pathname === '/administration-aides'
+    || pathname === '/api/aid-admin'
     || pathname === "/connexion"
     || pathname === "/api/maintenance-control"
     || pathname === "/api/maintenance-reminders"

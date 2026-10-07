@@ -7,6 +7,8 @@ import {
 } from "react-router-dom";
 import "./index.css";
 import App from "./App.jsx";
+import ShibaDevisPage from "./pages/ShibaDevisPage.jsx";
+import IndividualHomePage from "./pages/IndividualHomePage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider } from "./context/AuthProvider";
 import AuthPage from "./pages/AuthPage.jsx";
@@ -19,6 +21,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
 import AccountSettingsPage from "./pages/AccountSettingsPage.jsx";
 import PlatformAdminPage from "./pages/PlatformAdminPage.jsx";
 import MaintenanceAdminPage from "./pages/MaintenanceAdminPage.jsx";
+import AidAdminPage from "./pages/AidAdminPage.jsx";
 import ShibaRechargeModal from "./components/ShibaRechargeModal.jsx";
 import PublicMaintenanceReminderPage from "./pages/PublicMaintenanceReminderPage.jsx";
 import { registerSW } from "virtual:pwa-register";
@@ -57,6 +60,8 @@ createRoot(document.getElementById("root")).render(
           />
           {/* Accueil public */}
           <Route path="/" element={<App />} />
+          <Route path="/shiba-devis" element={<ShibaDevisPage />} />
+          <Route path="/espace-particulier" element={<IndividualHomePage />} />
           <Route path="/tarifs" element={<PricingPage />} />
           <Route path="/demande-entreprise" element={<EnterpriseQuotePage />} />
           <Route path="/faq" element={<FaqPage />} />
@@ -88,6 +93,7 @@ createRoot(document.getElementById("root")).render(
           <Route path="/parametres-compte" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
           <Route path="/administration-interne" element={<ProtectedRoute><PlatformAdminPage /></ProtectedRoute>} />
           <Route path="/administration-maintenance" element={<ProtectedRoute><MaintenanceAdminPage /></ProtectedRoute>} />
+          <Route path="/administration-aides" element={<ProtectedRoute><AidAdminPage /></ProtectedRoute>} />
           <Route path="/rappel/activer" element={<PublicMaintenanceReminderPage mode="activate" />} />
           <Route path="/rappel/gerer" element={<PublicMaintenanceReminderPage mode="manage" />} />
 

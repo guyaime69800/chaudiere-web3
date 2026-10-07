@@ -9,6 +9,10 @@ import platformAdminHandler from "../server/platform-admin.js";
 import maintenanceControlHandler from "../server/maintenance-control.js";
 import shibaRechargeHandler from "../server/shiba-recharge.js";
 import shibaUsageHandler from "../server/shiba-usage.js";
+import devisHandler from '../server/shiba-devis.js';
+import aidAdminHandler from '../server/aid-admin.js';
+import companyRgeHandler from '../server/company-rge.js';
+import plateScanHandler from '../server/plate-scan.js';
 import { runInternalMonitoring } from "../server/system-health.js";
 
 export const config = { api: { bodyParser: false } };
@@ -101,6 +105,10 @@ async function saveVerificationResult(
 }
 
 export default async function handler(req, res) {
+  if (req.query?.shiba_devis_route === '1') return devisHandler(req,res);
+  if (req.query?.aid_admin_route === '1') return aidAdminHandler(req,res);
+  if (req.query?.company_rge_route === '1') return companyRgeHandler(req,res);
+  if (req.query?.plate_scan_route === '1') return plateScanHandler(req,res);
   if (req.query?.maintenance_control_route === "1") return maintenanceControlHandler(req, res);
   if (req.query?.shiba_usage_route === "1") return shibaUsageHandler(req, res);
   await runInternalMonitoring();

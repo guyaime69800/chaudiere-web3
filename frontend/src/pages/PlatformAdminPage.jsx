@@ -332,6 +332,7 @@ export default function PlatformAdminPage() {
   return <main className="platform-admin">
     <Link to="/espace-pro">← Retour à CarnetPass</Link>
     <p><Link to="/administration-maintenance">Mettre le site en maintenance</Link></p>
+    <p><Link to="/administration-aides">Gérer les aides financières et vérifier les qualifications RGE</Link></p>
     <h1>Administration CarnetPass</h1>
     {data?.environment === "preview" && <p className="platform-admin-environment-preview">Environnement de test (Preview) : les modifications effectuées ici ne changent pas les données de production.</p>}
     {data?.environment === "production" && <p className="platform-admin-environment-production">Production — données réelles : chaque modification concerne les clients. Vérifiez le contrat, le règlement et l'entreprise avant de confirmer une action.</p>}

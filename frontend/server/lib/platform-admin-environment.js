@@ -1,4 +1,4 @@
-const previewBranches = new Set(["feature/documentation-multi-docs", "release/paris2-admin-documents"]);
+const previewBranches = new Set(["feature/documentation-multi-docs", "release/paris2-admin-documents", "feature/shiba-devis-production"]);
 const previewProject = "bqqzzbwqmiyxcotvqtoc";
 const previewUrl = `https://${previewProject}.supabase.co`;
 const nonProductionProjects = new Set([previewProject, "rpwzzvreuenstsjtbzto"]);

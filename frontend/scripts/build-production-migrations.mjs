@@ -16,9 +16,10 @@ const productionOnly = new Set([
   "20261006000800_reminder_discovery_eligibility.sql",
 ]);
 
-if (selected.length !== 37) throw new Error(`Expected 37 migrations, found ${selected.length}`);
+if (selected.length !== 38) throw new Error(`Expected 38 migrations, found ${selected.length}`);
 await mkdir(destination, { recursive: true });
 function productionName(name) {
+  if (/^\d{14}_.+\.sql$/.test(name)) return name;
   const match = /^(\d{8})_(\d{2})_(.+\.sql)$/.exec(name);
   if (!match) throw new Error(`Unexpected migration name: ${name}`);
   // The reminder pilot is added after the existing Paris 2 production schema.
@@ -37,6 +38,10 @@ if (existing.some((name) => !expected.includes(name) && !productionOnly.has(name
 }
 
 for (const name of selected) {
+  if (/^\d{14}_.+\.sql$/.test(name)) {
+    await writeFile(path.join(destination,name),await readFile(path.join(source,name),'utf8'));
+    continue;
+  }
   const match = /^(\d{8})_(\d{2})_(.+\.sql)$/.exec(name);
   if (!match) throw new Error(`Unexpected migration name: ${name}`);
   let sql = await readFile(path.join(source, name), "utf8");

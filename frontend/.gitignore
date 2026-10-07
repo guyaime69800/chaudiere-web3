@@ -8,6 +8,9 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.verification-deps/
+.verification-artifacts/
+supabase/.temp/
 dist
 dist-ssr
 *.local
