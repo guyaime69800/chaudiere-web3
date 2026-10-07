@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { createClient } from "@supabase/supabase-js";
-import { del, get, issueSignedToken } from "@vercel/blob";
+import { del, get, list, issueSignedToken } from "@vercel/blob";
 import { handleUploadPresigned } from "@vercel/blob/client";
 import platformCatalogDocuments from "../server/lib/platform-catalog-documents.js";
 import platformDocumentSubmissions from "../server/platform-document-submissions.js";
@@ -231,6 +231,15 @@ export default async function handler(req, res) {
     const token = /^Bearer ([^\s]+)$/i.exec(req.headers.authorization || "")?.[1];
     const user = await authorize(token);
     if (!user) return fail(res, 403, "Accès refusé.");
+    if (req.query?.inventory === "1") {
+      if (user.platformRole !== "founder") return fail(res, 403, "Accès réservé au fondateur.");
+      const cursor = req.query?.cursor;
+      if (cursor !== undefined && (typeof cursor !== "string" || cursor.length > 2048)) return fail(res, 400, "Curseur invalide.");
+      try {
+        const inventory = await list({ prefix: "platform-documents/", limit: 1000, ...(cursor ? { cursor } : {}) });
+        return res.status(200).json({ ok: true, documents: inventory.blobs.map(blob => ({ pathname: blob.pathname, size: blob.size })), cursor: inventory.cursor, hasMore: inventory.hasMore });
+      } catch { return fail(res, 503, "Inventaire documentaire indisponible."); }
+    }
     if (req.query?.id) {
       if (typeof req.query.id !== "string" || !/^[0-9a-f-]{36}$/i.test(req.query.id)) return fail(res, 400, "Document invalide.");
       const { data: entry, error: lookupError } = await service().from("platform_document_intake")
