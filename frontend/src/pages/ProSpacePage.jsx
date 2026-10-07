@@ -24,6 +24,7 @@ import ModelRemindersContents from "../components/ModelRemindersContents";
 import { professionalRemindersAvailable } from "../lib/professional-reminders-availability.js";
 import CarnetPassCreatedModal from "../components/CarnetPassCreatedModal";
 import TechnicalCatalogModal from "../components/TechnicalCatalogModal";
+import OfficialAidLinks from "../components/OfficialAidLinks";
 import { catalogEquipmentPrefill } from "../lib/catalogEquipmentPrefill.js";
 import ShibaUsage from "../components/ShibaUsage";
 import ShibaDevisMascot from '../components/ShibaDevisMascot';
@@ -514,13 +515,12 @@ function CompanyAccountCard({
                   Informations conformité
                 </span>
 
-                <h2>Aides aux travaux</h2>
+                <h2>Ressources réglementaires</h2>
 
-                <p>Simulateurs officiels France Rénov’ et annuaire RGE.</p>
+                <p>Formulaires, aides officielles et qualifications RGE.</p>
               </div>
             </div>
 
-            <Link className="pro-action-card-button" to="/shiba-devis?profil=professionnel">Consulter les outils officiels</Link>
 
             <button
               className="pro-action-card-button"
@@ -919,6 +919,7 @@ function CompanyAccountCard({
         className="pro-compliance-modal"
       >
         <EmergencyContacts />
+        <OfficialAidLinks />
         <div className="pro-compliance-links">
           <a
             href="https://entreprendre.service-public.gouv.fr/vosdroits/R43122"
