@@ -169,8 +169,7 @@ export default function PlateScanner({ onConfirm, disabled = false, initialOpen 
               )}
               {!analysis.candidates.length && (
                 <p>
-                  Modèle inconnu : la fiche pourra être créée avec les données
-                  confirmées, sans notice associée.
+                  Aucune correspondance trouvée avec les informations lues. Vous pouvez compléter les champs et créer la fiche sans notice associée.
                 </p>
               )}
               <div className="devis-grid">

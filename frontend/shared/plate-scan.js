@@ -31,15 +31,19 @@ const brandKey = (v) => aliases.get(compact(v)) || compact(v);
 export function plateCandidates(fields, catalog) {
   const brand = brandKey(fields.brand),
     ref = compact(fields.productReference),
-    model = compact(fields.model);
-  if (!brand) return [];
+    model = compact(fields.model),
+    modelWithoutRevision = compact(String(fields.model || "").replace(/\s+R\d+\s*$/i, ""));
+  if (!ref && !model) return [];
   return catalog
     .filter(
       (c) =>
-        brandKey(c.brand) === brand &&
+        (!brand || brandKey(c.brand) === brand) &&
         (ref
           ? compact(c.manufacturerReference) === ref
-          : Boolean(model && compact(c.model) === model)),
+          : Boolean(model && [
+              compact(c.model),
+              compact(`${c.model} ${c.variant || ""}`),
+            ].some(key => key === model || key === modelWithoutRevision))),
     )
     .map((c) => ({
       equipmentId: c.equipmentId,

@@ -10,6 +10,7 @@ import {
   createPlateHandler,
   canonicalPlateImage,
   reservePlateBudget,
+  PLATE_RESPONSE_FORMAT,
 } from "../server/plate-scan.js";
 import { fail } from "../server/lib/devis-security.js";
 const response = () => ({
@@ -37,6 +38,23 @@ const raw = {
     equipmentType: { value: "air_conditioning", evidence: "Air conditioning" },
   },
 };
+test("model-only label survives extraction and proposes catalogue matches without inventing a brand", () => {
+  const scan = sanitizePlateResult({ fields: {
+    model: { value: "ThemaPlus Condens 30 -A (H-FR) R1", evidence: "ThemaPlus Condens 30 -A (H-FR) R1" },
+  } });
+  assert.equal(scan.fields.brand.value, "");
+  assert.equal(scan.fields.model.value, "ThemaPlus Condens 30 -A (H-FR) R1");
+  assert.equal(scan.fields.productReference.value, "");
+  const entries = [
+    { equipmentId: "a", brand: "Saunier Duval", model: "ThemaPlus Condens 30-A", variant: "H-FR", manufacturerReference: "0010017388" },
+    { equipmentId: "b", brand: "Saunier Duval", model: "ThemaPlus Condens 25-A", variant: "H-FR", manufacturerReference: "other" },
+  ];
+  assert.deepEqual(plateCandidates({ model: scan.fields.model.value }, entries).map(c => c.equipmentId), ["a"]);
+  assert.equal(plateCandidates({ brand: "Another brand", model: scan.fields.model.value }, entries).length, 0);
+  assert.equal(plateCandidates({ serialNumber: "21164800100173881610015085N0" }, entries).length, 0);
+  assert.equal(PLATE_RESPONSE_FORMAT.json_schema.strict, true);
+  assert.equal(PLATE_RESPONSE_FORMAT.json_schema.schema.properties.fields.additionalProperties, false);
+});
 test("representative plate fields are uncertain, provenance is retained and a serial never supplies a year", () => {
   const scan = sanitizePlateResult(raw);
   assert.equal(scan.fields.brand.value, "Airwell");
