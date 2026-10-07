@@ -5,6 +5,7 @@ import { signOut, updateProfessionalPhone } from "../services/authService";
 import { activeStripeTestPlan, getStripeTestSubscription } from "../services/stripeTestSubscription";
 import {
   createCompany,
+  ensureFounderTestCompany,
   getMyCompany,
   updateCompanyContactDetails,
   updateCompanySiret,
@@ -1066,7 +1067,11 @@ export default function ProSpacePage() {
       setLoadError("");
 
       try {
-        const companyData = await getMyCompany(userId);
+        let companyData = await getMyCompany(userId);
+        if (!companyData && scanRequested) {
+          const prepared = await ensureFounderTestCompany();
+          if (prepared) companyData = await getMyCompany(userId);
+        }
 
         if (!cancelled) {
           setCompany(companyData);
@@ -1087,7 +1092,7 @@ export default function ProSpacePage() {
     return () => {
       cancelled = true;
     };
-  }, [userId, refreshKey]);
+  }, [userId, refreshKey, scanRequested]);
 
   useEffect(() => {
     let cancelled = false;

@@ -1,5 +1,13 @@
 import { supabase } from "./supabaseClient";
 
+export async function ensureFounderTestCompany() {
+  const { error } = await supabase.rpc("ensure_founder_test_company");
+  // Ordinary accounts continue through their normal company setup.
+  if (error?.code === "42501") return false;
+  if (error) throw new Error("Impossible de préparer votre espace de test. Réessayez ou contactez l’assistance.");
+  return true;
+}
+
 function getCompanyErrorMessage(error) {
   const message = error?.message || "";
 
