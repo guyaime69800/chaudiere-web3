@@ -97,6 +97,7 @@ export default function PlateScanner({ onConfirm, disabled = false, initialOpen 
           </p>
           <input
             ref={fileRef}
+            hidden
             type="file"
             accept="image/jpeg,image/png,image/webp"
             capture="environment"
@@ -104,12 +105,15 @@ export default function PlateScanner({ onConfirm, disabled = false, initialOpen 
             disabled={busy}
             aria-label="Prendre une photo ou importer la plaque"
           />
+          <button type="button" className="devis-button" disabled={busy || disabled} onClick={() => fileRef.current?.click()}>
+            {photo ? "Changer la photo" : "Prendre une photo ou choisir une image"}
+          </button>
           <p>
-            Caméra refusée ou réseau absent : vous pouvez toujours remplir la
-            fiche manuellement.
+            Vous pouvez aussi remplir la fiche manuellement, sans utiliser le scan.
           </p>
           {photo && (
             <>
+              <p role="status">Photo chargée. Lancez l’analyse, puis vérifiez les informations proposées.</p>
               <img
                 src={photo.dataUrl}
                 alt="Aperçu de la plaque à analyser"
@@ -120,11 +124,12 @@ export default function PlateScanner({ onConfirm, disabled = false, initialOpen 
                 }}
               />
               <div className="devis-actions">
-                <button type="button" disabled={busy} onClick={analyze}>
+                <button type="button" className="devis-button" disabled={busy || disabled} onClick={analyze}>
                   {busy ? "Analyse…" : "Analyser la plaque"}
                 </button>
                 <button
                   type="button"
+                  className="devis-secondary"
                   disabled={busy}
                   onClick={() => {
                     setPhoto(null);
