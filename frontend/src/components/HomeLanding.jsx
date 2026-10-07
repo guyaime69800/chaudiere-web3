@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
+import shibaTechnicien from "../assets/simba-assistance-technique.webp";
 import InstallCarnetPass from "./InstallCarnetPass";
 import ShibaDevisEntry from "./ShibaDevisEntry.jsx";
 import "./HomeLanding.css";
@@ -64,7 +64,7 @@ export default function HomeLanding() {
       </section>
 
       <section className="home-shiba" aria-labelledby="home-shiba-title">
-        <div className="home-shiba__portrait"><img src={shibaTechnicien} alt="Shiba Bot, assistant documentaire CarnetPass" /></div>
+        <div className="home-shiba__portrait"><img src={shibaTechnicien} alt="Simba avec une clé à molette, assistant documentaire Shiba Bot" /></div>
         <div><span className="home-eyebrow">Shiba Bot</span><h2 id="home-shiba-title">Posez la question avec le modèle sous les yeux.</h2><p>Shiba Bot recherche dans les notices et les vues éclatées associées à l’appareil. Ses réponses indiquent le document et la page pour que le professionnel puisse vérifier l’information.</p><Link to="/connexion">Ouvrir mon espace et utiliser Shiba <span aria-hidden="true">→</span></Link></div>
       </section>
 

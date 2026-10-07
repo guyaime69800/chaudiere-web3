@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../hooks/useAuth.js";
 import { formatShibaResetDate, shibaCreditsExhaustedMessage } from "../lib/shiba-credit-copy.js";
 import { SHIBA_RECHARGE_PACKS } from "../lib/shiba-recharge-packs.js";
-import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
+import shibaTechnicien from "../assets/simba-assistance-technique.webp";
 import { startShibaRecharge } from "../services/shibaRechargeService.js";
 import "./ShibaRechargeModal.css";
 

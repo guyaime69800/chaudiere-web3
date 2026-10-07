@@ -26,7 +26,7 @@
 .home-visual-document strong { font-size: 13px; }
 .home-visual-document b { margin-left: auto; color: #9d8c80; }
 .home-visual-shiba { display: flex; align-items: center; gap: 12px; margin-top: 17px; padding: 10px 14px; border-radius: 13px; background: #fff; border: 1px solid #efdfd2; }
-.home-visual-shiba img { width: 48px; height: 51px; object-fit: contain; }
+.home-visual-shiba img { width: 48px; height: 72px; object-fit: contain; flex-shrink: 0; }
 .home-visual-shiba strong { color: #a43b16; }
 .home-benefits { padding: clamp(52px, 7vw, 92px) 0; }
 .home-section-heading { max-width: 670px; margin-bottom: 28px; }
@@ -38,7 +38,7 @@
 .home-benefit p { margin: 0; color: #635b55; font-size: 15px; }
 .home-shiba { display: grid; grid-template-columns: .68fr 1fr; gap: clamp(25px, 6vw, 70px); align-items: center; padding: clamp(28px, 5vw, 58px); border-radius: 24px; background: #f2eae1; }
 .home-shiba__portrait { display: grid; place-items: center; min-height: 300px; border-radius: 18px; background: radial-gradient(circle at 50% 40%, #fffaf4, #e9d5c4); }
-.home-shiba__portrait img { width: min(75%, 270px); max-height: 300px; object-fit: contain; }
+.home-shiba__portrait img { width: min(75%, 240px); height: auto; max-height: 360px; object-fit: contain; }
 .home-shiba p, .home-final p { color: #5e544d; font-size: 16px; line-height: 1.65; }
 .home-shiba a { color: #9e370f; font-weight: 750; text-underline-offset: 4px; }
 .home-final { display: flex; justify-content: space-between; align-items: center; gap: 25px; margin: 70px 0 34px; padding: 30px 0; border-top: 1px solid #dcd3ca; }

@@ -3,7 +3,7 @@ import { supabase } from "../services/supabaseClient";
 import { parseReminderDate } from "../lib/reminder-date.js";
 import { reminderNotificationDate } from "../lib/reminder-notification-date.js";
 import { REMINDER_TYPE_LABELS, reminderAction, suggestedReminderDescription, suggestedReminderType } from "../lib/reminder-description.js";
-import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
+import shibaTechnicien from "../assets/simba-assistance-technique.webp";
 import "./MaintenanceReminders.css";
 
 const emptyForm = () => ({ description: "", reminderType: "", dueOn: "", lastMaintenanceOn: "", leadDays: "30" });

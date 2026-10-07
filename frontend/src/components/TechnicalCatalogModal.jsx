@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
+import shibaTechnicien from "../assets/simba-assistance-technique.webp";
 import { getEquipmentDocumentLibrary } from "../services/equipmentKnowledge";
 import { catalogModelsWithPublishedDocuments } from "../services/platformDocumentLibrary";
 import DocumentPreviewModal from "./DocumentPreviewModal";

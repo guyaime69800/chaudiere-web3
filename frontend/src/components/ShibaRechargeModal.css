@@ -2,8 +2,8 @@
 .shiba-recharge-dialog::backdrop { background: #2015109c; backdrop-filter: blur(4px); }
 .shiba-recharge-dialog__content { position: relative; padding: 32px; }
 .shiba-recharge-dialog__close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border: 1px solid #ecd7c7; border-radius: 50%; background: #fff8f3; font-size: 25px; line-height: 1; cursor: pointer; }
-.shiba-recharge-dialog__icon { display: grid; place-items: center; width: 72px; height: 72px; margin-bottom: 14px; border-radius: 16px; background: #fff0e6; }
-.shiba-recharge-dialog__icon img { display: block; width: 66px; height: 66px; object-fit: contain; }
+.shiba-recharge-dialog__icon { display: grid; place-items: center; width: 72px; height: 88px; margin-bottom: 14px; border-radius: 16px; background: #fff0e6; }
+.shiba-recharge-dialog__icon img { display: block; width: 54px; height: 81px; object-fit: contain; }
 .shiba-recharge-dialog__eyebrow { margin: 0 0 6px; color: #b9340a; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .shiba-recharge-dialog h2 { margin: 0 0 12px; font-size: clamp(26px, 5vw, 34px); line-height: 1.1; }
 .shiba-recharge-dialog p { line-height: 1.5; }

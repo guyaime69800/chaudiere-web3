@@ -34,7 +34,7 @@ import CompanyRgePanel from '../components/CompanyRgePanel';
 import {devisRequest} from '../services/shibaDevisService';
 import {uploadEquipmentAttachment} from '../services/equipmentAttachmentsService';
 import EmergencyContacts from "../components/EmergencyContacts";
-import shibaTechnicien from "../assets/carnetpass-shiba-technicien.png";
+import shibaTechnicien from "../assets/simba-assistance-technique.webp";
 import { DISCOVERY_EQUIPMENT_LIMIT, getDiscoveryAccess } from "../../shared/discovery-access.js";
 import equipmentIndex from "../data/equipment-index.json";
 import "./ProSpacePage.css";

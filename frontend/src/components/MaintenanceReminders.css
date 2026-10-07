@@ -46,7 +46,7 @@
   border-radius: 15px; background: linear-gradient(125deg, #fff, #fff0e8);
 }
 .maintenance-reminders__shiba-heading { display: flex; align-items: center; gap: 14px; }
-.maintenance-reminders__shiba-heading img { width: 54px; height: 54px; object-fit: contain; }
+.maintenance-reminders__shiba-heading img { width: 54px; height: 81px; object-fit: contain; flex-shrink: 0; }
 .maintenance-reminders__shiba-heading h4 { margin-bottom: 4px; font-size: 20px; }
 .maintenance-reminders__shiba-heading p { margin: 0; }
 .maintenance-reminders__shiba-form { margin-top: 18px; }
