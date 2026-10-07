@@ -514,13 +514,13 @@ function CompanyAccountCard({
                   Informations conformité
                 </span>
 
-                <h2>Shiba Devis &amp; aides</h2>
+                <h2>Aides aux travaux</h2>
 
-                <p>Préparation gratuite des projets, aides et devis.</p>
+                <p>Simulateurs officiels France Rénov’ et annuaire RGE.</p>
               </div>
             </div>
 
-            <Link className="pro-action-card-button" to="/shiba-devis?profil=professionnel">Préparer avec Shiba Devis — gratuit</Link>
+            <Link className="pro-action-card-button" to="/shiba-devis?profil=professionnel">Consulter les outils officiels</Link>
 
             <button
               className="pro-action-card-button"

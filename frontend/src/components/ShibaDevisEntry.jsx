@@ -4,20 +4,19 @@ import ShibaDevisMascot from "./ShibaDevisMascot";
 
 export default function ShibaDevisEntry({ professional = false }) {
   return (
-    <section className="devis-entry" aria-label="Shiba Devis gratuit">
+    <section className="devis-entry" aria-label="Liens vers les aides officielles">
       <ShibaDevisMascot decorative />
       <div>
-        <span className="devis-eyebrow">Gratuit · préparation du projet</span>
-        <h2>Shiba Devis & aides</h2>
+        <span className="devis-eyebrow">Services publics externes</span>
+        <h2>Aides aux travaux</h2>
         <p>
-          Réunissez les informations de votre projet, les aides à vérifier et
-          les étapes suivantes. Sans montant garanti.
+          Accédez aux simulateurs officiels France Rénov’ et à l’annuaire RGE.
         </p>
         <Link
           className="devis-button"
           to={`/shiba-devis${professional ? "?profil=professionnel" : ""}`}
         >
-          Préparer mon projet gratuitement →
+          Consulter les outils officiels →
         </Link>
       </div>
     </section>

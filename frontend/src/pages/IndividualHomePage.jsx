@@ -9,8 +9,7 @@ export default function IndividualHomePage() {
       <span className="devis-eyebrow">Espace particulier</span>
       <h1>Préparez votre projet de travaux.</h1>
       <p>
-        Un parcours gratuit, sans compte obligatoire. Votre brouillon reste dans
-        cet onglet ; il n’est pas enregistré dans un compte CarnetPass.
+        Retrouvez les services publics pour estimer vos aides et rechercher un professionnel RGE.
       </p>
       <ShibaDevisEntry />
       <section className="devis-panel">
