@@ -1,0 +1,14 @@
+.env*
+.git
+.worktrees
+frontend/.verification-artifacts
+frontend/.verification-deps
+frontend/supabase/.temp
+frontend/node_modules
+frontend/dist
+frontend/scripts/fixtures
+backend/node_modules
+backend/artifacts
+backend/cache
+output
+tmp
