@@ -25,6 +25,13 @@ begin
   if (select count(*) from public.company_members where user_id = v_founder) <> 1 then
     raise exception 'Incorrect membership';
   end if;
+  if v_first.is_demo is true and v_first.name = 'CarnetPass — tests fondateur'
+    and not exists (select 1 from public.subscriptions
+      where company_id = v_first.id and plan::text = 'enterprise'
+        and status::text = 'active' and current_period_end > now()
+        and enterprise_seat_limit = 10000) then
+    raise exception 'Founder full access missing';
+  end if;
 end;
 $$;
 select 'PASS: founder provisioning, idempotence and ordinary account rejection' as result;

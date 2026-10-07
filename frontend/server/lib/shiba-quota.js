@@ -37,6 +37,7 @@ function bonusKey(professional) {
 }
 
 export async function getShibaPlan(request, professional) {
+  if (professional.accessKind === "founder_test") return "enterprise";
   const token = /^Bearer ([^\s]+)$/i.exec(request.headers?.authorization || "")?.[1];
   if (!token) throw new Error("Missing authenticated user");
   const supabase = createClient(

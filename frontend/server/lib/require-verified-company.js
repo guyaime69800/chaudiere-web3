@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { getDiscoveryAccess } from "../../shared/discovery-access.js";
+import { devisDatabase } from "./devis-security.js";
+import { platformAdminEnvironment } from "./platform-admin-environment.js";
 
 // Vérifie qu'une requête provient d'un utilisateur professionnel autorisé.
 // Cette fonction n'utilise aucune clé administrateur Supabase.
@@ -164,11 +166,20 @@ export async function requireVerifiedCompany(req, res) {
       throw new Error("Company check failed");
     }
 
-    const verification = company?.company_verifications;
+    const verification = Array.isArray(company?.company_verifications)
+      ? company.company_verifications[0] : company?.company_verifications;
+    let founderTest = false;
+    if (company?.is_demo === true && !platformAdminEnvironment(process.env).status
+      && !["suspended", "rejected"].includes(verification?.status)) {
+      const { data: operator, error } = await devisDatabase().from("platform_admins")
+        .select("role").eq("user_id", user.id).maybeSingle();
+      if (error) throw new Error("Founder access check failed");
+      founderTest = operator?.role === "founder";
+    }
 
     const demoAllowed =
       company?.is_demo === true &&
-      verification?.status !== "suspended";
+      !["suspended", "rejected"].includes(verification?.status);
 
     const verifiedAllowed =
       verification?.status === "approved" &&
@@ -213,7 +224,7 @@ export async function requireVerifiedCompany(req, res) {
       companyId: company.id,
       role: membership.role,
       email: user.email || null,
-      accessKind: demoAllowed ? "demo" : subscription?.plan === "free" ? "discovery" : "verified",
+      accessKind: founderTest ? "founder_test" : demoAllowed ? "demo" : subscription?.plan === "free" ? "discovery" : "verified",
       discoveryStartsAt: company.created_at,
       discoveryEndsAt: discovery.endsAt,
     };

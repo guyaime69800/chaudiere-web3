@@ -1909,7 +1909,7 @@ export default function ProSpacePage() {
         <Brand />
 
         <div className="pro-header-actions">
-          <span className="pro-plan-badge">Accès {getPlanLabel(plan)}{testPlan ? ` · abonnement test ${getPlanLabel(testPlan)}` : ""}</span>
+          <span className="pro-plan-badge">Accès {company.is_demo === true && plan === "enterprise" ? "Test — fonctions complètes" : getPlanLabel(plan)}{testPlan ? ` · abonnement test ${getPlanLabel(testPlan)}` : ""}</span>
 
           <button
             className="pro-logout-button"

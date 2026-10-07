@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { devisRequest, compressPlate } from "../services/shibaDevisService";
 import { PLATE_FIELDS, EQUIPMENT_TYPES } from "../../shared/plate-scan.js";
+import { loadEquipmentKnowledge } from "../services/equipmentKnowledge";
 const labels = {
   brand: "Marque",
   model: "Modèle commercial",
@@ -66,16 +67,28 @@ export default function PlateScanner({ onConfirm, disabled = false, initialOpen 
       setBusy(false);
     }
   }
-  function candidate(id) {
+  async function candidate(id) {
     setCandidateId(id);
     const c = analysis.candidates.find((x) => x.equipmentId === id);
-    if (c)
+    if (c) {
+      setBusy(true);
+      let equipmentType = "";
+      try {
+        const knowledge = await loadEquipmentKnowledge(c);
+        const category = knowledge?.data?.identity?.productType || "";
+        if (category.startsWith("chaudiere")) equipmentType = "boiler";
+        else if (category.startsWith("pompe_a_chaleur")) equipmentType = "heat_pump";
+        else if (category.startsWith("climatisation")) equipmentType = "air_conditioning";
+      } catch { setError("Le type du modèle n’a pas pu être chargé. Précisez-le manuellement."); }
       setValues((v) => ({
         ...v,
         brand: c.brand,
         model: c.model,
         productReference: c.manufacturerReference,
+        equipmentType: equipmentType || v.equipmentType,
       }));
+      setBusy(false);
+    }
   }
   return (
     <section className="devis-panel" aria-label="Scanner la plaque">
@@ -156,6 +169,7 @@ export default function PlateScanner({ onConfirm, disabled = false, initialOpen 
                   Correspondances du catalogue à confirmer
                   <select
                     value={candidateId}
+                    disabled={busy}
                     onChange={(e) => candidate(e.target.value)}
                   >
                     <option value="">Ne rattacher aucun modèle</option>

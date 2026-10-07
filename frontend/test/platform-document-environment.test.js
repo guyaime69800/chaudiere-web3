@@ -27,6 +27,7 @@ test("the Production catalog allows verified and active discovery professionals"
   assert.equal(platformDocumentCatalogAllowed("production", "verified"), true);
   assert.equal(platformDocumentCatalogAllowed("production", "demo"), false);
   assert.equal(platformDocumentCatalogAllowed("production", "discovery"), true);
+  assert.equal(platformDocumentCatalogAllowed("production", "founder_test"), true);
   assert.equal(platformDocumentCatalogAllowed("production", undefined), false);
   assert.equal(platformDocumentCatalogAllowed("preview", "demo"), true);
 });

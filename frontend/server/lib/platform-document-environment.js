@@ -11,5 +11,5 @@ export function platformDocumentPathname(pathname, name) {
 }
 
 export function platformDocumentCatalogAllowed(name, accessKind) {
-  return name === "preview" || (name === "production" && ["verified", "discovery"].includes(accessKind));
+  return name === "preview" || (name === "production" && ["verified", "discovery", "founder_test"].includes(accessKind));
 }

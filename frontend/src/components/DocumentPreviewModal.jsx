@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import "./DocumentPreviewModal.css";
+const PdfDocumentViewer = lazy(() => import("./PdfDocumentViewer"));
 
 export default function DocumentPreviewModal({
   open,
@@ -28,7 +29,7 @@ export default function DocumentPreviewModal({
     documentUrl && !isImage
       ? documentUrl + "#toolbar=1&navpanes=0&view=FitH"
       : documentUrl;
-  const loading = loadedUrl !== viewerUrl;
+  const loading = isImage && loadedUrl !== viewerUrl;
   function openDocumentInNewTab(event) {
     event.preventDefault();
 
@@ -66,7 +67,7 @@ export default function DocumentPreviewModal({
       if (event.key !== "Tab") return;
 
       const focusableElements = dialogRef.current?.querySelectorAll(
-        'button:not([disabled]), a[href], iframe, [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), input:not([disabled]), a[href], iframe, [tabindex]:not([tabindex="-1"])',
       );
 
       if (!focusableElements?.length) return;
@@ -165,11 +166,9 @@ export default function DocumentPreviewModal({
               onError={() => setLoadedUrl(viewerUrl)}
             />
           ) : (
-            <iframe
-              src={viewerUrl}
-              title={title || "Aperçu du document PDF"}
-              onLoad={() => setLoadedUrl(viewerUrl)}
-            />
+            <Suspense fallback={<p role="status">Préparation du lecteur PDF…</p>}>
+              <PdfDocumentViewer key={documentUrl} url={documentUrl} title={title} />
+            </Suspense>
           )}
         </div>
 
