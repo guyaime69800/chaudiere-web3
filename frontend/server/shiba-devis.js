@@ -93,7 +93,15 @@ export function createDevisHandler(deps = {}) {
           .json({ ok: true, id: row?.[0]?.id || body.ticket });
       }
       if (body.action !== "simulate") throw fail(400, "Action inconnue.");
-      const input = projectInput(body.project);
+      let input;
+      try {
+        input = projectInput(body.project);
+      } catch {
+        throw fail(
+          400,
+          "Informations du projet invalides. Vérifiez les champs saisis.",
+        );
+      }
       const versions = await checked(
         db
           .from("shiba_aid_versions")

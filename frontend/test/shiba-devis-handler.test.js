@@ -3,6 +3,19 @@ import assert from "node:assert/strict";
 import { createDevisHandler } from "../server/shiba-devis.js";
 
 const ticket = "10000000-0000-0000-0000-000000000001";
+test("invalid project is a client error before any database query", async () => {
+  const { handler, calls, res } = fixture();
+  await handler(
+    {
+      method: "POST",
+      headers: {},
+      body: { action: "simulate", project: { budget: -1 } },
+    },
+    res,
+  );
+  assert.equal(res.code, 400);
+  assert.equal(calls.length, 0);
+});
 function fixture({
   owner = "alice",
   storedOwner = "alice",
