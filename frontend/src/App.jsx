@@ -1030,6 +1030,13 @@ function App({ initialMode = "public" }) {
       <section className="hero" id="rechercher-appareil">
         {location.pathname === "/" ? <h2>Retrouver un appareil</h2> : <h1>Fiche publique de votre appareil</h1>}
         <p>Saisissez un identifiant CarnetPass ou scannez le QR code pour ouvrir la fiche de l’appareil.</p>
+        {location.pathname === "/" && (
+          <div className="plate-scan-entry">
+            <h3>Vous avez la plaque signalétique de l’appareil ?</h3>
+            <p>Dans votre espace professionnel, choisissez « Ajouter un équipement », puis « Photographier la plaque signalétique ». Une photo permet de lire la marque, le modèle et la référence, puis de proposer les correspondances du catalogue. Vérifiez les informations avant l’enregistrement.</p>
+            <button type="button" className="btn btn-ghost" onClick={() => navigate("/espace-pro")}>📷 Accéder au scan de plaque dans l’espace pro</button>
+          </div>
+        )}
         {location.pathname.startsWith("/appareil/") && (
           <InstallCarnetPass className="install-carnetpass--qr" />
         )}

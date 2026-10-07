@@ -85,12 +85,12 @@ export default function PlateScanner({ onConfirm, disabled = false }) {
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
       >
-        Scanner la plaque
+        Photographier la plaque signalétique
       </button>
       {open && (
         <>
           <p>
-            Photographiez uniquement la plaque. L’image compressée est envoyée à
+            Photographiez la plaque signalétique entière, nette et sans reflet, avec la marque et les références lisibles. L’image compressée est envoyée à
             CarnetPass puis à OpenAI pour extraction. La photo n’est pas
             conservée par CarnetPass sauf choix explicite après enregistrement.
             Le numéro de série reste privé.
