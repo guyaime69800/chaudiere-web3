@@ -9,6 +9,7 @@ import platformDocumentSubmissions from "../server/platform-document-submissions
 import { platformDocumentEnvironment, platformDocumentPathname } from "../server/lib/platform-document-environment.js";
 import { indexPlatformDocument } from "../server/lib/platform-document-rag.js";
 import { loadPlatformPdf } from "../server/lib/verify-platform-pdf.js";
+import { mfaAccessError } from "../server/lib/mfa-access.js";
 
 export const maxDuration = 300;
 
@@ -46,6 +47,7 @@ async function authorize(token) {
   const { data: { user }, error } = await auth.auth.getUser(token);
   if (error || !user?.email_confirmed_at) return null;
   const { data: role } = await service().from("platform_admins").select("role").eq("user_id", user.id).maybeSingle();
+  if (role && mfaAccessError(user, token, { required: true })) return null;
   return role ? { ...user, platformRole: role.role } : null;
 }
 

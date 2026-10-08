@@ -302,6 +302,7 @@ function CompanyAccountCard({
   onContactSaved,
 }) {
   const [activeModal, setActiveModal] = useState(null);
+  const { security } = useAuth();
   const [siret, setSiret] = useState(company.siret || "");
   const [siretBusy, setSiretBusy] = useState(false);
   const [siretError, setSiretError] = useState("");
@@ -325,10 +326,7 @@ function CompanyAccountCard({
     user?.email_confirmed_at || user?.confirmed_at,
   );
   const authenticatedSession = Boolean(session?.access_token);
-  const mfaConfigured = Boolean(
-    Array.isArray(user?.factors) &&
-    user.factors.some((factor) => factor?.status === "verified"),
-  );
+  const mfaConfigured = Boolean(security?.enrolled && security.assurance === "aal2");
   const activeProtectionCount = [
     emailConfirmed,
     authenticatedSession,
@@ -873,7 +871,7 @@ function CompanyAccountCard({
             </div>
 
             <span className="pro-security-state">
-              {mfaConfigured ? "Active" : "À venir"}
+              {mfaConfigured ? "Active" : "À activer"}
             </span>
           </li>
         </ul>
@@ -892,13 +890,15 @@ function CompanyAccountCard({
 
         {!mfaConfigured && (
           <p className="pro-security-note">
-            <strong>À prévoir avant la production :</strong> l’activation de la
-            double authentification fera partie du renforcement final de la
-            sécurité CarnetPass.
+            Ajoutez CarnetPass à votre application d’authentification, puis validez
+            son code à six chiffres pour activer cette protection.
           </p>
         )}
 
         <div className="pro-modal-actions">
+          <Link className="pro-primary-button" to="/securite-compte">
+            {mfaConfigured ? "Gérer la double authentification" : "Activer la double authentification"}
+          </Link>
           <button
             className="pro-primary-button"
             type="button"

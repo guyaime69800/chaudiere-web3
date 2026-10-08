@@ -124,6 +124,7 @@ export default function AccountSettingsPage() {
         <section className="account-settings-card">
           <h2>Sécurité</h2>
           <p>Adresse e-mail confirmée : {user.email_confirmed_at ? "oui" : "non"}.</p>
+          <p><Link className="account-settings-plan-link" to="/securite-compte">Activer ou gérer la double authentification →</Link></p>
           <form onSubmit={(event) => { event.preventDefault(); run("password", async () => {
             if (newPassword.length < 12) throw new Error("Choisissez au moins 12 caractères.");
             const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });

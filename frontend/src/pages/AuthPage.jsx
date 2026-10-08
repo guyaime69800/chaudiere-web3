@@ -47,10 +47,10 @@ function getFriendlyError(error) {
 async function isPlatformAdmin(accessToken) {
   if (!accessToken) return false;
   try {
-    const response = await fetch("/api/platform-admin", {
+    const response = await fetch("/api/platform-admin?security=1", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    return response.ok;
+    return response.ok && (await response.json()).mfaRequired === true;
   } catch {
     return false;
   }

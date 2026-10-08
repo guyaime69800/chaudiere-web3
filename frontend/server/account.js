@@ -1,5 +1,6 @@
 import process from "node:process";
 import { createClient } from "@supabase/supabase-js";
+import { accountMfaAccessError } from "./lib/mfa-access.js";
 
 const clientOptions = { auth: { persistSession: false, autoRefreshToken: false } };
 
@@ -33,6 +34,8 @@ export default async function handler(req, res) {
   if (authError || !user?.id || !user.email_confirmed_at) return reply(res, 401, "Reconnectez-vous.");
 
   const admin = createClient(url, secretKey, clientOptions);
+  const mfaError = await accountMfaAccessError(user, bearer[1], admin);
+  if (mfaError) return reply(res, mfaError.status, mfaError.message);
   const { data: memberships, error: membershipError } = await admin.from("company_members")
     .select("company_id, role").eq("user_id", user.id);
   if (membershipError) return reply(res, 503, "Impossible de vérifier les entreprises du compte.");

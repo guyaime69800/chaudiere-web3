@@ -11,11 +11,11 @@ const loadingPageStyle = {
   fontFamily: "Inter, system-ui, sans-serif",
 };
 
-export default function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
+export default function ProtectedRoute({ children, allowMfaSetup = false }) {
+  const { user, loading, security, securityLoading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  if (loading || (!allowMfaSetup && securityLoading)) {
     return (
       <main style={loadingPageStyle}>
         <p role="status">Chargement de votre espace professionnel…</p>
@@ -31,6 +31,10 @@ export default function ProtectedRoute({ children }) {
         state={{ from: location }}
       />
     );
+  }
+
+  if (!allowMfaSetup && (security?.needsVerification || security?.error)) {
+    return <Navigate to="/securite-compte" replace state={{ from: location }} />;
   }
 
   return children;

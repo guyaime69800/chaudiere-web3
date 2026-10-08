@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getDiscoveryAccess } from "../../shared/discovery-access.js";
 import { devisDatabase } from "./devis-security.js";
 import { platformAdminEnvironment } from "./platform-admin-environment.js";
+import { mfaAccessError } from "./mfa-access.js";
 
 // Vérifie qu'une requête provient d'un utilisateur professionnel autorisé.
 // Cette fonction n'utilise aucune clé administrateur Supabase.
@@ -89,6 +90,8 @@ export async function requireVerifiedCompany(req, res) {
     }
 
     const user = authData?.user;
+    const mfaError = mfaAccessError(user, token);
+    if (mfaError) return deny(mfaError.status, mfaError.code, mfaError.message);
 
     if (!user?.id || user.is_anonymous) {
       return deny(
@@ -175,6 +178,10 @@ export async function requireVerifiedCompany(req, res) {
         .select("role").eq("user_id", user.id).maybeSingle();
       if (error) throw new Error("Founder access check failed");
       founderTest = operator?.role === "founder";
+      if (founderTest) {
+        const founderMfaError = mfaAccessError(user, token, { required: true });
+        if (founderMfaError) return deny(founderMfaError.status, founderMfaError.code, founderMfaError.message);
+      }
     }
 
     const demoAllowed =

@@ -7,6 +7,8 @@ test("maintenance preserves the founder control and reminder scheduler", () => {
   assert.equal(maintenanceAllowedPath("/administration-maintenance"), true);
   assert.equal(maintenanceAllowedPath("/api/maintenance-control"), true);
   assert.equal(maintenanceAllowedPath("/api/maintenance-reminders"), true);
+  assert.equal(maintenanceAllowedPath("/securite-compte"), true);
+  assert.equal(maintenanceAllowedPath("/api/platform-admin"), true);
   assert.equal(maintenanceAllowedPath("/api/billing"), false);
   assert.equal(maintenanceAllowedPath("/espace-pro"), false);
 });

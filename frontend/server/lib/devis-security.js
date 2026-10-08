@@ -3,6 +3,7 @@ import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 import { createHash } from "node:crypto";
 import { platformAdminEnvironment } from "./platform-admin-environment.js";
+import { accountMfaAccessError, mfaAccessError } from "./mfa-access.js";
 export const fail = (status, message) =>
   Object.assign(new Error(message), { status });
 const options = {
@@ -94,7 +95,10 @@ export async function devisIdentity(req) {
   const { data, error } = await auth.auth.getUser(token);
   if (error || !data?.user?.email_confirmed_at || data.user.is_anonymous)
     throw fail(401, "Connexion confirmée requise.");
-  return { user: data.user, db: devisDatabase() };
+  const database = devisDatabase();
+  const mfaError = await accountMfaAccessError(data.user, token, database);
+  if (mfaError) throw fail(mfaError.status, mfaError.message);
+  return { user: data.user, token, db: database };
 }
 export async function devisOperator(req) {
   const environment = platformAdminEnvironment(process.env);
@@ -107,6 +111,8 @@ export async function devisOperator(req) {
     .maybeSingle();
   if (error) throw fail(503, "Contrôle administrateur indisponible.");
   if (!data) throw fail(403, "Accès réservé à l’équipe CarnetPass.");
+  const mfaError = mfaAccessError(context.user, context.token, { required: true });
+  if (mfaError) throw fail(mfaError.status, mfaError.message);
   return { ...context, operator: data };
 }
 export async function devisCompany(
@@ -146,6 +152,10 @@ export async function devisCompany(
       const { data: operator, error: adminError } = await context.db.from("platform_admins").select("role").eq("user_id", context.user.id).maybeSingle();
       if (adminError) throw fail(503, "Contrôle de l’accès de test indisponible.");
       testAccess = operator?.role === "founder";
+      if (testAccess) {
+        const mfaError = mfaAccessError(context.user, context.token, { required: true });
+        if (mfaError) throw fail(mfaError.status, mfaError.message);
+      }
     }
   }
   if (

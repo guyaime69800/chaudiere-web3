@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { Redis } from "@upstash/redis";
 import { createHash, randomBytes } from "node:crypto";
+import { mfaAccessError } from "./lib/mfa-access.js";
 import { MAINTENANCE_KEY, MAINTENANCE_ACCESS_PREFIX, MAINTENANCE_ACCESS_COOKIE } from "./lib/maintenance-state.js";
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
@@ -55,6 +56,8 @@ export default async function handler(req, res) {
       const access = token ? await redis.get(accessKey(token)) : null;
       return res.status(200).json({ ok: true, state: state || { enabled: false }, accessUntil: access?.expiresAt || null });
     }
+    const mfaError = mfaAccessError(user, bearer, { required: true });
+    if (mfaError) return res.status(mfaError.status).json({ ok: false, code: mfaError.code, error: mfaError.message });
     let body;
     try { body = await readBody(req); }
     catch { return res.status(400).json({ ok: false, error: "Requête invalide." }); }
@@ -70,7 +73,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, accessUntil: expiresAt });
     }
     if (typeof body.enabled !== "boolean" || typeof body.message !== "string"
-      || body.message.length > 300 || /[\u0000-\u001f\u007f]/.test(body.message)) {
+      || body.message.length > 300 || /\p{Cc}/u.test(body.message)) {
       return res.status(400).json({ ok: false, error: "Paramètres invalides." });
     }
     const state = { enabled: body.enabled, message: body.message.trim(), updatedAt: new Date().toISOString(), updatedBy: user.id };

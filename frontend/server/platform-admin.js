@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { platformAdminEnvironment } from "./lib/platform-admin-environment.js";
+import { mfaAccessError } from "./lib/mfa-access.js";
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const send = (res, status, message, extra = {}) => res.status(status).json({ ok: status < 400, message, ...extra });
@@ -34,7 +35,12 @@ export default async function platformAdminHandler(req, res) {
   const { data: operator, error: roleError } = await admin.from("platform_admins")
     .select("role").eq("user_id", user.id).maybeSingle();
   if (roleError) return send(res, 503, "Accès administrateur indisponible.");
+  if (req.method === "GET" && req.query?.security === "1") {
+    return send(res, 200, "OK", { role: operator?.role || null, mfaRequired: Boolean(operator) });
+  }
   if (!operator) return send(res, 403, "Accès réservé à l'équipe CarnetPass.");
+  const mfaError = mfaAccessError(user, token, { required: true });
+  if (mfaError) return send(res, mfaError.status, mfaError.message, { code: mfaError.code });
 
   if (req.method === "GET") {
     const search = String(req.query?.search || "").trim();

@@ -11,6 +11,7 @@ import ShibaDevisPage from "./pages/ShibaDevisPage.jsx";
 import IndividualHomePage from "./pages/IndividualHomePage.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider } from "./context/AuthProvider";
+import MfaSecurityPage from "./pages/MfaSecurityPage";
 import AuthPage from "./pages/AuthPage.jsx";
 import ProSpacePage from "./pages/ProSpacePage.jsx";
 import PricingPage from "./pages/PricingPage.jsx";
@@ -91,6 +92,7 @@ createRoot(document.getElementById("root")).render(
             }
           />
           <Route path="/parametres-compte" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
+          <Route path="/securite-compte" element={<ProtectedRoute allowMfaSetup><MfaSecurityPage /></ProtectedRoute>} />
           <Route path="/administration-interne" element={<ProtectedRoute><PlatformAdminPage /></ProtectedRoute>} />
           <Route path="/administration-maintenance" element={<ProtectedRoute><MaintenanceAdminPage /></ProtectedRoute>} />
           <Route path="/administration-aides" element={<ProtectedRoute><AidAdminPage /></ProtectedRoute>} />

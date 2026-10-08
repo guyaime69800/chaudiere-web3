@@ -1,18 +1,34 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../services/supabaseClient";
 import { AuthContext } from "./AuthContext";
+import { loadMfaSecurity } from "../services/mfaService";
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [security, setSecurity] = useState(null);
+  const [securityRetry, setSecurityRetry] = useState(0);
+  const refreshSecurity = useCallback(() => setSecurityRetry((value) => value + 1), []);
+  const securityLoading = Boolean(session?.access_token && security?.token !== session.access_token);
   useEffect(() => {
-    if (!session?.access_token) return;
+    const token = session?.access_token;
+    if (!token) return;
+    let active = true;
+    loadMfaSecurity(token).then((result) => {
+      if (active) setSecurity({ ...result, token, error: "" });
+    }).catch(() => {
+      if (active) setSecurity({ token, error: "Le contrôle de sécurité est indisponible. Réessayez.", factors: [] });
+    });
+    return () => { active = false; };
+  }, [session?.access_token, securityRetry]);
+  useEffect(() => {
+    if (!session?.access_token || securityLoading || security?.error || security?.needsVerification) return;
     // Only the server-confirmed founder receives a pass; other users get 403.
     fetch("/api/maintenance-control", {
       method: "POST", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
       body: JSON.stringify({ action: "grant-durable-access" }),
     }).catch(() => {});
-  }, [session?.access_token]);
+  }, [session?.access_token, securityLoading, security?.error, security?.needsVerification]);
 
   useEffect(() => {
     let isActive = true;
@@ -58,8 +74,11 @@ export function AuthProvider({ children }) {
       session,
       user: session?.user ?? null,
       loading,
+      security,
+      securityLoading,
+      refreshSecurity,
     }),
-    [session, loading]
+    [session, loading, security, securityLoading, refreshSecurity]
   );
 
   return (

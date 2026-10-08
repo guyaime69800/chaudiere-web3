@@ -7,6 +7,8 @@ export function maintenanceAllowedPath(pathname) {
     || pathname === '/administration-aides'
     || pathname === '/api/aid-admin'
     || pathname === "/connexion"
+    || pathname === "/securite-compte"
+    || pathname === "/api/platform-admin"
     || pathname === "/api/maintenance-control"
     || pathname === "/api/maintenance-reminders"
     || pathname.startsWith("/assets/")

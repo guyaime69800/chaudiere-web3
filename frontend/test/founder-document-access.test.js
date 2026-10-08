@@ -21,8 +21,9 @@ test('only the authenticated founder demo receives full document access', async 
     return new Response(JSON.stringify(data),{status:200,headers:{'content-type':'application/json'}});
   };
   const response={status(code){this.code=code;return this;},json(data){this.data=data;return this;}};
+  const token = 'header.' + Buffer.from(JSON.stringify({sub:'founder-user',aal:'aal2'})).toString('base64url') + '.signature';
   try {
-    assert.equal((await requireVerifiedCompany({headers:{authorization:'Bearer test-token'}},response)).accessKind,'founder_test');
+    assert.equal((await requireVerifiedCompany({headers:{authorization:'Bearer '+token}},response)).accessKind,'founder_test');
     operator='operator';
     assert.equal((await requireVerifiedCompany({headers:{authorization:'Bearer test-token'}},response)).accessKind,'demo');
     operator='founder'; verificationStatus='suspended';
