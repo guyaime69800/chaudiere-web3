@@ -11,6 +11,7 @@ import { getShibaPlan, refundShibaQuestion, reserveShibaQuestion, setShibaUsageH
 import { reportAnomaly } from "../server/lib/anomaly-alert.js";
 import { checkDocumentGrounding, UNVERIFIED_ANSWER } from "../server/lib/shiba-grounding.js";
 import { shibaCreditsExhaustedMessage } from "../src/lib/shiba-credit-copy.js";
+import { platformDocumentEnvironment, platformDocumentCatalogAllowed } from "../server/lib/platform-document-environment.js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -192,12 +193,13 @@ export default async function handler(
       getEquipmentConfig(equipmentId);
 
     if (platformDocumentIds.length) {
-      const previewEnabled = process.env.VERCEL_ENV === "preview"
-        && process.env.VERCEL_GIT_COMMIT_REF === "feature/documentation-multi-docs"
-        && process.env.VITE_SUPABASE_URL === "https://bqqzzbwqmiyxcotvqtoc.supabase.co";
-      if (!previewEnabled) return response.status(404).json({ error: "Documentation indisponible." });
+      const documentEnvironment = platformDocumentEnvironment(process.env);
+      if (documentEnvironment.status) return response.status(documentEnvironment.status).json({ error: "Documentation indisponible." });
       const professional = await requireVerifiedCompany(request, response);
       if (!professional) return;
+      if (!platformDocumentCatalogAllowed(documentEnvironment.name, professional.accessKind)) {
+        return response.status(403).json({ error: "Documentation indisponible pour ce compte." });
+      }
       const db = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SECRET_KEY,
         { auth: { persistSession: false, autoRefreshToken: false } });
       const { data: indexed, error: indexError } = await db.from("platform_document_intake")
