@@ -51,7 +51,7 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
   const [query, setQuery] = useState("");
   const [model, setModel] = useState(null);
   const [documents, setDocuments] = useState([]);
-  const [indexedDocumentCount, setIndexedDocumentCount] = useState(0);
+  const indexedDocumentCount = documents.filter((item) => item.storage !== "platform-private" || item.ragStatus === "ready").length;
   const [publishedDocuments, setPublishedDocuments] = useState([]);
   const [publishedDocumentsBusy, setPublishedDocumentsBusy] = useState(Boolean(session?.access_token));
   const [publishedDocumentsError, setPublishedDocumentsError] = useState("");
@@ -76,8 +76,14 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
   const [error, setError] = useState("");
   const documentRequest = useRef(0);
   const aiRequest = useRef(0);
+  const selectedModel = useRef(null);
 
   useEffect(() => () => { documentRequest.current += 1; aiRequest.current += 1; }, []);
+  useEffect(() => {
+    const refresh = () => setPublishedDocumentsReload((value) => value + 1);
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, []);
   useEffect(() => {
     if (!session?.access_token) return;
     const controller = new AbortController();
@@ -88,7 +94,23 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
       if (!response.ok) throw new Error(result?.error || "Chargement des documents publiés impossible.");
       return result;
     }).then((result) => {
-      if (!controller.signal.aborted) setPublishedDocuments(result?.documents || []);
+      if (!controller.signal.aborted) {
+        const latest = result?.documents || [];
+        setPublishedDocuments(latest); setPublishedDocumentsError("");
+        const byId = new Map(latest.map((item) => [item.id, item]));
+        const updateDocuments = (items) => items.filter((item) => item.storage !== "platform-private" || byId.has(item.documentId))
+          .map((item) => byId.has(item.documentId) ? { ...item, title: byId.get(item.documentId).title, ragStatus: byId.get(item.documentId).rag_status } : item);
+        setDocuments((items) => updateDocuments(items));
+        const current = selectedModel.current;
+        if (current) {
+          const updated = { ...current, publishedDocuments: updateDocuments(current.publishedDocuments || []) };
+          if (!updated.equipmentId && !updated.publishedDocuments.length) {
+            clearModel({ preserveQuestion: true }); setStep("category");
+            setError("Cette fiche n’est plus diffusée. Choisissez un autre modèle.");
+          } else { selectedModel.current = updated; setModel(updated); }
+        }
+        setAnswer(""); setPreviewDocument(null);
+      }
     }).catch((error) => {
       if (!controller.signal.aborted) setPublishedDocumentsError(error.message);
     }).finally(() => {
@@ -122,7 +144,8 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
 
   function clearModel({ preserveQuestion = false } = {}) {
     documentRequest.current += 1; aiRequest.current += 1;
-    setModel(null); setDocuments([]); setIndexedDocumentCount(0); setSupport(null); setDocumentsBusy(false); setDocumentsError("");
+    selectedModel.current = null;
+    setModel(null); setDocuments([]); setSupport(null); setDocumentsBusy(false); setDocumentsError("");
     setPreviewDocument(null); setPreviewBusyId(null); if (!preserveQuestion) setQuestion(""); setAnswer(""); setAnswerSource(""); setAnswerSources([]); setAnswerCitations([]); setWebFallbackAvailable(false); setBusy(false); setError("");
   }
   function toCategory() { clearModel({ preserveQuestion: true }); setType(""); setBrand(""); setQuery(""); setStep("category"); }
@@ -134,10 +157,10 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
     clearModel({ preserveQuestion: true });
     const request = ++documentRequest.current;
     setModelReturnStep(returnStep);
+    selectedModel.current = item;
     setAssistantOrigin(fromAssistant); setModel(item); setStep(fromAssistant ? "assistant" : "model");
     if (item.publishedDocuments) {
       setDocuments(item.publishedDocuments);
-      setIndexedDocumentCount(item.publishedDocuments.filter((document) => document.ragStatus === "ready").length);
     }
     if (item.hotlinePhone) setSupport({ hotline: { label: "Hotline", phone: item.hotlinePhone } });
     if (!item.equipmentId) return;
@@ -147,7 +170,6 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
       if (request === documentRequest.current) {
         const indexedDocuments = Array.isArray(library?.documents) ? library.documents : [];
         setDocuments([...indexedDocuments, ...(item.publishedDocuments || [])]);
-        setIndexedDocumentCount(indexedDocuments.length + (item.publishedDocuments || []).filter((document) => document.ragStatus === "ready").length);
         setSupport(item.hotlinePhone ? { ...(library?.support || {}), hotline: { label: "Hotline", phone: item.hotlinePhone } } : library?.support ?? null);
       }
     } catch (loadError) {

@@ -52,6 +52,7 @@ export default function PlatformAdminPage() {
   const [hotlineInputs, setHotlineInputs] = useState({});
   const [aliasInputs, setAliasInputs] = useState({});
   const [documentNotice, setDocumentNotice] = useState(null);
+  const [editingDocument, setEditingDocument] = useState(null);
   const [entryNotices, setEntryNotices] = useState({});
   function setEntryNotice(id, action, text, kind = "success") {
     setEntryNotices((previous) => ({ ...previous, [`${id}:${action}`]: { text, kind } }));
@@ -201,6 +202,23 @@ export default function PlatformAdminPage() {
     finally { setBusy(false); }
   }
 
+  async function saveDocument(event) {
+    event.preventDefault(); setBusy(true);
+    const entry = editingDocument;
+    try {
+      const response = await fetch("/api/platform-admin-documents", {
+        method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, action: "edit", manufacturer: entry.manufacturer,
+          modelReference: entry.model_reference, title: entry.title, category: entry.catalog_category }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Modification impossible.");
+      await loadDocuments(); setEditingDocument(null);
+      setEntryNotice(entry.id, "edit", result.withdrawn ? "Fiche modifiée et retirée de la diffusion. Vérifiez son nouveau rattachement puis confirmez sa diffusion." : "Fiche modifiée.");
+    } catch (cause) { setEntryNotice(entry.id, "edit", cause.message, "error"); }
+    finally { setBusy(false); }
+  }
+
   async function saveHotline(entry) {
     const phone = hotlineInputs[entry.id] ?? entry.hotline_phone ?? "";
     setBusy(true); setError(""); setMessage("");
@@ -294,6 +312,17 @@ export default function PlatformAdminPage() {
     const content = <>
       <p className="platform-admin-document-name"><strong>{entry.manufacturer} · {entry.model_reference}</strong> · {entry.title} <span>({awaitingPublication ? "En attente de diffusion" : entry.status === "approved" ? "Publié" : entry.status === "rejected" ? "Rejeté" : "À valider"})</span></p>
       <p className="platform-admin-document-filename">{entry.original_filename}</p>
+      <button type="button" disabled={busy || entry.rag_status === "indexing"} onClick={() => setEditingDocument({ ...entry })}>Modifier la fiche</button>
+      {editingDocument?.id === entry.id && <form onSubmit={saveDocument}>
+        <label>Fabricant <input required minLength={2} maxLength={120} value={editingDocument.manufacturer} onChange={(event) => setEditingDocument({ ...editingDocument, manufacturer: event.target.value })} /></label>
+        <label>Référence exacte du modèle <input required minLength={2} maxLength={160} value={editingDocument.model_reference} onChange={(event) => setEditingDocument({ ...editingDocument, model_reference: event.target.value })} /></label>
+        <label>Titre <input required minLength={2} maxLength={200} value={editingDocument.title} onChange={(event) => setEditingDocument({ ...editingDocument, title: event.target.value })} /></label>
+        <label>Catégorie <select required value={editingDocument.catalog_category || ""} onChange={(event) => setEditingDocument({ ...editingDocument, catalog_category: event.target.value })}><option value="">Choisir une catégorie</option>{catalogCategories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <p>Changer le fabricant, la référence ou la catégorie retire la fiche de la diffusion jusqu’à votre nouvelle validation. Le PDF reste conservé.</p>
+        <button disabled={busy}>Enregistrer les modifications</button>
+        <button type="button" disabled={busy} onClick={() => setEditingDocument(null)}>Annuler</button>
+      </form>}
+      {entryNotices[`${entry.id}:edit`] && <p role={entryNotices[`${entry.id}:edit`].kind === "error" ? "alert" : "status"}>{entryNotices[`${entry.id}:edit`].text}</p>}
       <button type="button" onClick={() => downloadDocument(entry)}>Télécharger le PDF</button>
       {entry.status === "approved" && <div className="platform-admin-document-index">
         <p>Shiba : {entry.rag_status === "ready" ? "prêt" : entry.rag_status === "needs_ocr" ? "OCR nécessaire" : entry.rag_status === "failed" ? "échec de l'indexation" : entry.rag_status === "indexing" ? "indexation en cours" : "à indexer"}{entry.rag_error ? ` — ${entry.rag_error}` : ""}</p>

@@ -7,7 +7,7 @@ import { handleUploadPresigned } from "@vercel/blob/client";
 import platformCatalogDocuments from "../server/lib/platform-catalog-documents.js";
 import platformDocumentSubmissions from "../server/platform-document-submissions.js";
 import { platformDocumentEnvironment, platformDocumentPathname } from "../server/lib/platform-document-environment.js";
-import { indexPlatformDocument } from "../server/lib/platform-document-rag.js";
+import { indexPlatformDocument, documentTypeFromTitle } from "../server/lib/platform-document-rag.js";
 import { loadPlatformPdf } from "../server/lib/verify-platform-pdf.js";
 import { mfaAccessError } from "../server/lib/mfa-access.js";
 
@@ -112,12 +112,36 @@ export default async function handler(req, res) {
     if (!user) return fail(res, 403, "Accès refusé.");
     const { id, action, category, distributionConfirmed } = req.body || {};
     if (typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id)
-      || !["approve", "publish-imported", "reject", "set-hotline", "set-aliases", "index", "unpublish", "delete"].includes(action)
+      || !["approve", "publish-imported", "reject", "set-hotline", "set-aliases", "index", "unpublish", "delete", "edit"].includes(action)
       || (["approve", "publish-imported"].includes(action)
         && (!catalogCategories.has(category) || distributionConfirmed !== true))) {
       return fail(res, 400, "Validation incomplète.");
     }
     const db = service();
+    if (action === "edit") {
+      const manufacturer = clean(req.body.manufacturer, 120);
+      const reference = clean(req.body.modelReference, 160);
+      const title = clean(req.body.title, 200);
+      if (!manufacturer || !reference || !title || !catalogCategories.has(category)) return fail(res, 400, "Renseignez le fabricant, la référence, le titre et la catégorie.");
+      const { data: current, error: readError } = await db.from("platform_document_intake")
+        .select("id, manufacturer, model_reference, title, catalog_category, status, rag_status, rag_error, rag_data, distribution_confirmed_at")
+        .eq("id", id).maybeSingle();
+      if (readError) return fail(res, 503, "Lecture de la fiche indisponible.");
+      if (!current || current.rag_error === "deleted_by_admin") return fail(res, 404, "Fiche introuvable.");
+      if (current.rag_status === "indexing") return fail(res, 409, "Attendez la fin de l’indexation avant de modifier la fiche.");
+      const withdrawn = manufacturer !== current.manufacturer || reference !== current.model_reference || category !== current.catalog_category;
+      const ragData = current.rag_data?.items ? { ...current.rag_data, items: current.rag_data.items.map((item) => ({
+        ...item, documentId: title, documentType: documentTypeFromTitle(title), section: `${title} - page ${item.page}`,
+      })) } : current.rag_data;
+      const { data: updated, error } = await db.from("platform_document_intake")
+        .update({ manufacturer, model_reference: reference, title, catalog_category: category, rag_data: ragData,
+          distribution_confirmed_at: withdrawn ? null : current.distribution_confirmed_at,
+          reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+        .eq("id", id).eq("status", current.status).eq("rag_status", current.rag_status).select("id").maybeSingle();
+      if (error) return fail(res, 503, "Modification de la fiche impossible.");
+      if (!updated) return fail(res, 409, "La fiche a changé. Actualisez la liste.");
+      return res.status(200).json({ ok: true, withdrawn: withdrawn && Boolean(current.distribution_confirmed_at) });
+    }
     if (action === "set-hotline") {
       const phone = String(req.body?.phone || "").trim();
       if (phone && (phone.length < 6 || phone.length > 32 || !/^[+0-9(). -]+$/.test(phone)
