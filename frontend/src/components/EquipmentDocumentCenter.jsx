@@ -261,11 +261,12 @@ function EquipmentDocumentCenterContent({
           console.error("Chargement de la documentation impossible :", failures);
         }
 
-        const documents = [...library.documents, ...publishedDocuments.filter(
-          (document) => !library.documents.some((existing) => existing.documentId === document.documentId),
+        const legacyDocuments = publishedDocuments.managed || publishedDocuments.length ? [] : library.documents;
+        const documents = [...legacyDocuments, ...publishedDocuments.filter(
+          (document) => !legacyDocuments.some((existing) => existing.documentId === document.documentId),
         )];
         setTechnicalDocuments(documents);
-        setTechnicalEquipmentId(library.catalogueEquipment?.equipmentId || "");
+        setTechnicalEquipmentId(publishedDocuments.managed || publishedDocuments.length ? "" : library.catalogueEquipment?.equipmentId || "");
         onTechnicalDocumentCountChange?.(documents.length);
       })
       .catch((error) => {

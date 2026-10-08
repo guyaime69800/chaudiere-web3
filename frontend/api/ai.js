@@ -219,19 +219,18 @@ export default async function handler(
           || sameModel(first.manufacturer) !== sameModel(equipmentConfig.equipmentData.identity?.brand)))) {
         return response.status(400).json({ error: "Documents de modèles différents." });
       }
-      const sources = (value) => Array.isArray(value) ? value : Array.isArray(value?.documents) ? value.documents : value ? [value] : [];
       const dynamicDocuments = indexed.map((item) => ({ documentId: item.id, title: item.title, storage: "private" }));
-      const base = equipmentConfig?.equipmentData || { identity: {
+      const base = { identity: {
         brand: first.manufacturer, model: first.model_reference, manufacturerReference: first.model_reference,
       } };
       equipmentConfig = {
         equipmentData: {
           ...base,
-          documents: [...(base.documents || []), ...dynamicDocuments],
+          documents: dynamicDocuments,
           support: base.support?.hotline?.phone ? base.support : indexed.find((item) => item.hotline_phone)?.hotline_phone
             ? { hotline: { label: "Hotline constructeur", phone: indexed.find((item) => item.hotline_phone).hotline_phone } } : base.support,
         },
-        ragEmbeddingData: [...sources(equipmentConfig?.ragEmbeddingData), ...indexed.map((item) => item.rag_data)],
+        ragEmbeddingData: indexed.map((item) => item.rag_data),
       };
     }
 

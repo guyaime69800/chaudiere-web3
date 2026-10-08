@@ -14,8 +14,23 @@ function matchesCatalogCategory(item, category) {
       && category === `${item.type}_${item.unitPosition}`);
 }
 
-export function catalogModelsWithPublishedDocuments(catalog, documents) {
-  const models = (Array.isArray(catalog) ? catalog : []).map((item) => ({ ...item }));
+function referenceValues(entry) {
+  return [entry.model_reference, ...String(entry.model_reference || "").split("·")
+    .filter((part) => normalizeReference(part).length >= 5), ...(entry.model_aliases || [])]
+    .map(normalizeReference);
+}
+
+function matchesManagedModel(item, entry) {
+  return normalizeReference(item.brand) === normalizeReference(entry.manufacturer)
+    && referenceValues(entry).includes(normalizeReference(item.manufacturerReference || item.model))
+    && matchesCatalogCategory(item, entry.catalog_category);
+}
+
+export function catalogModelsWithPublishedDocuments(catalog, documents, managedModels = documents) {
+  // Administrative records own their references, including withdrawn documents.
+  const models = (Array.isArray(catalog) ? catalog : [])
+    .filter((item) => !(managedModels || []).some((entry) => matchesManagedModel(item, entry)))
+    .map((item) => ({ ...item }));
   for (const document of Array.isArray(documents) ? documents : []) {
     if (!document?.id || !document.manufacturer || !document.model_reference || !document.catalog_category) continue;
     const existing = models.find((item) =>
@@ -75,5 +90,7 @@ export async function getPlatformDocumentsForEquipment(equipment, accessToken) {
     throw new Error(details?.error || "Les documents publiés sont momentanément indisponibles.");
   }
   const result = await response.json();
-  return publishedDocumentsForEquipment(result.documents, equipment);
+  const documents = publishedDocumentsForEquipment(result.documents, equipment);
+  documents.managed = publishedDocumentsForEquipment((result.managedModels || []).map((entry) => ({ ...entry, title: "" })), equipment).length > 0;
+  return documents;
 }

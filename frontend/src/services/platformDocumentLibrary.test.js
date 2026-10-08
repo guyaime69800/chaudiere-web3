@@ -49,3 +49,21 @@ test("adds imported PDFs to a matching catalog model without changing the source
   assert.deepEqual(models[0].searchAliases, ["7SP023249"]);
   assert.equal(catalog[0].publishedDocuments, undefined);
 });
+
+test("administrative model replaces the legacy card by product code and uses only published PDFs", () => {
+  const legacy = { brand: "Saunier Duval", model: "ThemaPlus Condens 25-A", manufacturerReference: "0010021497", type: "boiler", equipmentId: "legacy" };
+  const updated = { id: "new-notice", manufacturer: "Saunier Duval", model_reference: "THEMAPLUS CONDENS 25 -A R2 (H-FR) · 0010021497", catalog_category: "boiler", title: "Updated notice" };
+  const models = catalogModelsWithPublishedDocuments([legacy], [updated]);
+  assert.equal(models.length, 1);
+  assert.equal(models[0].model, updated.model_reference);
+  assert.equal(models[0].equipmentId, undefined);
+  assert.deepEqual(models[0].publishedDocuments.map((doc) => doc.documentId), ["new-notice"]);
+  assert.equal(legacy.equipmentId, "legacy");
+});
+
+test("withdrawal does not resurrect a legacy model and leaves unrelated models available", () => {
+  const legacy = { brand: "Saunier Duval", manufacturerReference: "0010021497", type: "boiler", equipmentId: "old" };
+  const unrelated = { ...legacy, manufacturerReference: "0010017388", equipmentId: "other" };
+  const managed = { manufacturer: "Saunier Duval", model_reference: "R2 · 0010021497", catalog_category: "boiler" };
+  assert.deepEqual(catalogModelsWithPublishedDocuments([legacy, unrelated], [], [managed]), [unrelated]);
+});
