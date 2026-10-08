@@ -54,7 +54,6 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
   const [documents, setDocuments] = useState([]);
   const indexedDocumentCount = documents.filter((item) => item.storage !== "platform-private" || item.ragStatus === "ready").length;
   const [publishedDocuments, setPublishedDocuments] = useState([]);
-  const [managedModels, setManagedModels] = useState([]);
   const [publishedDocumentsBusy, setPublishedDocumentsBusy] = useState(Boolean(session?.access_token));
   const [publishedDocumentsError, setPublishedDocumentsError] = useState("");
   const [publishedDocumentsReload, setPublishedDocumentsReload] = useState(0);
@@ -99,7 +98,6 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
       if (!controller.signal.aborted) {
         const latest = result?.documents || [];
         setPublishedDocuments(latest); setPublishedDocumentsError("");
-        setManagedModels(result?.managedModels || latest);
         const byId = new Map(latest.map((item) => [item.id, item]));
         const updateDocuments = (items) => items.filter((item) => item.storage !== "platform-private" || byId.has(item.documentId))
           .map((item) => byId.has(item.documentId) ? { ...item, title: byId.get(item.documentId).title, ragStatus: byId.get(item.documentId).rag_status } : item);
@@ -125,7 +123,7 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
     if (previewDocument?.documentUrl?.startsWith("blob:")) URL.revokeObjectURL(previewDocument.documentUrl);
   }, [previewDocument]);
 
-  const entries = catalogModelsWithPublishedDocuments(catalog, publishedDocuments, managedModels);
+  const entries = catalogModelsWithPublishedDocuments(catalog, publishedDocuments);
   const publishedModels = entries.filter((item) => item.publishedDocuments?.length);
   const matchingPublishedModels = publishedModels.filter((item) =>
     normalize([item.brand, item.model, item.manufacturerReference, ...(item.searchAliases || [])].join(" ")).includes(normalize(query)));

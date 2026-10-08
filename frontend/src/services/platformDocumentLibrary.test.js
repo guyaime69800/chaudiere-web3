@@ -61,11 +61,11 @@ test("administrative model replaces the legacy card by product code and uses onl
   assert.equal(legacy.equipmentId, "legacy");
 });
 
-test("withdrawal does not resurrect a legacy model and leaves unrelated models available", () => {
+test("catalogue hides all static legacy models even when no administrative PDF is published", () => {
   const legacy = { brand: "Saunier Duval", manufacturerReference: "0010021497", type: "boiler", equipmentId: "old" };
   const unrelated = { ...legacy, manufacturerReference: "0010017388", equipmentId: "other" };
   const managed = { manufacturer: "Saunier Duval", model_reference: "R2 · 0010021497", catalog_category: "boiler" };
-  assert.deepEqual(catalogModelsWithPublishedDocuments([legacy, unrelated], [], [managed]), [unrelated]);
+  assert.deepEqual(catalogModelsWithPublishedDocuments([legacy, unrelated], [], [managed]), []);
 });
 
 test("model families group variants while keeping reference-specific documents separate", () => {

@@ -14,18 +14,6 @@ function matchesCatalogCategory(item, category) {
       && category === `${item.type}_${item.unitPosition}`);
 }
 
-function referenceValues(entry) {
-  return [entry.model_reference, ...String(entry.model_reference || "").split("·")
-    .filter((part) => normalizeReference(part).length >= 5), ...(entry.model_aliases || [])]
-    .map(normalizeReference);
-}
-
-function matchesManagedModel(item, entry) {
-  return normalizeReference(item.brand) === normalizeReference(entry.manufacturer)
-    && referenceValues(entry).includes(normalizeReference(item.manufacturerReference || item.model))
-    && matchesCatalogCategory(item, entry.catalog_category);
-}
-
 export function catalogModelFamily(item) {
   if (item.modelFamily) return item.modelFamily;
   // Legacy static entries include capacity/version in the model label.
@@ -44,11 +32,10 @@ export function catalogModelFamilies(models) {
   return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name, "fr"));
 }
 
-export function catalogModelsWithPublishedDocuments(catalog, documents, managedModels = documents) {
-  // Administrative records own their references, including withdrawn documents.
-  const models = (Array.isArray(catalog) ? catalog : [])
-    .filter((item) => !(managedModels || []).some((entry) => matchesManagedModel(item, entry)))
-    .map((item) => ({ ...item }));
+export function catalogModelsWithPublishedDocuments(_catalog, documents) {
+  // Only published administrative records belong in the live catalogue.
+  // Static equipment metadata remains available for existing equipment records.
+  const models = [];
   for (const document of Array.isArray(documents) ? documents : []) {
     if (!document?.id || !document.manufacturer || !document.model_reference || !document.catalog_category) continue;
     const existing = models.find((item) =>
