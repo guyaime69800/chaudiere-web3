@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import shibaTechnicien from "../assets/simba-assistance-technique.webp";
 import { getEquipmentDocumentLibrary } from "../services/equipmentKnowledge";
-import { catalogModelsWithPublishedDocuments } from "../services/platformDocumentLibrary";
+import { catalogModelFamily, catalogModelFamilies, catalogModelsWithPublishedDocuments } from "../services/platformDocumentLibrary";
 import DocumentPreviewModal from "./DocumentPreviewModal";
 import ShibaUsage from "./ShibaUsage";
 import { openShibaRecharge, refreshShibaUsage } from "../services/shibaUsageEvents";
@@ -48,6 +48,7 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
   const [step, setStep] = useState(initialMode === "assistant" ? "assistant-picker" : "category");
   const [type, setType] = useState("");
   const [brand, setBrand] = useState("");
+  const [family, setFamily] = useState("");
   const [query, setQuery] = useState("");
   const [model, setModel] = useState(null);
   const [documents, setDocuments] = useState([]);
@@ -141,7 +142,9 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
     normalize(name).includes(normalize(query)) ||
     categoryEntries.some((item) => normalize(item.brand) === normalize(name) &&
       normalize([item.brand, item.model, item.variant, item.manufacturerReference, ...(item.searchAliases || [])].join(" ")).includes(normalize(query))));
-  const models = categoryEntries.filter((item) => normalize(item.brand) === normalize(brand)
+  const brandModels = categoryEntries.filter((item) => normalize(item.brand) === normalize(brand));
+  const families = catalogModelFamilies(brandModels);
+  const models = brandModels.filter((item) => (!family || normalize(catalogModelFamily(item)) === normalize(family))
     && (!normalize(query) || normalize([item.brand, item.model, item.variant, item.manufacturerReference, ...(item.searchAliases || [])].join(" ")).includes(normalize(query))));
 
   function clearModel({ preserveQuestion = false } = {}) {
@@ -151,7 +154,7 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
     setPreviewDocument(null); setPreviewBusyId(null); if (!preserveQuestion) setQuestion(""); setAnswer(""); setAnswerSource(""); setAnswerSources([]); setAnswerCitations([]); setWebFallbackAvailable(false); setBusy(false); setError("");
   }
   function toCategory() { clearModel({ preserveQuestion: true }); setType(""); setBrand(""); setQuery(""); setStep("category"); }
-  function toBrands() { clearModel({ preserveQuestion: true }); setBrand(""); setQuery(""); setManualModel(""); setManualReference(""); setStep("brand"); }
+  function toBrands() { clearModel({ preserveQuestion: true }); setBrand(""); setFamily(""); setQuery(""); setManualModel(""); setManualReference(""); setStep("brand"); }
   function toModels() { clearModel(); setStep(modelReturnStep); }
   function toAssistantPicker() { clearModel({ preserveQuestion: true }); setQuery(""); setStep("assistant-picker"); }
 
@@ -353,8 +356,12 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
           </>}
           {step === "models" && <><div className="technical-catalog-band"><button type="button" onClick={toBrands} aria-label="Retour aux marques">‹</button><h3>{brand}</h3></div>
             <label className="technical-catalog-search">Rechercher un modèle ou une référence<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nom du modèle, référence…" autoFocus /></label>
+            {families.length > 0 && <nav className="technical-catalog-families" aria-label="Modèles du constructeur">
+              <button type="button" aria-pressed={!family} onClick={() => { setFamily(""); setQuery(""); }}>Tous les modèles</button>
+              {families.map((item) => <button key={item.key} type="button" aria-pressed={normalize(family) === normalize(item.name)} onClick={() => { setFamily(item.name); setQuery(""); }}>{item.name} <small>({item.count})</small></button>)}
+            </nav>}
             {models.length === 0 ? <p className="technical-catalog-empty">{query ? "Aucun modèle ne correspond à cette recherche." : "Les modèles seront ajoutés progressivement. La marque est déjà référencée."}</p> : <div className="technical-catalog-list">
-              {models.map((item) => <button key={item.equipmentId || item.manufacturerReference || `${item.brand}-${item.model}`} type="button" className="technical-catalog-row" onClick={() => selectModel(item)}><strong>{item.model}{item.variant ? ` · ${item.variant}` : ""}<small>{item.manufacturerReference || ""}</small></strong><span aria-hidden="true">›</span></button>)}
+              {models.map((item) => <button key={item.equipmentId || item.manufacturerReference || `${item.brand}-${item.model}`} type="button" className="technical-catalog-row" onClick={() => selectModel(item)}><strong>{item.modelFamily ? item.manufacturerReference : item.model}{!item.modelFamily && item.variant ? ` · ${item.variant}` : ""}<small>{item.modelFamily || item.manufacturerReference || ""}</small></strong><span aria-hidden="true">›</span></button>)}
             </div>}
             <form className="technical-catalog-manual" onSubmit={(event) => { event.preventDefault(); if (!manualModel.trim()) return; selectModel({ brand, model: manualModel.trim(), manufacturerReference: manualReference.trim(), type }); }}>
               <strong>Modèle absent du catalogue ?</strong>

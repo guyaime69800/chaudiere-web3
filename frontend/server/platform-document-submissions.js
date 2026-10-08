@@ -101,6 +101,8 @@ export default async function handler(req, res) {
       uploaded_by: professional.userId,
       manufacturer,
       model_reference: modelReference,
+      model_name: String(equipment.model || "").trim().slice(0, 160).length >= 2
+        ? String(equipment.model).trim().slice(0, 160) : null,
       title: attachment.title,
       original_filename: attachment.original_filename,
       blob_pathname: pathname,

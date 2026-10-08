@@ -86,6 +86,7 @@ async function completeUpload({ blob, tokenPayload }) {
     uploaded_by: metadata.userId,
     manufacturer: metadata.manufacturer,
     model_reference: metadata.modelReference,
+    model_name: metadata.modelName || null,
     title: metadata.title,
     hotline_phone: metadata.hotlinePhone || null,
     original_filename: metadata.filename,
@@ -121,6 +122,8 @@ export default async function handler(req, res) {
     if (action === "edit") {
       const manufacturer = clean(req.body.manufacturer, 120);
       const reference = clean(req.body.modelReference, 160);
+      const modelName = clean(req.body.modelName, 160);
+      if (req.body.modelName !== undefined && !modelName) return fail(res, 400, "Renseignez un modèle entre 2 et 160 caractères.");
       const title = clean(req.body.title, 200);
       if (!manufacturer || !reference || !title || !catalogCategories.has(category)) return fail(res, 400, "Renseignez le fabricant, la référence, le titre et la catégorie.");
       const { data: current, error: readError } = await db.from("platform_document_intake")
@@ -134,7 +137,7 @@ export default async function handler(req, res) {
         ...item, documentId: title, documentType: documentTypeFromTitle(title), section: `${title} - page ${item.page}`,
       })) } : current.rag_data;
       const { data: updated, error } = await db.from("platform_document_intake")
-        .update({ manufacturer, model_reference: reference, title, catalog_category: category, rag_data: ragData,
+        .update({ manufacturer, model_reference: reference, ...(modelName ? { model_name: modelName } : {}), title, catalog_category: category, rag_data: ragData,
           distribution_confirmed_at: withdrawn ? null : current.distribution_confirmed_at,
           reviewed_by: user.id, reviewed_at: new Date().toISOString() })
         .eq("id", id).eq("status", current.status).eq("rag_status", current.rag_status).select("id").maybeSingle();
@@ -281,11 +284,11 @@ export default async function handler(req, res) {
       return;
     }
     const { data, error } = await service().from("platform_document_intake")
-      .select("id, blob_pathname, manufacturer, model_reference, title, original_filename, size_bytes, status, catalog_category, distribution_confirmed_at, hotline_phone, model_aliases, rag_status, rag_error, rag_started_at, rag_indexed_at, created_at")
+      .select("id, blob_pathname, manufacturer, model_name, model_reference, title, original_filename, size_bytes, status, catalog_category, distribution_confirmed_at, hotline_phone, model_aliases, rag_status, rag_error, rag_started_at, rag_indexed_at, created_at")
       .order("created_at", { ascending: false }).limit(50);
     if (!error) return res.status(200).json({ ok: true, documents: data.filter((entry) => entry.rag_error !== "deleted_by_admin"), publicationReady: true, hotlineReady: true });
     const fallback = await service().from("platform_document_intake")
-      .select("id, blob_pathname, manufacturer, model_reference, title, original_filename, size_bytes, status, catalog_category, hotline_phone, model_aliases, created_at")
+      .select("id, blob_pathname, manufacturer, model_name, model_reference, title, original_filename, size_bytes, status, catalog_category, hotline_phone, model_aliases, created_at")
       .order("created_at", { ascending: false }).limit(50);
     return fallback.error ? fail(res, 503, "Documents indisponibles.")
       : res.status(200).json({ ok: true, documents: fallback.data, publicationReady: true, hotlineReady: true });
@@ -300,8 +303,11 @@ export default async function handler(req, res) {
     let payload;
     try { payload = JSON.parse(body.payload?.clientPayload || "{}"); } catch { return fail(res, 400, "Données invalides."); }
     const user = await authorize(payload.accessToken);
+    if (!user) return fail(res, 403, "Envoi refusé.");
     const manufacturer = clean(payload.manufacturer, 120);
     const modelReference = clean(payload.modelReference, 160);
+    const modelName = clean(payload.modelName, 160);
+    if (!modelName) return fail(res, 400, "Renseignez le modèle, par exemple ThemaPlus Condens.");
     const title = clean(payload.title, 200);
     const hotlinePhone = String(payload.hotlinePhone || "").trim();
     const filename = String(payload.filename || "").trim();
@@ -311,7 +317,7 @@ export default async function handler(req, res) {
       || !platformDocumentPathname(body.payload?.pathname, environment.name)) {
       return fail(res, 403, "Envoi refusé.");
     }
-    authorization = { userId: user.id, manufacturer, modelReference, title, hotlinePhone, filename, pathname: body.payload.pathname };
+    authorization = { userId: user.id, manufacturer, modelName, modelReference, title, hotlinePhone, filename, pathname: body.payload.pathname };
   }
   try {
     const result = await handleUploadPresigned({

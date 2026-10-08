@@ -71,6 +71,12 @@ test("editing metadata preserves PDF passages and withdraws changed model identi
     assert.equal(saved.distribution_confirmed_at, current.distribution_confirmed_at);
     assert.equal(saved.rag_data.items[0].text, "Original PDF text"); assert.equal(saved.rag_data.items[0].page, 12); assert.equal(saved.rag_data.items[0].embeddingQ8, "AQ=="); assert.equal(saved.rag_data.items[0].documentId, "New notice");
     const changed = await edit({ modelReference: "023104" }); assert.equal(changed.body.withdrawn, true); assert.equal(saved.distribution_confirmed_at, null);
+    const classified = await edit({ modelName: "ALFEA DUO" });
+    assert.equal(classified.statusCode, 200); assert.equal(classified.body.withdrawn, false);
+    assert.equal(saved.model_name, "ALFEA DUO"); assert.equal(saved.model_reference, "023103");
+    assert.equal(saved.rag_data.items[0].text, "Original PDF text");
+    assert.equal((await edit({ modelName: "" })).statusCode, 400);
+    assert.equal((await edit({ modelName: "x".repeat(161) })).statusCode, 400);
     current.rag_status = "indexing"; assert.equal((await edit()).statusCode, 409);
     assert.equal((await edit({ title: "" })).statusCode, 400);
   } finally {

@@ -203,7 +203,7 @@ export default async function handler(
       const db = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SECRET_KEY,
         { auth: { persistSession: false, autoRefreshToken: false } });
       const { data: indexed, error: indexError } = await db.from("platform_document_intake")
-        .select("id, manufacturer, model_reference, title, hotline_phone, rag_data")
+        .select("id, manufacturer, model_name, model_reference, title, hotline_phone, rag_data")
         .in("id", platformDocumentIds).eq("status", "approved").eq("rag_status", "ready")
         .not("distribution_confirmed_at", "is", null);
       if (indexError) throw indexError;
@@ -221,7 +221,7 @@ export default async function handler(
       }
       const dynamicDocuments = indexed.map((item) => ({ documentId: item.id, title: item.title, storage: "private" }));
       const base = { identity: {
-        brand: first.manufacturer, model: first.model_reference, manufacturerReference: first.model_reference,
+        brand: first.manufacturer, model: first.model_name || first.model_reference, manufacturerReference: first.model_reference,
       } };
       equipmentConfig = {
         equipmentData: {

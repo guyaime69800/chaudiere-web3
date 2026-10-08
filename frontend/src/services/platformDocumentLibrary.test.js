@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { catalogModelsWithPublishedDocuments, publishedDocumentsForEquipment } from "./platformDocumentLibrary.js";
+import { catalogModelFamilies, catalogModelsWithPublishedDocuments, publishedDocumentsForEquipment } from "./platformDocumentLibrary.js";
 
 const notice = { id: "notice", manufacturer: "Airwell", model_reference: "HDLA-022N-09M25 · 7SP023249", title: "Notice d'installation", rag_status: "ready" };
 
@@ -66,4 +66,24 @@ test("withdrawal does not resurrect a legacy model and leaves unrelated models a
   const unrelated = { ...legacy, manufacturerReference: "0010017388", equipmentId: "other" };
   const managed = { manufacturer: "Saunier Duval", model_reference: "R2 · 0010021497", catalog_category: "boiler" };
   assert.deepEqual(catalogModelsWithPublishedDocuments([legacy, unrelated], [], [managed]), [unrelated]);
+});
+
+test("model families group variants while keeping reference-specific documents separate", () => {
+  const base = { manufacturer: "Saunier Duval", model_name: "ThemaPlus Condens", catalog_category: "boiler", title: "Notice" };
+  const models = catalogModelsWithPublishedDocuments([], [
+    { ...base, id: "f25", model_reference: "THEMAPLUS CONDENS F25 A-1" },
+    { ...base, id: "f30", model_reference: "THEMAPLUS CONDENS F30 A-1" },
+    { ...base, id: "fast", model_name: "ThemaFast Condens", model_reference: "THEMAFAST F30" },
+  ]);
+  assert.equal(models.length, 3);
+  const families = catalogModelFamilies(models);
+  assert.equal(families.find((group) => group.name === "ThemaPlus Condens").count, 2);
+  assert.deepEqual(models.find((model) => model.manufacturerReference.includes("F25")).publishedDocuments.map((doc) => doc.documentId), ["f25"]);
+  assert.equal(models[0].model, "ThemaPlus Condens");
+});
+
+test("legacy imports remain available until their model family is classified", () => {
+  const models = catalogModelsWithPublishedDocuments([], [{ ...notice, catalog_category: "air_conditioning_indoor" }]);
+  assert.equal(models[0].manufacturerReference, notice.model_reference);
+  assert.equal(catalogModelFamilies(models)[0].name, "Modèles à préciser");
 });

@@ -110,3 +110,4 @@
 .technical-catalog-published-entry{max-width:460px;margin:20px auto 4px}
 .technical-catalog-published-entry p{margin:10px 0;font-size:13px}
 .technical-catalog-published-entry .technical-catalog-back{margin-left:6px}
+.technical-catalog-families{display:flex;flex-wrap:wrap;gap:8px;max-width:460px;margin:0 auto 18px}.technical-catalog-families button{max-width:100%;padding:9px 12px;border:1px solid #e6c5b7;border-radius:10px;background:#fff;color:#873009;font:inherit;overflow-wrap:anywhere;cursor:pointer}.technical-catalog-families button[aria-pressed=true]{background:#bc3608;color:#fff;border-color:#bc3608}.technical-catalog-families button:focus-visible{outline:2px solid #873009;outline-offset:2px}

@@ -44,6 +44,7 @@ export default function PlatformAdminPage() {
   const documentFileInput = useRef(null);
   const [manufacturer, setManufacturer] = useState("");
   const [modelReference, setModelReference] = useState("");
+  const [modelName, setModelName] = useState("");
   const [documentTitle, setDocumentTitle] = useState("");
   const [newHotlinePhone, setNewHotlinePhone] = useState("");
   const [documents, setDocuments] = useState([]);
@@ -118,7 +119,7 @@ export default function PlatformAdminPage() {
       const pathname = `platform-documents/${crypto.randomUUID()}.pdf`;
       await uploadPresigned(pathname, documentFile, {
         access: "private", handleUploadUrl: "/api/platform-admin-documents",
-        clientPayload: JSON.stringify({ accessToken: session.access_token, manufacturer, modelReference,
+        clientPayload: JSON.stringify({ accessToken: session.access_token, manufacturer, modelName, modelReference,
           title: documentTitle, hotlinePhone: newHotlinePhone.trim(), filename: documentFile.name }),
       });
       setDocumentNotice({ text: "PDF envoyé. Vérification de son enregistrement…", kind: "progress" });
@@ -209,7 +210,7 @@ export default function PlatformAdminPage() {
       const response = await fetch("/api/platform-admin-documents", {
         method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ id: entry.id, action: "edit", manufacturer: entry.manufacturer,
-          modelReference: entry.model_reference, title: entry.title, category: entry.catalog_category }),
+          modelName: entry.model_name, modelReference: entry.model_reference, title: entry.title, category: entry.catalog_category }),
       });
       const result = await response.json().catch(() => null);
       if (!response.ok) throw new Error(result?.error || "Modification impossible.");
@@ -301,7 +302,7 @@ export default function PlatformAdminPage() {
     && !awaitingDistribution.includes(entry));
   const archivedModels = Object.values(archivedDocuments.reduce((groups, entry) => {
     const key = `${entry.manufacturer || ""}\u0000${entry.model_reference || ""}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
-    if (!groups[key]) groups[key] = { manufacturer: entry.manufacturer, reference: entry.model_reference, entries: [] };
+    if (!groups[key]) groups[key] = { manufacturer: entry.manufacturer, model: entry.model_name, reference: entry.model_reference, entries: [] };
     groups[key].entries.push(entry);
     return groups;
   }, {}));
@@ -310,12 +311,13 @@ export default function PlatformAdminPage() {
       && entry.distribution_confirmed_at == null;
     const category = reviewCategories[entry.id] || entry.catalog_category || "";
     const content = <>
-      <p className="platform-admin-document-name"><strong>{entry.manufacturer} · {entry.model_reference}</strong> · {entry.title} <span>({awaitingPublication ? "En attente de diffusion" : entry.status === "approved" ? "Publié" : entry.status === "rejected" ? "Rejeté" : "À valider"})</span></p>
+      <p className="platform-admin-document-name"><strong>{entry.manufacturer} · {entry.model_name ? `${entry.model_name} · ` : ""}{entry.model_reference}</strong> · {entry.title} <span>({awaitingPublication ? "En attente de diffusion" : entry.status === "approved" ? "Publié" : entry.status === "rejected" ? "Rejeté" : "À valider"})</span></p>
       <p className="platform-admin-document-filename">{entry.original_filename}</p>
       <button type="button" disabled={busy || entry.rag_status === "indexing"} onClick={() => setEditingDocument({ ...entry })}>Modifier la fiche</button>
       {editingDocument?.id === entry.id && <form onSubmit={saveDocument}>
         <label>Fabricant <input required minLength={2} maxLength={120} value={editingDocument.manufacturer} onChange={(event) => setEditingDocument({ ...editingDocument, manufacturer: event.target.value })} /></label>
-        <label>Référence exacte du modèle <input required minLength={2} maxLength={160} value={editingDocument.model_reference} onChange={(event) => setEditingDocument({ ...editingDocument, model_reference: event.target.value })} /></label>
+        <label>Modèle <input required minLength={2} maxLength={160} placeholder="Ex. ThemaPlus Condens" value={editingDocument.model_name || ""} onChange={(event) => setEditingDocument({ ...editingDocument, model_name: event.target.value })} /></label>
+        <label>Référence exacte du modèle <input required minLength={2} maxLength={160} placeholder="Ex. THEMAPLUS CONDENS F25 A-1" value={editingDocument.model_reference} onChange={(event) => setEditingDocument({ ...editingDocument, model_reference: event.target.value })} /></label>
         <label>Titre <input required minLength={2} maxLength={200} value={editingDocument.title} onChange={(event) => setEditingDocument({ ...editingDocument, title: event.target.value })} /></label>
         <label>Catégorie <select required value={editingDocument.catalog_category || ""} onChange={(event) => setEditingDocument({ ...editingDocument, catalog_category: event.target.value })}><option value="">Choisir une catégorie</option>{catalogCategories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <p>Changer le fabricant, la référence ou la catégorie retire la fiche de la diffusion jusqu’à votre nouvelle validation. Le PDF reste conservé.</p>
@@ -434,7 +436,9 @@ export default function PlatformAdminPage() {
           setDocumentNotice({ text: `Vérifiez ${field} : ${event.target.validationMessage}`, kind: "error" });
         }}>
           <label>Fabricant <input required minLength={2} maxLength={120} value={manufacturer} onChange={(event) => setManufacturer(event.target.value)} /></label>
-          <label>Référence exacte du modèle <input required minLength={2} maxLength={160} value={modelReference} onChange={(event) => setModelReference(event.target.value)} /></label>
+          <label>Modèle <input required minLength={2} maxLength={160} list="platform-document-models" placeholder="Ex. ThemaPlus Condens" value={modelName} onChange={(event) => setModelName(event.target.value)} /></label>
+          <datalist id="platform-document-models">{[...new Set(documents.filter((entry) => entry.manufacturer?.trim().toLocaleLowerCase("fr") === manufacturer.trim().toLocaleLowerCase("fr")).map((entry) => entry.model_name).filter(Boolean))].map((name) => <option key={name} value={name} />)}</datalist>
+          <label>Référence exacte du modèle <input required minLength={2} maxLength={160} placeholder="Ex. THEMAPLUS CONDENS F25 A-1" value={modelReference} onChange={(event) => setModelReference(event.target.value)} /></label>
           <label>Titre du document <input required minLength={2} maxLength={200} value={documentTitle} onChange={(event) => setDocumentTitle(event.target.value)} /></label>
           <label>Hotline <input type="tel" value={newHotlinePhone} onChange={(event) => setNewHotlinePhone(event.target.value)} placeholder="Numéro de téléphone (facultatif)" maxLength={32} /></label>
           <label>Fichier PDF, 30 Mo maximum <input ref={documentFileInput} type="file" accept="application/pdf,.pdf" required onChange={(event) => { setDocumentFile(event.target.files?.[0] || null); setDocumentNotice(null); }} /></label>
@@ -452,7 +456,7 @@ export default function PlatformAdminPage() {
         </details>}
         {!!archivedDocuments.length && <details className="platform-admin-document-archive"><summary>Archives des modèles ({archivedModels.length}) · {archivedDocuments.length} document(s)</summary>
           <ul>{archivedModels.map((group) => <li key={`${group.manufacturer}:${group.reference}`} className="platform-admin-document-item">
-            <details><summary>{group.manufacturer} · {group.reference} ({group.entries.length} document{group.entries.length > 1 ? "s" : ""})</summary>
+            <details><summary>{group.manufacturer} · {group.model ? `${group.model} · ` : ""}{group.reference} ({group.entries.length} document{group.entries.length > 1 ? "s" : ""})</summary>
               <ul>{group.entries.map(renderDocument)}</ul>
             </details>
           </li>)}</ul>

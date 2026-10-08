@@ -49,16 +49,16 @@ export default async function handler(req, res) {
       return;
     }
     const managed = await db.from("platform_document_intake")
-      .select("id, manufacturer, model_reference, catalog_category, model_aliases")
+      .select("id, manufacturer, model_name, model_reference, catalog_category, model_aliases")
       .order("created_at", { ascending: false }).limit(500);
     if (managed.error) return res.status(503).json({ error: "Catalogue indisponible." });
     const { data, error } = await db.from("platform_document_intake")
-      .select("id, manufacturer, model_reference, title, catalog_category, hotline_phone, model_aliases, rag_status")
+      .select("id, manufacturer, model_name, model_reference, title, catalog_category, hotline_phone, model_aliases, rag_status")
       .eq("status", "approved").not("distribution_confirmed_at", "is", null)
       .order("created_at", { ascending: false }).limit(500);
     if (!error) return res.status(200).json({ ok: true, documents: data, managedModels: managed.data });
     const fallback = await db.from("platform_document_intake")
-      .select("id, manufacturer, model_reference, title, catalog_category, hotline_phone, model_aliases")
+      .select("id, manufacturer, model_name, model_reference, title, catalog_category, hotline_phone, model_aliases")
       .eq("status", "approved").not("distribution_confirmed_at", "is", null)
       .order("created_at", { ascending: false }).limit(500);
     return fallback.error ? res.status(503).json({ error: "Catalogue indisponible." })

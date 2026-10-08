@@ -26,6 +26,24 @@ function matchesManagedModel(item, entry) {
     && matchesCatalogCategory(item, entry.catalog_category);
 }
 
+export function catalogModelFamily(item) {
+  if (item.modelFamily) return item.modelFamily;
+  // Legacy static entries include capacity/version in the model label.
+  if (item.equipmentId) return String(item.model || "").replace(/\s+\d+(?:[.,]\d+)?(?:\s*-\s*[a-z])?(?:\s.*)?$/i, "").trim();
+  return "Modèles à préciser";
+}
+
+export function catalogModelFamilies(models) {
+  const groups = new Map();
+  for (const item of models) {
+    const name = catalogModelFamily(item);
+    const key = normalizeReference(name);
+    if (!groups.has(key)) groups.set(key, { name, key, count: 0 });
+    groups.get(key).count++;
+  }
+  return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name, "fr"));
+}
+
 export function catalogModelsWithPublishedDocuments(catalog, documents, managedModels = documents) {
   // Administrative records own their references, including withdrawn documents.
   const models = (Array.isArray(catalog) ? catalog : [])
@@ -39,11 +57,16 @@ export function catalogModelsWithPublishedDocuments(catalog, documents, managedM
       && matchesCatalogCategory(item, document.catalog_category));
     const model = existing || {
       brand: document.manufacturer,
-      model: document.model_reference,
+      model: document.model_name || document.model_reference,
+      modelFamily: document.model_name || "",
       manufacturerReference: document.model_reference,
       type: document.catalog_category,
     };
     if (!existing) models.push(model);
+    if (!model.modelFamily && document.model_name) {
+      model.modelFamily = document.model_name;
+      model.model = document.model_name;
+    }
     model.publishedDocuments = [...(model.publishedDocuments || []), {
       documentId: document.id,
       title: document.title,
