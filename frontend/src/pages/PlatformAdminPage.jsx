@@ -86,9 +86,13 @@ export default function PlatformAdminPage() {
     if (!["preview", "production"].includes(environmentName)) return;
     let active = true;
     fetch("/api/platform-admin-documents", { headers: { Authorization: `Bearer ${session.access_token}` } })
-      .then((response) => response.ok ? response.json() : null)
+      .then(async (response) => {
+        const result = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(result?.error || "Documents indisponibles. Actualisez la liste pour réessayer.");
+        return result;
+      })
       .then((result) => { if (active && result) { setDocuments(result.documents || []); setPublicationReady(result.publicationReady === true); setHotlineReady(result.hotlineReady === true); } })
-      .catch(() => {});
+      .catch((cause) => { if (active) setDocumentNotice({ text: cause.message, kind: "error" }); });
     return () => { active = false; };
   }, [session.access_token, environmentName]);
 
@@ -396,14 +400,17 @@ export default function PlatformAdminPage() {
       {(["preview", "production"].includes(data.environment)) && <section><h2>Importer un document technique</h2>
         <p>Le PDF reste privé et en attente de validation. Sa publication lance l'indexation pour Shiba ; un document scanné peut nécessiter un OCR.</p>
         {!publicationReady && <p>La publication attend l’activation du catalogue dans cette base.</p>}
-        <form onSubmit={importDocument}>
+        <form onSubmit={importDocument} onInvalidCapture={(event) => {
+          const field = event.target.closest("label")?.firstChild?.textContent?.trim() || "le champ demandé";
+          setDocumentNotice({ text: `Vérifiez ${field} : ${event.target.validationMessage}`, kind: "error" });
+        }}>
           <label>Fabricant <input required minLength={2} maxLength={120} value={manufacturer} onChange={(event) => setManufacturer(event.target.value)} /></label>
           <label>Référence exacte du modèle <input required minLength={2} maxLength={160} value={modelReference} onChange={(event) => setModelReference(event.target.value)} /></label>
           <label>Titre du document <input required minLength={2} maxLength={200} value={documentTitle} onChange={(event) => setDocumentTitle(event.target.value)} /></label>
           <label>Hotline <input type="tel" value={newHotlinePhone} onChange={(event) => setNewHotlinePhone(event.target.value)} placeholder="Numéro de téléphone (facultatif)" maxLength={32} /></label>
           <label>Fichier PDF, 30 Mo maximum <input ref={documentFileInput} type="file" accept="application/pdf,.pdf" required onChange={(event) => { setDocumentFile(event.target.files?.[0] || null); setDocumentNotice(null); }} /></label>
-          <button disabled={busy} type="submit">Déposer le document</button>
-          <button disabled={busy} type="button" onClick={() => loadDocuments().catch((cause) => setError(cause.message))}>Actualiser la liste</button>
+          <button disabled={busy} type="submit">{busy ? "Traitement en cours…" : "Déposer le document"}</button>
+          <button disabled={busy} type="button" onClick={() => loadDocuments().then(() => setDocumentNotice({ text: "Liste des documents actualisée.", kind: "success" })).catch((cause) => setDocumentNotice({ text: cause.message, kind: "error" }))}>Actualiser la liste</button>
         </form>
         {documentNotice && <p role={documentNotice.kind === "error" ? "alert" : "status"} className={`platform-admin-inline-${documentNotice.kind}`}>{documentNotice.text}</p>}
         <div className="platform-admin-document-queue"><h3>Documents à valider ({pendingCount})</h3>

@@ -9,6 +9,9 @@ export function maintenanceAllowedPath(pathname) {
     || pathname === "/connexion"
     || pathname === "/securite-compte"
     || pathname === "/api/platform-admin"
+    // Admin/MFA authorization and signed Blob callbacks are checked by this API.
+    // Blob completion callbacks cannot carry the founder's browser cookie.
+    || pathname === "/api/platform-admin-documents"
     || pathname === "/api/maintenance-control"
     || pathname === "/api/maintenance-reminders"
     || pathname.startsWith("/assets/")
