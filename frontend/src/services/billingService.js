@@ -22,3 +22,13 @@ export async function sendTestBillingConfirmation(token) {
   if (!response.ok) throw new Error(result?.message || "Confirmation de test indisponible.");
   return result.message;
 }
+
+export async function getBillingInvoices(token, { after, signal } = {}) {
+  const query = new URLSearchParams({ action: "invoices", ...(after ? { after } : {}) });
+  const response = await fetch(`/api/billing?${query}`, {
+    headers: { Authorization: `Bearer ${token}` }, signal,
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !Array.isArray(result?.invoices)) throw new Error(result?.message || "Factures momentanément indisponibles.");
+  return result;
+}

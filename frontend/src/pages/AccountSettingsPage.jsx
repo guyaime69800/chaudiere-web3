@@ -6,6 +6,7 @@ import { getMyCompany } from "../services/companyService";
 import { signOut } from "../services/authService";
 import { getDiscoveryAccess } from "../../shared/discovery-access.js";
 import PasswordField from "../components/PasswordField";
+import AccountInvoices from "../components/AccountInvoices";
 import { sendTestBillingConfirmation, startBilling } from "../services/billingService";
 import "./AccountSettingsPage.css";
 
@@ -168,6 +169,12 @@ export default function AccountSettingsPage() {
               }}>Arrêter l’essai</button>}
             {subscription?.plan !== "free" && !testBilling && <p>Pour une formule payante, contactez <a href="mailto:contact@carnetpass.fr">contact@carnetpass.fr</a> afin d’obtenir la procédure de résiliation.</p>}
           </>}
+        </section>
+        <section className="account-settings-card" id="factures">
+          <h2>Mes factures</h2>
+          {!company ? <p>Renseignez votre entreprise pour retrouver ses factures.</p>
+            : !["owner", "admin"].includes(company.role) ? <p>Les factures sont accessibles au responsable de votre entreprise.</p>
+            : <><p>Consultez et téléchargez les factures de votre entreprise.</p><AccountInvoices key={company.id} token={session.access_token} /></>}
         </section>
         <section className="account-settings-card account-settings-danger">
           <h2>Supprimer mon compte</h2>

@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { fulfillRechargeSession } from "./lib/shiba-recharge-stripe.js";
+import invoicesHandler from "./billing-invoices.js";
 
 const PRICES = {
   pro: "price_1UL0nM8Wefijgtt281qKbtMQ",
@@ -190,6 +191,7 @@ async function sendTestInvoiceEmail(admin, invoice) {
 }
 
 export default async function billingHandler(req, res) {
+  if (req.query?.action === "invoices" && req.query?.webhook !== "1") return invoicesHandler(req, res);
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") return send(res, 405, "Méthode non autorisée.");
   if (process.env.VERCEL_ENV !== "preview" || !stripeTestKey()?.startsWith("sk_test_")) {
