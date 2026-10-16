@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mfaAccessError } from "./mfa-access.js";
 import { MAINTENANCE_KEY } from "./maintenance-state.js";
 
@@ -72,4 +73,23 @@ export function internalPathRole(pathname) {
 
 export function permits(role, required) {
   return role === "founder" || (required === "operator" && role === "operator");
+}
+
+export async function verifiedRequestIdentity(headers, env = process.env) {
+  const token = accessToken(headers);
+  if (token || headers.has("authorization")) return verifiedIdentity(token, env);
+  const pass = /(?:^|;\s*)carnetpass_maintenance_access=([a-f0-9]{64})(?:;|$)/.exec(headers.get("cookie") || "")?.[1];
+  if (!pass || env.VERCEL_ENV !== "production") return {user:null,role:null};
+  const url = env.UPSTASH_REDIS_REST_KV_REST_API_URL, key = env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN;
+  if (!url || !key || !env.VITE_SUPABASE_URL || !env.SUPABASE_SECRET_KEY) throw new Error("Access unavailable");
+  const hash = createHash("sha256").update(pass).digest("hex");
+  const response = await fetch(`${url}/get/${encodeURIComponent(`carnetpass:production:maintenance-access:v1:${hash}`)}`, {headers:{Authorization:`Bearer ${key}`},cache:"no-store",signal:AbortSignal.timeout(2000)});
+  if (!response.ok) throw new Error("Access unavailable");
+  const payload = await response.json();
+  const access = typeof payload.result === "string" ? JSON.parse(payload.result) : payload.result;
+  if (!access?.durable || !/^[a-f0-9-]{36}$/i.test(access.founderId || "") || !(Date.parse(access.expiresAt) > Date.now())) return {user:null,role:null};
+  const found = await fetch(`${env.VITE_SUPABASE_URL}/rest/v1/platform_admins?user_id=eq.${encodeURIComponent(access.founderId)}&select=role`, {headers:{apikey:env.SUPABASE_SECRET_KEY,Authorization:`Bearer ${env.SUPABASE_SECRET_KEY}`},cache:"no-store",signal:AbortSignal.timeout(2000)});
+  if (!found.ok) throw new Error("Roles unavailable");
+  const roles = await found.json();
+  return roles.length === 1 && roles[0].role === "founder" ? {user:{id:access.founderId},role:"founder",legacyPass:true} : {user:null,role:null};
 }

@@ -1,6 +1,6 @@
 ﻿import { next } from "@vercel/functions";
 import { maintenanceAllowedPath, maintenanceHtml } from "./server/lib/maintenance-state.js";
-import { accessToken, internalPathRole, permits, privateHeaders, readMaintenance, verifiedIdentity } from "./server/lib/internal-access.js";
+import { internalPathRole, permits, privateHeaders, readMaintenance, verifiedRequestIdentity } from "./server/lib/internal-access.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -43,7 +43,7 @@ export default async function middleware(request) {
   try {
     const state = await readMaintenance();
     if (required || state.enabled) {
-      const identity = await verifiedIdentity(accessToken(request.headers));
+      const identity = await verifiedRequestIdentity(request.headers);
       if (required && !permits(identity.role, required)) {
         return new Response("Accès refusé.", { status: identity.user ? 403 : 401, headers: privateHeaders });
       }
