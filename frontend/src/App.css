@@ -1,0 +1,297 @@
+/* ============================================================
+   CHAUDIERE-WEB3 — Feuille de style (relooking cuivre)
+   Pour changer la couleur d'accent : modifie --copper ci-dessous.
+   ============================================================ */
+
+:root {
+  color-scheme: light;          /* on force le theme clair (pas de mode sombre auto) */
+
+  --copper: #C2410C;            /* couleur d'accent (cuivre) — LE reglage principal */
+  --copper-dark: #9A3412;       /* cuivre plus fonce (survol des boutons) */
+
+  --bg: #FBF9F6;                /* fond de page (blanc chaud) */
+  --surface: #FFFFFF;           /* fond des cartes */
+  --surface-alt: #F5F2EC;       /* fond des zones secondaires */
+
+  --text: #1C1917;             /* texte principal */
+  --text-soft: #57534E;         /* texte secondaire */
+  --text-faint: #A8A29E;        /* petits textes / indices */
+  --border: #E7E2DA;            /* traits fins */
+
+  --green-bg: #EAF3DE;          /* badge "verifiee" */
+  --green-text: #3B6D11;
+
+  --radius: 10px;               /* coins des boutons/champs */
+  --radius-card: 14px;          /* coins des cartes */
+}
+
+/* --- Remise a zero du gabarit par defaut de Vite --- */
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+}
+#root { max-width: none; margin: 0; padding: 0; text-align: left; }
+
+/* --- Conteneur principal centre --- */
+.app { max-width: 1080px; margin: 0 auto; padding: 24px 28px 80px; }
+
+/* --- Barre du haut --- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 18px; border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-mark {
+  width: 30px; height: 30px; border-radius: 8px; background: var(--copper);
+  display: flex; align-items: center; justify-content: center;
+}
+.brand-name { font-weight: 600; font-size: 17px; letter-spacing: 0.02em; }
+
+/* --- Boutons --- */
+.btn {
+  font-size: 15px; border-radius: var(--radius); cursor: pointer;
+  border: 1px solid transparent; padding: 9px 16px;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.btn-primary { background: var(--copper); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--copper-dark); }
+.btn-primary:disabled { opacity: 0.6; cursor: default; }
+.btn-ghost { background: transparent; color: var(--text-soft); border-color: var(--border); }
+.btn-ghost:hover { background: var(--surface-alt); }
+
+/* --- Hero + recherche --- */
+.hero {
+  text-align: center; padding: 58px 32px 30px; margin-top: 22px;
+  border: 1px solid var(--border); border-radius: 24px;
+  background: radial-gradient(circle at 50% 0%, #fff 0%, #fffaf6 48%, #f8f3ed 100%);
+}
+.hero h1 { font-size: clamp(30px, 4vw, 46px); line-height: 1.12; font-weight: 750; margin: 0 auto 16px; max-width: 780px; }
+.hero p { color: var(--text-soft); max-width: 650px; margin: 0 auto; font-size: 18px; }
+.search { display: flex; gap: 8px; max-width: 520px; margin: 24px auto 12px; }
+.field {
+  padding: 11px 14px; font-size: 15px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface); color: var(--text);
+  width: 100%; box-sizing: border-box;
+}
+.field:focus {
+  outline: none; border-color: var(--copper);
+  box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.12);
+}
+.search .field { flex: 1; }
+.search .btn { white-space: nowrap; }
+.hero-foot { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+.linklike { background: none; border: none; cursor: pointer; color: var(--copper); font-size: 14px; padding: 0; }
+.linklike:hover { text-decoration: underline; }
+.trust { font-size: 12px; color: var(--text-faint); }
+
+.pro-context-banner {
+  display: flex; align-items: center; gap: 14px; max-width: 760px;
+  margin: 22px auto 0; padding: 16px 18px; box-sizing: border-box;
+  border: 1px solid #bbf7d0; border-radius: 14px; background: #f0fdf4;
+}
+.pro-context-icon {
+  display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px;
+  border-radius: 50%; background: #dcfce7; color: #15803d; font-weight: 800;
+}
+.pro-context-banner div { display: flex; flex-direction: column; }
+.pro-context-banner strong { font-size: 15px; color: #166534; }
+.pro-context-banner div span { font-size: 13px; color: #3f6212; }
+
+/* --- Espace pro --- */
+.pro-zone { margin-top: 24px; }
+.pro-bar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
+  padding: 14px; background: var(--surface-alt); border-radius: var(--radius-card);
+}
+.status-ok { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; }
+.status-ok .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green-text); }
+.warn { color: #B45309; font-size: 14px; }
+.err { color: #B91C1C; font-size: 14px; }
+.admin-line { text-align: center; font-size: 13px; color: var(--text-faint); margin: 12px 0 0; }
+.admin-line code { font-size: 12px; }
+
+/* --- Cartes de formulaire --- */
+.form-card {
+  max-width: 380px; margin: 20px auto 0; padding: 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-card); text-align: center;
+}
+.form-card h3 { margin: 0 0 14px; font-size: 17px; font-weight: 600; }
+.form-card .field { margin-bottom: 10px; }
+.form-card .btn { width: 100%; }
+.form-msg { margin: 12px 0 0; font-size: 14px; }
+
+/* --- Message "non trouve" --- */
+.notfound {
+  text-align: center; color: #B91C1C; background: #FEF2F2; border: 1px solid #FECACA;
+  border-radius: var(--radius); padding: 12px; max-width: 420px; margin: 20px auto 0;
+}
+
+/* --- Resultat : fiche appareil --- */
+.result { margin: 32px auto 0; max-width: 900px; }
+.appareil {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-card); padding: 20px;
+}
+.appareil-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
+}
+.appareil-type {
+  display: inline-block; font-size: 11px; letter-spacing: 0.04em; color: var(--text-soft);
+  background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px;
+  padding: 2px 8px; margin-bottom: 8px;
+}
+.appareil-name { margin: 0; font-size: 20px; font-weight: 600; }
+.appareil-loc { margin: 4px 0 0; font-size: 14px; color: var(--text-soft); }
+.public-appliance-nav { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
+.public-appliance-nav a {
+  display: inline-flex; align-items: center; min-height: 40px; padding: 8px 12px;
+  border: 1px solid #e6c7ba; border-radius: 9px; color: #9b2c06;
+  background: #fff8f4; font-weight: 650; text-decoration: none;
+}
+.public-appliance-nav a:hover { background: #ffece1; text-decoration: underline; }
+.public-appliance-nav a:focus-visible { outline: 3px solid #c7400c; outline-offset: 2px; }
+#notice-utilisation-publique, #historique-interventions, #shiba-notice-publique { scroll-margin-top: 20px; }
+.badge-verified {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 12px;
+  color: var(--green-text); background: var(--green-bg); border-radius: 6px;
+  padding: 5px 10px; white-space: nowrap;
+}
+.badge-documentation-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  color: #854d0e;
+  background: #fef9c3;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.appareil-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px; margin-top: 14px;
+}
+.appareil-grid > div { display: flex; flex-direction: column; }
+.appareil-grid .k { font-size: 12px; color: var(--text-faint); }
+.appareil-grid .v { font-size: 15px; }
+
+.appareil--catalog { padding: clamp(22px, 4vw, 36px); box-shadow: 0 24px 60px rgba(68, 45, 30, 0.08); }
+.appareil--catalog .appareil-name { font-size: clamp(24px, 3vw, 32px); line-height: 1.2; }
+.appareil--catalog .appareil-grid {
+  padding: 18px; margin-top: 20px; border-radius: 12px; background: var(--surface-alt);
+}
+.catalog-intro {
+  margin: 20px 0; padding-left: 14px; border-left: 3px solid #f2c8b4;
+  color: var(--text-soft); font-size: 14px;
+}
+.documentation-optional-notice {
+  display: grid;
+  gap: 4px;
+  margin: 18px 0;
+  padding: 14px 16px;
+  color: #713f12;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-left: 4px solid #d97706;
+  border-radius: 10px;
+  font-size: 14px;
+}
+.public-fault-assistant {
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid #f2c8b4;
+  border-radius: 16px;
+  background: #fff8f4;
+}
+.public-fault-assistant__heading { display: flex; align-items: center; gap: 12px; }
+.public-fault-assistant__heading img { width: 64px; height: 96px; object-fit: contain; flex-shrink: 0; }
+.public-fault-assistant__heading p { margin: 4px 0; }
+.public-fault-assistant__choices { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
+.public-fault-assistant form { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0; }
+.public-fault-assistant form label { font-weight: 700; }
+.public-fault-assistant form input { flex: 1 1 150px; min-width: 0; padding: 10px; border: 1px solid #e6c7ba; border-radius: 8px; }
+.public-fault-assistant > p { line-height: 1.5; }
+.public-company-contact { margin: 1.5rem 0; padding: 1.25rem; border: 1px solid #e7cfc2; border-radius: 18px; background: #fffaf7; color: #241a16; }
+.public-company-contact h3 { margin: 0 0 .5rem; }
+.public-company-contact p { margin: .5rem 0 1rem; line-height: 1.5; }
+.public-company-contact__links { display: flex; flex-wrap: wrap; gap: .65rem; }
+.public-company-contact__links a { display: inline-flex; align-items: center; min-height: 44px; padding: .65rem .9rem; border: 1px solid #c7400c; border-radius: 10px; background: #fff; color: #9b2c06; font-weight: 650; text-decoration: none; overflow-wrap: anywhere; }
+.public-company-contact__links a:hover { background: #fff0e9; text-decoration: underline; }
+.public-company-contact__links a:focus-visible { outline: 3px solid #c7400c; outline-offset: 2px; }
+.claim-card {
+  margin-top: 26px; padding: clamp(20px, 4vw, 30px); border: 1px solid #fed7c3;
+  border-radius: 18px; background: linear-gradient(135deg, #fff8f4 0%, #fff 75%);
+}
+.claim-card-label {
+  display: inline-block; margin-bottom: 8px; color: var(--copper); font-size: 12px;
+  font-weight: 750; letter-spacing: .08em; text-transform: uppercase;
+}
+.claim-card h3 { margin: 0; font-size: 22px; line-height: 1.3; }
+.claim-card > p { margin: 8px 0 20px; color: var(--text-soft); }
+.claim-card-action { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; }
+.claim-card-action label { display: flex; flex-direction: column; gap: 7px; }
+.claim-card-action label > span { font-size: 13px; font-weight: 650; }
+.claim-card-button { min-height: 47px; padding-inline: 24px; white-space: nowrap; }
+
+@media (max-width: 720px) {
+  .app { padding: 16px 14px 56px; }
+  .topbar { align-items: flex-start; gap: 12px; }
+  .hero { padding: 38px 18px 24px; }
+  .hero p { font-size: 16px; }
+  .search { flex-direction: column; }
+  .search .btn { width: 100%; }
+  .appareil-head { flex-direction: column; }
+  .claim-card-action { grid-template-columns: 1fr; }
+  .claim-card-button { width: 100%; }
+}
+
+/* --- Carnet en frise (timeline) --- */
+.carnet { margin-top: 22px; }
+.carnet-title {
+  font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--text-faint); margin: 0 0 12px;
+}
+.muted { color: var(--text-faint); }
+.tl-item { display: flex; gap: 14px; }
+.tl-marker { display: flex; flex-direction: column; align-items: center; padding-top: 5px; }
+.tl-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--copper); flex-shrink: 0; }
+.tl-line { width: 2px; flex: 1; background: var(--border); margin: 3px 0; min-height: 14px; }
+.tl-body { padding-bottom: 16px; }
+.tl-date { margin: 0; font-size: 13px; color: var(--text-faint); }
+.tl-type { margin: 3px 0 0; font-size: 15px; font-weight: 600; }
+.tl-desc { margin: 3px 0 0; font-size: 14px; color: var(--text-soft); }
+.tl-part { margin: 3px 0 0; font-size: 13px; color: var(--text-faint); }
+/* Message affiche pendant le telechargement du scanner (1re ouverture) */
+.scan-loading {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  z-index: 1000;
+}
+.public-reminder-offer {
+  margin: 22px 0;
+  padding: 20px;
+  border: 1px solid #e6bda9;
+  border-radius: 16px;
+  background: #fff9f6;
+}
+.public-reminder-offer h3 { margin: 0 0 10px; }
+.public-reminder-offer p { line-height: 1.55; }
+.public-reminder-offer form { display: grid; gap: 12px; }
+.public-reminder-offer label { display: grid; gap: 5px; font-weight: 650; }
+.public-reminder-offer input {
+  width: 100%; min-height: 42px; padding: 8px 10px;
+  border: 1px solid #dec9bf; border-radius: 9px; background: #fff; font: inherit;
+}
+.public-reminder-offer button { width: fit-content; min-height: 44px; }

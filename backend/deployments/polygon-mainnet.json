@@ -1,0 +1,9 @@
+{
+  "network": "polygon",
+  "chainId": 137,
+  "contractName": "EquipmentRegistryV2",
+  "contractAddress": "0xe99B6132535dd0DFfd14f897dA3ae042A91a7205",
+  "deploymentTransaction": "0xa2f6e4706899c36801f3eecdc07e42c0102eb63e922e62b19e18ce2c3a1c9451",
+  "serverAuthorizationTransaction": "0x0dd16416c70f8f9a5ae09b86bd3b0c8a1c30822cc39f9194d06f0af97fbc8c6e",
+  "deployedAt": "2026-09-09"
+}

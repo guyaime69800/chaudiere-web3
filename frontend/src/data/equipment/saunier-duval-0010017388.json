@@ -1,0 +1,401 @@
+{
+  "version": "1.0",
+  "equipmentId": "sd-themaplus-condens-30-a-h-fr-0010017388",
+  "identity": {
+    "brand": "Saunier Duval",
+    "productType": "chaudiere_gaz_condensation",
+    "range": "ThemaPlus Condens",
+    "model": "ThemaPlus Condens 30-A",
+    "variant": "H-FR",
+    "manufacturerReference": "0010017388"
+  },
+  "carnetPass": {
+    "linkedIds": [
+      "CP-2026-000001"
+    ]
+  },
+  "documents": [
+    {
+      "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+      "title": "Notice d'installation et de maintenance - ThemaPlus Condens",
+      "documentType": "installation_maintenance",
+      "documentCode": "0020238207_08",
+      "documentUrl": "https://9zitc2y9n0ktt4m8.public.blob.vercel-storage.com/saunier-duval/0010017388/notice/saunier-duval-themaplus-condens-notice-installation-et-maintenance-0020238207-08-08-2023-2968673.pdf",
+      "revisionDate": "2023-07-10",
+      "pageCount": 44,
+      "language": "fr",
+      "sourceType": "manufacturer_document",
+      "sourceName": "Saunier Duval",
+      "appliesTo": [
+        "ThemaPlus Condens 30-A (H-FR)"
+      ],
+      "manufacturerReference": "0010017388",
+      "usefulPages": {
+        "modelValidity": [
+          7
+        ],
+        "functionalComponents": [
+          9
+        ],
+        "faultCodes": [
+          33,
+          34,
+          35
+        ],
+        "electricalDiagram": [
+          36,
+          37
+        ],
+        "technicalSpecifications": [
+          38,
+          39,
+          40,
+          41
+        ]
+      },
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "external_not_committed",
+      "notes": "Document constructeur conservé hors du dépôt GitHub public."
+    },
+    {
+      "documentId": "sd-themaplus-condens-30-a-exploded-view-0010017388",
+      "title": "Vue éclatée - ThemaPlus Condens 30-A (H-FR)",
+      "documentType": "exploded_view",
+      "documentUrl": "https://9zitc2y9n0ktt4m8.public.blob.vercel-storage.com/saunier-duval/0010017388/vue-eclatee/Vue%20%C3%A9clat%C3%A9e%20-%20THEMAPLUS%20CONDENS%2030%20-A%20%28H-FR%29%20-%200010017388%20%281%29.pdf",
+      "documentCode": null,
+      "revisionDate": null,
+      "pageCount": 32,
+      "language": "fr",
+      "sourceType": "manufacturer_spare_parts_catalog",
+      "sourceName": "Saunier Duval",
+      "appliesTo": [
+        "ThemaPlus Condens 30-A (H-FR)"
+      ],
+      "manufacturerReference": "0010017388",
+      "usefulPages": {
+        "gasMechanism": [
+          3,
+          4
+        ],
+        "pipesAndHydraulics": [
+          5,
+          6
+        ],
+        "connectionPlate": [
+          7,
+          8
+        ],
+        "electricalHarnesses": [
+          9,
+          10
+        ],
+        "condensateComponents": [
+          11,
+          12
+        ],
+        "burner": [
+          15,
+          16
+        ],
+        "expansionVessel": [
+          19,
+          20
+        ],
+        "equipmentOverview": [
+          21,
+          22
+        ],
+        "fanAndFlueComponents": [
+          23,
+          24
+        ],
+        "pumpAndPressureSensor": [
+          25,
+          26
+        ],
+        "gasConversionKit": [
+          27,
+          28
+        ],
+        "hotWaterTank": [
+          29,
+          30
+        ],
+        "heatExchanger": [
+          31,
+          32
+        ]
+      },
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "external_not_committed",
+      "notes": "Catalogue de pièces conservé hors du dépôt GitHub public."
+    }
+  ],
+  "errorCodeIndex": {
+    "codes": [
+      "F.00",
+      "F.01",
+      "F.02",
+      "F.03",
+      "F.10",
+      "F.11",
+      "F.12",
+      "F.13",
+      "F.20",
+      "F.22",
+      "F.23",
+      "F.24",
+      "F.26",
+      "F.27",
+      "F.28",
+      "F.29",
+      "F.32",
+      "F.42",
+      "F.49",
+      "F.52",
+      "F.53",
+      "F.54",
+      "F.56",
+      "F.57",
+      "F.61",
+      "F.62",
+      "F.63",
+      "F.64",
+      "F.65",
+      "F.67",
+      "F.68",
+      "F.70",
+      "F.71",
+      "F.72",
+      "F.73",
+      "F.74",
+      "F.77",
+      "F.79",
+      "F.81",
+      "F.83",
+      "F.84",
+      "F.85",
+      "F.86"
+    ],
+    "meanings": {
+      "F.00": "Coupure de la sonde de température de départ",
+      "F.01": "Coupure du capteur de température de retour",
+      "F.02": "Interruption capteur de sortie",
+      "F.03": "Coupure de la sonde de température de stockage",
+      "F.10": "Court-circuit de la sonde de température de départ",
+      "F.11": "Court-circuit du capteur de température de retour",
+      "F.12": "Court-circuit capteur de sortie",
+      "F.13": "Court-circuit de la sonde de température de stockage",
+      "F.20": "Arrêt de sécurité limiteur de température",
+      "F.22": "Arrêt de sécurité manque d'eau",
+      "F.23": "Arrêt de sécurité écart de température trop élevé",
+      "F.24": "Arrêt de sécurité montée de température trop rapide",
+      "F.26": "Défaut vanne combustible HS",
+      "F.27": "Arrêt de sécurité simulation de flamme",
+      "F.28": "Anomalie démarrage - allumage infructueux",
+      "F.29": "Anomalie fonctionnement - allumage infructueux",
+      "F.32": "Défaut ventilateur",
+      "F.42": "Défaut résistance de codage",
+      "F.49": "Défaut eBUS",
+      "F.52": "Capteur de débit massique non raccordé",
+      "F.53": "Débit massique du mécanisme gaz non conforme aux valeurs attendues",
+      "F.54": "Défaut démarrage appareil",
+      "F.56": "Arrêt de sécurité dépassement seuil CO",
+      "F.57": "Défaut mesures",
+      "F.61": "Défaut vanne de commande combustible",
+      "F.62": "Défaut retard coupure vanne de commande combustible",
+      "F.63": "Défaut EEPROM",
+      "F.64": "Erreur électronique / capteur",
+      "F.65": "Défaut température électronique",
+      "F.67": "Défaut électronique / flamme",
+      "F.68": "Défaut signal de flamme instable",
+      "F.70": "Défaut codage appareil erroné",
+      "F.71": "Erreur du capteur de température de départ",
+      "F.72": "Défaut sonde de température départ / capteur température retour",
+      "F.73": "Défaut sonde pression d'eau - signal trop faible",
+      "F.74": "Défaut sonde pression d'eau - signal trop fort",
+      "F.77": "Défaut clapet fumées / pompe condensats",
+      "F.79": "Défaut du capteur de température du ballon",
+      "F.81": "Défaut pompe de charge ballon",
+      "F.83": "Défaut variation de température CTN",
+      "F.84": "Défaut différence de température CTN non plausible",
+      "F.85": "Défaut sondes CTN mal montées",
+      "F.86": "Contact du chauffage au sol coupé"
+    },
+    "note": "Le tableau constructeur couvre plusieurs produits ; certains codes peuvent ne pas être visibles sur cet équipement.",
+    "source": {
+      "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+      "pages": [
+        33,
+        34,
+        35
+      ],
+      "section": "Codes de défaut - vue d’ensemble",
+      "verificationStatus": "verified_from_uploaded_pdf"
+    }
+  },
+  "errorCodes": [
+    {
+      "code": "F.28",
+      "aliases": [
+        "F28",
+        "f28",
+        "code F28",
+        "défaut F28",
+        "erreur F28"
+      ],
+      "title": "Allumage infructueux au démarrage",
+      "category": "ignition",
+      "manufacturerData": {
+        "meaning": "Le brûleur ne parvient pas à s’allumer lors du démarrage.",
+        "possibleCauses": [
+          "Alimentation en gaz absente, insuffisante ou interrompue",
+          "Défaut du mécanisme gaz",
+          "Entrée d’air ou circuit des condensats obstrué",
+          "Défaut du système d’allumage ou de détection de flamme",
+          "Défaut électrique, électronique ou de mise à la terre",
+          "Réglage de combustion incorrect"
+        ],
+        "professionalChecks": [
+          "Robinet d’arrêt et pression dynamique du gaz",
+          "Mécanisme gaz",
+          "Tube d’entrée d’air",
+          "Circuit des condensats",
+          "Faisceau électrique et connecteurs",
+          "Transformateur et câble d’allumage",
+          "Électrode d’allumage et électrode de surveillance",
+          "Circuit électronique et mise à la terre",
+          "Réglage du CO2"
+        ]
+      },
+      "userGuidance": {
+        "safetyLevel": "professional_required",
+        "allowedActions": [
+          "Vérifier visuellement que la chaudière est alimentée électriquement",
+          "Vérifier sans démontage que le robinet de gaz accessible est ouvert",
+          "Effectuer une seule tentative de réarmement en l’absence d’odeur de gaz",
+          "Contacter un professionnel si le défaut revient"
+        ],
+        "forbiddenActions": [
+          "Démonter la chaudière",
+          "Intervenir sur le mécanisme gaz",
+          "Modifier le réglage de combustion",
+          "Manipuler les électrodes ou les composants électriques"
+        ],
+        "emergencyMessage": "En cas d’odeur de gaz, ne pas réarmer l’appareil, aérer, quitter les lieux et contacter le service d’urgence gaz depuis l’extérieur."
+      },
+      "source": {
+        "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+        "page": 34,
+        "section": "Codes de défaut - vue d’ensemble",
+        "verificationStatus": "verified_from_uploaded_pdf"
+      }
+    },
+    {
+      "code": "F.32",
+      "aliases": [
+        "F32",
+        "f32",
+        "code F32",
+        "défaut F32",
+        "erreur F32"
+      ],
+      "title": "Défaut ventilateur",
+      "category": "ventilation",
+      "manufacturerData": {
+        "meaning": "Ventilateur défectueux ou non raccordé.",
+        "possibleCauses": [
+          "Ventilateur défectueux",
+          "Ventilateur non raccordé",
+          "Obstruction du ventilateur",
+          "Défaut du faisceau électrique",
+          "Défaut du capteur Hall",
+          "Défaut du circuit imprimé",
+          "Obstruction du circuit des gaz de combustion"
+        ],
+        "professionalChecks": [
+          "Connecteur",
+          "Faisceau électrique",
+          "Ventilateur : obstruction, fonctionnement et adéquation du régime",
+          "Capteur Hall",
+          "Circuit imprimé",
+          "Circuit des gaz de combustion : obstruction"
+        ]
+      },
+      "userGuidance": {
+        "safetyLevel": "professional_required",
+        "allowedActions": [
+          "Relever le code défaut affiché",
+          "Vérifier uniquement l'absence d'obstruction extérieure visible sans démontage",
+          "Contacter un professionnel si le défaut persiste"
+        ],
+        "forbiddenActions": [
+          "Démonter la chaudière",
+          "Intervenir sur le ventilateur ou son câblage",
+          "Manipuler les composants électriques",
+          "Intervenir sur le circuit des gaz de combustion"
+        ],
+        "emergencyMessage": "En cas d'odeur anormale de gaz ou de gaz de combustion, arrêter l'appareil, aérer les locaux et contacter un professionnel ou le service d'urgence approprié."
+      },
+      "source": {
+        "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+        "page": 34,
+        "section": "Codes de défaut - vue d'ensemble",
+        "verificationStatus": "verified_from_uploaded_pdf"
+      }
+    },
+    {
+      "code": "F.49",
+      "aliases": [
+        "F49",
+        "f49",
+        "code F49",
+        "défaut F49",
+        "erreur F49"
+      ],
+      "title": "Défaut eBUS",
+      "category": "communication",
+      "manufacturerData": {
+        "meaning": "Sous-tension au niveau de l'eBUS.",
+        "possibleCauses": [
+          "Surcharge de l'eBUS",
+          "Deux tensions d'alimentation de polarités différentes",
+          "Court-circuit sur l'eBUS"
+        ],
+        "professionalChecks": [
+          "Contrôler l'eBUS : surcharge",
+          "Contrôler la présence de deux tensions d'alimentation de polarités différentes",
+          "Contrôler l'eBUS : court-circuit"
+        ]
+      },
+      "userGuidance": {
+        "safetyLevel": "professional_required",
+        "allowedActions": [
+          "Relever le code défaut affiché",
+          "Vérifier sans démontage si un régulateur ou thermostat externe affiche également une anomalie",
+          "Contacter un professionnel si le défaut persiste"
+        ],
+        "forbiddenActions": [
+          "Démonter la chaudière",
+          "Intervenir sur le câblage eBUS",
+          "Manipuler les connecteurs ou le circuit imprimé",
+          "Intervenir sur les composants électriques internes"
+        ],
+        "emergencyMessage": "En cas de fumée, d'odeur de brûlé ou de signe anormal d'échauffement électrique, arrêter l'appareil si cela peut être fait sans danger et contacter un professionnel."
+      },
+      "source": {
+        "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+        "page": 34,
+        "section": "Codes de défaut - vue d'ensemble",
+        "verificationStatus": "verified_from_uploaded_pdf"
+      }
+    }
+  ],
+  "diagnosticRules": [],
+  "metadata": {
+    "status": "pilot",
+    "verificationStatus": "incomplete",
+    "lastVerifiedAt": null,
+    "notes": "Les informations techniques seront ajoutées uniquement après vérification des documents constructeur."
+  }
+}

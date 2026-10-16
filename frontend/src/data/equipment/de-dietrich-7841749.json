@@ -1,0 +1,114 @@
+{
+  "version": "1.0",
+  "equipmentId": "de-dietrich-mcr-2-24-7841749",
+  "identity": {
+    "brand": "De Dietrich",
+    "productType": "chaudiere_gaz_condensation",
+    "range": "MCR 2",
+    "model": "MCR 2 24",
+    "variant": "FR",
+    "manufacturerReference": "7841749"
+  },
+  "carnetPass": {
+    "linkedIds": []
+  },
+  "documents": [
+    {
+      "documentId": "de-dietrich-mcr-2-24-installation-7838865-04",
+      "title": "Notice d'installation et d'entretien - MCR 2 24 / 30 MI / 35 MI",
+      "documentType": "installation_maintenance",
+      "documentCode": "7838865-04",
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/de-dietrich/7841749/notice-installation-mcr-2-24-aSYtrFVazWtmCHahWI1loZN0VrDVSB.pdf",
+      "revisionDate": "2023-12-15",
+      "pageCount": 84,
+      "language": "fr",
+      "sourceType": "manufacturer_document",
+      "sourceName": "De Dietrich",
+      "appliesTo": [
+        "MCR 2 24"
+      ],
+      "manufacturerReference": "7841749",
+      "usefulPages": {
+        "installation": [
+          25
+        ],
+        "electricalDiagram": [
+          13
+        ],
+        "safety": [
+          5
+        ]
+      },
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "private",
+      "sha256": "dd1430762747664a216803127ff48785e4694fd9f681abded6c925ac4e858d32",
+      "notes": "Document commun aux MCR 2 24, 30 MI et 35 MI."
+    },
+    {
+      "documentId": "de-dietrich-mcr-2-24-exploded-view-2024-03-21",
+      "title": "Vue éclatée et références des pièces - MCR 2 24 / 30-35 MI",
+      "documentType": "exploded_view",
+      "documentCode": null,
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/de-dietrich/7841749/vue-eclatee-mcr-2-24-GyIH7UURjntAfTJkN1cuwWqrYPnIt0.pdf",
+      "revisionDate": "2024-03-21",
+      "pageCount": 3,
+      "language": "fr",
+      "sourceType": "manufacturer_spare_parts_catalog",
+      "sourceName": "De Dietrich",
+      "appliesTo": [
+        "MCR 2 24"
+      ],
+      "manufacturerReference": "7841749",
+      "usefulPages": {
+        "diagram": [
+          1
+        ],
+        "partsReferences": [
+          2,
+          3
+        ]
+      },
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "private",
+      "sha256": "b5be827f2805766f4e11f29aa627bdd5b9b06a9f6bffdd4ee59eb9831d6ff026",
+      "notes": "Document commun aux MCR 2 24, 30 MI et 35 MI. Prix affichés historiques, à ne pas utiliser comme prix actuels."
+    },
+    {
+      "documentId": "de-dietrich-mcr-2-24-user-manual-7838860-04",
+      "title": "Notice d'utilisation - MCR 2 24 / 30 MI / 35 MI",
+      "documentType": "user_manual",
+      "documentCode": "7838860-04",
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/de-dietrich/7841749/notice-utilisation-mcr-2-24-eX5FYSstYZMqyxcBhTcuNQsQobmSDl.pdf",
+      "revisionDate": "2023-12-15",
+      "pageCount": 44,
+      "language": "fr",
+      "sourceType": "manufacturer_document",
+      "sourceName": "De Dietrich",
+      "appliesTo": [
+        "MCR 2 24"
+      ],
+      "manufacturerReference": "7841749",
+      "usefulPages": {
+        "safety": [
+          5
+        ],
+        "operation": [
+          15
+        ]
+      },
+      "verificationStatus": "verified_from_uploaded_pdf",
+      "storage": "private",
+      "sha256": "57dd5bc316202012a243b19af80c8a4be5a061525405156f203416edefccce9a",
+      "notes": "Document commun aux MCR 2 24, 30 MI et 35 MI."
+    }
+  ],
+  "errorCodeIndex": null,
+  "errorCodes": [],
+  "diagnosticRules": [],
+  "metadata": {
+    "status": "pilot",
+    "verificationStatus": "verified_documents",
+    "lastVerifiedAt": "2026-09-25",
+    "notes": "Notices et vue éclatée contrôlées sur les trois PDF transmis. MCR 2 24 est une chaudière chauffage seul ; 30 MI et 35 MI sont des variantes différentes."
+  }
+}

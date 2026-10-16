@@ -1,0 +1,585 @@
+import { loadPlatformPdf } from "../services/platformPdfDelivery.js";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { uploadPresigned } from "@vercel/blob/client";
+import { uploadDirectR2 } from "../services/r2DirectUpload.js";
+import { useAuth } from "../hooks/useAuth";
+import { runR2MigrationBatch } from "../services/r2MigrationBatch.js";
+import "./PlatformAdminPage.css";
+
+const catalogCategories = [
+  ["boiler", "Chaudières"], ["heat_pump_indoor", "PAC · unités intérieures"],
+  ["heat_pump_outdoor", "PAC · unités extérieures"],
+  ["air_conditioning_indoor", "Clim · unités intérieures"],
+  ["air_conditioning_outdoor", "Clim · unités extérieures"], ["burner", "Brûleurs"],
+  ["water_heater", "Chauffe-bains"], ["regulation", "Régulations"],
+  ["heat_pump_water_heater", "Chauffe-eau thermodynamiques"], ["vmc", "VMC"],
+];
+
+async function request(token, body, search = "", companyId = "") {
+  const params = new URLSearchParams({ search });
+  if (companyId) params.set("companyId", companyId);
+  const response = await fetch(`/api/platform-admin${body ? "" : `?${params}`}`, {
+    method: body ? "POST" : "GET",
+    headers: { Authorization: `Bearer ${token}`, ...(body ? { "Content-Type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(result?.message || "Service indisponible.");
+  return result;
+}
+
+export default function PlatformAdminPage() {
+  const { session } = useAuth();
+  const [data, setData] = useState(null);
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState("");
+  const [contractEnd, setContractEnd] = useState("");
+  const [paymentReference, setPaymentReference] = useState("");
+  const [seatLimit, setSeatLimit] = useState(1);
+  const [technicianEmail, setTechnicianEmail] = useState("");
+  const [note, setNote] = useState("");
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [documentFile, setDocumentFile] = useState(null);
+  const documentFileInput = useRef(null);
+  const [manufacturer, setManufacturer] = useState("");
+  const [modelReference, setModelReference] = useState("");
+  const [modelName, setModelName] = useState("");
+  const [documentTitle, setDocumentTitle] = useState("");
+  const [newHotlinePhone, setNewHotlinePhone] = useState("");
+  const [documents, setDocuments] = useState([]);
+  const [archivePage, setArchivePage] = useState(1);
+  const [publicationReady, setPublicationReady] = useState(false);
+  const [hotlineReady, setHotlineReady] = useState(false);
+  const [hotlineInputs, setHotlineInputs] = useState({});
+  const [aliasInputs, setAliasInputs] = useState({});
+  const [documentNotice, setDocumentNotice] = useState(null);
+  const [editingDocument, setEditingDocument] = useState(null);
+  const [entryNotices, setEntryNotices] = useState({});
+  const [r2Status, setR2Status] = useState(null);
+  const [r2Batch, setR2Batch] = useState(null);
+  const r2BatchControl = useRef({ running: false, stopped: false });
+  const currentAccessToken = useRef(session.access_token);
+  useEffect(() => { currentAccessToken.current = session.access_token; }, [session.access_token]);
+  useEffect(() => () => { r2BatchControl.current.stopped = true; }, []);
+  async function startR2Batch() {
+    if (r2BatchControl.current.running) return;
+    r2BatchControl.current = { running: true, stopped: false };
+    setBusy(true); setError("");
+    try {
+      const entries = await loadDocuments();
+      await runR2MigrationBatch(entries, {
+        stopped: () => r2BatchControl.current.stopped,
+        progress: setR2Batch,
+        copy: async (entry) => {
+          const response = await fetch("/api/platform-admin-documents", {
+            method: "PATCH", headers: { Authorization: `Bearer ${currentAccessToken.current}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ id: entry.id, action: "r2-copy" }), signal: AbortSignal.timeout(240_000),
+          });
+          const result = await response.json().catch(() => null);
+          if (!response.ok) throw new Error(result?.error || "Réponse indisponible. Consultez le suivi avant de reprendre.");
+          return result;
+        },
+      });
+    } catch (cause) { setError(cause.message); }
+    finally { r2BatchControl.current.running = false; setBusy(false); }
+  }
+  async function checkR2() {
+    setBusy(true); setError("");
+    try {
+      const response = await fetch("/api/platform-admin-documents?r2_status=1", {
+        headers: { Authorization: `Bearer ${session.access_token}` }, signal: AbortSignal.timeout(30_000),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Vérification R2 indisponible.");
+      setR2Status(result);
+    } catch (cause) { setError(cause.message); }
+    finally { setBusy(false); }
+  }
+  async function r2Document(entry, action) {
+    setBusy(true); setError("");
+    try {
+      const response = await fetch("/api/platform-admin-documents", {
+        method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, action }), signal: AbortSignal.timeout(240_000),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Opération R2 indisponible.");
+      if (action === "r2-preview") {
+        const url = new URL(result.url);
+        if (url.protocol !== "https:" || url.hostname !== "521d9298e733d9b187f6eb2acb2e17de.eu.r2.cloudflarestorage.com") {
+          throw new Error("Destination PDF invalide.");
+        }
+        const pdf = await fetch(url.href, { credentials: "omit", referrerPolicy: "no-referrer", signal: AbortSignal.timeout(60_000) });
+        if (!pdf.ok || !pdf.headers.get("content-type")?.includes("application/pdf")) throw new Error("Lecture du PDF R2 impossible.");
+        const objectUrl = URL.createObjectURL(await pdf.blob());
+        const link = document.createElement("a");
+        link.href = objectUrl; link.download = "verification-r2.pdf"; link.click();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+        setEntryNotice(entry.id, "r2", "PDF reçu depuis R2. Ouvrez-le pour vérifier sa lecture.");
+      } else {
+        setEntryNotice(entry.id, "r2", result.outcome === "reused" ? "Copie vérifiée déjà présente, aucun nouvel envoi." : "Copie vérifiée : taille et SHA-256 identiques. Original Blob conservé.");
+      }
+    } catch (cause) { setEntryNotice(entry.id, "r2", `${cause.message} Vérifiez le suivi avant une nouvelle tentative.`, "error"); }
+    finally { setBusy(false); }
+  }
+  function setEntryNotice(id, action, text, kind = "success") {
+    setEntryNotices((previous) => ({ ...previous, [`${id}:${action}`]: { text, kind } }));
+  }
+  const [reviewCategories, setReviewCategories] = useState({});
+  const [distributionConfirmed, setDistributionConfirmed] = useState({});
+  const environmentName = data?.environment;
+  const loadDocuments = useCallback(async () => {
+    const response = await fetch("/api/platform-admin-documents", { headers: { Authorization: `Bearer ${session.access_token}` } });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(result?.error || "Documents indisponibles.");
+    setDocuments(result.documents || []);
+    setPublicationReady(result.publicationReady === true);
+    setHotlineReady(result.hotlineReady === true);
+    return result.documents || [];
+  }, [session.access_token]);
+  const load = useCallback(async () => {
+    const result = await request(session.access_token, null, search, selected);
+    setData(result);
+    setError("");
+  }, [session.access_token, search, selected]);
+
+  useEffect(() => {
+    let active = true;
+    request(session.access_token, null, search, selected)
+      .then((result) => { if (active) { setData(result); setError(""); } })
+      .catch((cause) => { if (active) setError(cause.message); });
+    return () => { active = false; };
+  }, [session.access_token, search, selected]);
+
+  useEffect(() => {
+    if (!["preview", "production"].includes(environmentName)) return;
+    let active = true;
+    fetch("/api/platform-admin-documents", { headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then(async (response) => {
+        const result = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(result?.error || "Documents indisponibles. Actualisez la liste pour réessayer.");
+        return result;
+      })
+      .then((result) => { if (active && result) { setDocuments(result.documents || []); setPublicationReady(result.publicationReady === true); setHotlineReady(result.hotlineReady === true); } })
+      .catch((cause) => { if (active) setDocumentNotice({ text: cause.message, kind: "error" }); });
+    return () => { active = false; };
+  }, [session.access_token, environmentName]);
+
+  async function importDocument(event) {
+    event.preventDefault();
+    if (!documentFile) {
+      setDocumentNotice({ text: "Choisissez un fichier PDF avant de le déposer.", kind: "error" }); return;
+    }
+    if (documentFile.type !== "application/pdf" && !documentFile.name.toLowerCase().endsWith(".pdf")) {
+      setDocumentNotice({ text: "Le fichier sélectionné doit être un PDF.", kind: "error" }); return;
+    }
+    if (!documentFile.size || documentFile.size > 30 * 1024 * 1024) {
+      setDocumentNotice({ text: `Ce PDF pèse ${(documentFile.size / 1024 / 1024).toFixed(1)} Mo. La limite est de 30 Mo ; utilisez une version compressée avant de réessayer.`, kind: "error" }); return;
+    }
+    if (newHotlinePhone.trim() && (!/^[+0-9(). -]{6,32}$/.test(newHotlinePhone.trim())
+      || (newHotlinePhone.match(/\d/g) || []).length < 6)) {
+      setDocumentNotice({ text: "Indiquez un numéro de hotline valide.", kind: "error" }); return;
+    }
+    setBusy(true); setError(""); setMessage("");
+    setDocumentNotice({ text: "Envoi du PDF en cours…", kind: "progress" });
+    try {
+      let pathname;
+      const direct = environmentName === "production";
+      if (!["production", "preview"].includes(environmentName)) throw new Error("Environnement d’import non confirmé.");
+      if (direct) {
+        const result = await uploadDirectR2(documentFile, { manufacturer, modelName, modelReference,
+          title: documentTitle, hotlinePhone: newHotlinePhone.trim() }, session.access_token,
+        text => setDocumentNotice({ text, kind: "progress" }));
+        pathname = result.pathname;
+      } else {
+        pathname = `platform-documents/${crypto.randomUUID()}.pdf`;
+        await uploadPresigned(pathname, documentFile, {
+          access: "private", handleUploadUrl: "/api/platform-admin-documents",
+          clientPayload: JSON.stringify({ accessToken: session.access_token, manufacturer, modelName, modelReference,
+            title: documentTitle, hotlinePhone: newHotlinePhone.trim(), filename: documentFile.name }),
+        });
+      }
+      setDocumentNotice({ text: "PDF envoyé. Vérification de son enregistrement…", kind: "progress" });
+      setDocumentFile(null);
+      if (documentFileInput.current) documentFileInput.current.value = "";
+      setNewHotlinePhone("");
+      let recorded = false;
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1500));
+        const entries = await loadDocuments();
+        if (entries.some((entry) => entry.blob_pathname === pathname)) { recorded = true; break; }
+      }
+      setDocumentNotice(recorded
+        ? { text: direct ? "PDF enregistré directement dans R2 et vérifié. Validez-le pour lancer son indexation Shiba." : "PDF enregistré dans Documents à valider. Validez-le pour lancer son indexation Shiba.", kind: "success" }
+        : { text: "PDF envoyé, mais son enregistrement n’est pas encore confirmé. Cliquez sur Actualiser la liste dans quelques instants.", kind: "progress" });
+    } catch (cause) { setDocumentNotice({ text: cause.message || "Import impossible.", kind: "error" }); }
+    finally { setBusy(false); }
+  }
+
+  async function downloadDocument(entry) {
+    setError("");
+    try {
+      const pdf = await loadPlatformPdf(`/api/platform-admin-documents?id=${encodeURIComponent(entry.id)}`, session.access_token);
+      const url = URL.createObjectURL(pdf);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = entry.original_filename;
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (cause) { setError(cause.message); }
+  }
+
+  async function reviewDocument(entry, action) {
+    const category = reviewCategories[entry.id] || entry.catalog_category;
+    if (["approve", "publish-imported"].includes(action) && (!category || !distributionConfirmed[entry.id])) {
+      setError("Choisissez une catégorie et confirmez le droit de diffuser ce PDF.");
+      return;
+    }
+    if (!window.confirm(["approve", "publish-imported"].includes(action)
+      ? `Publier ${entry.title} pour tous les comptes CarnetPass ?`
+      : `Rejeter ${entry.title} ?`)) return;
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const response = await fetch("/api/platform-admin-documents", {
+        method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, action, category, distributionConfirmed: distributionConfirmed[entry.id] === true }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Validation impossible.");
+      setMessage(["approve", "publish-imported"].includes(action)
+        ? result.indexStatus === "ready" ? "Document publié et prêt pour Shiba."
+          : `Document publié ; indexation Shiba : ${result.indexStatus === "needs_ocr" ? "OCR nécessaire" : result.indexStatus === "failed" ? "échec, réessayez dans l'archive" : result.indexStatus === "pending" ? "migration Preview à appliquer" : "en cours"}.`
+        : "Document rejeté.");
+      await loadDocuments();
+    } catch (cause) { setError(cause.message); }
+    finally { setBusy(false); }
+  }
+
+  async function manageDocument(entry, action) {
+    const label = `${entry.manufacturer} · ${entry.model_reference} · ${entry.title}`;
+    const question = action === "unpublish"
+      ? `Retirer « ${label} » de la diffusion ? Le PDF restera privé et pourra être diffusé à nouveau.`
+      : entry.blob_pathname?.startsWith("r2://")
+        ? `Supprimer la fiche « ${label} » du catalogue ? Le fichier R2 partagé reste conservé.`
+      : `Supprimer définitivement le PDF « ${label} » du Blob Store ? Cette action est irréversible et retire aussi la fiche du catalogue.`;
+    if (!window.confirm(question)) return;
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const response = await fetch("/api/platform-admin-documents", {
+        method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, action }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Action impossible.");
+      await loadDocuments();
+      setMessage(action === "unpublish" ? "Document retiré de la diffusion. Il reste privé dans les fiches à diffuser." : "PDF supprimé et fiche retirée du catalogue.");
+    } catch (cause) { setError(cause.message); }
+    finally { setBusy(false); }
+  }
+
+  async function saveDocument(event) {
+    event.preventDefault(); setBusy(true);
+    const entry = editingDocument;
+    try {
+      const response = await fetch("/api/platform-admin-documents", {
+        method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, action: "edit", manufacturer: entry.manufacturer,
+          modelName: entry.model_name, modelReference: entry.model_reference, title: entry.title, category: entry.catalog_category }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Modification impossible.");
+      await loadDocuments(); setEditingDocument(null);
+      setEntryNotice(entry.id, "edit", result.withdrawn ? "Fiche modifiée et retirée de la diffusion. Vérifiez son nouveau rattachement puis confirmez sa diffusion." : "Fiche modifiée.");
+    } catch (cause) { setEntryNotice(entry.id, "edit", cause.message, "error"); }
+    finally { setBusy(false); }
+  }
+
+  async function saveHotline(entry) {
+    const phone = hotlineInputs[entry.id] ?? entry.hotline_phone ?? "";
+    setBusy(true); setError(""); setMessage("");
+    setEntryNotice(entry.id, "hotline", "Enregistrement de la hotline…", "progress");
+    try {
+      const response = await fetch("/api/platform-admin-documents", {
+        method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, action: "set-hotline", phone }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Hotline indisponible.");
+      const entries = await loadDocuments();
+      if ((entries.find((item) => item.id === entry.id)?.hotline_phone || "") !== phone.trim()) {
+        throw new Error("La hotline n’a pas pu être confirmée dans le catalogue.");
+      }
+      setEntryNotice(entry.id, "hotline", phone.trim()
+        ? `Hotline enregistrée dans le catalogue : ${phone.trim()}.`
+        : "Hotline supprimée du catalogue.");
+      setHotlineInputs((previous) => { const next = { ...previous }; delete next[entry.id]; return next; });
+    } catch (cause) { setEntryNotice(entry.id, "hotline", cause.message, "error"); }
+    finally { setBusy(false); }
+  }
+
+  async function indexDocument(entry) {
+    setBusy(true);
+    setEntryNotice(entry.id, "index", "Indexation en cours : lecture du PDF et préparation des pages…", "progress");
+    try {
+      const response = await fetch("/api/platform-admin-documents", {
+        method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, action: "index" }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Indexation impossible.");
+      setEntryNotice(entry.id, "index", result.indexStatus === "ready"
+        ? "Document prêt pour Shiba."
+        : result.indexStatus === "indexing" ? "L'indexation est encore en cours. Réessayez dans quelques minutes."
+        : result.indexStatus === "needs_ocr" ? "Ce PDF est scanné : un OCR est nécessaire avant son indexation."
+          : result.indexError || "Indexation non terminée.", result.indexStatus === "ready" ? "success" : result.indexStatus === "indexing" ? "progress" : "error");
+      await loadDocuments();
+    } catch (cause) { setEntryNotice(entry.id, "index", cause.message, "error"); }
+    finally { setBusy(false); }
+  }
+
+  async function saveAliases(entry) {
+    const aliases = aliasInputs[entry.id] ?? (entry.model_aliases || []).join(", ");
+    setBusy(true); setError(""); setMessage("");
+    setEntryNotice(entry.id, "aliases", "Enregistrement des références…", "progress");
+    try {
+      const response = await fetch("/api/platform-admin-documents", {
+        method: "PATCH", headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, action: "set-aliases", aliases }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Références indisponibles.");
+      await loadDocuments();
+      setEntryNotice(entry.id, "aliases", "Références enregistrées dans le catalogue.");
+      setAliasInputs((previous) => { const next = { ...previous }; delete next[entry.id]; return next; });
+    } catch (cause) { setEntryNotice(entry.id, "aliases", cause.message, "error"); }
+    finally { setBusy(false); }
+  }
+
+  async function act(body) {
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const result = await request(session.access_token, body);
+      setMessage(result.message);
+      await load();
+    } catch (cause) { setError(cause.message); }
+    finally { setBusy(false); }
+  }
+
+  const company = data?.selectedCompanyId === selected
+    ? data.companies?.find((entry) => entry.id === selected)
+    : null;
+  const pendingCount = documents.filter((entry) => entry.status === "pending_review").length;
+  const pendingDocuments = documents.filter((entry) => entry.status === "pending_review");
+  const awaitingDistribution = documents.filter((entry) => data?.environment === "production"
+    && entry.status === "approved" && entry.distribution_confirmed_at == null);
+  const archivedDocuments = documents.filter((entry) => entry.status !== "pending_review"
+    && !awaitingDistribution.includes(entry));
+  const archivedModels = Object.values(archivedDocuments.reduce((groups, entry) => {
+    const key = `${entry.manufacturer || ""}\u0000${entry.model_reference || ""}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+    if (!groups[key]) groups[key] = { manufacturer: entry.manufacturer, model: entry.model_name, reference: entry.model_reference, entries: [] };
+    groups[key].entries.push(entry);
+    return groups;
+  }, {}));
+  const archivePageCount = Math.max(1, Math.ceil(archivedModels.length / 15));
+  const currentArchivePage = Math.min(archivePage, archivePageCount);
+  function renderDocument(entry) {
+    const awaitingPublication = data.environment === "production" && entry.status === "approved"
+      && entry.distribution_confirmed_at == null;
+    const category = reviewCategories[entry.id] || entry.catalog_category || "";
+    const content = <>
+      <p className="platform-admin-document-name"><strong>{entry.manufacturer} · {entry.model_name ? `${entry.model_name} · ` : ""}{entry.model_reference}</strong> · {entry.title} <span>({awaitingPublication ? "En attente de diffusion" : entry.status === "approved" ? "Publié" : entry.status === "rejected" ? "Rejeté" : "À valider"})</span></p>
+      <p className="platform-admin-document-filename">{entry.original_filename}</p>
+      <button type="button" disabled={busy || entry.rag_status === "indexing"} onClick={() => setEditingDocument({ ...entry })}>Modifier la fiche</button>
+      {editingDocument?.id === entry.id && <form onSubmit={saveDocument}>
+        <label>Fabricant <input required minLength={2} maxLength={120} value={editingDocument.manufacturer} onChange={(event) => setEditingDocument({ ...editingDocument, manufacturer: event.target.value })} /></label>
+        <label>Modèle <input required minLength={2} maxLength={160} placeholder="Ex. ThemaPlus Condens" value={editingDocument.model_name || ""} onChange={(event) => setEditingDocument({ ...editingDocument, model_name: event.target.value })} /></label>
+        <label>Référence exacte du modèle <input required minLength={2} maxLength={160} placeholder="Ex. THEMAPLUS CONDENS F25 A-1" value={editingDocument.model_reference} onChange={(event) => setEditingDocument({ ...editingDocument, model_reference: event.target.value })} /></label>
+        <label>Titre <input required minLength={2} maxLength={200} value={editingDocument.title} onChange={(event) => setEditingDocument({ ...editingDocument, title: event.target.value })} /></label>
+        <label>Catégorie <select required value={editingDocument.catalog_category || ""} onChange={(event) => setEditingDocument({ ...editingDocument, catalog_category: event.target.value })}><option value="">Choisir une catégorie</option>{catalogCategories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <p>Changer le fabricant, la référence ou la catégorie retire la fiche de la diffusion jusqu’à votre nouvelle validation. Le PDF reste conservé.</p>
+        <button disabled={busy}>Enregistrer les modifications</button>
+        <button type="button" disabled={busy} onClick={() => setEditingDocument(null)}>Annuler</button>
+      </form>}
+      {entryNotices[`${entry.id}:edit`] && <p role={entryNotices[`${entry.id}:edit`].kind === "error" ? "alert" : "status"}>{entryNotices[`${entry.id}:edit`].text}</p>}
+      <button type="button" onClick={() => downloadDocument(entry)}>Télécharger le PDF</button>
+      {environmentName === "production" && data?.role === "founder" && entry.status === "approved" && entry.distribution_confirmed_at && <div>
+        <button type="button" disabled={busy || !r2Status?.readAccess} onClick={() => r2Document(entry, "r2-copy")}>Copier ce PDF vers R2</button>
+        <button type="button" disabled={busy || !r2Status?.readAccess} onClick={() => r2Document(entry, "r2-preview")}>Vérifier le PDF depuis R2</button>
+        {entryNotices[`${entry.id}:r2`] && <p role={entryNotices[`${entry.id}:r2`].kind === "error" ? "alert" : "status"}>{entryNotices[`${entry.id}:r2`].text}</p>}
+      </div>}
+      {entry.status === "approved" && <div className="platform-admin-document-index">
+        <p>Shiba : {entry.rag_status === "ready" ? "prêt" : entry.rag_status === "needs_ocr" ? "OCR nécessaire" : entry.rag_status === "failed" ? "échec de l'indexation" : entry.rag_status === "indexing" ? "indexation en cours" : "à indexer"}{entry.rag_error ? ` — ${entry.rag_error}` : ""}</p>
+        {entry.rag_status !== "ready" && entry.rag_status !== "needs_ocr" && <button type="button" disabled={busy} onClick={() => indexDocument(entry)}>{entry.rag_status === "indexing" ? "Vérifier ou relancer l'indexation" : "Indexer pour Shiba"}</button>}
+        {entryNotices[`${entry.id}:index`] && <p role={entryNotices[`${entry.id}:index`].kind === "error" ? "alert" : "status"} className={`platform-admin-inline-${entryNotices[`${entry.id}:index`].kind}`}>{entryNotices[`${entry.id}:index`].text}</p>}
+      </div>}
+      {hotlineReady && entry.status === "approved" && <div>
+        <label>Hotline <input type="tel" value={hotlineInputs[entry.id] ?? entry.hotline_phone ?? ""} onChange={(event) => setHotlineInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="Numéro de téléphone" maxLength={32} /></label>
+        <button type="button" disabled={busy} onClick={() => saveHotline(entry)}>Enregistrer la hotline</button>
+        {entryNotices[`${entry.id}:hotline`] && <p role={entryNotices[`${entry.id}:hotline`].kind === "error" ? "alert" : "status"} className={`platform-admin-inline-${entryNotices[`${entry.id}:hotline`].kind}`}>{entryNotices[`${entry.id}:hotline`].text}</p>}
+        <label>Autres références couvertes par le PDF <input value={aliasInputs[entry.id] ?? (entry.model_aliases || []).join(", ")} onChange={(event) => setAliasInputs((previous) => ({ ...previous, [entry.id]: event.target.value }))} placeholder="Autre référence du modèle" maxLength={1620} /></label>
+        <button type="button" disabled={busy} onClick={() => saveAliases(entry)}>Enregistrer les références</button>
+        {entryNotices[`${entry.id}:aliases`] && <p role={entryNotices[`${entry.id}:aliases`].kind === "error" ? "alert" : "status"} className={`platform-admin-inline-${entryNotices[`${entry.id}:aliases`].kind}`}>{entryNotices[`${entry.id}:aliases`].text}</p>}
+      </div>}
+      {publicationReady && entry.status === "pending_review" && <div>
+        <label>Catégorie du catalogue <select value={reviewCategories[entry.id] || ""} onChange={(event) => setReviewCategories((previous) => ({ ...previous, [entry.id]: event.target.value }))}>
+          <option value="">Choisir une catégorie</option>
+          {catalogCategories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </select></label>
+        <label><input type="checkbox" checked={distributionConfirmed[entry.id] === true} onChange={(event) => setDistributionConfirmed((previous) => ({ ...previous, [entry.id]: event.target.checked }))} /> J’ai vérifié la référence et le droit de diffuser ce PDF à tous les comptes CarnetPass.</label>
+        <button type="button" disabled={busy || !reviewCategories[entry.id] || !distributionConfirmed[entry.id]} onClick={() => reviewDocument(entry, "approve")}>Valider et publier</button>
+        <button type="button" disabled={busy} onClick={() => reviewDocument(entry, "reject")}>Rejeter</button>
+      </div>}
+      {publicationReady && awaitingPublication && <div>
+        <p>Fiche transférée : le PDF reste invisible tant que sa diffusion n'est pas confirmée.</p>
+        <label>Catégorie du catalogue <select value={category} onChange={(event) => setReviewCategories((previous) => ({ ...previous, [entry.id]: event.target.value }))}>
+          <option value="">Choisir une catégorie</option>
+          {catalogCategories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </select></label>
+        <label><input type="checkbox" checked={distributionConfirmed[entry.id] === true} onChange={(event) => setDistributionConfirmed((previous) => ({ ...previous, [entry.id]: event.target.checked }))} /> J'ai vérifié la référence et le droit de diffuser ce PDF aux professionnels CarnetPass.</label>
+        <button type="button" disabled={busy || !category || !distributionConfirmed[entry.id] || entry.rag_status !== "ready"} onClick={() => reviewDocument(entry, "publish-imported")}>Confirmer la diffusion</button>
+      </div>}
+      {data.environment === "production" && entry.status === "approved" && !awaitingPublication && <button type="button" disabled={busy} onClick={() => manageDocument(entry, "unpublish")}>Retirer de la diffusion</button>}
+      {data.environment === "production" && data.role === "founder" && <button type="button" disabled={busy} onClick={() => manageDocument(entry, "delete")}>{entry.blob_pathname?.startsWith("r2://") ? "Supprimer la fiche du catalogue" : "Supprimer le PDF et la fiche"}</button>}
+    </>;
+    return <li key={entry.id} className="platform-admin-document-item">
+      {entry.status === "pending_review" ? content : <details><summary>{entry.manufacturer} · {entry.model_reference} · {entry.title} ({awaitingPublication ? "En attente de diffusion" : entry.status === "approved" ? "Publié" : "Rejeté"})</summary>{content}</details>}
+    </li>;
+  }
+  if (!data) return <main><p role="status">{error || "Vérification des accès…"}</p></main>;
+  return <main className="platform-admin">
+    <Link to="/espace-pro">← Retour à CarnetPass</Link>
+    {data.role === "founder" && <p><Link to="/administration-maintenance">Mettre le site en maintenance</Link></p>}
+    {data.role === "founder" && <p><Link to="/espace-pro?action=scan-plaque" style={{ display: "inline-block", padding: "16px 22px", borderRadius: 12, background: "#bf3509", color: "#fff", fontWeight: 700, textDecoration: "none" }}>📷 Ouvrir mon espace de test — scan de plaque</Link></p>}
+    {data.role === "founder" && <p>Ce raccourci utilise votre compte connecté. L’autorisation de test sans SIRET validé est réservée au fondateur. Les équipements ajoutés restent des données réelles de votre entreprise.</p>}
+    <p><Link to="/administration-aides">Gérer les aides financières et vérifier les qualifications RGE</Link></p>
+    <h1>Administration CarnetPass</h1>
+    {data?.environment === "preview" && <p className="platform-admin-environment-preview">Environnement de test (Preview) : les modifications effectuées ici ne changent pas les données de production.</p>}
+    {data?.environment === "production" && <p className="platform-admin-environment-production">Production — données réelles : chaque modification concerne les clients. Vérifiez le contrat, le règlement et l'entreprise avant de confirmer une action.</p>}
+    {error && <p role="alert" className="platform-admin-error">{error}</p>}
+    {message && <p role="status" className="platform-admin-success">{message}</p>}
+    {data && <>
+      <section><h2>Entreprises</h2>
+        <form onSubmit={(event) => { event.preventDefault(); load().catch((cause) => setError(cause.message)); }}>
+          <label>Rechercher par nom <input value={search} onChange={(event) => setSearch(event.target.value)} maxLength={80} /></label>
+          <button type="submit">Rechercher</button>
+        </form>
+        <ul>{data.companies.map((entry) => <li key={entry.id}>
+          <button type="button" onClick={() => { setSelected(entry.id); setSeatLimit(entry.subscriptions?.enterprise_seat_limit || 1); }} aria-pressed={selected === entry.id}>
+            {entry.name} · {entry.siret || "SIRET absent"} · créée le {new Date(entry.created_at).toLocaleDateString("fr-FR")} · réf. {entry.id.slice(0, 8)} · {entry.subscriptions?.plan || "sans formule"} / {entry.subscriptions?.status || "—"}
+          </button>
+        </li>)}</ul>
+      </section>
+      {selected && data.selectedCompanyId !== selected && <p role="status">Chargement de la fiche entreprise…</p>}
+      {company && <section><h2>{company.name}</h2>
+        <p>Référence entreprise : {company.id}</p>
+        {data.memberLoadError && <p role="alert" className="platform-admin-error">La liste de l’équipe est momentanément indisponible. L’activation est bloquée par sécurité. <button type="button" onClick={() => load().catch((cause) => setError(cause.message))}>Réessayer</button></p>}
+        {(!/^\d{14}$/.test(company.siret || "") || company.company_verifications?.status !== "approved") && <p role="status">Avant d’activer l’offre Entreprise, le responsable doit enregistrer son SIRET et faire valider l’entreprise dans son espace professionnel. Vérifiez ensuite le contrat et le règlement.</p>}
+        <p>Vérification : {company.company_verifications?.status || "inconnue"}. Formule : {company.subscriptions?.plan || "—"}.
+          Échéance : {company.subscriptions?.current_period_end ? new Date(company.subscriptions.current_period_end).toLocaleDateString("fr-FR") : "aucune"}.
+          Comptes : {data.memberCount}/{company.subscriptions?.enterprise_seat_limit || "non défini"} (responsable compris).</p>
+        <form onSubmit={(event) => { event.preventDefault();
+          if (window.confirm(`Activer Entreprise pour ${company.name} jusqu'au ${contractEnd} ?`)) {
+            act({ action: "activate", companyId: selected, contractEnd: new Date(`${contractEnd}T23:59:59`).toISOString(), paymentReference, seatLimit, note });
+          }
+        }}>
+          <label>Fin du contrat <input type="date" required value={contractEnd} onChange={(event) => setContractEnd(event.target.value)} /></label>
+          <label>Référence du règlement vérifié <input required minLength={3} maxLength={120} value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} /></label>
+          <label>Comptes prévus au contrat, responsable compris <input type="number" min={Math.max(1, data.memberCount)} max="10000" required value={seatLimit} onChange={(event) => setSeatLimit(event.target.value)} /></label>
+          <label>Note interne <textarea maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} /></label>
+          <button disabled={busy || data.memberLoadError || !/^\d{14}$/.test(company.siret || "") || company.company_verifications?.status !== "approved"} type="submit">Activer Entreprise</button>
+          <button disabled={busy || company.subscriptions?.plan !== "enterprise" || company.subscriptions?.status !== "active"}
+            type="button" onClick={() => { if (window.confirm(`Suspendre l'accès de ${company.name} ?`)) act({ action: "suspend", companyId: selected, note }); }}>Suspendre</button>
+          <button disabled={busy || company.subscriptions?.plan !== "enterprise" || company.subscriptions?.status !== "active"}
+            type="button" onClick={() => { if (window.confirm(`Fixer ${seatLimit} comptes pour ${company.name} ?`)) act({ action: "set-seats", companyId: selected, seatLimit, note }); }}>Modifier le nombre de comptes</button>
+        </form>
+        {company.subscriptions?.plan === "enterprise" && company.subscriptions?.status === "active" && <div>
+          <h3>Techniciens de l'entreprise</h3>
+          <p>Le technicien doit avoir créé et confirmé son compte CarnetPass. Il ne peut appartenir à une autre entreprise.</p>
+          <form onSubmit={(event) => { event.preventDefault(); if (window.confirm(`Ajouter ${technicianEmail} à ${company.name} ?`)) act({ action: "add-technician", companyId: selected, email: technicianEmail, note }); }}>
+            <label>E-mail du technicien <input type="email" required value={technicianEmail} onChange={(event) => setTechnicianEmail(event.target.value)} /></label>
+            <button disabled={busy || data.memberLoadError || data.memberCount >= company.subscriptions?.enterprise_seat_limit}>Ajouter ce technicien</button>
+          </form>
+          <ul>{data.members.map((member) => <li key={member.user_id}>
+            {member.email || member.user_id} · {member.role}
+            {member.role === "technician" && member.email && <button type="button" disabled={busy}
+              onClick={() => { if (window.confirm(`Retirer ${member.email} de ${company.name} ?`)) act({ action: "remove-technician", companyId: selected, email: member.email, note }); }}>Retirer</button>}
+          </li>)}</ul>
+          {data.memberCount > data.members.length && <p>Seuls les 100 premiers membres sont affichés.</p>}
+        </div>}
+      </section>}
+      <section><h2>Historique récent</h2><ul>{data.events.map((event, index) => <li key={`${event.created_at}-${index}`}>
+        {new Date(event.created_at).toLocaleString("fr-FR")} · {event.action} · {data.companies.find((entry) => entry.id === event.company_id)?.name || event.company_id} · {event.payment_reference || "sans référence"}
+      </li>)}</ul></section>
+      {(["preview", "production"].includes(data.environment)) && <section><h2>Importer un document technique</h2>
+        <p>Le PDF reste privé et en attente de validation. Sa publication lance l'indexation pour Shiba ; un document scanné peut nécessiter un OCR.</p>
+        {!publicationReady && <p>La publication attend l’activation du catalogue dans cette base.</p>}
+        <form onSubmit={importDocument} onInvalidCapture={(event) => {
+          const field = event.target.closest("label")?.firstChild?.textContent?.trim() || "le champ demandé";
+          setDocumentNotice({ text: `Vérifiez ${field} : ${event.target.validationMessage}`, kind: "error" });
+        }}>
+          <label>Fabricant <input required minLength={2} maxLength={120} value={manufacturer} onChange={(event) => setManufacturer(event.target.value)} /></label>
+          <label>Modèle <input required minLength={2} maxLength={160} list="platform-document-models" placeholder="Ex. ThemaPlus Condens" value={modelName} onChange={(event) => setModelName(event.target.value)} /></label>
+          <datalist id="platform-document-models">{[...new Set(documents.filter((entry) => entry.manufacturer?.trim().toLocaleLowerCase("fr") === manufacturer.trim().toLocaleLowerCase("fr")).map((entry) => entry.model_name).filter(Boolean))].map((name) => <option key={name} value={name} />)}</datalist>
+          <label>Référence exacte du modèle <input required minLength={2} maxLength={160} placeholder="Ex. THEMAPLUS CONDENS F25 A-1" value={modelReference} onChange={(event) => setModelReference(event.target.value)} /></label>
+          <label>Titre du document <input required minLength={2} maxLength={200} value={documentTitle} onChange={(event) => setDocumentTitle(event.target.value)} /></label>
+          <label>Hotline <input type="tel" value={newHotlinePhone} onChange={(event) => setNewHotlinePhone(event.target.value)} placeholder="Numéro de téléphone (facultatif)" maxLength={32} /></label>
+          <label>Fichier PDF, 30 Mo maximum <input ref={documentFileInput} type="file" accept="application/pdf,.pdf" required onChange={(event) => { setDocumentFile(event.target.files?.[0] || null); setDocumentNotice(null); }} /></label>
+          <button disabled={busy} type="submit">{busy ? "Traitement en cours…" : "Déposer le document"}</button>
+          <button disabled={busy} type="button" onClick={() => loadDocuments().then(() => setDocumentNotice({ text: "Liste des documents actualisée.", kind: "success" })).catch((cause) => setDocumentNotice({ text: cause.message, kind: "error" }))}>Actualiser la liste</button>
+        </form>
+        {documentNotice && <p role={documentNotice.kind === "error" ? "alert" : "status"} className={`platform-admin-inline-${documentNotice.kind}`}>{documentNotice.text}</p>}
+        {environmentName === "production" && data.role === "founder" && <section aria-label="Vérification du stockage R2">
+          <h3>Vérification R2</h3>
+          <p>Les nouveaux PDF sont déposés directement dans R2, puis vérifiés. Leur lecture et leur indexation Shiba utilisent R2. Les anciens originaux Blob sont conservés.</p>
+          <button type="button" disabled={busy} onClick={checkR2}>Vérifier la connexion et actualiser le suivi R2</button>
+          <p>La copie automatique traite les documents publiés un par un et réutilise les copies déjà vérifiées. Gardez cet onglet ouvert et l’ordinateur éveillé. Aucun accès public ne sera activé.</p>
+          <button type="button" disabled={busy || !r2Status?.readAccess} onClick={startR2Batch}>Copier ou reprendre tous les documents publiés vers R2</button>
+          {r2Batch?.outcome === "running" && <button type="button" onClick={() => { r2BatchControl.current.stopped = true; }}>Arrêter après le PDF en cours</button>}
+          {r2Batch && <div role="status">
+            <p>{r2Batch.processed}/{r2Batch.total} fiches traitées · {r2Batch.copied} nouveaux PDF copiés · {r2Batch.reused} copies existantes réutilisées.</p>
+            {r2Batch.outcome === "running" && r2Batch.current && <p>En cours : {r2Batch.current.manufacturer} · {r2Batch.current.model_reference} · {r2Batch.current.title}</p>}
+            {r2Batch.outcome === "completed" && <p>Copie terminée. Actualisez le suivi R2 pour consulter le total des fichiers uniques.</p>}
+            {r2Batch.outcome === "stopped" && <p>Copie arrêtée à votre demande. La reprise conserve les copies vérifiées.</p>}
+            {r2Batch.outcome === "failed" && <p>Arrêt : {r2Batch.reason} Aucun nouvel essai automatique. Actualisez le suivi R2 avant de reprendre.</p>}
+          </div>}
+          {r2Status && <><p role="status">Connexion en lecture confirmée · {r2Status.copies} copie(s) vérifiée(s).</p>
+            <ul>{r2Status.attempts.map(attempt => <li key={attempt.id}>{new Date(attempt.started_at).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })} · {attempt.document_id} · {attempt.outcome}{attempt.reason ? ` · ${attempt.reason}` : ""}</li>)}</ul>
+          </>}
+        </section>}
+        <div className="platform-admin-document-queue"><h3>Documents à valider ({pendingCount})</h3>
+          {pendingCount ? <ul>{pendingDocuments.map(renderDocument)}</ul> : <p>Aucun nouveau PDF à valider.</p>}
+        </div>
+        {!!awaitingDistribution.length && <details className="platform-admin-document-archive">
+          <summary>Fiches importées à diffuser ({awaitingDistribution.length})</summary>
+          <p>Ces PDF sont enregistrés et indexés, mais restent privés. Vérifiez la catégorie et le droit de diffusion de chaque fiche avant de la rendre visible aux professionnels.</p>
+          <ul>{awaitingDistribution.map(renderDocument)}</ul>
+        </details>}
+        {!!archivedDocuments.length && <details className="platform-admin-document-archive"><summary>Archives des modèles ({archivedModels.length}) · {archivedDocuments.length} document(s)</summary>
+          <nav aria-label="Pages des modèles archivés" className="platform-admin-pagination">
+            <button type="button" disabled={currentArchivePage <= 1} onClick={() => setArchivePage(currentArchivePage - 1)}>← Précédente</button>
+            <span role="status">Page {currentArchivePage} sur {archivePageCount} · {archivedModels.length} modèles</span>
+            <button type="button" disabled={currentArchivePage >= archivePageCount} onClick={() => setArchivePage(currentArchivePage + 1)}>Suivante →</button>
+          </nav>
+          <ul>{archivedModels.slice((currentArchivePage - 1) * 15, currentArchivePage * 15).map((group) => <li key={`${group.manufacturer}:${group.reference}`} className="platform-admin-document-item">
+            <details><summary>{group.manufacturer} · {group.model ? `${group.model} · ` : ""}{group.reference} ({group.entries.length} document{group.entries.length > 1 ? "s" : ""})</summary>
+              <ul>{group.entries.map(renderDocument)}</ul>
+            </details>
+          </li>)}</ul>
+        </details>}
+      </section>}
+      {data.role === "founder" && <section><h2>Collaborateurs internes</h2>
+        <p>Le collaborateur doit déjà avoir créé et confirmé son compte CarnetPass. Seul le fondateur peut accorder ou retirer ce rôle.</p>
+        <form onSubmit={(event) => { event.preventDefault(); act({ action: "add-collaborator", email }); }}>
+          <label>E-mail du collaborateur <input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+          <button disabled={busy}>Autoriser</button>
+          <button type="button" disabled={busy} onClick={() => { if (window.confirm(`Retirer l'accès interne de ${email} ?`)) act({ action: "remove-collaborator", email }); }}>Retirer</button>
+        </form>
+        <p>{data.collaborators.length} compte(s) interne(s) autorisé(s).</p>
+      </section>}
+    </>}
+  </main>;
+}

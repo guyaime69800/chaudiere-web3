@@ -1,0 +1,581 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import BoilerMaintenanceCertificateForm from "./BoilerMaintenanceCertificateForm";
+import CarnetPassModal from "./CarnetPassModal";
+import EquipmentDocumentCenter from "./EquipmentDocumentCenter";
+import InterventionForm from "./InterventionForm";
+import ThermodynamicDocuments from "./ThermodynamicDocuments";
+import MaintenanceReminders from "./MaintenanceReminders";
+import { professionalRemindersAvailable } from "../lib/professional-reminders-availability.js";
+import { previewDocumentsAvailable } from "../lib/preview-documents-availability.js";
+import "./EquipmentWorkspace.css";
+
+const remindersEnabled = professionalRemindersAvailable(import.meta.env);
+const previewDocumentsEnabled = previewDocumentsAvailable(import.meta.env);
+const WORKSPACE_TABS = [
+    { id: "summary", label: "Synthèse" },
+    ...(remindersEnabled ? [{ id: "reminders", label: "Rappels" }] : []),
+    { id: "history", label: "Interventions" },
+    { id: "regulatory", label: "Attestations / CERFA" },
+    { id: "documents", label: "Documents" },
+    { id: "traceability", label: "Traçabilité" },
+];
+
+function getEquipmentTypeLabel(type) {
+    const labels = {
+        boiler: "Chaudière",
+        heat_pump: "Pompe à chaleur",
+        air_conditioning: "Climatisation",
+        vmc: "VMC",
+        rooftop: "Rooftop",
+        other: "Autre équipement",
+    };
+
+    return labels[type] || "Équipement";
+}
+
+function formatDate(value, withTime = false) {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) return "Date non renseignée";
+
+    return new Intl.DateTimeFormat("fr-FR", {
+        dateStyle: "medium",
+        ...(withTime ? { timeStyle: "short" } : {}),
+    }).format(date);
+}
+
+function certificateBelongsToEquipment(
+    certificate,
+    equipment,
+    interventionIds,
+) {
+    if (interventionIds.has(String(certificate?.interventionId || ""))) {
+        return true;
+    }
+
+    const equipmentId = String(equipment?.id || "");
+    const serialNumber = String(equipment?.serial_number || "");
+    const snapshot = certificate?.equipmentSnapshot || {};
+
+    const certificateEquipmentIds = [
+        certificate?.equipmentId,
+        certificate?.equipment_id,
+        snapshot?.id,
+        snapshot?.equipmentId,
+        snapshot?.equipment_id,
+    ].map((value) => String(value || ""));
+
+    const snapshotSerialNumbers = [
+        snapshot?.serialNumber,
+        snapshot?.serial_number,
+    ].map((value) => String(value || ""));
+
+    return (
+        (equipmentId && certificateEquipmentIds.includes(equipmentId)) ||
+        (serialNumber && snapshotSerialNumbers.includes(serialNumber))
+    );
+}
+
+function getCarnetPassPresentation(status, loading, error) {
+    if (loading && !status) {
+        return {
+            label: "Vérification du CarnetPass…",
+            buttonLabel: "Vérification…",
+            tone: "neutral",
+            disabled: true,
+        };
+    }
+
+    if (error || !status) {
+        return {
+            label: "Statut CarnetPass indisponible",
+            buttonLabel: "Statut indisponible",
+            tone: "warning",
+            disabled: true,
+        };
+    }
+
+    if (status.status === "active") {
+        return {
+            label: "CarnetPass actif",
+            buttonLabel: "Voir le CarnetPass",
+            tone: "success",
+            disabled: false,
+        };
+    }
+
+    if (status.status === "blockchain_pending") {
+        return {
+            label: "Confirmation Polygon en cours",
+            buttonLabel: "Confirmation Polygon…",
+            tone: "pending",
+            disabled: true,
+        };
+    }
+
+    if (status.exists) {
+        return {
+            label: "CarnetPass momentanément indisponible",
+            buttonLabel: "CarnetPass indisponible",
+            tone: "warning",
+            disabled: true,
+        };
+    }
+
+    return {
+        label: "CarnetPass à créer",
+        buttonLabel: "Créer le CarnetPass",
+        tone: "neutral",
+        disabled: false,
+    };
+}
+
+export default function EquipmentWorkspace({
+    session,
+    company,
+    equipment,
+    carnetPassStatus,
+    carnetPassStatusLoading = false,
+    carnetPassStatusError = "",
+    carnetPassActionError = "",
+    interventions = [],
+    interventionLoading = false,
+    interventionLoadError = "",
+    boilerCertificates = [],
+    boilerCertificatesLoading = false,
+    onClose,
+    onOpenCarnetPass,
+    onOpenModelReminders,
+    onInterventionCreated,
+    onCertificatesChange,
+    promptReminder = false,
+    openRemindersRequest = null,
+}) {
+    const [activeTab, setActiveTab] = useState(remindersEnabled && (promptReminder || openRemindersRequest) ? "reminders" : "summary");
+    const [requestedInterventionId, setRequestedInterventionId] = useState("");
+    const [carnetPassModalOpen, setCarnetPassModalOpen] = useState(false);
+    const [technicalDocumentCount, setTechnicalDocumentCount] = useState(0);
+    const [thermodynamicDocuments, setThermodynamicDocuments] = useState([]);
+    const workspaceRef = useRef(null);
+
+    const equipmentInterventions = useMemo(
+        () =>
+            interventions.filter(
+                (intervention) =>
+                    String(intervention.equipmentId) === String(equipment.id),
+            ),
+        [equipment.id, interventions],
+    );
+
+    const interventionIds = useMemo(
+        () =>
+            new Set(
+                equipmentInterventions.map((intervention) => String(intervention.id)),
+            ),
+        [equipmentInterventions],
+    );
+
+    const equipmentCertificates = useMemo(
+        () =>
+            boilerCertificates.filter((certificate) =>
+                certificateBelongsToEquipment(certificate, equipment, interventionIds),
+            ),
+        [boilerCertificates, equipment, interventionIds],
+    );
+
+    const latestIntervention = useMemo(
+        () =>
+            [...equipmentInterventions].sort(
+                (left, right) =>
+                    new Date(right.interventionAt).getTime() -
+                    new Date(left.interventionAt).getTime(),
+            )[0] || null,
+        [equipmentInterventions],
+    );
+
+    const confirmedInterventionCount = equipmentInterventions.filter(
+        (intervention) => intervention.polygonState === "confirmed",
+    ).length;
+
+    const issuedCertificateCount = equipmentCertificates.filter(
+        (certificate) => certificate.status === "issued",
+    ).length + thermodynamicDocuments.filter((document) => document.status === "issued").length;
+
+    const draftCertificateCount = equipmentCertificates.filter(
+        (certificate) => certificate.status === "draft",
+    ).length + thermodynamicDocuments.filter((document) => document.status === "draft").length;
+
+    const totalDocumentCount =
+        technicalDocumentCount +
+        confirmedInterventionCount +
+        equipmentCertificates.length +
+        thermodynamicDocuments.length;
+    const regulatoryDocumentCount = equipmentCertificates.length + thermodynamicDocuments.length;
+
+    const carnetPassPresentation = getCarnetPassPresentation(
+        carnetPassStatus,
+        carnetPassStatusLoading,
+        carnetPassStatusError,
+    );
+    const activeCarnetPassId =
+        carnetPassStatus?.status === "active" && carnetPassStatus?.carnetPassId
+            ? String(carnetPassStatus.carnetPassId)
+            : "";
+    useEffect(() => {
+        if (!(previewDocumentsEnabled || (company?.is_demo === true && company?.subscription?.plan === "enterprise")) || !["air_conditioning", "heat_pump"].includes(equipment.equipment_type) || !session?.access_token) return;
+        const controller = new AbortController();
+        fetch(`/api/thermodynamic-documents?equipmentId=${encodeURIComponent(equipment.id)}`, {
+            headers: { Authorization: `Bearer ${session.access_token}` }, signal: controller.signal,
+        }).then((response) => response.ok ? response.json() : null)
+            .then((result) => { if (!controller.signal.aborted) setThermodynamicDocuments(result?.documents || []); })
+            .catch(() => {});
+        return () => controller.abort();
+    }, [equipment.id, equipment.equipment_type, session?.access_token, company?.is_demo, company?.subscription?.plan]);
+    useEffect(() => {
+        if (openRemindersRequest?.reminderId) return undefined;
+        const frame = window.requestAnimationFrame(() => {
+            workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        return () => window.cancelAnimationFrame(frame);
+    }, [openRemindersRequest?.reminderId]);
+
+    function handleCarnetPassAction() {
+        if (activeCarnetPassId) {
+            setCarnetPassModalOpen(true);
+            return;
+        }
+
+        onOpenCarnetPass();
+    }
+
+    function openRegulatoryDocument(interventionId) {
+        setRequestedInterventionId(interventionId);
+        setActiveTab("regulatory");
+    }
+
+    function renderTabLabel(tab) {
+        if (tab.id === "history" && equipmentInterventions.length > 0) {
+            return `${tab.label} (${equipmentInterventions.length})`;
+        }
+
+        if (tab.id === "regulatory" && regulatoryDocumentCount > 0) {
+            return `${tab.label} (${regulatoryDocumentCount})`;
+        }
+
+        if (tab.id === "documents" && totalDocumentCount > 0) {
+            return `${tab.label} (${totalDocumentCount})`;
+        }
+
+        return tab.label;
+    }
+
+    function handleTabKeyDown(event, currentIndex) {
+        const supportedKeys = ["ArrowLeft", "ArrowRight", "Home", "End"];
+
+        if (!supportedKeys.includes(event.key)) return;
+
+        event.preventDefault();
+
+        let nextIndex = currentIndex;
+
+        if (event.key === "Home") {
+            nextIndex = 0;
+        } else if (event.key === "End") {
+            nextIndex = WORKSPACE_TABS.length - 1;
+        } else if (event.key === "ArrowRight") {
+            nextIndex = (currentIndex + 1) % WORKSPACE_TABS.length;
+        } else if (event.key === "ArrowLeft") {
+            nextIndex =
+                (currentIndex - 1 + WORKSPACE_TABS.length) % WORKSPACE_TABS.length;
+        }
+
+        const nextTab = WORKSPACE_TABS[nextIndex];
+        setActiveTab(nextTab.id);
+
+        window.requestAnimationFrame(() => {
+            document.getElementById(`equipment-tab-${nextTab.id}`)?.focus();
+        });
+    }
+
+    return (
+        <section
+            ref={workspaceRef}
+            id="equipment-workspace"
+            className="equipment-workspace"
+            aria-labelledby="equipment-workspace-title"
+        >
+            <header className="equipment-workspace__header">
+                <div className="equipment-workspace__identity">
+                    <span className="equipment-workspace__eyebrow">
+                        DOSSIER ÉQUIPEMENT
+                    </span>
+                    <h2 id="equipment-workspace-title">
+                        {equipment.brand} {equipment.model}
+                    </h2>
+                    <div className="equipment-workspace__metadata">
+                        <span>{getEquipmentTypeLabel(equipment.equipment_type)}</span>
+                        <span>N° de série : {equipment.serial_number || "non lisible"}</span>
+                        {equipment.product_reference && (
+                            <span>Réf. produit : {equipment.product_reference}</span>
+                        )}
+                    </div>
+                    <span
+                        className={`equipment-workspace__status equipment-workspace__status--${carnetPassPresentation.tone}`}
+                    >
+                        {carnetPassPresentation.label}
+                    </span>
+                </div>
+
+                <div className="equipment-workspace__header-actions">
+                    {remindersEnabled && onOpenModelReminders && <button
+                        className="equipment-workspace__reminders-button"
+                        type="button"
+                        onClick={onOpenModelReminders}
+                        aria-label={`Voir les rappels du modèle ${equipment.brand} ${equipment.model}`}
+                        title="Rappels de ce modèle"
+                    >🔔</button>}
+                    <button
+                        className="pro-primary-button"
+                        type="button"
+                        disabled={carnetPassPresentation.disabled}
+                        onClick={handleCarnetPassAction}
+                    >
+                        {carnetPassPresentation.buttonLabel}
+                    </button>
+                    <button
+                        className="pro-action-card-button"
+                        type="button"
+                        onClick={onClose}
+                    >
+                        Fermer le dossier
+                    </button>
+                </div>
+                {carnetPassActionError && <p className="equipment-workspace__carnetpass-error" role="alert">{carnetPassActionError}</p>}
+            </header>
+
+            <nav
+                className="equipment-workspace__tabs"
+                aria-label="Rubriques du dossier équipement"
+                role="tablist"
+            >
+                {WORKSPACE_TABS.map((tab, index) => (
+                    <button
+                        key={tab.id}
+                        id={`equipment-tab-${tab.id}`}
+                        className={activeTab === tab.id ? "is-active" : ""}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === tab.id}
+                        aria-controls={`equipment-panel-${tab.id}`}
+                        tabIndex={activeTab === tab.id ? 0 : -1}
+                        onClick={() => setActiveTab(tab.id)}
+                        onKeyDown={(event) => handleTabKeyDown(event, index)}
+                    >
+                        {renderTabLabel(tab)}
+                    </button>
+                ))}
+            </nav>
+
+            <div
+                id={`equipment-panel-${activeTab}`}
+                className="equipment-workspace__panel"
+                role="tabpanel"
+                aria-labelledby={`equipment-tab-${activeTab}`}
+            >
+                {activeTab === "summary" && (
+                    <div className="equipment-workspace__summary">
+                        <article>
+                            <span>Interventions enregistrées</span>
+                            <strong>
+                                {interventionLoading ? "…" : equipmentInterventions.length}
+                            </strong>
+                            <small>
+                                {latestIntervention
+                                    ? `Dernière intervention : ${formatDate(
+                                        latestIntervention.interventionAt,
+                                        true,
+                                    )}`
+                                    : "Aucune intervention pour cet équipement"}
+                            </small>
+                            <button type="button" onClick={() => setActiveTab("history")}>
+                                Ouvrir l’historique
+                            </button>
+                        </article>
+
+                        <article>
+                            <span>Documents réglementaires</span>
+                            <strong>
+                                {boilerCertificatesLoading && equipment.equipment_type === "boiler" ? "…" : regulatoryDocumentCount}
+                            </strong>
+                            <small>
+                                {issuedCertificateCount} émise
+                                {issuedCertificateCount > 1 ? "s" : ""}
+                                {draftCertificateCount > 0
+                                    ? ` · ${draftCertificateCount} brouillon${draftCertificateCount > 1 ? "s" : ""
+                                    }`
+                                    : ""}
+                            </small>
+                            <button type="button" onClick={() => setActiveTab("regulatory")}>
+                                Voir les attestations
+                            </button>
+                        </article>
+
+                        <article>
+                            <span>Preuves Polygon</span>
+                            <strong>{confirmedInterventionCount}</strong>
+                            <small>
+                                Empreinte confirmée pour chaque intervention validée
+                            </small>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (activeCarnetPassId) {
+                                        handleCarnetPassAction();
+                                        return;
+                                    }
+
+                                    setActiveTab("traceability");
+                                }}
+                            >
+                                Voir la traçabilité
+                            </button>
+                        </article>
+                    </div>
+                )}
+
+                {activeTab === "history" && (
+                    <InterventionForm
+                        embedded
+                        selectedEquipmentId={equipment.id}
+                        session={session}
+                        company={company}
+                        equipments={[equipment]}
+                        carnetPassStatuses={{
+                            [equipment.id]: carnetPassStatus,
+                        }}
+                        carnetPassStatusLoading={carnetPassStatusLoading}
+                        interventions={equipmentInterventions}
+                        boilerCertificates={equipmentCertificates}
+                        boilerCertificatesLoading={boilerCertificatesLoading}
+                        interventionLoading={interventionLoading}
+                        interventionLoadError={interventionLoadError}
+                        onOpenRegulatoryDocument={openRegulatoryDocument}
+                        onInterventionCreated={onInterventionCreated}
+                    />
+                )}
+
+                {remindersEnabled && activeTab === "reminders" && (
+                    <MaintenanceReminders
+                        equipment={equipment}
+                        session={session}
+                        interventions={equipmentInterventions}
+                        promptAfterCreation={promptReminder}
+                        focusReminderRequest={openRemindersRequest}
+                    />
+                )}
+
+                {activeTab === "regulatory" &&
+                    (equipment.equipment_type === "boiler" ? (
+                        <BoilerMaintenanceCertificateForm
+                            embedded
+                            selectedEquipmentId={equipment.id}
+                            session={session}
+                            interventions={equipmentInterventions}
+                            equipments={[equipment]}
+                            requestedInterventionId={requestedInterventionId}
+                            onCertificatesChange={onCertificatesChange}
+                            onRequestHandled={() => setRequestedInterventionId("")}
+                            onClose={() => {
+                                setRequestedInterventionId("");
+                                setActiveTab("summary");
+                            }}
+                        />
+                    ) : (previewDocumentsEnabled || (company?.is_demo === true && company?.subscription?.plan === "enterprise")) && ["air_conditioning", "heat_pump"].includes(equipment.equipment_type) ? (
+                        <ThermodynamicDocuments
+                            equipment={equipment}
+                            interventions={equipmentInterventions}
+                            session={session}
+                            company={company}
+                            onDocumentsChange={setThermodynamicDocuments}
+                        />
+                    ) : ["air_conditioning", "heat_pump"].includes(equipment.equipment_type) ? (
+                        <div className="equipment-workspace__empty-state">
+                            <h3>Documents réglementaires de l’équipement</h3>
+                            <p>Les formulaires climatisation et pompe à chaleur sont encore en validation avant leur ouverture.</p>
+                        </div>
+                    ) : (
+                        <div className="equipment-workspace__empty-state">
+                            <h3>Documents réglementaires de l’équipement</h3>
+                            <p>Aucun formulaire spécifique n’est encore disponible pour ce type d’équipement.</p>
+                        </div>
+                    ))}
+
+                {activeTab === "documents" && (
+                    <EquipmentDocumentCenter
+                        equipment={equipment}
+                        carnetPassId={carnetPassStatus?.carnetPassId || ""}
+                        reportCount={confirmedInterventionCount}
+                        certificateCount={regulatoryDocumentCount}
+                        onOpenHistory={() => setActiveTab("history")}
+                        onOpenRegulatory={() => setActiveTab("regulatory")}
+                        onTechnicalDocumentCountChange={setTechnicalDocumentCount}
+                    />
+                )}
+                {activeTab === "traceability" && (
+                    <div className="equipment-workspace__traceability">
+                        <article>
+                            <h3>État du CarnetPass</h3>
+                            <span
+                                className={`equipment-workspace__status equipment-workspace__status--${carnetPassPresentation.tone}`}
+                            >
+                                {carnetPassPresentation.label}
+                            </span>
+                            {carnetPassStatus?.carnetPassId && (
+                                <p>
+                                    Identifiant : <strong>{carnetPassStatus.carnetPassId}</strong>
+                                </p>
+                            )}
+                            {carnetPassStatusError && (
+                                <p className="pro-form-error" role="alert">
+                                    {carnetPassStatusError}
+                                </p>
+                            )}
+                            <button
+                                className="pro-primary-button"
+                                type="button"
+                                disabled={carnetPassPresentation.disabled}
+                                onClick={onOpenCarnetPass}
+                            >
+                                {carnetPassPresentation.buttonLabel}
+                            </button>
+                        </article>
+
+                        <article>
+                            <h3>Preuves d’intervention</h3>
+                            <strong>{confirmedInterventionCount}</strong>
+                            <p>
+                                Seule l’empreinte cryptographique est publiée sur Polygon. Les
+                                informations professionnelles restent conservées dans l’espace
+                                privé de l’entreprise.
+                            </p>
+                        </article>
+                    </div>
+                )}
+            </div>
+
+            <CarnetPassModal
+                open={carnetPassModalOpen}
+                onOpenChange={setCarnetPassModalOpen}
+                onOpenDocuments={() => {
+                    setCarnetPassModalOpen(false);
+                    setActiveTab("documents");
+                }}
+                carnetPassId={activeCarnetPassId}
+                equipment={equipment}
+                statusLabel={carnetPassPresentation.label}
+                statusTone={carnetPassPresentation.tone}
+            />
+
+        </section>
+    );
+}

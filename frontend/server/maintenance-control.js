@@ -1,0 +1,85 @@
+import { createClient } from "@supabase/supabase-js";
+import { Redis } from "@upstash/redis";
+import { createHash, randomBytes } from "node:crypto";
+import { mfaAccessError } from "./lib/mfa-access.js";
+import { MAINTENANCE_KEY, MAINTENANCE_ACCESS_PREFIX, MAINTENANCE_ACCESS_COOKIE } from "./lib/maintenance-state.js";
+
+const options = { auth: { persistSession: false, autoRefreshToken: false } };
+const accessKey = (token) => `${MAINTENANCE_ACCESS_PREFIX}${createHash("sha256").update(token).digest("hex")}`;
+const accessCookie = (token, maxAge) => `${MAINTENANCE_ACCESS_COOKIE}=${token}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Lax`;
+
+async function readBody(req) {
+  if (req.body && typeof req.body === "object") return req.body;
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > 2048) throw new Error("Body too large");
+    chunks.push(chunk);
+  }
+  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
+
+export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
+  if (process.env.VERCEL_ENV !== "production") return res.status(404).json({ ok: false });
+  if (!["GET", "POST", "DELETE"].includes(req.method)) return res.status(405).json({ ok: false });
+  const url = process.env.VITE_SUPABASE_URL;
+  const publicKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const secretKey = process.env.SUPABASE_SECRET_KEY;
+  const redisUrl = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL;
+  const redisToken = process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN;
+  if (!url || !publicKey || !secretKey || !redisUrl || !redisToken) {
+    return res.status(503).json({ ok: false, error: "Configuration indisponible." });
+  }
+  const bearer = /^Bearer ([^\s]+)$/i.exec(req.headers.authorization || "")?.[1];
+  if (!bearer || bearer.length > 16384) return res.status(401).json({ ok: false });
+  const auth = createClient(url, publicKey, options);
+  const { data: { user }, error: authError } = await auth.auth.getUser(bearer);
+  if (authError || !user?.email_confirmed_at) return res.status(401).json({ ok: false });
+  const db = createClient(url, secretKey, options);
+  const { data: operator, error: roleError } = await db.from("platform_admins")
+    .select("role").eq("user_id", user.id).maybeSingle();
+  if (roleError) return res.status(503).json({ ok: false, error: "Administration indisponible." });
+  if (operator?.role !== "founder") return res.status(403).json({ ok: false });
+  const redis = new Redis({ url: redisUrl, token: redisToken });
+  try {
+    if (req.method === "DELETE") {
+      const token = /(?:^|;\s*)carnetpass_maintenance_access=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie || "")?.[1];
+      if (token) await redis.del(accessKey(token));
+      res.setHeader("Set-Cookie", accessCookie("", 0));
+      return res.status(200).json({ ok: true });
+    }
+    if (req.method === "GET") {
+      const state = await redis.get(MAINTENANCE_KEY);
+      const token = /(?:^|;\s*)carnetpass_maintenance_access=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie || "")?.[1];
+      const access = token ? await redis.get(accessKey(token)) : null;
+      return res.status(200).json({ ok: true, state: state || { enabled: false }, accessUntil: access?.expiresAt || null });
+    }
+    const mfaError = mfaAccessError(user, bearer, { required: true });
+    if (mfaError) return res.status(mfaError.status).json({ ok: false, code: mfaError.code, error: mfaError.message });
+    let body;
+    try { body = await readBody(req); }
+    catch { return res.status(400).json({ ok: false, error: "Requête invalide." }); }
+    if (["grant-access", "grant-durable-access"].includes(body.action)) {
+      const durable = body.action === "grant-durable-access";
+      const lifetime = durable ? 30 * 24 * 3600 : 3600;
+      const previousToken = /(?:^|;\s*)carnetpass_maintenance_access=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie || "")?.[1];
+      if (previousToken) await redis.del(accessKey(previousToken));
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + lifetime * 1000).toISOString();
+      await redis.set(accessKey(token), { founderId: user.id, expiresAt, durable }, { ex: lifetime });
+      res.setHeader("Set-Cookie", accessCookie(token, lifetime));
+      return res.status(200).json({ ok: true, accessUntil: expiresAt });
+    }
+    if (typeof body.enabled !== "boolean" || typeof body.message !== "string"
+      || body.message.length > 300 || /\p{Cc}/u.test(body.message)) {
+      return res.status(400).json({ ok: false, error: "Paramètres invalides." });
+    }
+    const state = { enabled: body.enabled, message: body.message.trim(), updatedAt: new Date().toISOString(), updatedBy: user.id };
+    await redis.set(MAINTENANCE_KEY, state);
+    return res.status(200).json({ ok: true, state });
+  } catch {
+    return res.status(503).json({ ok: false, error: "État de maintenance indisponible." });
+  }
+}

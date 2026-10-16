@@ -1,0 +1,155 @@
+[
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-1-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 1,
+    "section": "Document technique - page 1",
+    "topic": "page-1",
+    "text": "a\nU_ug\nfrsquet\nCHAUDIERES A GAZ\nNOTICE D’UTILISATION\nGAZLINER 23 kW\nGAZLINER VENTOUSE 23 kW\nHYDROMOTRIX VENTOUSE 32 kW\nHYDROMOTRIX 32 et 45 kW\nPRESTIGE 23 , 30 et 50 kW"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-2-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 2,
+    "section": "Document technique - page 2",
+    "topic": "page-2",
+    "text": "Conseillé par un professionnel ou attaché à une marque reconnue, vous\navez équipé votre chauffage central d’une chaudière FRISQUET.\nHaute technologie, choix rigoureux des composants, contrôle sévère à\ntoutes les étapes de fabrication contribuent à assurer le rendement, la\nlongévité et le confort que vous attendez d'elle.\nVotre chaudière est bien sûr protégée contre les excès de pression ou de\ntempérature mais pour votre sécurité nous sommes allés au-delà des\nexigences des normes françaises et européennes en équipant tous les\nmodèles depuis plusieurs années déjà de :\n\n- Détection de flamme par ionisation.\n\n- Contrôle gaz par bloc de sécurité classe A.\n\n- D.A.T.*, la détection d'anomalie de tirage.\nS'il y a défaillance du conduit de fumée, le DAT arrête le brûleur et évite tout\ndégagement de gaz brûlés dans la pièce.\nLa remise en marche est automatique dès le retour des conditions\nnormales.\n\nNOTRE VOLONTÉ : MÉRITER VOTRE CONFIANCE.\nPour cette raison, par l'intermédiaire de votre installateur ou l’un des 400\nservices après-vente répartis sur toute la France, vous pouvez compter sur\nnotre engagement à long terme.\nFRISQUET S.A.\n\n*DAT : Brevet international FRISQUET S.A."
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-3-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 3,
+    "section": "Document technique - page 3",
+    "topic": "page-3",
+    "text": "TABLE DES MATIERES\nPage\n\nTABLEAU DE BORD 4\nALLUMAGE - EXTINCTION 5\nREGULATION 6\nUTILISATION HIVER 7\nUTILISATION ETE 7\nREGULATIONS COMPLEMENTAIRES 8\n\n- TAD 52\n\n- TAD 52 + Motorisation\n\n- RIF 2000\nENVIRONNEMENT ET REGLEMENTATION 10\n\n- Ventilations\n\n- Entretien\n\n- Ramonage\nCONSEILS PRATIQUES 11\n\n- Remplissage / pression d’eau\n\n-Purge\n\n- Protection contre le gel\n\n- Qualité de l'eau\n\n- Dégommage circulateur\nCARACTERISTIQUES TECHNIQUES 13\nINCIDENTS EVENTUELS 14\n\n- Chaudière arrêtée\n\n- Pas de chauffage\n\n- Eau chaude\n\n- Bruits\nGARANTIE 16\n\n3"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-4-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 4,
+    "section": "Document technique - page 4",
+    "topic": "page-4",
+    "text": "TABLEAU DE BORD = =\nGAZLINER 23 kW et GAZLINER 23 kW Ventouse\nOm ‘ wc sort\nPS I =\no Az Uner\nga\n()\n@G\nHYDROMOTRIX 32 kW / 45 KW et HYDROMOTRIX 32 kW Ventouse\nse\n8 © (6) ©\n@ à\nas ns\nsi ILES\nPRESTIGE 23 / 30 kW et 50 kW\n® Thermomanomètre, indique la température\n(7) (6) des radiateurs et la pression de l'eau dans\n(4) ” l'installation (Mini 1 bar).\n: @ Réglage \"température radiateurs”.\n8e ‘ ;\n®© Sélecteur d’allure, permet de régler la\npuissance en fonction des conditions\nextérieures ou d'une demande d'eau chaude.\n@ Interrupteur lumineux, de mise en marche.\n(2) © Interrupteur lumineux, service chauffage.\n$ \" © Voyant à réarmement de mise en sécurité\ndu brûleur.\n© Voyant de fonctionnement du brûleur.\n(3) Les chaudières “Chauffage seul “sont prédisposées\nCS pour recevoir un ballon de production d'eau chaude.\n> Les plaques de commande comportent donc déjà\ntoutes les indications pour cet usage\n4"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-5-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 5,
+    "section": "Document technique - page 5",
+    "topic": "page-5",
+    "text": "ALLUMAGE - EXTINCTION\nAllumage\nÜ\nQu * Basculer l'interrupteur lumineux 4 sur b , son témoin s'allume.\n© « Un cycle d'allumage est lancé le voyant vert 7 s'allume.\nAprès une extinction prolongée de votre chaudière, le\nvoyant rouge 6 peut s'allumer 5 secondes après le voyant vert.\nX Relancer le cycle en appuyant sur le voyant rouge.\nL'interrupteur 5 met le chauffage en service « témoin allumé ».\nExtinction\n(OR\n* Basculer l'interrupteur lumineux 4 vers le bas, son témoin\ns'éteint.\nR"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-6-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 6,
+    "section": "Document technique - page 6",
+    "topic": "page-6",
+    "text": "REGULATION\nAfin d'exploiter toutes ses possibilités de puissance et de rendement, votre\nchaudière est équipée, pour votre confort, d’une double régulation :\n\n@) - Le réglage de température radiateurs\n\noo Si la chaudière est équipée d’une régulation\n1 & automatique TAD + Moteur ou RIF 2000 cette\ncommande est inopérante.\n0 » Le sélecteur d’allure :\n\\) La demande thermique n'étant pas la même en\nMAXI plein hiver qu'en demi saison, le sélecteur d'allure\n: adapte le potentiel de la chaudière en fonction des\nA besoins.\nLa position \"ECO\"\nC'est le réglage où la chaudière a son meilleur rapport :\nconsommation de gaz\nchauffage + eau chaude\nLa position \"ECO\" couvre le fonctionnement de la chaudière pendant la\npériode de demi saison, hors besoins exceptionnels d’eau chaude.\nLa marche en \"ECO\" apporte une économie importante d'énergie. Elle est\nconseillée tant que la réponse de la chaudière correspond aux besoins.\n- Si votre chaudière est raccordée à un ballon :\na) choisissez les fonctions sur le boîtier de commande ou sur la régulation\nautomatique RIF 2000 (voir page 9).\n\nb) réglez la température souhaitée,\n\nc) pour des demandes d'eau chaude très importantes, augmenter le réglage du\nsélecteur pour donner plus de ressource à la chaudière et diminuer le temps\nde réchauffage du ballon.\n\nû"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-7-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 7,
+    "section": "Document technique - page 7",
+    "topic": "page-7",
+    "text": "UTILISATION HIVER\nom\nBasculer l'interrupteur lumineux sur ‘|[{|. Son témoin s'allume. ff\nTempérature Extérieure : Moyenne Puisage Eau Chaude : Normal\neco =\n63\nmo NT 0\nMAXI MAXI = = 2\nES 18 ae\nTempérature Extérieure : Très Froide Puisage Eau Chaude : Important ——\neco =\n6\n50 7/0\n@, UN Ce sé *\nMAXI MAXI = Z\nTS M8 ve\nUTILISATION ETE\nOm\nBasculer l'interrupteur lumineux vers le bas. Son témoin s'éteint. g\nPuisage Eau Chaude : Normal —— ——=—Æ——\nEco =\nÉ\n»\nee\nMAXI MAXI # Ées\nEE ma e\nPuisage Eau Chaude : Important ——\nEco =\nÉ\n0\n50e\nMAXI MAXI à 5 Là\n+ 18 25\n7"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-8-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 8,
+    "section": "Document technique - page 8",
+    "topic": "page-8",
+    "text": "REGULATIONS COMPLEMENTAIRES\nConçues spécifiquement pour nos chaudières, elles ont pour but de :\n\n- Augmenter le confort,\n\n- Générer d'importantes économies d'énergie,\n\n- Personnaliser, et automatiser le fonctionnement de l'installation de chauffage.\nSelon différents critères tels que le :\n\n- Mode d'utilisation\n\n- Type d'habitation et d'installation de chauffage\n\n- Niveau de confort recherché.\nTHERMOSTAT D'AMBIANCE DIGITAL TAD52—\nDe programmation aisée, il arrête ou remet en\nmarche le chauffage aux valeurs de température\nchoisies pour chaque période du jour ou de la\nsemaine. Son action chronoproportionnelle\nanticipe les variations de température pour affiner\nla qualité de la régulation. cu\nTAD 52 + MOTORISATION —\nLe plus haut niveau de régulation en fonction de a\nl'ambiance. |! reprend toutes les particularités du\nTAD 52 mais en commandant un servomoteur. Il y =\nn'y a plus marche ou arrêt du chauffage mais\nmodulation permanente de sa température. D\n\n8"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-9-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 9,
+    "section": "Document technique - page 9",
+    "topic": "page-9",
+    "text": "RIF-2980\nLe Confort Absolu\nLe confort absolu grâce à am, [|\nl'automatisme intégral en e&xo\nprenant en compte tous les |\nparamètres : |\n- Température extérieure - i\n= +\n- Température ambiante fre 6)\n- Chauffage\n- Eau chaude (si sa production est faite par un ballon).\n* Toutes les commandes principales sont reportées dans la partie habitation\nsur le détecteur d'ambiance.\n- Elle gère en permanence le fonctionnement de la chaudière et de l'installation,\nsans aucune action manuelle, toute l'année.\næ O =\n* Conviviale, sa programmation est pee SE =\nd'une extrême simplicité. >\n= (es\n» e\n« Une commande par téléphone est 7\nréalisable par simple raccordement ui M ë\nà un relais téléphonique standard. ê\në .\n9"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-10-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 10,
+    "section": "Document technique - page 10",
+    "topic": "page-10",
+    "text": "ENVIRONNEMENT ET REGLEMENTATION\nUne chaudière au gaz doit être installée\npar un professionnel qualifié. !| agit en\nrespectant les réglementations en vigueur B E——\net votre sécurité. pa4 —\n«Conformément à la réglementation, il doit ——== Prenez\nvous délivrer un certificat de conformité visé =\npar Qualigaz : — es\n- Modèle 2 pour une installation nouvelle\nou sa modification.\n- Modèle 4 pour tout remplacement d’une\nchaudière à gaz en lieu et place de 1\nl'ancienne. =\n{ |\nPour votre bien être, votre sécurité et la = (ël\nlongévité de votre chaudière : hs\nLaisser les ventilations obligatoires libres et /l 7\npropres. é pr\n«Ne placer pas un appareil de cuisson sous ou à | AE |\nproximité immédiate de la chaudière.\n« La laisser accessible pour l'entretien. —= =\n-Les appareils à gaz ainsi que leurs conduits de\nfumée doivent être vérifiés, nettoyés et réglés une\nfois par an. (fe\nee\n(cf Réglement Sanitaire Départemental Art.31/6). q |\n«Le respect de ces règles permettra de garder à | BA }\nvotre installation, le niveau de performances, =] A |\nd'économie d'énergie et de confort que vous\nattendez d'elle.\nDoivent être respectés les textes suivants : æ\n- DTU 61.1 (et ses mises à jour) NF P45204.\n« DTU 24.1 (sauf pour VENTOUSE) NF P51201.\n» Arrêté du 2 Août 1977 et ses modificatifs.\n» Norme NFC 15.100. y\nCes conseils de sécurité élaborés par GAZ DE FRANCE\nvous sont proposés par FRISQUET S.A. 5\n10"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-11-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 11,
+    "section": "Document technique - page 11",
+    "topic": "page-11",
+    "text": "CONSEILS PRATIQUES\n\nRemplissage - Pression d’eau\n\n- La pression de l'eau dans l'installation se lit au thermomanomètre.\n\n- Elle doit être comprise entre 1 et 1,5 bar. En dessous de cette valeur, procéder à un\nappoint d'eau : ouvrir le ou les robinets de remplissage situés sous la chaudière\nou sur l'installation selon les modèles.\n\n« Lorsque la pression correcte est atteinte, refermer.\n\nCette pression varie ensuite autour de votre réglage, lors du fonctionnement de la\nchaudière. Au delà de 3 bar la soupape de sécurité s'ouvre.\n\nPurge\n\n« Si un ou plusieurs radiateurs ne chauffent plus ou sont bruyants (écoulement d'eau),\nles purger.\n\n» Procéder de même pour les éventuels points hauts de l'installation.\n\n« Après une purge, toujours vérifier et rétablir le cas échéant, la pression.\n\nProtection contre le gel\n\n« Deux solutions :\n\n- Soit vidanger l'installation et la chaudière.\n- Soit protéger par un antigel spécial chauffage.\nATTENTION : dans ce dernier cas, seul le circuit de chauffage est protégé,\nil reste nécessaire de vidanger le circuit sanitaire.\n11"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-12-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 12,
+    "section": "Document technique - page 12",
+    "topic": "page-12",
+    "text": "CONSEILS PRATIQUES (suite)\nQualité de l’eau\n« Votre chaudière est peu sensible à l'entartrage, néanmoins lorsque les valeurs\ndépassent une certaine limite, le calcaire se cristalise. || crée un entartrage de\nl'échangeur sanitaire mais aussi de l'installation : machine à laver, robinets, etc…\n- La chaudière a une action auto-détartrante. Le tartre est éliminé en paillettes\nprésentes dans l'eau ou les filtres de robinets.\nOn classifie les eaux selon leur teneur en calcaire :\nMoins de12°TH_ : Eau douce\nDe 13°à 24°TH_ : Eau dure\nPlus de 25°TH : Eau très dure\nMISE EN GARDE\nSi vous habitez une région où l'eau est \" dure \" ou \" très dure \", il y a lieu de prévoir un\ndispositif éliminant ou limitant les effets néfastes du calcaire.\nVotre installateur vous conseillera sur les différents systèmes efficaces :\nPolyphosphates ou Résines + sel.\nSi le débit d'eau chaude diminue aux robinets, l'échangeur sanitaire s'entartre.\nAdressez vous rapidement à un professionnel avant l'entartrage total.\n19"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-13-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 13,
+    "section": "Document technique - page 13",
+    "topic": "page-13",
+    "text": "Dégommage du circulateur chauffage\nAppuyer (1) et tourner alternativement (2) dans un sens et dans l'autre.\nee,\n;\nSe\n\nCARACTERISTIQUES TECHNIQUES\n(OR ES SO PE RS\npe | ri ro | +\n5. ÉMEZ GITES\nfrs | |r== fre]\npti [| = | 55) = [s-[=4\nss pn[ == | =) pafsalsr]\nsee bn] >| = pejas[ss\nesrraseee qan[ = | = | [esj2s4[424\nCes IENEZ com\n- -—— IÈNEZ | # [x\npare [= | =) Eau\nfee |y|æ|#| Ge]\npc NE [+\n\n= |w| Ex\n[simsgge [we] + | + | pe 51\n13"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-14-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 14,
+    "section": "Document technique - page 14",
+    "topic": "page-14",
+    "text": "Un incident mineur peut perturber ou arrêter le fonctionnement de votre chaudière ou de\nvotre installation. Bien souvent une vérification ou une manœuvre simple vous permet de\nvous sortir vous-même de l'embarras.\ne = 5 Œ\n1 623 ce 35 2\në st 22 8 5\nET 25 #5 = 2\nFA 52 32 % 2 =\n: ES eS 7 ë 2\nA 25 2 2 ; = là\n5 © à = ©\nÉ | 82 68 2 8 > |Ë\n= »û 1527 +12 S |8-\n2 ê= 9822 28 É (ge\n=# 3: 2252 ES gs |v»\nÿ -2 ê,20° 218 E (28\nE|zë8 | gt ét: $ ie B le\n=|£e5 Es aéos es 5 9 |32\nes 9 o2P5 CSS #7 g > >=\n>sg. 82 8-78 cs E 2 ë g Ze\ns8es 96 2o22 5/6 E = 8 ês\nsaes vx 2250 515.2 e 2 El\nS2E 2a 5155 2 3 Ci\nw|26EP 2 s2ez 2/2s8 = ë\n2 |2s5$) 25 55,> s 12582 8 5 (ec\nS|£ése® 86 29%0 2 2285 Ë 2 5\n2e9ca3 Le 3% 4 03: 3 = s\n29$7 = 809$ s|228 2 = \"€\nose | .Ë: 958a 5985 F4 £ as\n5202 /=55 22420 8855 5 a.\n2/2286S 2282 2SSS.É 285 2 Z es\n95 |ÉS8 53-825 ë 25\n81552555 Sse2t5S 2338 S 2 » 3\n5982 S25 245825 968 En © 2\nn|12229=5 258 S228ÉS 008 ès = 185\n20285 180 525269 28S #l&|2 è g=\n= |8s2é 565 oossce 258 ss ; : 22\nE2;S RE2 65:50 6Se||$ 2? g Lg\nw|ssgé 2328820 2232 ||#/5|É F4 $ |ês\n9 |É225 95908-22520 /585 É|e |9 |2 JÉ=\n< |E65292 |29325 5350952 2 = 15 A, 3 5e\nÈ -esS 228339 ,225 2% = (8 ° 5 age\nSES2 Se 22x03 21582 5 |: e |« |2E\n09530 93529553. 555S|2700 018 5 eS\n59e |558Gy 29382 soc 5 jé @ 5 22\nSs55 Slouts26sa|s2g | |18/8 12 5 |B |sE\nSE o2 |207°557 208 ces 215 ë ë\nwu|2525 EN :tsÉ 98 22c 1129/8128 |S 3 #5"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-14-chunk-2",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 14,
+    "section": "Document technique - page 14",
+    "topic": "page-14",
+    "text": "09530 93529553. 555S|2700 018 5 eS\n59e |558Gy 29382 soc 5 jé @ 5 22\nSs55 Slouts26sa|s2g | |18/8 12 5 |B |sE\nSE o2 |207°557 208 ces 215 ë ë\nwu|2525 EN :tsÉ 98 22c 1129/8128 |S 3 #5\nà |4S0% 2085285085 260 ||JÉ|J$ 27 |E |€ ES\n= é #\nÔ = b- =\n515 le ê Él8 lux f2E\nÉ 5 ë ë =|3|8,|88 ae =.\n& |? ; #l2f # =:\n618 ë ê 6|s 8e és /8=|É\n: © © E 2182 F4\nw|e > c|5= 183 3e 135\n+ 8 e =* »è 5\në = ES $ 12 > s=\n: jf Ë sf 88/55/58\në 5 a re Z s\nË $ $ 2 ë ge\n4 Ss 20/82 1582\nTE 3 3 S JE /SÉ/SŸ/48/88\n14"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-15-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 15,
+    "section": "Document technique - page 15",
+    "topic": "page-15",
+    "text": "Vous trouverez ci-après une récapitulation de ces divers points. En cas d'insuccès,\nadressez-vous à un professionnel qualifié.\nës\npe\nBE\nPS °.\në 2 £\n3 | 2S , 2 Ë\n“ |é sacs 2 5 £2\n3 Sa. E= =\n[À © © 2 ©\n€ 18 e2s|22 1852\n2 18 et Ë* 255\n-|2 |: 82/52 228\në|- 2 E=z3S 3-|2ug\nË|x |ë ste ges s-é\n$|é |s ses Éss ès\n#18 |€ 2895/0620 /grgs\n2 S 9895|=8=2/$5\ns|5 3 2233|225/52S\n.&18 |S ess 552£ 559\nês|lE |E ÉcE| ses to 5\n35/5 jé ss Sés 525\nS5|É g 828 522 228$\nvs) 2 |s 2239|/282/285\n:s| 8 ë 65 529 û\nFa = ê=s2|285 588\n255 |£ 258 282 08\n5618 5 2ge Sé5 B,S\n8212 18 gs e78 588\no| 81° o22|52E|/25 2\n821 85/2 065 22: 0% 8\n25| ê W 5:3|%#25/28 2\n©2|25/7T 22/2282 52 82\n22 52/8 8:89 225 vo®2\n23) 58/2 ÉSP|«22 558\nsc) 22/2 302/735 %.\n*e| 2218 5=2| °22 272\noE| 88/2 285 585 2ÉF 8\nFr — 25É2|225/98 Es\nsE|2:318 202 550 ER 2%\n+ eS =5 0235 22 <5\nse gg fé s2s|255 SÉ2P\nSEE so 825 2765\n2É| SS/É 8:38 $35/ 8258\n&|w8/|u 68/5821/532856\n2\n2 =\n2e ® €\nê |e É ê\n3 Z 2 ê\n3 5 = ë lé\na © . pS 8 ©\nÉ E |2 5 5e |E\ng |8 |É 8 |2* |3\n8 |# |: SE JÉ2 18\n3 |% |3 $2 | 82 5\n[en è æ® 73 =£E =\në |E |5 $s |: |\nÈ É |= 0% 52 |\n15"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-user-manual-page-16-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-user-manual",
+    "documentType": "user_manual",
+    "page": 16,
+    "section": "Document technique - page 16",
+    "topic": "page-16",
+    "text": "Nos chaudières sont garanties un an contre tout défaut de\nfabrication dans une limite de 18 mois à compter de la date de notre\nfacturation, à la condition qu'elles aient été mises en œuvre et\ninstallées conformément aux règles de l'art et normes en vigueur.\nNotre garantie et notre responsabilité sont limitées à la fourniture\ngratuite des pièces retounées en usine pour examen et reconnues 2\ndéfectueuses dès l'origine. ë\nSont exclus de cette garantie tous les incidents dus à une utilisation #\ndéfectueuse ou anormale. ë\nL'utilisateur bénéficie en tout état de cause de la garantie légale des :\nvices cachés des articles 1641 et suivants du code civil. =\n8\nGARANTIE LONGUE DURÉE 5\n$\nLorsque l'installation, la mise en service et l'entretien sont assurés 8\npar un professionnel qualifié, notre garantie peut être portée à : $\nHi\n- 5 ans pour le corps de chauffe, brûleur et ballon en ë\nacier inoxydable si incorporé à la chaudière. ë\n- 2 ans pour les autres composants. ë\n2\nPour en bénéficier, notre garantie longue durée doit être demandée ë\npar l'installateur pour son client. Ê\nIl est indispensable de nous retourner votre carte de garantie $\ncomplétée avec le cachet de l'installateur pour que votre Ë è\ndemande soit enregistrée. ê4\nsi\n= 4\na à\n2;\n8}\n_ :r\n8.\n5)\n15QGUE 2;\nêl\n8e\nbe\n2e\nFRISQUET S.A. 20 RUE BRANLY ZI BEAUVAL 77109 MEAUX Cedex 8e\nTEL : 01 60 09 91 00 FAX : 01 60 25 38 50 £z"
+  }
+]

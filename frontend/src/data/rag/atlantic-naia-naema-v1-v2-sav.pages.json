@@ -1,0 +1,141 @@
+{
+  "documentId": "atlantic-naia-naema-v1-v2-livret-sav",
+  "documentTitle": "Livret SAV - Naia et Naema versions 1 et 2",
+  "documentType": "troubleshooting",
+  "documentCode": "NAIA-NAEMA-V1-V2-SAV",
+  "manufacturerReference": "021272",
+  "brand": "Atlantic",
+  "model": "Naia 2 Micro 25",
+  "pageCount": 32,
+  "extractedAt": "2026-09-25T14:56:18.087Z",
+  "pages": [
+    {
+      "page": 1,
+      "text": "1 \nLIVRET DE DEPANNAGE SAV\nCHAUDIERES MURALES\nNAIA ET NAEMA\nVersion 1 et 2"
+    },
+    {
+      "page": 2,
+      "text": "Sommaire \n● Plaque Signalétique \n● Utilisation des touches \n● Lecture des infos \n● Schémas électriques \n● Valeur des sondes \n● Liste des codes erreurs \n● Synoptiques de dépannage\n- Panne sans code défaut\n- Le défaut E57\n- Le défaut E58\n- Le défaut E73\n- Le défaut E81 , E116 à E119\n- Le défaut E101\n- Le défaut E104\n- Le défaut E105\n- Le défaut E132\n- Le défaut E135 E136 \n● Trucs et astuces \nPage 3\nPage 4\nPage 6\nPage 7\nPage 9\nPage 10\nPage 13\nPage 14\nPage 15\nPage 16\nPage 17\nPage 18\nPage 19\nPage 20\nPage 21\nPage 22\nPage 23"
+    },
+    {
+      "page": 3,
+      "text": "3 \nLa plaque signalétique \nVous trouverez sur le tableau de\nrégulation ou sur la tranche de la façade,\nune ou plusieurs étiquettes précisant :\n- Le nom du produit\n- Le code produit\n- Le N° de série\n- Et un QR code \nListe des réfs : \n• Version 1 \n- Naema : 021200 – 021201\n- Naema Micro : 021202 – 021203 – 021204\n- Naema Duo : 021205 – 021206 - 021231\n- Naia : 021250\n- Naia Micro : 021251 – 021252 - 021253\n- Naia Duo : 021280 – 021282 – 021131 \n• Version 2 \n- Naema : 021240 – 021241\n- Naema Micro : 021242 – 021243 – 021244\n- Naema Duo : 021245 – 021204 - 021247\n- Naia : 021270 - 021271\n- Naia Micro : 021272 – 021273 - 021274\n- Naia Duo : 021275 – 021276 – 021277"
+    },
+    {
+      "page": 4,
+      "text": "4\nUtilisation des touches et affichage \nNaia et Naema 1 \nSélection de\nfonction\nMode de\nfonctionnement \nParamétrage \nAppui court (bref)\naccès utilisateur \nAppui long ( +5s)\naccès Installateur \nInterrupteur\nOn / Off\nTouche OK appui bref\nValidation d’action\nReset défaut\nAccès au\ninformation de\ntempérature et/ou\nTouche retour\nTouche réglage +/-\nTempérature.\nTouche navigation\nMenu \nUsage ecs\nAccès\nParamètre\nutilisateur\nAccès\nparamètre\nInstallateur\nveille\nMode PROG\nFonctionnement\nRégulé selon\nProgramme horaire\nPrésence de\nflamme détectée\npar la sonde\nionisation\ninformations\nEco permanent\n+\nPas de maintient de t°\nEchangeur sanitaire\nMode vacances\nUsage chauffage\nConfort permanent\n+\nMaintient en t°\nEchangeur sanitaire"
+    },
+    {
+      "page": 5,
+      "text": "5\nUtilisation des touches et affichage \nNaia et Naema 2 \nAffichage Etat ECS\nOFF : Arrêt\nAppui court + appui 3s\nAffichage Etat Chauffage\nOFF : Arrêt\nAppui court + appui 3s \nParamétrage \nAppui court (bref)\naccès utilisateur \nAppui long ( +5s)\naccès Installateur \nInterrupteur\nOn / Off\nTouche OK appui bref\nValidation d’action\nReset défaut\nAccès au\ninformation de\ntempérature et/ou\nTouche retour\nTouche réglage +/-\nTempérature.\nTouche navigation\nMenu\nUsage ecs\nAccès\nParamètre\nutilisateur\nAccès\nparamètre\nInstallateur\nveille\nMode PROG\nFonctionnement\nRégulé selon\nProgramme horaire\nPrésence de\nflamme détectée\npar la sonde\nionisation\ninformations\nEco permanent\n+\nPas de maintient de t°\nEchangeur sanitaire\nMode vacances\nUsage chauffage\nConfort permanent\n+\nMaintient en t°\nEchangeur sanitaire"
+    },
+    {
+      "page": 6,
+      "text": "6 \nLecture des infos \nInformations Etats \nAppuyer sur la touche ou\npour accéder aux diverses informations"
+    },
+    {
+      "page": 7,
+      "text": "7 \nSchémas électriques \nPlatine principale \n1 2 3 4\n5\n6\n7 8 9 10 11 12 \n1 Alimentation carte en Y1 230 V AC\n2 Alimentation ventilateur et circulateur en Y2 B 230 V AC \n3 Sonde d'ambiance 1et 2\nSonde extérieure\nSécurité plancher chauffant 24 V DC \n4 Vanne 3 voies directionnelle en X9 24V DC\n5 Fusible (réf 199 925) à remplacer ou contrôler si court circuit\n6 Kit 2 zones en X2 branchement faisceau inter-carte\n7 Alimentation Navipass\n8 Capteur de pression , sonde départ retour en X1\n9 Commande ventilateur en X5\n10 Débitmètre ECS en X6\n11 Vanne gaz en X8 24 V DC \n12 Cable allumage résistance 1KΩ"
+    },
+    {
+      "page": 8,
+      "text": "8 \nSonde départ\ncircuit 2 mélangé\nFaisceau inter- carte\nFil marron phase\ncirculateur zone 1\nFil Jaune phase\ncirculateur zone 2 \nKit 2 ème zone \nSchémas électriques\nSonde départ zone 2\nAlimentation vanne mélangeuse"
+    },
+    {
+      "page": 9,
+      "text": "9 \nValeur des sondes \nCourbe de valeur ohmique \nTableau de valeurs \nT°C 0 5 10 15 20 25 30 35 \nKΩ 32 27 20 15 12 10 7,5 6,8 \nT°C 40 45 50 55 60 65 70 \nKΩ 5,7 4,8 4,1 3,5 2,5 2,3 2\nCourant ionisation ?\n● Les valeurs sont identiques pour les sondes départ , retour,\nsanitaire et extérieure"
+    },
+    {
+      "page": 10,
+      "text": "10 \nLes codes erreurs \nLecture sur la chaudière \nLecture de l’historique sur l’appli pro \n● Pour visualiser le dernier défaut survenu, appuyer sur la touche ou\npuis aller à la ligne n° 50 \n● Sur la ligne 51 et 52 on peut également lire ou consulter la date et l’heure du défaut. \n● Pour visualiser les 10 derniers défaut survenus , Il est nécessaire d'avoir le Navipass BT\nRéf. : 073328, installer également l'appli Atlantic service pro sur votre smartphone \n● Brancher le Navipass BT sur le port dédié sur le tableau de bord de la chaudière \n● Lancer l'application et se connecter à l'aide de ses identifiants \n● Appuyer sur le logo puis \n● appuyer sur le \nNaia Naema 1 Naia Naema 2 \nPour la pose du Navipass\nVisualisez notre tutoriel\nen scannant ce QR code"
+    },
+    {
+      "page": 11,
+      "text": "11 \nLes codes erreurs \nL'afficheur alterne entre un chiffre et \"bar\" \nErreur automatiquement résolue"
+    },
+    {
+      "page": 12,
+      "text": "12 \nLes codes erreurs \nErreur nécessitant un reset manuel"
+    },
+    {
+      "page": 13,
+      "text": "13 \nSynoptiques \nPanne sans code défaut \nSi info 10 sur 0 : Shunter le bornier\nAccessoire d’ambiance de la zone 1\nNOK \nChauffage NOK \nEn demande de\nchauffage ?\n(Info 10 sur 3, 4 ou\n5 -> voir page 6)\nLe circulateur\ntourne ?\nOK\nVérifier l’alimentation de la pompe\n(voir page 7 repère 2), voir si pas\ngrippée. NOK\nLancement du\ncycle d’allumage?\n(étincelles, ouverture\nvanne gaz…)\nOK\nPrésence de\nflamme ?\nOK\nPhases de\nfonctionnement\nbruleur longues?\n(pas de courts cycles)\nOK\nVoir si la valeur de la sonde départ\n(info 4) est plus basse que la\nconsigne (info 21), si NOK vérif\nsondes, circulation… NOK\nVoir synoptique E-101\n(page 18)\nNOK\nVérifier si présence d’air dans le\ncircuit de chauffage, delta de t° entre\ndépart et retour… NOK\nConfort ressenti\nen t° ambiance?\nOK\nVérifier paramétrage pente et\ninfluence, lecture des sondes (voir\npage 6) NOK \nFIN \nOK \nV1\nV2 \nPasse en\ndemande de\nchauffage?\nOK\nRemplacer\nl’accessoire.\nNOK\nVérifier la\ncontinuité du\nfaisceau."
+    },
+    {
+      "page": 14,
+      "text": "14 \nSynoptiques \nLe défaut E57 \nFaire un remplissage du réseau de\nchauffage .\nVérifier l’étanchéité du réseau\n(ballon ECS, vase expansion,\nsoupape) Non Ok \nPression inférieure\nà 0,4 Bar\nVérifier la\npression lue par\nle manomètre\nsous la chaudière\nsup à 0,4 bars\nVérifier la\nprésence d’eau\nen ouvrant le\npurgeur de CDC \nOK \nOuvrir les vannes départ/retour\nchauffage.\nVérifier la non présence des\nbouchons sur ses même raccords\n(voir photo ci-dessous) Non Ok \nVérifier le bon\nraccordement\nainsi que la\ncontinuité du\nfaisceau 24V \nOK \nVérifier sur la\ncarte l’entrée X1:\nN/R=5VC \nOK \nVérifier sur la\ncarte l’entrée X1:\nN/B=1VC à\n0,8Bars\nRemplacer le faisceau 24V* \nNon Ok\nOK \nRemplacer le capteur de\npression\nV1 : 159811 V2 : 159813 \nOK \nNon Ok \nRemplacer la platine principale \nNon Ok \nNotre tutoriel \n*Réf faisceau 24V : \n- 1S V1 : 109351\n- Micro V1 : 109354\n- Duo 30 V1: 109355\n- Duo 35 V1 : 109363\n- 1S V2 : 109369\n- Micro V2 : 109367\n- Duo 30 V2: 109666\n- Duo 25/35 V2 : 109661"
+    },
+    {
+      "page": 15,
+      "text": "15 \nSynoptiques \nLe défaut E58 \n3 points essentiels à contrôler !\n- Le vase d’expansion\n- Une communication primaire secondaire\nau niveau de l’échangeur sanitaire\n- Le disconnecteur ( remplissage fuyard\nsur l’installation ) \nNon Ok \nPression supérieure\nà 2,7 Bar\nVérifier la\npression lue par\nle manomètre\nsous la chaudière\ninférieur à 2,7\nbars \nOk \nVérifier le bon\nraccordement\nainsi que la\ncontinuité du\nfaisceau\nVérifier sur la\ncarte l’entrée X1:\nN/R=5VC \nOk \nVérifier sur la\ncarte l’entrée X1:\nN/B=1VC à 0,8\nBars\nRemplacer le faisceau \nNon Ok\nOk\nOk\nNon Ok \nRemplacer la platine principale \nNon Ok \nNotre tutoriel \nRéf faisceau : \n- 1S V1 : 109351\n- Micro V1 : 109354\n- Duo 30 V1: 109355\n- Duo 35 V1 : 109363\n- 1S V2 : 109369\n- Micro V2 : 109367\n- Duo 30 V2: 109666\n- Duo 25/35 V2 : 109661\nRemplacer le capteur de pression\nV1 : 159811 V2 : 159813"
+    },
+    {
+      "page": 16,
+      "text": "16 \nSynoptiques \nLe défaut E73 \nVérifier le réglage paramètre\nligne 34,45,55 ( sur 0),\nNon Ok\nErreur 73 : Contact sur entrée\nsécurité plancher chauffant.\nPrésence\nPlancher\nchauffant ?\nOk\nla Température\ndépart i4 et i40\nest-elle < 55°C \nRemplacer la sonde départ\nRef : voir page 17 \nOk \nVérifier le réglage de la Sécurité\nplancher si ok Aquastat à\nremplacer Non Ok\nVérifier le réglage paramètre ligne\n34,45,55 ( sur 1), la pente ligne 30 et 40\net de la T°C départ max ligne 32 et 42\nVérifier le câblage de la sécurité plancher\n( et tester la continuité à l’ohmètre )\nContrôler la purge de l’installation,\nl’ouverture des vannes, le circulateur et\nla vanne 3 voies fonctionnent ( mesurer\nla tension , voir page 24 )\nOk\nOk\nOk"
+    },
+    {
+      "page": 17,
+      "text": "17 \nSynoptiques \nLe défaut E81 , E116 , E117 , E118 , E119 \nRemplacer le faisceau\n( ref : voir page 14 )\nNon Ok\nErreur 81 : Vérification sondes départ retour en cours (24h) suite à une anomalie\nErreur 116 : Température départ ne change pas après démarrage bruleur\nErreur 118 : Une variation de température trop importante détectée sur sonde départ\nErreur 117 : Température retour ne change pas, même après un démarrage bruleur\nErreur 119 : Une variation de température trop importante détectée sur sonde\nVérifier l’état du faisceau\nsondes et sa continuité\nsur connecteur X1\n( voir point N°8 page 7 )\nVérifier à l’arrêt les\nvaleurs ohmiques de la\nsonde départ/retour\nchaudière\nOk\nVérifier en\nfonctionnement les\nvaleurs ohmiques de la\nsonde départ/retour\nOk\nOk\nOk\nNon Ok \nVérification du positionnement de la sonde\nde température départ/retour, et une\npossible inversion de celle-ci \nNon \nPurge chaudière\nVérification de la pression réseau chauffage\nOuverture des vannes départ retour chauffage \nChangement de la sonde\nNon Ok \nTempérature Valeur Ohmique \n10 20 kΩ\n25 10 kΩ\n30 7,5 kΩ\n60 2,5 kΩ \nRéf sonde : \n- V1 Départ : 198758\n- V1 retour: 198757\n- V2 Départ / retour : 198798"
+    },
+    {
+      "page": 18,
+      "text": "Synoptiques \nE 101 / 3 démarrages successifs loupés\nVérifier \nContrôles de base :\n● La pression gaz statique et dynamique sur la prise IN du bloc gaz \nEcart maximum de 3 mbar entre statique et dynamique \nSi il n’y a pas de chute de pression,\nvérifier la tension d’alimentation du bloc gaz\n● L’état et l’écartement des électrodes et câble d'allumage\nSi il n’y a pas de présence de flamme :\n● Faire une remise en configuration usine du bloc gaz (voir procédure en page 29)\nSi il y a une présence de flamme :\n● Vérifier les tensions d’alimentations d’alimentation secteur\n● Vérifier l’état d’encrassement du corps de chauffe et le bon écoulement des condensats dans le siphon\n● Vérifier la présence de CO/CO² ( dans l'air neuf = 0 ppm ) , sinon vérifier les joints et raccordement de la\nfumisterie ( voir page 19 )\n● Vérifier les réglages de combustion ( page 28 )\nPour régler votre combustion,\nvisualisez notre tutoriel en scannant ce QR code \nPression statique\nGaz de ville 20/25 mbar\nPropane 37 mbar \n18 \nFaire attention de ne pas donner de chocs\nà l’électrode et au bruleur \nPour vous aider à régler\nle mini et maxi\nCommander cet outil\nréf. 908050"
+    },
+    {
+      "page": 19,
+      "text": "E 104 / Trop de pertes de flamme en modulation\ndans une période donnée\nVérifier \n● Le positionnement du joint sortie chaudière\nLe joint doit être engagé au maximum de sa gorge sur la sortie fumée \n● Caisson fermé le taux de CO/CO² dans l'air neuf = 0 ppm ( sinon vérifier les joints et raccordement de la fumisterie ) \n● Le diaphragme \n● L e paramètre type de gaz à la ligne 6 ( gaz naturelle = 0 et propane = 1 ) \n● L a pression gaz statique et dynamique sur la prise IN du bloc gaz \nécart maximum de 3 mbar entre statique et dynamique \n● L’ état et l’écartement des électrodes et câble d'allumage \n● L’encrassement du corps de chauffe et le bon écoulement des condensats dans le siphon ( Nettoyer au besoin ) \n● Vérifier les réglages de combustion\nPour régler votre combustion,\nvisualisez notre tutoriel en scannant ce QR code \nPression statique\nGaz de ville 20 ou 25 mbar\nPropane 37 mbar \nFaire attention de ne pas donner de\nchocs\nà l’électrode et au bruleur \n4.5 mm +/-\n0.5\n8.5\nmm \nDiaphragme\nsortie\nBloc gaz \nPour vous aider à régler\nle mini et maxi\nCommander cet outil\nréf. 908050\nSynoptiques \n19"
+    },
+    {
+      "page": 20,
+      "text": "20 \nSynoptiques \nLe défaut E105 \nRemplacer\nLa carte de régulation\nRetrouver les réf sur notre espace SAV\n( voir dernière page ) Non Ok \nLe retour d’information\ndu ventilateur ne\ncorrespond pas à la\nvitesse demandée \nVérifier la tension\nd’alimentation du\nventilateur sur la\nconnexion Y2B ( rep 2\npage 7 ) de la carte de\nrégulation\nSur la borne 4 plots du\nventilateur vérifier la\ntension sur les fils noir\n& rouge 24V continue\nOk\nSur cette même borne\nvérifier la tension entre\nles fils noir & jaune \n6V continue\nOk\nVérifier l’état du\nfaisceau et des\nconnecteurs.\nVérifier leurs\ncontinuités\nOk\nRemplacer Le ventilateur\nRetrouver les réf sur notre espace SAV\n( voir dernière page )\nNon Ok \nRemplacer\nLe faisceau ( ref en page 14) \nNon Ok \nNon Ok"
+    },
+    {
+      "page": 21,
+      "text": "21 \nSynoptiques \nLe défaut E132 \nVérifier la valeur ohmique de la sonde\ntempérature de départ\nOk\nErreur 132 : Température de sécurité\natteinte sur le départ\nBruit dans le\ncorps de chauffe\n( Encrassement\néventuel )\nNon Ok\nVérification du grippage de la pompe\n( vis cruciforme au centre du circulateur )\nAinsi que Purgeur automatique sur le\ncirculateur et le purgeur manuel sur corps\nde chauffe\nNettoyer le corps de\nchauffe avec mise en\nplace d’un traitement\ndu circuit de\nchauffage.\nErreur 132\npendant le\nchauffage, l’ECS\nou les deux ?\nDelta T (départ / retour) >5°C \nECS \nVérification de la vanne 3\nvoies et de l’échangeur\nsanitaire \nECS +\nCHAUFFAGE \nOk\nSi le problème n’est pas résolu :\nChangement du corps\nde chauffe\nVérifier que les vannes\nhydrauliques sont\nouvertes et qu’au moins un\nradiateur soit exempt de robinet\nthermostatique ( ouverture\npermanente ) \nCHAUFFAGE \nAprès avoir vidé la chaudière,\nvérifier l’état du bypass (bloqué,\nencrassé) et vérifier la présence\net l’état des filtres sur\nl’installation (départ, retour) \nVersion Soft\n( ligne 9 )\nLecture sonde\ndépart \n6 Info N°3\n8\nInfo N°4 10\n12"
+    },
+    {
+      "page": 22,
+      "text": "22 \nSynoptiques \nLe défaut E135 E136 \nNon Ok \nE135 : Sonde Température départ\nE136 : Sonde Température retour\nVérifier les\nvaleur ohmique\nde sonde\n( voir tableau de\nvaleur page 17 ) \nOk \nVérifier la continuité du faisceau\nVérifier état du connecteur coté sonde\net coté carte\nRemplacer\nLa carte de régulation\nRetrouver les réf sur notre espace SAV (\nvoir dernière page )\nRemplacer la sonde\n( Ref : voir page 17 ) \nOk \nRemplacer le faisceau\n( Ref : voir page 17 ) \nNon Ok\nNon Ok"
+    },
+    {
+      "page": 23,
+      "text": "23 \nTrucs et astuces \nContrôle des composants \n• L’alimentation de la carte principal \nMesure en Y1 ( voir point N° 1 page 7 )\n- Entre phase et neutre et phase terre\n- 230 V AC ± 10%\n- Entre neutre et terre ˂ 3V AC \n• Le capteur de pression d’eau \nMesure en X1 ( voir point N° 8 page 7 )\n- Entre noir et rouge 5V DC\nSi OV  carte de régulation HS\n- Entre noir et bleu tension en V DC\nSi OV  capteur HS \n• Le ventilateur \nMesure en X5 et Y2B ( voir point N° 2 et N°9 page 7 )\n- Entre noir et jaune 6V DC\nSi OV  ventilateur HS\n- Entre noir et rouge 24V DC\nSi OV  carte de régulation HS\n- Entre bleu marron 230 V AC\nSi OV  carte de régulation HS \n• Le débitmètre sanitaire \nMesure en X6 ( voir point N° 10 page 7 ) \n- Entre noir et orange 5V DC\nSi OV  carte de régulation HS\n- Entre noir et violet 3V DC\nSi OV  Débitmètre HS"
+    },
+    {
+      "page": 24,
+      "text": "24 \nTrucs et astuces \nContrôle des composants ( suite ) \n• La bobine de la vanne gaz \nMesure sur la bobine directement \nType Honneywell \n- 120 Ω \nType Siemens \n- Entre 1 et 2  43,44 Ω\n- Entre 1 et 4  43,44 Ω\n- Entre 1 et 5  67,68 Ω \n• La vanne directionnelle ECS \nMesure en X9 ( voir point N° 4 page 7 )\n- Entre rouge et noir 22 Ω et 24V DC\nSi O Ω  moteur HS si OV carte HS\nEntre bleu et jaune 22 Ω\nSi O Ω  moteur HS \n• La vanne mélangeuse Kit 2 zones \nMesure en 5 / 6 / 7 ( voir page 8 )\n- Ouverture vanne entre vert et bleu 230 V AC\n- Fermeture vanne entre blanc et bleu 230 V AC \n• Les circulateurs ( voir page 8 )\nZone 1 ( kit 2 zones )\n- Entre jaune (4) et bleu (2) 230 V AC\nZone 2 ( kit 2 zones )\n- Entre marron (1) et bleu (2) 230 V AC \nHoneywell\nSiemens"
+    },
+    {
+      "page": 25,
+      "text": "Trucs et astuces \nAfficheur reste éteint \n● Vérifier la tension sur le bornier alimentation L/N-L/Te-N/Te\n● Vérifier la tension sur le connecteur Y1\n● Puis entre le neutre et chaque extrémités du fusible\n● Si les tensions sont correctes, couper l'alimentation électrique\n- Débrancher l'ensemble des connecteurs de la carte sauf le connecteur Y1,\nremettre le courant\n- Si l'affichage revient, rebrancher les connecteurs 1 par 1 afin de cibler l'élément\nen défaut\n- Si l'affichage ne revient pas , il faudra sortir la carte du support puis déclipser\nl’écran afin de nettoyer les contacts de la piste à l'aide d'un chiffon sec\n- Remettre l’écran puis la carte en place, puis remettre\nen marche la chaudière\n- Si l’écran reste éteint prévoir le remplacement\nde la carte de régulation 25 \nNettoyer les pistes"
+    },
+    {
+      "page": 26,
+      "text": "26\nMaintenez le bouton de l'antenne de réception\nRF appuyé pendant 15 secondes. Le voyant\nclignotera 0.1 sec allumé, and 0.9 sec éteint \nPour activer la phase de reconnaissance de\nl’antenne, maintenez le bouton de l’antenne de\nréception RF appuyé pendant 5 secondes. Le\nvoyant clignotera 0.5 sec allumé, and 0.5 sec\néteint.\nL’affichage affichera “InSt CO”. Les icones du signal RF et de la flamme seront affichés à l’écran.\nPressez la touche verte\nLes modules sont connectés lorsque le voyant rouge s’éteint sur l’antenne réceptrice. \nSi la communication est perdue entre l’Antenne de réception RF et la Télécommande,\nalors le voyant de l’antenne clignote rouge toutes les 3 secondes pendant 0.1seconde.\nIl faudra donc reprendre l’opération à l’étape 1 \nAppairage Navilink H58 \n● Réinitialisation du boîtier relais \n● Synchronisation \nTrucs et astuces"
+    },
+    {
+      "page": 27,
+      "text": "27\n27 \nVérifier le positionnement\ndes micro switch sur le Navipass IO\n5 sur ON ( switch en position haute )\nNe pas bouger 1,2,3,4 \nAppairage Navilink A59 \n● 4 Réinitialisation \n● 1 Adressage \n● 2 Mise sous tension ● 3 Association sur la A59 \nLe voyant 2\nDevient fixe\nLes voyant 1 et 2\nsont fixes\nSi ce n’est pas le\ncas , réinitialiser\nsuivant l’étape 4 \nTrucs et astuces \nNotre tutoriel"
+    },
+    {
+      "page": 28,
+      "text": "28 \nTrucs et astuces \nRéglage combustion \n● Installation avec plancher chauffant (réglage en ECS ) \n● Régler le paramètre 91 sur 1 ( Vanne directionnelle sur ECS )\n● Ouvrir un robinet d’eau chaude au maximum\n● Régler le paramètre 91 sur 0 ( Vanne directionnelle sur\nchauffage )\n● Vérifier que les robinets radiateurs soient ouverts\n● A la ligne 99 : sélectionner l’allure du bruleur : En ECS 4 (\nMaxi )\n● Laisser la température de chaudière atteindre 60°C\n● Contrôler le taux de CO2 ( voir tableau ci-dessous )\n● Si nécessaire ajouter le taux en réglant le débit gaz sur la vis\nR1 ( clé 6 pans M4 – sens horaire pour augmenter le taux )\n● Régler la ligne 99 sur le niveau 1 ( allure mini en chauffage )\n● Contrôle le taux de CO2\n● Corriger le taux sur la vis R2 ( Torx 40 – Enlever le bouchon )\nsens horaire pour augmenter le taux\n● Contrôler une nouvelle fois l’allure maxi ( corriger si\nnécessaire )\n● Une fois terminé , remettre la ligne 99 sur ---\n● Installation avec radiateurs (réglage en chauffage ) \nToujours désactiver le mode test\nAvant de fermer le robinet d’eau chaude \nDepuis la ligne , appuyer sur\nla flèche du bas pour accéder\ndirectement à la ligne 99 \nNotre tutoriel"
+    },
+    {
+      "page": 29,
+      "text": "29 \nTrucs et astuces \nPour vous aider à\nrégler le mini et maxi\nCommander cet outil\nréf. 908050 \nRéinitialisation bloc vanne gaz \nCette opération assure un démarrage de la chaudière\ndans les cas ou les réglages bloc gaz ont été perdus\n● 1 Bloc gaz Honneywell ● 2 Bloc gaz Siemens \nModèle Tours Vis R1 \nV2 Duo 25 7\nV2 Duo 30 7\nV2 Duo 35 5,75 \nModèle Tours Vis R1 \nV1 V2 12 kw 9,25\nV1 V2 20 kw 7\nV1 V2 Micro 25 7\nV1 V2 Micro 30 7\nV1 V2 Micro 35 5,75\nV1 Duo 30 7\nV1 Duo 35 5,75"
+    },
+    {
+      "page": 30,
+      "text": "30 \nApplication Atlantic Services PRO \nVue éclatées Documentation technique Liste code défaut\nAccès au tableau de bord Assistant de mise en service\n(Easy start) \nIl est possible de répliquer la configuration\nd’une chaudière dans des autres logements\ndu même type.\nVisualisez notre tutoriel\nen scannant ce QR code\nTrucs et astuces \n● Version non connecté \n● Version connecté \nNotre tutoriel \n30"
+    },
+    {
+      "page": 31,
+      "text": "Trucs et astuces \nAutres défauts \n● L’erreur aléatoire E38 : Défaut sonde sanitaire à la mise en service\nsur Naia / Naema version 1 et 2 Duo 30 \n- Interroger le menu des informations (voir page 6) pour voir si il y a une valeur de\nsonde à la ligne n°30.\n- Le produit étant constitué de 2 parties (dosseret avec ballons / chaudière), on\nretrouvera une cosse blanche à 4 pôles sous celle-ci.\n- Vérifier l’état des contacts, si les broches sont endommagées (voir photo ci-\ndessous), remplacer le faisceau 24v coté chaudière.\nRéférence pièce de remplacement:\nNaia/Naema DUO 30 : 109355 \nNaia/Naema 2 DUO 30 : 109666 \n● L’erreur E48 : Défaut sonde extérieure ( après la mise sous tension ) \n- Lors de la mise en service de l’appareil, il est possible de trouver l’erreur 48.\nDans ce cas effectuer en coupant électriquement la chaudière\nSi le défaut persiste faire une remise à 0 de la régulation\nà la ligne 96 (mettre sur 1)\n● L’erreur E171 : Surchauffe sur circuit 2 ( sans l’option kit 2 zones ) \n- Activer l’option Kit 2 zones à la ligne P4 = 3\n- Couper électriquement la chaudière, puis la rallumer\n- Modifier le programme P42 , mettre 80°C\n- Désactiver l’option kit 2 zones à la ligne P4 = 1\n- Couper électriquement la chaudière , puis la rallumer \n31"
+    },
+    {
+      "page": 32,
+      "text": "32 \nVisitez nos tutoriels\nSur notre chaîne Youtube\nAtlantic PAC et Chaudières\nBesoin d’une formation\nAppelez-nous au\n04 72 10 27 69\nwww.atlantic-formations.fr\nPour toute assistance technique\nContacter notre plateau\nau 03 51 42 70 42 \nRetrouver notre Espace SAV sur :\nhttps://atlantic.plateforme-services.com/ \nESPACE\nSAV\nATLANTIC"
+    }
+  ]
+}

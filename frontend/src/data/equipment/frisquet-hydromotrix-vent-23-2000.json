@@ -1,0 +1,83 @@
+{
+  "version": "1.0",
+  "equipmentId": "frisquet-hydromotrix-vent-23-2000-0006000-0806000",
+  "identity": {
+    "brand": "Frisquet",
+    "productType": "chaudiere_gaz",
+    "range": "HYDROMOTRIX VENT.",
+    "model": "HYDROMOTRIX VENT. 23 kW 2000",
+    "variant": "0006000–0806000",
+    "manufacturerReference": "0006000-0806000"
+  },
+  "carnetPass": { "linkedIds": [] },
+  "support": {
+    "manufacturer": "Frisquet",
+    "hotline": {
+      "label": "Hotline Frisquet",
+      "phone": "01 60 09 91 00",
+      "hours": null,
+      "source": "Capture de la fiche HYDROMOTRIX VENT. 23 kW 2000 fournie par l'utilisateur",
+      "verifiedAt": "2026-09-27"
+    }
+  },
+  "documents": [
+    {
+      "documentId": "frisquet-hydromotrix-vent-23-2000-exploded-view",
+      "title": "Vue éclatée - HYDROMOTRIX VENT. 23 kW 2000",
+      "documentType": "exploded_view",
+      "pageCount": 17,
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/Frisquet/HYDROMOTRIX%20VENT.23kW%202000%20/0006000-%3E0806000/Vue%20%C3%A9clat%C3%A9e%20-%20HYDROMOTRIX%20VENT.23kW%202000%20@0006000-_0806000.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "Frisquet",
+      "manufacturerReference": "0006000-0806000",
+      "appliesTo": ["HYDROMOTRIX VENT. 23 kW 2000, 0006000–0806000"]
+    },
+    {
+      "documentId": "frisquet-hydromotrix-vent-23-2000-installation",
+      "title": "Notice d'installation - HYDROMOTRIX VENT. 23 kW 2000",
+      "documentType": "installation_maintenance",
+      "pageCount": 16,
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/Frisquet/HYDROMOTRIX%20VENT.23kW%202000%20/Notice%20d'installation%20-%20HYDROMOTRIX%20VENT.23kW%202000%20@0006000-_0806000.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "Frisquet",
+      "manufacturerReference": "0006000-0806000",
+      "appliesTo": ["HYDROMOTRIX VENT. 23 kW 2000, 0006000–0806000"]
+    },
+    {
+      "documentId": "frisquet-hydromotrix-vent-23-2000-troubleshooting",
+      "title": "Notice d’aide au dépannage - HYDROMOTRIX VENT. 23 kW 2000",
+      "documentType": "troubleshooting",
+      "pageCount": 56,
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/Frisquet/HYDROMOTRIX%20VENT.23kW%202000%20/Notice%20d%E2%80%99aide%20au%20d%C3%A9pannage%20-%20HYDROMOTRIX%20VENT.23kW%202000%20@0006000-_0806000.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "Frisquet",
+      "manufacturerReference": "0006000-0806000",
+      "appliesTo": ["HYDROMOTRIX VENT. 23 kW 2000, 0006000–0806000"]
+    },
+    {
+      "documentId": "frisquet-hydromotrix-vent-23-2000-user-manual",
+      "title": "Notice d’utilisation - HYDROMOTRIX VENT. 23 kW 2000",
+      "documentType": "user_manual",
+      "pageCount": 20,
+      "documentUrl": "https://xf9gicunr6npguri.private.blob.vercel-storage.com/Frisquet/HYDROMOTRIX%20VENT.23kW%202000%20/Notice%20d%E2%80%99utilisation%20-%20HYDROMOTRIX%20VENT.23kW%202000%20@0006000-_0806000.pdf",
+      "storage": "private",
+      "language": "fr",
+      "sourceName": "Frisquet",
+      "manufacturerReference": "0006000-0806000",
+      "appliesTo": ["HYDROMOTRIX VENT. 23 kW 2000, 0006000–0806000"]
+    }
+  ],
+  "errorCodeIndex": null,
+  "errorCodes": [],
+  "diagnosticRules": [],
+  "metadata": {
+    "status": "pilot",
+    "ragStatus": "ready",
+    "verificationStatus": "verified_documents",
+    "lastVerifiedAt": "2026-09-27",
+    "notes": "Quatre PDF téléchargés et indexés. Vue éclatée étiquetée 0006000–0806000 ; notices d'installation et d'utilisation communes à la gamme HYDROMOTRIX Ventouse. Vérifier la variante 23 kW dans les procédures. Numéro de contact relevé sur la capture fournie."
+  }
+}

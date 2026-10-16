@@ -1,0 +1,2427 @@
+{
+  "deployment": "dpl_DqXSyAj8ULhektt4WDMS4J1mA7jM",
+  "commit": "afb4b6f357e70625da72cd8aeb28d798f04644a1",
+  "files": [
+    {
+      "path": ".vercelignore",
+      "sha1": "13c7a162abf57e0e23ed547eb2b963815d2c50a5"
+    },
+    {
+      "path": "README.md",
+      "sha1": "8502d019eab3c334e20b8a902ae78d9f811db17d"
+    },
+    {
+      "path": "backend/README.md",
+      "sha1": "0733cd2870472de9728a0d59d3b48a7b02b1d081"
+    },
+    {
+      "path": "backend/contracts/BoilerRegistry.sol",
+      "sha1": "7a04391382762eb397138653108e52e9fe009d8e"
+    },
+    {
+      "path": "backend/contracts/EquipmentRegistry.sol",
+      "sha1": "0d2907097f0b87f6bf066b4694342aef883c1ded"
+    },
+    {
+      "path": "backend/contracts/EquipmentRegistryV2.sol",
+      "sha1": "bac7a37d7af07521c1413ff62baba90ad26d5bd5"
+    },
+    {
+      "path": "backend/deployments/polygon-mainnet.json",
+      "sha1": "44aefea1650090aca5af9dd52268cfb6396837a8"
+    },
+    {
+      "path": "backend/hardhat.config.js",
+      "sha1": "f29183f2d687e855ae646c93a4d2a0bbc79b43e9"
+    },
+    {
+      "path": "backend/ignition/modules/Lock.js",
+      "sha1": "804586fef1e05ea0101f5373c215d621e5fcd487"
+    },
+    {
+      "path": "backend/package-lock.json",
+      "sha1": "10e4e076c992e67146d30439ce1a008f2b189d09"
+    },
+    {
+      "path": "backend/package.json",
+      "sha1": "c5b7d38f44638b6e9ad5383ee3176749651ff8df"
+    },
+    {
+      "path": "backend/scripts/deploy-equipment-registry-v2.js",
+      "sha1": "2bd0c7914a9fc88afe385c900a48aa5bc4a5a6cc"
+    },
+    {
+      "path": "backend/scripts/deploy-equipment.js",
+      "sha1": "286a3901b67014a3f7638d2821a19f9eccd5d00d"
+    },
+    {
+      "path": "backend/scripts/deploy.js",
+      "sha1": "78b296556b19c9e3159682faadc122388c9a916d"
+    },
+    {
+      "path": "backend/scripts/seed.js",
+      "sha1": "e08b04136ad2c638142edb2f15b979190a83e881"
+    },
+    {
+      "path": "backend/scripts/test-chaudiere.js",
+      "sha1": "19eaaeb90de66fb2b03c9f7eb6ce518007f5c47d"
+    },
+    {
+      "path": "backend/test/BoilerRegistry.js",
+      "sha1": "50245f2a6be3b0ce9be00555d95bea4049d69770"
+    },
+    {
+      "path": "backend/test/EquipmentRegistry.js",
+      "sha1": "2d9d758ccb98d0932a98c24228132d929df4ddaf"
+    },
+    {
+      "path": "backend/test/EquipmentRegistryV2.test.js",
+      "sha1": "7d16acb938bdc7dc20c4ad676d85a010854fa504"
+    },
+    {
+      "path": "docs/AUDIT_MIGRATIONS_PRODUCTION_PARIS_2.md",
+      "sha1": "f2cb908400f8512217d9e2a2948e0c61b9a9212d"
+    },
+    {
+      "path": "docs/AUTH_EMAIL_RESEND.md",
+      "sha1": "7adac61289b27a250c2b11219e3c62b2100b6642"
+    },
+    {
+      "path": "docs/DEPLOYMENT_AUDIT_2026-09-27.md",
+      "sha1": "275a3081a01deed14d21c581851499ddee315043"
+    },
+    {
+      "path": "docs/DEPLOYMENT_POLYGON.md",
+      "sha1": "315aed723a1ace3406d0297d4fec02504a3773a8"
+    },
+    {
+      "path": "docs/DEPLOYMENT_WORKFLOW.md",
+      "sha1": "c1691d7527a890973e9e17e4db3ce5a3396e7172"
+    },
+    {
+      "path": "docs/LEGAL_READINESS_FR.md",
+      "sha1": "90ac290769a975ad0a9abee4c6de1dfdbe3784d7"
+    },
+    {
+      "path": "docs/PHASE1_ENVIRONNEMENTS_ADMINISTRATION.md",
+      "sha1": "84f7963e0036720cb18e108956528cc21b89803c"
+    },
+    {
+      "path": "docs/PRO_SUBSCRIPTION_PLAN.md",
+      "sha1": "b192f9bd55c69210c8ab853f00a15085a6c9a34c"
+    },
+    {
+      "path": "docs/RELEASE_PARIS2_ADMIN_DOCUMENTS.md",
+      "sha1": "32322fa3ad6125d3a9dcc006a341a0adc42fab66"
+    },
+    {
+      "path": "docs/ROADMAP_IA_CARNETPASS.md",
+      "sha1": "85ec09d5131ba8804ebb1e9f4b0c0e1edc79efc2"
+    },
+    {
+      "path": "docs/docs/architecture.md",
+      "sha1": "dcd0ad8a6365c9805cd393306b59ec46d3497aaf"
+    },
+    {
+      "path": "docs/docs/data-model.md",
+      "sha1": "e12b6a0975f1e9945381f10de88fbb5d8f4ae806"
+    },
+    {
+      "path": "docs/docs/roles.md",
+      "sha1": "c8654bfe0e660aacd5fb3f5f52cd04746d7a70be"
+    },
+    {
+      "path": "docs/docs/smart-contract.md",
+      "sha1": "4318efcd1a69dbcd94acc27dffe5d26b9b2ff6af"
+    },
+    {
+      "path": "docs/docs/workflow.md",
+      "sha1": "6c4fd9a7b7dccbe608db103ebc8b1944e60b8a19"
+    },
+    {
+      "path": "docs/ideas.md",
+      "sha1": "29a002463bc1c407aa97ee816e55e9bdf5c0e8fc"
+    },
+    {
+      "path": "frontend/README.md",
+      "sha1": "1d35721c32661b17a1a86303a2a892f6bacda887"
+    },
+    {
+      "path": "frontend/api/ai-web.js",
+      "sha1": "934076e2dd41714ca26c5f20b3b0fda73b933b34"
+    },
+    {
+      "path": "frontend/api/ai.js",
+      "sha1": "c2f77067daa32ba1d6553f3a670ffdada3056e8b"
+    },
+    {
+      "path": "frontend/api/carnetpass-status.js",
+      "sha1": "896978024a17f9444e172946d573eeb1ebb46a22"
+    },
+    {
+      "path": "frontend/api/carnetpass.js",
+      "sha1": "a85459389f5274d6ff564d6dfba16e6d87ace16f"
+    },
+    {
+      "path": "frontend/api/document.js",
+      "sha1": "1a3390c60101cfd7ae456409e89f3299bb2e78e4"
+    },
+    {
+      "path": "frontend/api/equipment-attachments.js",
+      "sha1": "3e575b764bd7d1b642d0e4b06bf8802d89d38724"
+    },
+    {
+      "path": "frontend/api/interventions.js",
+      "sha1": "dd838898787ce57b2a7066492e0cf952ca756eac"
+    },
+    {
+      "path": "frontend/api/platform-admin-documents.js",
+      "sha1": "6031bf70aef3e986cb1c4196bf4206e45562006f"
+    },
+    {
+      "path": "frontend/api/search.js",
+      "sha1": "10fcb93ca66085008890fb848e2e7a0dd1eb0935"
+    },
+    {
+      "path": "frontend/api/technical-document.js",
+      "sha1": "4c889d21809ae00d8398ceb53ef462ac05718683"
+    },
+    {
+      "path": "frontend/api/verify-company.js",
+      "sha1": "34e84634a69ac6aa5483f561d9fcefea53d30219"
+    },
+    {
+      "path": "frontend/docs/accord-traitement-donnees-2026-10-12.md",
+      "sha1": "64d54efc4afd8a051f143f51b77cbef344dc6bf6"
+    },
+    {
+      "path": "frontend/docs/auth-email-paris-setup.md",
+      "sha1": "301a86bcd47a47964540a5da148b4cb93cd29963"
+    },
+    {
+      "path": "frontend/docs/company-data-self-service-2026-10-12.md",
+      "sha1": "9dcbcf17bce08e277edff58d1ffe52aaaa49cbad"
+    },
+    {
+      "path": "frontend/docs/document-research-pilot.md",
+      "sha1": "ef0bd43cc4d7d5bdd53a3203e5aaf04029e6fbd5"
+    },
+    {
+      "path": "frontend/docs/enterprise-admin-preview.md",
+      "sha1": "a0235d534ab98b6937a73d0a483cb1c849211533"
+    },
+    {
+      "path": "frontend/docs/legal-versions/cgv-2026-10-12.1.md",
+      "sha1": "ac6d9c3cafde9c680a1f598f0dda9286cc13d248"
+    },
+    {
+      "path": "frontend/docs/legal-versions/cgv-2026-10-12.2.md",
+      "sha1": "30b5b49cea12952ebe080a4aef69476b7cdfd089"
+    },
+    {
+      "path": "frontend/docs/legal-versions/cgv-2026-10-12.3.md",
+      "sha1": "693a0c872e589b3898d210968f87258aa4624f58"
+    },
+    {
+      "path": "frontend/docs/maintenance-production.md",
+      "sha1": "5f0ee85d8b644404a90f4ecda52ef1ceb3ba3352"
+    },
+    {
+      "path": "frontend/docs/maintenance-reminders-preview.md",
+      "sha1": "74bbfb47a4498a6501cfa2f0b69f41704a92b99d"
+    },
+    {
+      "path": "frontend/docs/maintenance-reminders-production.md",
+      "sha1": "4d2b1bb3bcbfe0304f76a98be697e611a1d63308"
+    },
+    {
+      "path": "frontend/docs/ouverture-production-2026-10-12.md",
+      "sha1": "2113386c546236a973fda80da4ad1ebe0b21bebb"
+    },
+    {
+      "path": "frontend/docs/r2-direct-import.md",
+      "sha1": "1b30c02effe72a9cbab077d357c18ac490e51b25"
+    },
+    {
+      "path": "frontend/docs/r2-production-setup.sql",
+      "sha1": "0e4f2cfa19af5bd19477666ab923120862043211"
+    },
+    {
+      "path": "frontend/docs/shiba-devis-production.md",
+      "sha1": "d54907919660cec49e19e5d8786a8627f00f3f6d"
+    },
+    {
+      "path": "frontend/docs/stripe-test-setup.md",
+      "sha1": "1c47052892e065eb407ba8bf6667ebd5325dbd4f"
+    },
+    {
+      "path": "frontend/src/content/cgv-b2b.md",
+      "sha1": "693a0c872e589b3898d210968f87258aa4624f58"
+    },
+    {
+      "path": "frontend/src/content/cookies.md",
+      "sha1": "1582e68f34563cdb563550513a0d827b9a4967c4"
+    },
+    {
+      "path": "frontend/src/content/faq.md",
+      "sha1": "f9239eeab0623029662da9250d848f8afaa9e144"
+    },
+    {
+      "path": "frontend/src/content/legal.md",
+      "sha1": "734cc8d44696feb0dbe438e53f9ba216bb817442"
+    },
+    {
+      "path": "frontend/src/content/privacy.md",
+      "sha1": "e794a536b49a70bcd8fa47d0694e4c45c2de88a0"
+    },
+    {
+      "path": "frontend/src/content/terms.md",
+      "sha1": "c2ed639d635e9a56d73991a57097cce9d339e0fc"
+    },
+    {
+      "path": "frontend/src/App.css",
+      "sha1": "26b78c2919366cb9cb488991cca499c7e8355293"
+    },
+    {
+      "path": "frontend/src/App.jsx",
+      "sha1": "9d7d91710571a3b525fc50d7f22e738fad86e2a3"
+    },
+    {
+      "path": "frontend/src/ScannerQR.jsx",
+      "sha1": "f21fb5f39e435f81fbb5887fced7a3419c1d2d38"
+    },
+    {
+      "path": "frontend/src/assets/hero.png",
+      "sha1": "013c992c30720bf156b62bd4c8a2760e71fe842a"
+    },
+    {
+      "path": "frontend/src/assets/react.svg",
+      "sha1": "f505ddc8ebe56bdc51efb721ef04923a8d3068dd"
+    },
+    {
+      "path": "frontend/src/assets/simba-accompagnement-administratif.webp",
+      "sha1": "0364cdcc85f0a5b034c23a3aa799bbd46a6d946a"
+    },
+    {
+      "path": "frontend/src/assets/simba-assets.md",
+      "sha1": "93115c48ecdb30afc9357e69113ad2495bd366ba"
+    },
+    {
+      "path": "frontend/src/assets/simba-assistance-technique.webp",
+      "sha1": "506e174917aa9dbf2cb7381342f6ae4aaf236a62"
+    },
+    {
+      "path": "frontend/src/assets/vite.svg",
+      "sha1": "e5b1d75f8a9c96f7b8657cbfcb59832b78ceeef1"
+    },
+    {
+      "path": "frontend/src/blockchain/BoilerRegistry.json",
+      "sha1": "da3e254b11bb620e5880aa2c34635dbc0594268c"
+    },
+    {
+      "path": "frontend/src/blockchain/EquipmentRegistry.json",
+      "sha1": "8bea84f9a87e30faeef72d1ac71b4ccdea054fa0"
+    },
+    {
+      "path": "frontend/src/blockchain/config.js",
+      "sha1": "337a29d5f9df6b2aac31c14689f30e9ecea92805"
+    },
+    {
+      "path": "frontend/src/blockchain/useWallet.js",
+      "sha1": "738bceec946b221bc4abf6a3403498c9fa9165d1"
+    },
+    {
+      "path": "frontend/src/components/AccountInvoices.jsx",
+      "sha1": "28747ee13ee17b736455f4043e6fbcf38349eccc"
+    },
+    {
+      "path": "frontend/src/components/AdditionalAccounts.jsx",
+      "sha1": "977450da610c41c4e882ca6b8bf2e19cf8a059de"
+    },
+    {
+      "path": "frontend/src/components/AttestationModal.jsx",
+      "sha1": "702dc62995441d445e90e22fce89c5f7a3eedf8f"
+    },
+    {
+      "path": "frontend/src/components/BoilerMaintenanceCertificateForm.jsx",
+      "sha1": "937f6aa3474684ba3403d52d2a84d914862bcaf1"
+    },
+    {
+      "path": "frontend/src/components/CarnetPassCreatedModal.css",
+      "sha1": "6fc532dd8ae2955fc6c69d490a9246e4df5506dc"
+    },
+    {
+      "path": "frontend/src/components/CarnetPassCreatedModal.jsx",
+      "sha1": "92cb861a0659f727fc2c2ab7c7f5eedca186aadc"
+    },
+    {
+      "path": "frontend/src/components/CarnetPassModal.css",
+      "sha1": "94036eaaacddc3351ced3d5b9f8ee4c3af3b8223"
+    },
+    {
+      "path": "frontend/src/components/CarnetPassModal.jsx",
+      "sha1": "eba9922bd66101b5e47be434f7110e2d7760b61a"
+    },
+    {
+      "path": "frontend/src/components/CompanyDataControls.jsx",
+      "sha1": "f5ca75a55e35ce25fcee26d876929afba7634dba"
+    },
+    {
+      "path": "frontend/src/components/CompanyRgePanel.jsx",
+      "sha1": "1eec7e9c2fbdd3075d5e784218369f18ba9d72f7"
+    },
+    {
+      "path": "frontend/src/components/DevisFinancialAssistant.jsx",
+      "sha1": "236b3b47b592a2e2228454cf966aaf79497e34af"
+    },
+    {
+      "path": "frontend/src/components/DocumentPreviewModal.css",
+      "sha1": "a13dae2ef21fc1ef00fdfb42ffa0517b91c528a5"
+    },
+    {
+      "path": "frontend/src/components/DocumentPreviewModal.jsx",
+      "sha1": "16db47be4812c0e4becd3e56168870ac3dbac520"
+    },
+    {
+      "path": "frontend/src/components/EmergencyContacts.css",
+      "sha1": "5a4897b489c85e63d8e5df5a92c338c23364189f"
+    },
+    {
+      "path": "frontend/src/components/EmergencyContacts.jsx",
+      "sha1": "7fbaa5dd97a92ec79226caa9d8f58467c406bd8d"
+    },
+    {
+      "path": "frontend/src/components/EquipmentDocumentCenter.css",
+      "sha1": "1de7348f7680f007a0b80ae5b2423dca2824941c"
+    },
+    {
+      "path": "frontend/src/components/EquipmentDocumentCenter.jsx",
+      "sha1": "0eb8c1b8ea641802095882a3c1af33b626e5b29b"
+    },
+    {
+      "path": "frontend/src/components/EquipmentWorkspace.css",
+      "sha1": "fa329f5c63f0035f27d07a54db21b3d9f9e4a801"
+    },
+    {
+      "path": "frontend/src/components/EquipmentWorkspace.jsx",
+      "sha1": "be15a501e19290ade883effdfc2707436d37e64a"
+    },
+    {
+      "path": "frontend/src/components/HomeLanding.css",
+      "sha1": "401c4c27f26f0e23f71dd87b751fbd56d759cba7"
+    },
+    {
+      "path": "frontend/src/components/HomeLanding.jsx",
+      "sha1": "e85aa36478b13384fcfd019440d9c382d793132a"
+    },
+    {
+      "path": "frontend/src/components/InstallCarnetPass.css",
+      "sha1": "fc710d5cf88cb56d8b8e867c7e5552654cb85847"
+    },
+    {
+      "path": "frontend/src/components/InstallCarnetPass.jsx",
+      "sha1": "4b1a472b73360533d7f9c26e0655b29dc545ac55"
+    },
+    {
+      "path": "frontend/src/components/InterventionForm.jsx",
+      "sha1": "e7951d9a6f2ad8ab68422be962b8dc9e9c70ec0c"
+    },
+    {
+      "path": "frontend/src/components/MaintenanceReminders.css",
+      "sha1": "ca18ef8798ba210b62b139e9328c797d973de2e1"
+    },
+    {
+      "path": "frontend/src/components/MaintenanceReminders.jsx",
+      "sha1": "59651912f83d559c6c0feaa8461332bd7e02c954"
+    },
+    {
+      "path": "frontend/src/components/ModelRemindersContents.css",
+      "sha1": "87e5b1bc87a17391db93ef9c22dccdcea26cc18c"
+    },
+    {
+      "path": "frontend/src/components/ModelRemindersContents.jsx",
+      "sha1": "35fedf0be74e2330738f2d12e84e91e3f0ff4881"
+    },
+    {
+      "path": "frontend/src/components/OfficialAidLinks.css",
+      "sha1": "ea5f9cedd7f50061f4be7f7952f2735dac822f8b"
+    },
+    {
+      "path": "frontend/src/components/OfficialAidLinks.jsx",
+      "sha1": "93da19e21ed9c398a04f1ae12e2e277104e06b8f"
+    },
+    {
+      "path": "frontend/src/components/PasswordField.css",
+      "sha1": "27322c8924f02d38947e13acaeed7492f84cfbb6"
+    },
+    {
+      "path": "frontend/src/components/PasswordField.jsx",
+      "sha1": "a50ba2d80f83f755210334bce11ae3e5f362a9eb"
+    },
+    {
+      "path": "frontend/src/components/PdfDocumentViewer.jsx",
+      "sha1": "7c0c275c4703eeb656da785362848af2b6d1b0fd"
+    },
+    {
+      "path": "frontend/src/components/PlateScanner.jsx",
+      "sha1": "170c6b41177292fbae1001c7ee3c0ce5e747c8e7"
+    },
+    {
+      "path": "frontend/src/components/ProtectedRoute.jsx",
+      "sha1": "7ce7e72f5ee573341ff58fe94ad4d5035719e2d5"
+    },
+    {
+      "path": "frontend/src/components/ShibaDevisEntry.jsx",
+      "sha1": "aeb13a7a3cd24db503ed5d179f7fe1b23c5abb01"
+    },
+    {
+      "path": "frontend/src/components/ShibaDevisMascot.jsx",
+      "sha1": "a5088698c97dae50d574786b24c6f45929492d2f"
+    },
+    {
+      "path": "frontend/src/components/ShibaRechargeModal.css",
+      "sha1": "a9c11bf9dfada9d988cdea9c4ca855a74be8afb5"
+    },
+    {
+      "path": "frontend/src/components/ShibaRechargeModal.jsx",
+      "sha1": "a9a770c49fa991240613acc9bc438374d6713b2a"
+    },
+    {
+      "path": "frontend/src/components/ShibaUsage.css",
+      "sha1": "925f65a91e6834ebb621c0dffceaa88e1a3133b4"
+    },
+    {
+      "path": "frontend/src/components/ShibaUsage.jsx",
+      "sha1": "505c93dce594bf8720ba6fbc77eec414103338c9"
+    },
+    {
+      "path": "frontend/src/components/SiteFooter.css",
+      "sha1": "fda63ae6e04b325035ea2b03e9327eb56852aa2e"
+    },
+    {
+      "path": "frontend/src/components/SiteFooter.jsx",
+      "sha1": "dc692f3cf199ac39ea47bed439727f009afbb2be"
+    },
+    {
+      "path": "frontend/src/components/TechnicalCatalogModal.css",
+      "sha1": "5859bf22405a72187587bd38d0279afb0ce7df41"
+    },
+    {
+      "path": "frontend/src/components/TechnicalCatalogModal.jsx",
+      "sha1": "bd50967e28091288ec9130902c104389360239fc"
+    },
+    {
+      "path": "frontend/src/components/ThermodynamicDocuments.css",
+      "sha1": "730124177dff291fe880543d5b113188d2a8077d"
+    },
+    {
+      "path": "frontend/src/components/ThermodynamicDocuments.jsx",
+      "sha1": "90ee628336779074129f48a9c3b6ff1ae8b58e5a"
+    },
+    {
+      "path": "frontend/src/components/ThermodynamicSignature.jsx",
+      "sha1": "0b846da40abc4787914d374de643ec1ca8a8f131"
+    },
+    {
+      "path": "frontend/src/context/AuthContext.js",
+      "sha1": "a07c801184ac673627524596a20fc62500240218"
+    },
+    {
+      "path": "frontend/src/context/AuthProvider.jsx",
+      "sha1": "16ef62bbcd5c60f6476c4fca04dbe8a692aa0f4c"
+    },
+    {
+      "path": "frontend/src/data/equipment-index.json",
+      "sha1": "796c66c5830e432612b82d257c306684e9528887"
+    },
+    {
+      "path": "frontend/src/data/equipment/atlantic-021272.json",
+      "sha1": "eef8ce10b326f331f18efa66151d0452614d54ed"
+    },
+    {
+      "path": "frontend/src/data/equipment/chaffoteaux-3310543.json",
+      "sha1": "c8216bf684aaa5118feb07a7bc34b4b1cb737785"
+    },
+    {
+      "path": "frontend/src/data/equipment/chaffoteaux-3310544.json",
+      "sha1": "cdc4e863799bd49680153779a3f8a15580680af6"
+    },
+    {
+      "path": "frontend/src/data/equipment/chaffoteaux-3310545.json",
+      "sha1": "d18775e36119d999dcb9a581accdc04b1a81e0b2"
+    },
+    {
+      "path": "frontend/src/data/equipment/de-dietrich-7841749.json",
+      "sha1": "56a57363f9bfee33b8956129fd17a716bb1b494e"
+    },
+    {
+      "path": "frontend/src/data/equipment/elm-leblanc-7716704261.json",
+      "sha1": "bbc1aa0e78ec08988f26c2b36765109a1a6acf16"
+    },
+    {
+      "path": "frontend/src/data/equipment/frisquet-hydromotrix-vent-23-2000.json",
+      "sha1": "d732bc9accfcd6375784877bad9f7c1ddf866985"
+    },
+    {
+      "path": "frontend/src/data/equipment/frisquet-hydromotrix-vent-32-2000.json",
+      "sha1": "ffc7063eca8eb4ed90c3a42f9d285097ff8b9433"
+    },
+    {
+      "path": "frontend/src/data/equipment/frisquet-hydromotrix-vent-32.json",
+      "sha1": "18466cf24f7500d8b0fe1ec295b7235953539ca5"
+    },
+    {
+      "path": "frontend/src/data/equipment/saunier-duval-0010017388.json",
+      "sha1": "04b0684114c80b5cd8a59f03cfbb1734e20e8b8f"
+    },
+    {
+      "path": "frontend/src/data/equipment/saunier-duval-0010017417.json",
+      "sha1": "50c61c05001ce0a8b3912e03e59ddade94315339"
+    },
+    {
+      "path": "frontend/src/data/equipment/saunier-duval-0010021497.json",
+      "sha1": "824654ce24b94cecc054e3518506feaccc43cbdd"
+    },
+    {
+      "path": "frontend/src/data/equipment/vaillant-8000044523.json",
+      "sha1": "ba00b4ac62d02bc6da94e2c2900d874cb2b5ad0f"
+    },
+    {
+      "path": "frontend/src/data/rag/atlantic-021272-nomenclature-2018.full.chunks.json",
+      "sha1": "63fee3162a341aef48dde5296753204cc3ca07c9"
+    },
+    {
+      "path": "frontend/src/data/rag/atlantic-021272-nomenclature-2018.full.embeddings.json",
+      "sha1": "6f19db87d4556b84f9fa1ae6f07bf9d542d9adab"
+    },
+    {
+      "path": "frontend/src/data/rag/atlantic-021272-nomenclature-2018.pages.json",
+      "sha1": "f795cdf44f2ae2f9a00f2af6a145d1d526da338f"
+    },
+    {
+      "path": "frontend/src/data/rag/atlantic-naia-naema-v1-v2-sav.full.chunks.json",
+      "sha1": "2caf38ac9312233f6316b4c5d95460758222d81f"
+    },
+    {
+      "path": "frontend/src/data/rag/atlantic-naia-naema-v1-v2-sav.full.embeddings.json",
+      "sha1": "0ce3676167a3f945074828898d42295510892bc9"
+    },
+    {
+      "path": "frontend/src/data/rag/atlantic-naia-naema-v1-v2-sav.pages.json",
+      "sha1": "79d5c98f814f58f2f4795a8c8a273b65024208c6"
+    },
+    {
+      "path": "frontend/src/data/rag/atlantic-u0619432-1904-fr-15.full.chunks.json",
+      "sha1": "ba3d23cf8ecc754240ea4b0865b52bfd1d9826c2"
+    },
+    {
+      "path": "frontend/src/data/rag/atlantic-u0619432-1904-fr-15.full.embeddings.json",
+      "sha1": "0f4c09d5da3c5a6a416252228c6a822e9e79670d"
+    },
+    {
+      "path": "frontend/src/data/rag/atlantic-u0619432-1904-fr-15.pages.json",
+      "sha1": "39dc0c8f5681bf8e02101cfe20eb36cd6ba0a5b8"
+    },
+    {
+      "path": "frontend/src/data/rag/atlantic-u0619432-reglages-extrait.full.chunks.json",
+      "sha1": "0360de65d4273965779510cf32043852650b0cc4"
+    },
+    {
+      "path": "frontend/src/data/rag/atlantic-u0619432-reglages-extrait.full.embeddings.json",
+      "sha1": "04e54a59b3cc7aa32fba33a3209a07e5881d3698"
+    },
+    {
+      "path": "frontend/src/data/rag/atlantic-u0619432-reglages-extrait.pages.json",
+      "sha1": "b777d84a412f14ac62ad24f1c096aafd7fbb81ba"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310543-exploded-view.full.chunks.json",
+      "sha1": "c01d18ddb913f02b82734a20d7db743fee09c173"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310543-exploded-view.full.embeddings.json",
+      "sha1": "73fb3e71d69190aa9524920f82d0b0f8d6d9d980"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310543-exploded-view.pages.json",
+      "sha1": "87f5ba368cc131ffe0603ea2f0c7bc357015f164"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310543-installation-maintenance.full.chunks.json",
+      "sha1": "5384b071b5821c0a066096664cc863ff4ac83a3b"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310543-installation-maintenance.full.embeddings.json",
+      "sha1": "b0c6e04f0e6fc5c0c3f545989a57c78283de859e"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310543-installation-maintenance.pages.json",
+      "sha1": "48b53d5d5765b7ced1bd425e759a1113bf67f6f3"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310543-settings-extract.full.chunks.json",
+      "sha1": "aa4e490f7e87f6fbf89feaa154ab15b127f950c4"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310543-settings-extract.full.embeddings.json",
+      "sha1": "5a1b5811709981c2a596e80ce0f0f431686173d4"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310543-settings-extract.pages.json",
+      "sha1": "a99dad01af6fc468d28b24963b93846267bacd2c"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310544-exploded-view.full.chunks.json",
+      "sha1": "cb70e3f6e9f6f2db1ff31a708b618e41ea3b9bf5"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310544-exploded-view.full.embeddings.json",
+      "sha1": "153ef75b8661701650bf5223445df22de4260f5d"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310544-exploded-view.pages.json",
+      "sha1": "d476e1475a550c92c448120b6acb1a8984e99da6"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310544-installation-maintenance.full.chunks.json",
+      "sha1": "619796b583e65315307389a8fa8a2d84c2528f2c"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310544-installation-maintenance.full.embeddings.json",
+      "sha1": "61ce38bfbe06c9ba4f742fa987871bb633bc8f45"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310544-installation-maintenance.pages.json",
+      "sha1": "7686b691a767c358426b489df539c1498721dc04"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310544-settings-extract.full.chunks.json",
+      "sha1": "befb51dfb8472dc1c361e8dd50e5f4d4a395e3ed"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310544-settings-extract.full.embeddings.json",
+      "sha1": "3cc927ec8d56414fc1d351c38c302c48fdce8a69"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310544-settings-extract.pages.json",
+      "sha1": "d10468df0ade9db23984fcea4b9ab58ce8118afd"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310545-exploded-view.full.chunks.json",
+      "sha1": "9c4253a14bfebada20272fb598d005b72521c542"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310545-exploded-view.full.embeddings.json",
+      "sha1": "1de477e02b320ce6570fc3937384380b827a063f"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310545-exploded-view.pages.json",
+      "sha1": "ab642fed51f04826443e26d6189d15c27c4e2b44"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310545-installation-maintenance.full.chunks.json",
+      "sha1": "b9271fd7d53af7cb3acf7d7718270b4fc2ffdf19"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310545-installation-maintenance.full.embeddings.json",
+      "sha1": "d074f44f5040af65ca46ad2e66681093bc84b9af"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310545-installation-maintenance.pages.json",
+      "sha1": "2cf9f96ca04176697e20ab37659467348d521cb5"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310545-settings-extract.full.chunks.json",
+      "sha1": "0d87c6e0da820cf334a3e40969cd98fd2f212294"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310545-settings-extract.full.embeddings.json",
+      "sha1": "320a07bda9c404109046734a915bde8d3631466b"
+    },
+    {
+      "path": "frontend/src/data/rag/chaffoteaux-chaffoteaux-3310545-settings-extract.pages.json",
+      "sha1": "bd9401a04637e64006ba1336d284afb78986c98a"
+    },
+    {
+      "path": "frontend/src/data/rag/de-dietrich-7838860-04.full.chunks.json",
+      "sha1": "3383c330faa24eec60c6fa11945f5aa6d4ff7bee"
+    },
+    {
+      "path": "frontend/src/data/rag/de-dietrich-7838860-04.full.embeddings.json",
+      "sha1": "5f0c251331755ba8fa5cb4ae924b7f60a0a87393"
+    },
+    {
+      "path": "frontend/src/data/rag/de-dietrich-7838860-04.pages.json",
+      "sha1": "87dab35c3512dbd327994db42f5612ce4ee93671"
+    },
+    {
+      "path": "frontend/src/data/rag/de-dietrich-7838865-04.full.chunks.json",
+      "sha1": "95beb4b758138b1d22e556c037587f5f3a3bb03d"
+    },
+    {
+      "path": "frontend/src/data/rag/de-dietrich-7838865-04.full.embeddings.json",
+      "sha1": "5a95761e5a98874800638c5026806de8d55f1e40"
+    },
+    {
+      "path": "frontend/src/data/rag/de-dietrich-7838865-04.pages.json",
+      "sha1": "382749039547b7b4e0c26523c31858c7ee2a5a1f"
+    },
+    {
+      "path": "frontend/src/data/rag/de-dietrich-de-dietrich-mcr-2-24-exploded-view-2024-03-21.full.chunks.json",
+      "sha1": "b07a3f21c931dddc35e6ac3df6c6047aa7cc1886"
+    },
+    {
+      "path": "frontend/src/data/rag/de-dietrich-de-dietrich-mcr-2-24-exploded-view-2024-03-21.full.embeddings.json",
+      "sha1": "1876a14a9742e8f06d6d75ea9c166e8b38f48520"
+    },
+    {
+      "path": "frontend/src/data/rag/de-dietrich-de-dietrich-mcr-2-24-exploded-view-2024-03-21.pages.json",
+      "sha1": "a4bacc9720cdd065106cd00a93fdf01e4c8274ae"
+    },
+    {
+      "path": "frontend/src/data/rag/elm-leblanc-elm-leblanc-7716704261-exploded-view.full.chunks.json",
+      "sha1": "750d70feab66fae6e2315dec73305e85109d3c81"
+    },
+    {
+      "path": "frontend/src/data/rag/elm-leblanc-elm-leblanc-7716704261-exploded-view.full.embeddings.json",
+      "sha1": "ce1e3b509e1a5521d9a6ac2383c94659fb411d4d"
+    },
+    {
+      "path": "frontend/src/data/rag/elm-leblanc-elm-leblanc-7716704261-exploded-view.pages.json",
+      "sha1": "e84b2f4887565916c9dba888a12e8ecfe6ec9ab9"
+    },
+    {
+      "path": "frontend/src/data/rag/elm-leblanc-elm-leblanc-7716704261-installation.full.chunks.json",
+      "sha1": "3f73292e39b3a29878ace3d2a1302ec3cec293d6"
+    },
+    {
+      "path": "frontend/src/data/rag/elm-leblanc-elm-leblanc-7716704261-installation.full.embeddings.json",
+      "sha1": "1562e094fdabf0ed2ce396187a911f4d5dbeaab5"
+    },
+    {
+      "path": "frontend/src/data/rag/elm-leblanc-elm-leblanc-7716704261-installation.pages.json",
+      "sha1": "24ac9065652d2bb1fd471d3c0cdaff95ff0b712c"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-23-2000-exploded-view.full.chunks.json",
+      "sha1": "7ed2c8cc52254f6fbef3e50300ae96669a8e01ee"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-23-2000-exploded-view.full.embeddings.json",
+      "sha1": "3503ee60061acb2ff33a5b3c2a162d7209b2e717"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-23-2000-exploded-view.pages.json",
+      "sha1": "1ca9b4e119e1ee1693067779cb338914443ee797"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-23-2000-installation.full.chunks.json",
+      "sha1": "ef944505542b808b3e3a04bf6858405d9d2adf7b"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-23-2000-installation.full.embeddings.json",
+      "sha1": "70a4868c988500821af71d6b93b5109c6924820b"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-23-2000-installation.pages.json",
+      "sha1": "68745bf0bf400167879b67ea4f543ccad57c9e72"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-23-2000-troubleshooting.full.chunks.json",
+      "sha1": "f3e3ee9dd030da1a4c31331b5265237e98ce27f3"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-23-2000-troubleshooting.full.embeddings.json",
+      "sha1": "b7146527653be2da8bdf9811aac70311a136c156"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-23-2000-troubleshooting.pages.json",
+      "sha1": "6e4131ba86a7f3f9de908391f07aee9c5b623bcb"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-23-2000-user-manual.full.chunks.json",
+      "sha1": "a092d603ae5c7a181ee852b5f774ef52438449d5"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-23-2000-user-manual.full.embeddings.json",
+      "sha1": "ec2f20233d44fdd83176e717e75f6df1f04c41e5"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-23-2000-user-manual.pages.json",
+      "sha1": "f1623e510b252658f005c980f05042e17c11b17c"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-exploded-view.full.chunks.json",
+      "sha1": "99396469a28530cf4f03953eda0692186898460b"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-exploded-view.full.embeddings.json",
+      "sha1": "d83d93053af14ea4b0a2edc1ffe640624258576a"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-exploded-view.pages.json",
+      "sha1": "c466f136c24e2962cb1b712c6851d62caa5f19a4"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-installation.full.chunks.json",
+      "sha1": "36522aaf237d81d1cc5620ebf2f6a14423ea71de"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-installation.full.embeddings.json",
+      "sha1": "e727f17ef1158b325e6c75a2974232cadd31d430"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-installation.pages.json",
+      "sha1": "54308824bf9b271f92bace0ed4265e4184deb2f0"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-troubleshooting.full.chunks.json",
+      "sha1": "20126d6b68ba19d05db447f8c74eab30a0c19fa7"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-troubleshooting.full.embeddings.json",
+      "sha1": "e0a44d110f54e4c116225d4caae3fea757ed02b0"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-troubleshooting.pages.json",
+      "sha1": "0a25e9f5f54504a03037408146794195c55c28ca"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-user-manual.full.chunks.json",
+      "sha1": "814d94ddff2a5f99297a267a8ec7795c68c3642f"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-user-manual.full.embeddings.json",
+      "sha1": "05671b25e7f76371f15cc23a8503bc81cd5416c0"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-2000-user-manual.pages.json",
+      "sha1": "73e185b9f0628f3440fb2c6950ce1c587a512c3c"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-exploded-view.full.chunks.json",
+      "sha1": "bf030b0e048fdb0ac1c4863371d54b5c04c4af1b"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-exploded-view.full.embeddings.json",
+      "sha1": "1346e3ec926ffc4e6e1fed51f8ac4ffc5aa5bd6a"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-exploded-view.pages.json",
+      "sha1": "4c36569a5bdb2bed43e3c837fdc4c06276ee530e"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-installation.full.chunks.json",
+      "sha1": "d522281e60b99f8a2d1c0216495d974d29eb1d93"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-installation.full.embeddings.json",
+      "sha1": "c52162d85f81cb7619a266a69e85ed50cb95e54f"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-installation.pages.json",
+      "sha1": "28ec43412d20696fdf73ca03004c594bf198802a"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-user-manual.full.chunks.json",
+      "sha1": "d786f4e9430fca22d456efef5d75814d43c86585"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-user-manual.full.embeddings.json",
+      "sha1": "85abf12452ed1f44adc7e0bf204dec714f216a78"
+    },
+    {
+      "path": "frontend/src/data/rag/frisquet-frisquet-hydromotrix-vent-32-user-manual.pages.json",
+      "sha1": "25229761255210b8219ae8849243679b22303d4f"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-0020200493-01.full.chunks.json",
+      "sha1": "4e1f0c0ad7dd08561e78b4939a7c9cec705a6224"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-0020200493-01.full.embeddings.json",
+      "sha1": "023873372cbb1b306933b908289de050da935178"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-0020200493-01.pages.json",
+      "sha1": "262a3df79556adb18b4266a55e203776c850d6be"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-0020238207-08.chunks.json",
+      "sha1": "f06c99370be9799f0479575853b5b38316c0cd62"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-0020238207-08.embeddings.json",
+      "sha1": "8d388a687edb5d72471caff84d319167145b6b97"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-0020238207-08.full.chunks.json",
+      "sha1": "d2eaaa4dc3549f2cf0ec7ae6d1a0157ff04195ae"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-0020238207-08.full.embeddings.json",
+      "sha1": "f22b25f7eb63eb5667acb1c1c0f9e5148a0dbfc8"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-0020238207-08.pages.json",
+      "sha1": "a87c9c3eedf83946aac9530c860c2de6e6066271"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-0020238209-04.full.chunks.json",
+      "sha1": "34549f6433cb8fc8d193207537bd54c6723ae0a1"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-0020238209-04.full.embeddings.json",
+      "sha1": "daa5a2db46c5eae4a90581e256ec8ec22af8fe9a"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-0020238209-04.pages.json",
+      "sha1": "a9e04f3f24c5ea517d0c760882204262b19a3ba4"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-0010021497-installation.full.chunks.json",
+      "sha1": "7c49cdbaff09861657e1df1ff47828a5bb2016ba"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-0010021497-installation.full.embeddings.json",
+      "sha1": "4b458d60cd97174c361bf3b7e01358ccb084a8d1"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-0010021497-installation.pages.json",
+      "sha1": "c737297117693c19f847f16817dffa2b4aa5b440"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-0010021497-utilisation.full.chunks.json",
+      "sha1": "1afe08f23d2d48075b6cd41e6290eb5bf59cb31f"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-0010021497-utilisation.full.embeddings.json",
+      "sha1": "579f7e1c7bc7c0037e6e0a50ca647f1429fd3399"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-0010021497-utilisation.pages.json",
+      "sha1": "8d373013dfe9ecddf6a99cad6af2be3c28f4a854"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-0010021497-vue-eclatee.full.chunks.json",
+      "sha1": "b00b0c6322fd1578f510a7fb8c09e1fc3e65ab1d"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-0010021497-vue-eclatee.full.embeddings.json",
+      "sha1": "117b72f04bc336572c9f8bb7b42b051213e88d3c"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-0010021497-vue-eclatee.pages.json",
+      "sha1": "66cae6601df8e029fc206f9a7c91799bd3c68015"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-themafast-condens-30-a-exploded-view-0010017417.full.chunks.json",
+      "sha1": "93ca6259b0109c7388a80dddaaee6640800c2d0e"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-themafast-condens-30-a-exploded-view-0010017417.full.embeddings.json",
+      "sha1": "fca253dcebd9fcfab77a2d208cc1bf82a93110b5"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-themafast-condens-30-a-exploded-view-0010017417.pages.json",
+      "sha1": "4a93f75b79756f0c8fa7fca69762d9a46508b021"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-themaplus-condens-30-a-exploded-view-0010017388.full.chunks.json",
+      "sha1": "0ebbbcf91c773923b7ecec85c6b99a616b1ce874"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-themaplus-condens-30-a-exploded-view-0010017388.full.embeddings.json",
+      "sha1": "8a046107465f7449e71ee21ab350fa9f51a60a94"
+    },
+    {
+      "path": "frontend/src/data/rag/saunier-duval-sd-themaplus-condens-30-a-exploded-view-0010017388.pages.json",
+      "sha1": "1c5bb80f0378678c1d270201f080d3918f37f593"
+    },
+    {
+      "path": "frontend/src/data/rag/vaillant-0020279448-11.full.chunks.json",
+      "sha1": "026bf89492ea63e762d947b8a55aeefc0ed51e5d"
+    },
+    {
+      "path": "frontend/src/data/rag/vaillant-0020279448-11.full.embeddings.json",
+      "sha1": "da5308057657d21371fde5c52ff5b7c37cffc786"
+    },
+    {
+      "path": "frontend/src/data/rag/vaillant-0020279448-11.pages.json",
+      "sha1": "679a4eaf1a42e6b9f7675b7756b41e7fdaf48c19"
+    },
+    {
+      "path": "frontend/src/hooks/useAuth.js",
+      "sha1": "d721743ba40cf3a55c4e37b1ec977362ae8ae961"
+    },
+    {
+      "path": "frontend/src/index.css",
+      "sha1": "142190cffc7f9707dd72511193bc7900496257b2"
+    },
+    {
+      "path": "frontend/src/lib/catalogEquipmentPrefill.js",
+      "sha1": "022fcce58c7ee423d6629828562081fd107c6b64"
+    },
+    {
+      "path": "frontend/src/lib/catalogEquipmentPrefill.test.js",
+      "sha1": "70c33b55d0739463026e42883a6600a9941c3243"
+    },
+    {
+      "path": "frontend/src/lib/document-types.js",
+      "sha1": "6de48578b2ae01a06b40af3376be857539b94da7"
+    },
+    {
+      "path": "frontend/src/lib/preview-documents-availability.js",
+      "sha1": "a3b9ccafef49fb427f8cbc97bdf19f60d3a99b26"
+    },
+    {
+      "path": "frontend/src/lib/professional-reminders-availability.js",
+      "sha1": "f57695d6760fb98e691d5953908fc7c6d2b1edec"
+    },
+    {
+      "path": "frontend/src/lib/public-qr-url.js",
+      "sha1": "42cc5970cc1ce4ad8ba35a7eabe6b06c8f0b4561"
+    },
+    {
+      "path": "frontend/src/lib/public-qr-url.test.js",
+      "sha1": "6b97bf35be0d0adb4b4f30ea3afed86588e3d210"
+    },
+    {
+      "path": "frontend/src/lib/public-user-manuals.js",
+      "sha1": "22c21855c12788d83580e5e952b5ba4daaeda53e"
+    },
+    {
+      "path": "frontend/src/lib/public-user-manuals.test.js",
+      "sha1": "dbbbe1db508c7532a0b36370b0668f3b17852a9b"
+    },
+    {
+      "path": "frontend/src/lib/reminder-date.js",
+      "sha1": "79333a6c33980cc2c958453b2a1d63121c954fae"
+    },
+    {
+      "path": "frontend/src/lib/reminder-date.test.js",
+      "sha1": "c098baf3f0f54ec86b915289f4446d76844012c9"
+    },
+    {
+      "path": "frontend/src/lib/reminder-description.js",
+      "sha1": "862148192407fad85a9d6ebec0b14005fff9f441"
+    },
+    {
+      "path": "frontend/src/lib/reminder-description.test.js",
+      "sha1": "7c1fb1a51efc8877d40bb6cb113995e48fd2418f"
+    },
+    {
+      "path": "frontend/src/lib/reminder-notification-date.js",
+      "sha1": "41527651f26277640f7b2d566c342a337f72dcbd"
+    },
+    {
+      "path": "frontend/src/lib/shiba-credit-copy.js",
+      "sha1": "5e9fc21c3a7c8e10d4b88393d67d75a85224e0ed"
+    },
+    {
+      "path": "frontend/src/lib/shiba-devis.js",
+      "sha1": "96a32b3e95b80acf5bb433e047d44f770c23648f"
+    },
+    {
+      "path": "frontend/src/lib/shiba-recharge-packs.js",
+      "sha1": "ddbab3e7f6d02d8f5ace9a0b4a7cdc543415c5f4"
+    },
+    {
+      "path": "frontend/src/main.jsx",
+      "sha1": "a525c40ebca5735cccb7c2535dc791be996b026b"
+    },
+    {
+      "path": "frontend/src/pages/AccountSettingsPage.css",
+      "sha1": "09d470bdb841c3171e4d785d214eec0cf6e3d4bc"
+    },
+    {
+      "path": "frontend/src/pages/AccountSettingsPage.jsx",
+      "sha1": "9619321c49ef56e0a6fc2f7ffc0ed34f951ef3fb"
+    },
+    {
+      "path": "frontend/src/pages/AidAdminPage.jsx",
+      "sha1": "e9c1489107f66ac919049256fab85e66eefb0f1f"
+    },
+    {
+      "path": "frontend/src/pages/AuthPage.css",
+      "sha1": "367751138b3f8c7168a61da41d7a57c0b57a9986"
+    },
+    {
+      "path": "frontend/src/pages/AuthPage.jsx",
+      "sha1": "e80e1bef5dc1b82b7a8ddc05c2a46d3fcc33038a"
+    },
+    {
+      "path": "frontend/src/pages/EnterpriseQuotePage.css",
+      "sha1": "eedd93e9998d97d61369cb0e9acb8f5823b31051"
+    },
+    {
+      "path": "frontend/src/pages/EnterpriseQuotePage.jsx",
+      "sha1": "2c4ab42e996f5a0daabed5eeeecc672aeb5f0672"
+    },
+    {
+      "path": "frontend/src/pages/IndividualHomePage.jsx",
+      "sha1": "3b877d37e1556dbc21e72a2d2f0cca19fe18de39"
+    },
+    {
+      "path": "frontend/src/pages/InfoPages.css",
+      "sha1": "c10ff40bbe5f1c07f8de47d2ad750d6b26dc95a6"
+    },
+    {
+      "path": "frontend/src/pages/InfoPages.jsx",
+      "sha1": "42ab41b635bebd5e33d86484274f584fc2dde3de"
+    },
+    {
+      "path": "frontend/src/pages/MaintenanceAdminPage.jsx",
+      "sha1": "11ed7b84f29d35b6ccd0867d1e58d1093dfb7771"
+    },
+    {
+      "path": "frontend/src/pages/MfaSecurityPage.css",
+      "sha1": "0c635c6c408c24bd65dcefddfe55af537505c823"
+    },
+    {
+      "path": "frontend/src/pages/MfaSecurityPage.jsx",
+      "sha1": "5eb329c72194c9b57b4d8c6c14d2df59d97c2439"
+    },
+    {
+      "path": "frontend/src/pages/PlatformAdminPage.css",
+      "sha1": "80e04b782a53a6b646dda787591ea24fa764e95d"
+    },
+    {
+      "path": "frontend/src/pages/PlatformAdminPage.jsx",
+      "sha1": "df634e836ec750210b1b9be1a82a66397ba31671"
+    },
+    {
+      "path": "frontend/src/pages/PricingPage.css",
+      "sha1": "66fa62df516c29d4abe88d1ad4eef9c95b9ffd89"
+    },
+    {
+      "path": "frontend/src/pages/PricingPage.jsx",
+      "sha1": "6d610adaa596cd087e52419e112ff018c23d3674"
+    },
+    {
+      "path": "frontend/src/pages/ProShibaPrompt.css",
+      "sha1": "3ef7f0b77481e5815b8b2a840b7d4f7706c33534"
+    },
+    {
+      "path": "frontend/src/pages/ProSpacePage.css",
+      "sha1": "69bb6b024e85e465bc2f78c2df0de8f6de9648fe"
+    },
+    {
+      "path": "frontend/src/pages/ProSpacePage.jsx",
+      "sha1": "54397bf65c13e3b4b047bfbf5f0e49d86f1e48ad"
+    },
+    {
+      "path": "frontend/src/pages/PublicMaintenanceReminderPage.css",
+      "sha1": "f82a800210da7331432899d93870c5b95e38eb8f"
+    },
+    {
+      "path": "frontend/src/pages/PublicMaintenanceReminderPage.jsx",
+      "sha1": "a71d045a8f81869005af6bd32a08fab65ff53118"
+    },
+    {
+      "path": "frontend/src/pages/ResetPasswordPage.jsx",
+      "sha1": "2ffe287395d00db68054e192cfd6accbc437fbc0"
+    },
+    {
+      "path": "frontend/src/pages/ShibaDevisPage.css",
+      "sha1": "11ec2d6e0a502383e162b7bf08da710146a125b7"
+    },
+    {
+      "path": "frontend/src/pages/ShibaDevisPage.jsx",
+      "sha1": "cfabda5de5784d35f343a03f51cd30cf333ae4b7"
+    },
+    {
+      "path": "frontend/src/route-pages.jsx",
+      "sha1": "18029e98d960b85b14b10cd06a36cfa8431e5c54"
+    },
+    {
+      "path": "frontend/src/services/accountExportService.js",
+      "sha1": "421c8b4b47f9f215d3ff5977143f4d4c71c7f1e7"
+    },
+    {
+      "path": "frontend/src/services/authService.js",
+      "sha1": "e0868d41a1436dcae10ec86ff73beebfa691721f"
+    },
+    {
+      "path": "frontend/src/services/billingService.js",
+      "sha1": "ac9955ce0993812b86d15a3ed31cf6da2bd9abb1"
+    },
+    {
+      "path": "frontend/src/services/carnetPassService.js",
+      "sha1": "c5db1a0b085d4c7007a914532cf02d4b41f04cbc"
+    },
+    {
+      "path": "frontend/src/services/companyService.js",
+      "sha1": "e622574dca05b0009e53e1500b0dd69f6d08d6ad"
+    },
+    {
+      "path": "frontend/src/services/equipmentAttachmentsService.js",
+      "sha1": "97e61c5a984280f1795947f5822d9d44b5b575f8"
+    },
+    {
+      "path": "frontend/src/services/equipmentKnowledge.js",
+      "sha1": "6ef00458b78017f8b0dfb7ddd1e226615fbd9278"
+    },
+    {
+      "path": "frontend/src/services/equipmentService.js",
+      "sha1": "72a9f1141b290f6c0a83283a3b5878b9000f3a8d"
+    },
+    {
+      "path": "frontend/src/services/interventionPdfService.js",
+      "sha1": "9c12da4c61e644391ec7894132695d02cefc6ed5"
+    },
+    {
+      "path": "frontend/src/services/mfaService.js",
+      "sha1": "c99b9a39a4ee0ec364fbb2a45fcd9daba05a6745"
+    },
+    {
+      "path": "frontend/src/services/photosToPdf.js",
+      "sha1": "241d8f29bf90ae00a9ddeeff15df1179840afd74"
+    },
+    {
+      "path": "frontend/src/services/platformDocumentLibrary.js",
+      "sha1": "ec1cc38fb42b6b4fbbf11168d0854ba3fa2ff05c"
+    },
+    {
+      "path": "frontend/src/services/platformDocumentLibrary.test.js",
+      "sha1": "af7fadc8c765ef9b0a2038533a7e18baca2008dd"
+    },
+    {
+      "path": "frontend/src/services/platformPdfDelivery.js",
+      "sha1": "5089837242fb0f0f4c2c8b35916db468f013ae95"
+    },
+    {
+      "path": "frontend/src/services/platformPdfDelivery.test.js",
+      "sha1": "dcc1634691ae64f2b5b8c6bfdae519b488914568"
+    },
+    {
+      "path": "frontend/src/services/r2DirectUpload.js",
+      "sha1": "689657cbff573ccdcd57e7ee35f62392b736513a"
+    },
+    {
+      "path": "frontend/src/services/r2MigrationBatch.js",
+      "sha1": "e603c54fb43da4178d55c474baded5d216874fb4"
+    },
+    {
+      "path": "frontend/src/services/sharedNoticeLabels.test.js",
+      "sha1": "c64516eb2dd9fc3c6a13dc9910b964e50f2d413f"
+    },
+    {
+      "path": "frontend/src/services/shibaDevisService.js",
+      "sha1": "553576add51fe55bc0e12c7cc93a1b6e6b846dfc"
+    },
+    {
+      "path": "frontend/src/services/shibaRechargeService.js",
+      "sha1": "c5ea183f1055da7c7bf6e574f31741351f742449"
+    },
+    {
+      "path": "frontend/src/services/shibaUsageEvents.js",
+      "sha1": "7456dff51b9c4467255b953d694990c384044f17"
+    },
+    {
+      "path": "frontend/src/services/stripeTestSubscription.js",
+      "sha1": "cc8e81aacc37e15f0122feaadd171c8863ac3471"
+    },
+    {
+      "path": "frontend/src/services/supabaseClient.js",
+      "sha1": "b81023be3feb69ea81c1b8d2d24cf289a208709e"
+    },
+    {
+      "path": "frontend/eslint.config.js",
+      "sha1": "f9e9eeec8388ae6b785952526825e8c3d3745332"
+    },
+    {
+      "path": "frontend/index.html",
+      "sha1": "c4c28bbe1bc99bc40654956491ce736e668a22d5"
+    },
+    {
+      "path": "frontend/middleware.js",
+      "sha1": "2705a6d9f3b2c8c2d9ba93c59cd8a1aaaed777b9"
+    },
+    {
+      "path": "frontend/package-lock.json",
+      "sha1": "ce65067ae20f0c7e6fd6b886edae9660f90e4d46"
+    },
+    {
+      "path": "frontend/package.json",
+      "sha1": "3a3da99ece1412422aadf0818a8833a50b8499b4"
+    },
+    {
+      "path": "frontend/public/favicon.svg",
+      "sha1": "3f5bb8f3a6a05b7ca68a62581d2dd5bc88812caf"
+    },
+    {
+      "path": "frontend/public/icon-192.png",
+      "sha1": "d1262ace40aadbd1e8b5efac73c645e806da4954"
+    },
+    {
+      "path": "frontend/public/icon-512.png",
+      "sha1": "f86e2a4dedd619a915ff477bb6b79027d3df4a5a"
+    },
+    {
+      "path": "frontend/public/icons.svg",
+      "sha1": "338549eae25bfaaf4b52a004811c913c8b1915a2"
+    },
+    {
+      "path": "frontend/research/reports/de-dietrich-mcr-2-24-7841749.md",
+      "sha1": "1552051a5534df0fc989e1b29f42cb8f61514f32"
+    },
+    {
+      "path": "frontend/scripts/audit-environments.mjs",
+      "sha1": "3d35265f79b9e9b147ff5cfe68d34d822f80258f"
+    },
+    {
+      "path": "frontend/scripts/build-production-migrations.mjs",
+      "sha1": "17560bcc5f0a4eafc64f499e2999f8137127ccaa"
+    },
+    {
+      "path": "frontend/scripts/build-production-reminder-discovery-fix.mjs",
+      "sha1": "73ec3a2a3386cbf995d29f59a00f390b798567ab"
+    },
+    {
+      "path": "frontend/scripts/build-production-reminders-bundle.mjs",
+      "sha1": "3f32200089be06d9acacb101c8a39b9ad500eed6"
+    },
+    {
+      "path": "frontend/scripts/extract-rag-document.mjs",
+      "sha1": "6b1583c759e38fe92d66f82b83b9d355225f7206"
+    },
+    {
+      "path": "frontend/scripts/generate-equipment-registry.mjs",
+      "sha1": "46d6b23fc0795e65bb0004608cc6662b04b3cc92"
+    },
+    {
+      "path": "frontend/scripts/generate-full-rag-chunks.mjs",
+      "sha1": "d47354744ef9a912101df1c331e0e67ba1b74652"
+    },
+    {
+      "path": "frontend/scripts/generate-full-rag-embeddings.mjs",
+      "sha1": "18f6abe1a7e64f4c75480c607a52641ca2b3af6d"
+    },
+    {
+      "path": "frontend/scripts/generate-rag-chunks.mjs",
+      "sha1": "c001fa27b0b9b943544f17b70f61a290b8c781a5"
+    },
+    {
+      "path": "frontend/scripts/generate-rag-embeddings.mjs",
+      "sha1": "4f943c6fa4dd7297c308221331c8d85a55ca217b"
+    },
+    {
+      "path": "frontend/scripts/import-mcr-2-24.mjs",
+      "sha1": "70693d1c10e9c5062e5ea5b92c3d10d52a7fc953"
+    },
+    {
+      "path": "frontend/scripts/import-naia-2-micro-25.mjs",
+      "sha1": "652e8f7cd0de34e119279c08d02b7d5864fb4cd9"
+    },
+    {
+      "path": "frontend/scripts/import-rag-document.mjs",
+      "sha1": "49161613c45d763ec7e20d98c17824b47927d2b1"
+    },
+    {
+      "path": "frontend/scripts/integrer-chaffoteaux.mjs",
+      "sha1": "d0d38de5a4c28d64b90ad3ca76b5496675aa8754"
+    },
+    {
+      "path": "frontend/scripts/lib/document-research.js",
+      "sha1": "5087982444f65fdfc4eb966440d4afedd62f10e7"
+    },
+    {
+      "path": "frontend/scripts/research-documents.mjs",
+      "sha1": "991e6a10da40ce54eb261f0386a37e38561fdadd"
+    },
+    {
+      "path": "frontend/scripts/search-full-rag-embeddings.mjs",
+      "sha1": "c7b61883a9630b24e406b601dd636f67526d3a20"
+    },
+    {
+      "path": "frontend/scripts/search-rag-chunks.mjs",
+      "sha1": "0b2d03ed82214b2834fc8a65c42ffaa2f82eecf5"
+    },
+    {
+      "path": "frontend/scripts/search-rag-embeddings.mjs",
+      "sha1": "05fd03f00745739ad77845ef8ccf4056669ccc9e"
+    },
+    {
+      "path": "frontend/scripts/validate-equipment-catalog.mjs",
+      "sha1": "e14fb61f1d96f47b1698c624f3e0dfd7b76cf7bf"
+    },
+    {
+      "path": "frontend/scripts/verify-additional-accounts-sql.mjs",
+      "sha1": "1c362832ad0f183269904f72e631fa05953204ed"
+    },
+    {
+      "path": "frontend/scripts/verify-company-data-sql.mjs",
+      "sha1": "6cbb33c21a6412c0603f8e9f76abf25c1eaf2143"
+    },
+    {
+      "path": "frontend/scripts/verify-rag-questions.mjs",
+      "sha1": "bf91f27ba90e2d0a64337eb48521cd844fbb609e"
+    },
+    {
+      "path": "frontend/scripts/verify-shiba-devis-sql.mjs",
+      "sha1": "fdf2303ef0cb4d2a9fde44b95d7dcd377d15af53"
+    },
+    {
+      "path": "frontend/scripts/verify-shiba-devis-ui.mjs",
+      "sha1": "6b199e1fb56ba6f421df40611c636246147cd108"
+    },
+    {
+      "path": "frontend/server/account-erasure.test.js",
+      "sha1": "10f13ec1db51be7a154b33812c25b0c35192253c"
+    },
+    {
+      "path": "frontend/server/account.js",
+      "sha1": "6e048a03cca99e567103d21b9a3f6632ce2ab8f3"
+    },
+    {
+      "path": "frontend/server/account.test.js",
+      "sha1": "e4bacd5fc0b25bb7b9e749b55eecb2eb18ec799a"
+    },
+    {
+      "path": "frontend/server/aid-admin.js",
+      "sha1": "1574318c51e9c452e23fcf0decb1d6bba319f1d4"
+    },
+    {
+      "path": "frontend/server/billing-invoices.js",
+      "sha1": "d25fa512bf6d5a0779922a5dfb9ce1aada49f2a2"
+    },
+    {
+      "path": "frontend/server/billing-invoices.test.js",
+      "sha1": "b36d400e16007486bb1b54749b96369a54ea8d38"
+    },
+    {
+      "path": "frontend/server/billing.js",
+      "sha1": "5302110793709cd560f48592aff39056ce60f312"
+    },
+    {
+      "path": "frontend/server/billing.test.js",
+      "sha1": "2a59cb78eca1f1c99ff31d8c6172ca7b167b5afa"
+    },
+    {
+      "path": "frontend/server/company-rge.js",
+      "sha1": "dd7077f2907b57c202304c8410f505f58d4e7aca"
+    },
+    {
+      "path": "frontend/server/enterprise-quote.js",
+      "sha1": "34754b1d2b359b66260a7d1cc6b8e1fd85f4e9d7"
+    },
+    {
+      "path": "frontend/server/lib/account-export.js",
+      "sha1": "bff3a8862bdaacb99f17bbbd7b30274fd3d6a31d"
+    },
+    {
+      "path": "frontend/server/lib/account-export.test.js",
+      "sha1": "f5175aef16b6d8aa96c626f11ca915e4606af059"
+    },
+    {
+      "path": "frontend/server/lib/additional-account-access.js",
+      "sha1": "08e8b0fdb82c29539ea1eb8a9f8340f382921fff"
+    },
+    {
+      "path": "frontend/server/lib/additional-account-access.test.js",
+      "sha1": "4396108483312ac40f442b796fb7663fe3208db4"
+    },
+    {
+      "path": "frontend/server/lib/additional-account-billing.js",
+      "sha1": "48809b9b2a8a7116039c673c5213c825c6b404c0"
+    },
+    {
+      "path": "frontend/server/lib/additional-account-billing.test.js",
+      "sha1": "e82155c922c60fc1d7a1b9bfe31e327d713a2b02"
+    },
+    {
+      "path": "frontend/server/lib/aid-drafts.js",
+      "sha1": "4a52621fc4fe8268d4a923d3f6b50aa473fd670a"
+    },
+    {
+      "path": "frontend/server/lib/aid-watch.js",
+      "sha1": "3e1d7b9f30a5b1b3c2b27ac46b731349d36b326b"
+    },
+    {
+      "path": "frontend/server/lib/anomaly-alert.js",
+      "sha1": "c2e850d314d5096d2abf7a93fe76389c2fc92b81"
+    },
+    {
+      "path": "frontend/server/lib/api-route-flags.js",
+      "sha1": "e3419cc7d9bbe49067709ac59b12251a7658eb87"
+    },
+    {
+      "path": "frontend/server/lib/boiler-maintenance-certificates.js",
+      "sha1": "4f1fd32f282365cb5c3dd65cdafabb5120538b68"
+    },
+    {
+      "path": "frontend/server/lib/carnetpass-access.js",
+      "sha1": "0cfee1eb2964d7574c66c95f2c04cfaa9cfb847c"
+    },
+    {
+      "path": "frontend/server/lib/carnetpass-status.js",
+      "sha1": "406c010819adec671eefb382693701059b655bb9"
+    },
+    {
+      "path": "frontend/server/lib/company-data-cleanup.js",
+      "sha1": "d1b71b3ce6fcfd1c0ab91250302c6d9997b287be"
+    },
+    {
+      "path": "frontend/server/lib/company-data-cleanup.test.js",
+      "sha1": "5023eb54698c69f2d56195973b2b696cbe36df95"
+    },
+    {
+      "path": "frontend/server/lib/company-export-files.js",
+      "sha1": "6aa358436761fa3c94da3155bd6676275e6cd32d"
+    },
+    {
+      "path": "frontend/server/lib/devis-security.js",
+      "sha1": "3097711ea2211b644eb7f8b56e7534eaec70d0a2"
+    },
+    {
+      "path": "frontend/server/lib/document-consultation-quota.js",
+      "sha1": "0a73b68ee0c0c5c8a3dfede3c66a5ab9c120764f"
+    },
+    {
+      "path": "frontend/server/lib/equipment-metadata.generated.js",
+      "sha1": "af7a271ef03d8d9b14f98f76e28b0a389530f445"
+    },
+    {
+      "path": "frontend/server/lib/equipment-registry-v2.js",
+      "sha1": "db8c73ccf83e796bac67b765298355ee5825026d"
+    },
+    {
+      "path": "frontend/server/lib/equipment-registry.generated.js",
+      "sha1": "4a7f01f4bfd25a1669a7fe8b448dda590e451f2b"
+    },
+    {
+      "path": "frontend/server/lib/equipment-registry.js",
+      "sha1": "9240ada30e99c6ce99d1b99deaac5cc45847b7f6"
+    },
+    {
+      "path": "frontend/server/lib/list-admin-documents.js",
+      "sha1": "674238e087caed0ae31b6416eaaace940ebd1a26"
+    },
+    {
+      "path": "frontend/server/lib/list-admin-documents.test.js",
+      "sha1": "d17531f73b738267708ad1223abed1c79ed52e50"
+    },
+    {
+      "path": "frontend/server/lib/maintenance-state.js",
+      "sha1": "27a584d872c5afb07685b03dc4c0d813cf516f1d"
+    },
+    {
+      "path": "frontend/server/lib/mfa-access.js",
+      "sha1": "e0ef34eccfdbf581aa5df4199d3467d6f529718b"
+    },
+    {
+      "path": "frontend/server/lib/platform-admin-environment.js",
+      "sha1": "fac567b17869eafdb75c00581eb7ea250683c758"
+    },
+    {
+      "path": "frontend/server/lib/platform-catalog-documents.js",
+      "sha1": "658efe96941c4bb0bf38bd6079d83e502cd5969d"
+    },
+    {
+      "path": "frontend/server/lib/platform-document-environment.js",
+      "sha1": "c6847f71b65986df0e0f2538c59a2f0dd3ed3d97"
+    },
+    {
+      "path": "frontend/server/lib/platform-document-rag.js",
+      "sha1": "4b0114ccc3a4b4a42766f08641cfadf164923797"
+    },
+    {
+      "path": "frontend/server/lib/platform-document-rag.test.js",
+      "sha1": "24a159786bcf0dd98374a1694988240311d00e8b"
+    },
+    {
+      "path": "frontend/server/lib/polygon-wallet-health.js",
+      "sha1": "41a82f784f97122f0ea864304521f267285b0873"
+    },
+    {
+      "path": "frontend/server/lib/public-intervention.js",
+      "sha1": "f4167b3524edd500485d8872671f6553b259ce02"
+    },
+    {
+      "path": "frontend/server/lib/public-intervention.test.js",
+      "sha1": "861c6f70c451122db2e567839539b0a6675c17bd"
+    },
+    {
+      "path": "frontend/server/lib/public-reminder-link.js",
+      "sha1": "b037067cb8e47608cf3a97c14187ff387b0d02e3"
+    },
+    {
+      "path": "frontend/server/lib/public-reminder-link.test.js",
+      "sha1": "e648d52ae1f5df3799b2d41b6931cdcbdaf0a535"
+    },
+    {
+      "path": "frontend/server/lib/r2-direct-upload.js",
+      "sha1": "d81ce0d2f22e14d704664343de620f26727076ba"
+    },
+    {
+      "path": "frontend/server/lib/r2-direct-upload.test.js",
+      "sha1": "3cfd9f008d128a1f463dd128ac15fc70302d0a4c"
+    },
+    {
+      "path": "frontend/server/lib/r2-document-delivery.js",
+      "sha1": "db7a85fc5950f51e3d254a8adea99910557dda70"
+    },
+    {
+      "path": "frontend/server/lib/r2-document-delivery.test.js",
+      "sha1": "ad98a7d1adb0c01fefbaaea316cc20df9f36d3b3"
+    },
+    {
+      "path": "frontend/server/lib/r2-document-migration.js",
+      "sha1": "c71703ed13bcf3770de56f5acee2ce8c87281b84"
+    },
+    {
+      "path": "frontend/server/lib/r2-document-storage.js",
+      "sha1": "fca25a294367051300268d76880e70abe48d31ff"
+    },
+    {
+      "path": "frontend/server/lib/r2-native-documents.js",
+      "sha1": "785408ec75da5e25356bd63ba103915c9da2102b"
+    },
+    {
+      "path": "frontend/server/lib/r2-upload-completion.js",
+      "sha1": "74ef23e81e977b2106e9be5930b4295cf0c240c2"
+    },
+    {
+      "path": "frontend/server/lib/r2-upload-completion.test.js",
+      "sha1": "756798e415ebe61d8bf54cdd403537f1526df32b"
+    },
+    {
+      "path": "frontend/server/lib/rag.js",
+      "sha1": "5bbc082f60660d824e4029046d7a62f161a62c2b"
+    },
+    {
+      "path": "frontend/server/lib/rate-limit.js",
+      "sha1": "4452c5a2b3aaca1949ca412be4fad10489981c1e"
+    },
+    {
+      "path": "frontend/server/lib/require-verified-company.js",
+      "sha1": "bac7b4aeb93d063d707a6adb6630a28000291559"
+    },
+    {
+      "path": "frontend/server/lib/shiba-grounding.js",
+      "sha1": "b5c1e572396d9f156fe373f1e0f8f83c18484818"
+    },
+    {
+      "path": "frontend/server/lib/shiba-quota.js",
+      "sha1": "dcb6f767e4f9dd853ee4938a809a7ba8c859e11b"
+    },
+    {
+      "path": "frontend/server/lib/shiba-recharge-stripe.js",
+      "sha1": "a515a6ab9cb63f5c4c66bcce99dc8d5d0391f643"
+    },
+    {
+      "path": "frontend/server/lib/technical-document-store.js",
+      "sha1": "5907cf7fc5b88b954b83c83defaf9148a1fd4a9a"
+    },
+    {
+      "path": "frontend/server/lib/thermodynamic-document-pdf.js",
+      "sha1": "73ec93c6f07f6b67d20244321a457ed5f9cc7927"
+    },
+    {
+      "path": "frontend/server/lib/thermodynamic-document-pdf.test.js",
+      "sha1": "918a11dab68fd2fc04c9817eeebd2ab8a7b3529c"
+    },
+    {
+      "path": "frontend/server/lib/thermodynamic-document-schema.js",
+      "sha1": "d6cc38f8eb87db190d88410e215485a7a393d1db"
+    },
+    {
+      "path": "frontend/server/lib/thermodynamic-document-schema.test.js",
+      "sha1": "fa86ac1640316efb50d2cd351224f1cc5dc1b580"
+    },
+    {
+      "path": "frontend/server/lib/verify-platform-pdf.js",
+      "sha1": "daf6d778130be0f464745647bfa45a46fc828a14"
+    },
+    {
+      "path": "frontend/server/maintenance-control.js",
+      "sha1": "55eb69fcae02d6fb3e1fd08c57e00f669741b819"
+    },
+    {
+      "path": "frontend/server/maintenance-reminder-dispatch.js",
+      "sha1": "43c5222be92f1abc112ab8f92d4db127447a7fe7"
+    },
+    {
+      "path": "frontend/server/maintenance-reminder-dispatch.test.js",
+      "sha1": "aba9499393df0fb73325ab9cb481851da0f419f2"
+    },
+    {
+      "path": "frontend/server/model-reminder-summary.js",
+      "sha1": "7e9c76f387ab54217fc05254770b343d1bf4bd2b"
+    },
+    {
+      "path": "frontend/server/model-reminder-summary.test.js",
+      "sha1": "66d9b923cb6bef4bb8d813c976891a75f8bfb391"
+    },
+    {
+      "path": "frontend/server/model-reminders.js",
+      "sha1": "505d8f9a1e97efcb111ea83fd2b5700af22ec5fc"
+    },
+    {
+      "path": "frontend/server/plate-scan.js",
+      "sha1": "9e858d823138a5a4b7439d9ad306b100c40b2260"
+    },
+    {
+      "path": "frontend/server/platform-admin.js",
+      "sha1": "802cbce85978bd82e6b0fddb6db9ec65bd9ee259"
+    },
+    {
+      "path": "frontend/server/platform-document-submissions.js",
+      "sha1": "6b0478444960bd184dd6794d7aa0b70bfad62174"
+    },
+    {
+      "path": "frontend/server/public-maintenance-reminders.js",
+      "sha1": "9be11592b34a4ebeb604b62ca0e433cc0d8b4ef0"
+    },
+    {
+      "path": "frontend/server/public-maintenance-reminders.test.js",
+      "sha1": "4004e8cefa2afceb9b54811136f2a4aada6bfea7"
+    },
+    {
+      "path": "frontend/server/shiba-devis.js",
+      "sha1": "34c8bd5f3fd472cc2e6505d75de7e9a4333960e5"
+    },
+    {
+      "path": "frontend/server/shiba-recharge.js",
+      "sha1": "804a4fe0d7f5716ddb8b3dca6f370b15f8b89eef"
+    },
+    {
+      "path": "frontend/server/shiba-usage.js",
+      "sha1": "d038d979506c0bcfe784c9124666d5b898fec086"
+    },
+    {
+      "path": "frontend/server/system-health.js",
+      "sha1": "c636d89ca0cee8c54ea4a583b67c4b2a2f585460"
+    },
+    {
+      "path": "frontend/server/thermodynamic-documents.js",
+      "sha1": "edbe84c8f98be7e5794437678dce88474774da21"
+    },
+    {
+      "path": "frontend/shared/additional-accounts.js",
+      "sha1": "21f0ff1c596e8f4a49a4ff63c782dc6327096d5a"
+    },
+    {
+      "path": "frontend/shared/aid-engine.js",
+      "sha1": "825d0bcfe8a129bc86f8479b120abbb416e7e869"
+    },
+    {
+      "path": "frontend/shared/commercial-terms.js",
+      "sha1": "c642953730da0eaf12a8183223f60662c632c764"
+    },
+    {
+      "path": "frontend/shared/commercial-terms.test.js",
+      "sha1": "b505779563703a216f31e88ae673e978decae66e"
+    },
+    {
+      "path": "frontend/shared/discovery-access.js",
+      "sha1": "12a51603a5f8c770533711b5fccab40ad6d3ea3f"
+    },
+    {
+      "path": "frontend/shared/plate-scan.js",
+      "sha1": "a5a05ee7faeea91c6a34f1132448a8dd77242407"
+    },
+    {
+      "path": "frontend/supabase-production/bootstrap-maintenance-founder.sql",
+      "sha1": "03020c29c170db72d56e700cb0456761de70b870"
+    },
+    {
+      "path": "frontend/supabase-production/maintenance-reminders-rollout.sql",
+      "sha1": "f2a47b507722eca85ca3814ab312bf622fcede43"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260902000100_create_profiles.sql",
+      "sha1": "0fbc8d6687256251999784f41a1f65f159cd6e67"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260902000200_create_companies_and_roles.sql",
+      "sha1": "9ced98cf58b375bbdcd79b88bafdb839f5e08926"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260902000300_create_subscriptions.sql",
+      "sha1": "5ab131ff5cf380a1447d79db88902dc86998b88e"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260903000400_create_company_onboarding.sql",
+      "sha1": "2cff10d746e6bc9e54bc3e74e50f723f83ecebc6"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260904000500_add_owner_role.sql",
+      "sha1": "20dcd739999d09999e0e83d1aad3a0b4b6d10a32"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260906000600_create_company_verifications.sql",
+      "sha1": "47e0f0431d8956d4a394d5b51ac4012e9887fe99"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260907000700_company_siret_update.sql",
+      "sha1": "5f260c1e3ad001c442534d7bcdc5321fa6f28889"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260907000800_create_equipments.sql",
+      "sha1": "93153c68a6e863d46d9ec0b1cd57a103b2474732"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260907000900_add_equipment_type.sql",
+      "sha1": "1453772efaf711ff227e220a2ae1497569703ad9"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260907001000_add_demo_company_mode.sql",
+      "sha1": "764a5779043ad0e4c635dac2a202b7fe1586b4ac"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260908000100_secure_company_verification_result.sql",
+      "sha1": "0ec4d5371c92d92c335b13ce6eec94819d1ff673"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260914000100_create_interventions.sql",
+      "sha1": "c1ee279d2e02c41195f81c35bbd8cf64cc2ad113"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260916000100_create_boiler_maintenance_certificates.sql",
+      "sha1": "add35382f8d4a30351600db7a6e93df7142632c7"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260917000100_add_company_contact_details.sql",
+      "sha1": "bdead2e5f5208e325d01efcc684bace0e2a1ce03"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260917000200_add_update_company_contact_details.sql",
+      "sha1": "e2493623a1f02be7541d0b08b2359ddbfa911749"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260922000100_add_boiler_certificate_cancellation.sql",
+      "sha1": "12b6be76b5dac536d021e8b75f449fef3938300a"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260924000100_optional_equipment_serial.sql",
+      "sha1": "23fa2a73322f0cfb621369664311ede50c083c78"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260927000100_create_discovery_equipment.sql",
+      "sha1": "d9d5a18159b6bf989eddfac60536d4d8c80c4d7d"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260929000100_platform_enterprise_admin.sql",
+      "sha1": "e231f63748c0047f3e2f9679bb6bb4c40f0b9c61"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260929000200_platform_enterprise_seats.sql",
+      "sha1": "d83a421278169006275daec57bee0f9e1ba5b36c"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260929000300_platform_document_intake.sql",
+      "sha1": "2a197f700bd2b9f52a630c1bbc8e4059707f3a7e"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260929000400_company_members_service_read.sql",
+      "sha1": "4ca107532507e07ce2ad15005dfc63a01fdc4542"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260930000100_platform_document_publication.sql",
+      "sha1": "25a0070428d1e65fbac47a1aec9d724c50898e2f"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260930000200_platform_document_hotline.sql",
+      "sha1": "44f3bcff9d21924625bdb7800753fa21aaf4b27d"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260930000300_platform_document_30mb.sql",
+      "sha1": "e8180ec4d7baf1002125171ff300b454c4e0c967"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260930000400_platform_document_rag.sql",
+      "sha1": "16e9a244a580848a50c4060dace9db0b7d595828"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260930000500_thermodynamic_documents.sql",
+      "sha1": "a8a1bc212fcc69c6d2e30187103c09456457af04"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260930000600_one_discovery_per_email.sql",
+      "sha1": "f81a0edb47aae50c21bcbec4e6a7a2a801b8a7e1"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20260930000700_allow_discovery_interventions.sql",
+      "sha1": "f3b3d1424a221e9218b177d798c33e1bebe81c40"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261001000100_discovery_phone_claim.sql",
+      "sha1": "d3b76f373ebc9633c9a842ecb8488539903a7e72"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261004194150_private_equipment_attachments.sql",
+      "sha1": "11d3c9d20f40f65110261bd704865b83e8039bd1"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261004211830_restrict_internal_triggers.sql",
+      "sha1": "c78592e6808052cec2f409150e77071f4fde322c"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261006000100_maintenance_reminders.sql",
+      "sha1": "de5504150522b600c645fbe53062dcbb4d2422fa"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261006000200_maintenance_dispatch.sql",
+      "sha1": "db1052df775b2405caa3125ea0377ef4b52edd6f"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261006000300_public_reminder_opt_in.sql",
+      "sha1": "6cdaa5b20b97d0f786342692be3195a27453802a"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261006000400_public_reminder_dispatch.sql",
+      "sha1": "91a5ca4c1e0ae420d106072d8087759ae8f75003"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261006000500_maintenance_reminder_audit.sql",
+      "sha1": "75050e256297124995d92b5d672d054051580bfe"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261006000600_maintenance_after_validation.sql",
+      "sha1": "7e26740fc3dedd21aaa6898cf83f318818701f5f"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261006000700_reminder_description.sql",
+      "sha1": "208178503997bb0853ee3c3e8c74c4e881bdea16"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261006000800_reminder_discovery_eligibility.sql",
+      "sha1": "cd515aeee75e5419a21e645aa7fb962ad5818b00"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261007111436_shiba_devis_aids_rge_scan.sql",
+      "sha1": "210e6612ea19321d832f74c7c4ef57e6c8cd1394"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261007170449_founder_test_company.sql",
+      "sha1": "480c784610246b8846e9f4c211bc06d64339f896"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261007182051_founder_test_full_access.sql",
+      "sha1": "94acaa3e364c53899375dcbb597234ee66e9a13d"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261008113759_account_mfa_enforcement.sql",
+      "sha1": "75a0e742fadaa4a2b35743d4648329018a1da1a6"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261008190000_document_model_name.sql",
+      "sha1": "6437ca03117125357780ca3d80b7fbbcd4df5f5b"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261009090000_classify_existing_saunier_models.sql",
+      "sha1": "bb444c4efcc40820c52978f5ece2101970cd4b63"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261009100000_subscription_invoice_customer.sql",
+      "sha1": "0ddeafba4a505b74226be60b6c98a07b1b2806fa"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261012153743_company_data_self_service.sql",
+      "sha1": "55e733d3a35fce22a8873bb1248d9e0c7c434e9a"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261012161417_legacy_company_qr_cleanup.sql",
+      "sha1": "3a1c7b48442018fc025157eee4da3bf6de3c715b"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261012205113_pro_additional_accounts.sql",
+      "sha1": "9c887a951c42a8b9b4793884a1ede62732c6ce29"
+    },
+    {
+      "path": "frontend/supabase-production/migrations/20261012211047_pro_main_account_guard.sql",
+      "sha1": "94388713e4718c858482d1a5c721a13bc9a3ff5c"
+    },
+    {
+      "path": "frontend/supabase-production/verify-founder-test-company.sql",
+      "sha1": "86f327b4de56d1c1055f827ca4ea9ed4060a3015"
+    },
+    {
+      "path": "frontend/supabase-production/verify-maintenance-reminders.sql",
+      "sha1": "144cd929c092797ee8cd8bcee1f31c502a40cd81"
+    },
+    {
+      "path": "frontend/supabase-production/verify-reminders-functions.sql",
+      "sha1": "6f2986856548aded74a0999dcbe4b38e9af048f6"
+    },
+    {
+      "path": "frontend/supabase-production/verify-reminders-tables.sql",
+      "sha1": "b8f748a8bbf9960d0acadeed83f3a5984a66341d"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260902_01_create_profiles.sql",
+      "sha1": "0fbc8d6687256251999784f41a1f65f159cd6e67"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260902_02_create_companies_and_roles.sql",
+      "sha1": "9ced98cf58b375bbdcd79b88bafdb839f5e08926"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260902_03_create_subscriptions.sql",
+      "sha1": "5ab131ff5cf380a1447d79db88902dc86998b88e"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260903_04_create_company_onboarding.sql",
+      "sha1": "2cff10d746e6bc9e54bc3e74e50f723f83ecebc6"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260904_05_add_owner_role.sql",
+      "sha1": "20dcd739999d09999e0e83d1aad3a0b4b6d10a32"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260906_06_create_company_verifications.sql",
+      "sha1": "47e0f0431d8956d4a394d5b51ac4012e9887fe99"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260907_07_company_siret_update.sql",
+      "sha1": "5f260c1e3ad001c442534d7bcdc5321fa6f28889"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260907_08_create_equipments.sql",
+      "sha1": "93153c68a6e863d46d9ec0b1cd57a103b2474732"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260907_09_add_equipment_type.sql",
+      "sha1": "1453772efaf711ff227e220a2ae1497569703ad9"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260907_10_add_demo_company_mode.sql",
+      "sha1": "764a5779043ad0e4c635dac2a202b7fe1586b4ac"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260908_01_secure_company_verification_result.sql",
+      "sha1": "0ec4d5371c92d92c335b13ce6eec94819d1ff673"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260914_01_create_interventions.sql",
+      "sha1": "c1ee279d2e02c41195f81c35bbd8cf64cc2ad113"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260916_01_create_boiler_maintenance_certificates.sql",
+      "sha1": "add35382f8d4a30351600db7a6e93df7142632c7"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260917_01_add_company_contact_details.sql",
+      "sha1": "bdead2e5f5208e325d01efcc684bace0e2a1ce03"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260917_02_add_update_company_contact_details.sql",
+      "sha1": "e2493623a1f02be7541d0b08b2359ddbfa911749"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260922_01_add_boiler_certificate_cancellation.sql",
+      "sha1": "12b6be76b5dac536d021e8b75f449fef3938300a"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260924_01_optional_equipment_serial.sql",
+      "sha1": "23fa2a73322f0cfb621369664311ede50c083c78"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260927_01_create_discovery_equipment.sql",
+      "sha1": "d9d5a18159b6bf989eddfac60536d4d8c80c4d7d"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260929_03_platform_document_intake.sql",
+      "sha1": "2a197f700bd2b9f52a630c1bbc8e4059707f3a7e"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260930_01_platform_document_publication.sql",
+      "sha1": "25a0070428d1e65fbac47a1aec9d724c50898e2f"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260930_02_platform_document_hotline.sql",
+      "sha1": "44f3bcff9d21924625bdb7800753fa21aaf4b27d"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260930_03_platform_document_30mb.sql",
+      "sha1": "e8180ec4d7baf1002125171ff300b454c4e0c967"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260930_04_platform_document_rag.sql",
+      "sha1": "16e9a244a580848a50c4060dace9db0b7d595828"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260930_05_thermodynamic_documents.sql",
+      "sha1": "a8a1bc212fcc69c6d2e30187103c09456457af04"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260930_06_one_discovery_per_email.sql",
+      "sha1": "f81a0edb47aae50c21bcbec4e6a7a2a801b8a7e1"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260930_07_allow_discovery_interventions.sql",
+      "sha1": "f3b3d1424a221e9218b177d798c33e1bebe81c40"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261001_01_discovery_phone_claim.sql",
+      "sha1": "d3b76f373ebc9633c9a842ecb8488539903a7e72"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261001_02_maintenance_reminders.sql",
+      "sha1": "de5504150522b600c645fbe53062dcbb4d2422fa"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261001_03_maintenance_dispatch.sql",
+      "sha1": "db1052df775b2405caa3125ea0377ef4b52edd6f"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261001_04_public_reminder_opt_in.sql",
+      "sha1": "6cdaa5b20b97d0f786342692be3195a27453802a"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261001_05_public_reminder_dispatch.sql",
+      "sha1": "91a5ca4c1e0ae420d106072d8087759ae8f75003"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261001_06_maintenance_reminder_audit.sql",
+      "sha1": "75050e256297124995d92b5d672d054051580bfe"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261001_07_maintenance_after_validation.sql",
+      "sha1": "7e26740fc3dedd21aaa6898cf83f318818701f5f"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261001_08_reminder_description.sql",
+      "sha1": "208178503997bb0853ee3c3e8c74c4e881bdea16"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261007111436_shiba_devis_aids_rge_scan.sql",
+      "sha1": "210e6612ea19321d832f74c7c4ef57e6c8cd1394"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261007170449_founder_test_company.sql",
+      "sha1": "480c784610246b8846e9f4c211bc06d64339f896"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261007182051_founder_test_full_access.sql",
+      "sha1": "94acaa3e364c53899375dcbb597234ee66e9a13d"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261008113759_account_mfa_enforcement.sql",
+      "sha1": "75a0e742fadaa4a2b35743d4648329018a1da1a6"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261008190000_document_model_name.sql",
+      "sha1": "6437ca03117125357780ca3d80b7fbbcd4df5f5b"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261009090000_classify_existing_saunier_models.sql",
+      "sha1": "bb444c4efcc40820c52978f5ece2101970cd4b63"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261009100000_subscription_invoice_customer.sql",
+      "sha1": "0ddeafba4a505b74226be60b6c98a07b1b2806fa"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261012153743_company_data_self_service.sql",
+      "sha1": "55e733d3a35fce22a8873bb1248d9e0c7c434e9a"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261012161417_legacy_company_qr_cleanup.sql",
+      "sha1": "3a1c7b48442018fc025157eee4da3bf6de3c715b"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261012205113_pro_additional_accounts.sql",
+      "sha1": "9c887a951c42a8b9b4793884a1ede62732c6ce29"
+    },
+    {
+      "path": "frontend/supabase/migrations/20261012211047_pro_main_account_guard.sql",
+      "sha1": "94388713e4718c858482d1a5c721a13bc9a3ff5c"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260928_01_stripe_test_billing.sql",
+      "sha1": "8420d5e1a3ceef0e3353361f58cae0d7edb3caa8"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260929_01_platform_enterprise_admin.sql",
+      "sha1": "29d058c2fd47bbcb1e7cce0dada07cbdca302d3c"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260929_02_platform_enterprise_seats.sql",
+      "sha1": "ec8ef53105798d5fb18d142c09abc1bd6a2878ed"
+    },
+    {
+      "path": "frontend/supabase/migrations/20260929_04_company_members_service_read.sql",
+      "sha1": "f13ad9cf7bc684bcf2fc03c0e5ac7c826a68a19b"
+    },
+    {
+      "path": "frontend/supabase/bootstrap-preview-founder.sql",
+      "sha1": "c0969ecd6ee5c4efea00acacfa7972d17ba343a7"
+    },
+    {
+      "path": "frontend/supabase/manual-tests/enterprise_preview_cleanup.sql",
+      "sha1": "ef0edbc7b5015700cdb57f02df51564437d6b2a0"
+    },
+    {
+      "path": "frontend/supabase/manual-tests/enterprise_preview_setup.sql",
+      "sha1": "a10d42318764f921ce79a3f372a85d1bcaf98410"
+    },
+    {
+      "path": "frontend/supabase/preview-bootstrap-schema.sql",
+      "sha1": "da6448af8377fd8cee4a1640eb3b803bbf2584fa"
+    },
+    {
+      "path": "frontend/supabase/templates/confirmation.html",
+      "sha1": "081f27d6296ef7c3b63c4780199a027580ca1ff5"
+    },
+    {
+      "path": "frontend/supabase/tests/20260907_07_company_siret_update.test.sql",
+      "sha1": "44210f5d0fa54c264cbfe4fc4cb425ccc6f46655"
+    },
+    {
+      "path": "frontend/test/audit-environments.test.js",
+      "sha1": "3f2752bed0072c081ec9b0a6aed41ca401fa2c14"
+    },
+    {
+      "path": "frontend/test/discovery-access.test.js",
+      "sha1": "9266fcee845db9cf5e8ae78ff6d9b083df4fd963"
+    },
+    {
+      "path": "frontend/test/document-consultation-quota.test.js",
+      "sha1": "099fc79bbe8cc2228968b447b70c30f352544031"
+    },
+    {
+      "path": "frontend/test/document-consultation-route.test.js",
+      "sha1": "925675c0d66aa0893b027af1e284136ef5f62f4f"
+    },
+    {
+      "path": "frontend/test/document-research.test.js",
+      "sha1": "dedd7d2d187843b0638a43d87ad23fdc3760ddce"
+    },
+    {
+      "path": "frontend/test/equipment-metadata-registry.test.js",
+      "sha1": "aebb7ae9c2835fd29472b587edfdc72e3725e247"
+    },
+    {
+      "path": "frontend/test/equipment-registry-v2.test.js",
+      "sha1": "f19f3433fc3bf6dfa45443e4322e7e7e6f440f9b"
+    },
+    {
+      "path": "frontend/test/founder-document-access.test.js",
+      "sha1": "260eaca8b9e4437013cb24660167649115fa6c88"
+    },
+    {
+      "path": "frontend/test/founder-scan-access.test.js",
+      "sha1": "5164426dedb25156b8686084658fa0a2e7d4cd00"
+    },
+    {
+      "path": "frontend/test/maintenance-mode.test.js",
+      "sha1": "8d7928dcd14b495bbf94feba1aa93a4f3b8fb264"
+    },
+    {
+      "path": "frontend/test/mfa-access.test.js",
+      "sha1": "d984279e2e9bdca101c04c3a2ce97ba1c8d7445e"
+    },
+    {
+      "path": "frontend/test/platform-admin-environment.test.js",
+      "sha1": "4c19fddad8a927255c28b2f70dcd76d4853d9aa4"
+    },
+    {
+      "path": "frontend/test/platform-admin.test.js",
+      "sha1": "c4348fb13beea240beff4de31f225e19ea303c6c"
+    },
+    {
+      "path": "frontend/test/platform-document-environment.test.js",
+      "sha1": "4183ea8e54b010ca9542d7cd6080f7a9ea3f2548"
+    },
+    {
+      "path": "frontend/test/platform-document-upload-security.test.js",
+      "sha1": "c313cded97161876af97b89b76784b574f7ea1a0"
+    },
+    {
+      "path": "frontend/test/preview-documents-availability.test.js",
+      "sha1": "512d25524fdae79b992c1ee020e2ca0b604b79bd"
+    },
+    {
+      "path": "frontend/test/professional-reminders-availability.test.js",
+      "sha1": "5f3e3ad4df37c681b08670d235e851e8ac703e87"
+    },
+    {
+      "path": "frontend/test/r2-document-migration.test.js",
+      "sha1": "d2ebac1914c1d1d04475533c95b924a7549107df"
+    },
+    {
+      "path": "frontend/test/r2-document-storage.test.js",
+      "sha1": "ffeac8faa8d21abff8886eccf76fc2e74961ce7a"
+    },
+    {
+      "path": "frontend/test/r2-migration-batch.test.js",
+      "sha1": "770ef6f042e0778f86eb1ac37c03c4a3aa649bf8"
+    },
+    {
+      "path": "frontend/test/rag-parts.test.js",
+      "sha1": "cf2cd944c566924d19ac83ca6b35f8da4de570b3"
+    },
+    {
+      "path": "frontend/test/reminder-notification-date.test.js",
+      "sha1": "eacd07aa50483e65469d8b0749c7ebe32778f4cf"
+    },
+    {
+      "path": "frontend/test/shiba-aid-engine.test.js",
+      "sha1": "ffda8058274eb9cd51612299a0e6b90cbd869467"
+    },
+    {
+      "path": "frontend/test/shiba-aid-watch.test.js",
+      "sha1": "96e9f244047b5ed6d4c9be954e90bfc50c565dc3"
+    },
+    {
+      "path": "frontend/test/shiba-devis-handler.test.js",
+      "sha1": "f92e6242f7f076aedb685129bf2e09026c34a64f"
+    },
+    {
+      "path": "frontend/test/shiba-devis.test.js",
+      "sha1": "78c7108daea32efecf4f4a4142141e2893d458d5"
+    },
+    {
+      "path": "frontend/test/shiba-grounding.test.js",
+      "sha1": "64e0571b56c5f9018da54e8f930772a3f3a40e5e"
+    },
+    {
+      "path": "frontend/test/shiba-imported-documents.test.js",
+      "sha1": "ab203e54fe100e028ef1703a43d7066cf859c83e"
+    },
+    {
+      "path": "frontend/test/shiba-plate-scan.test.js",
+      "sha1": "9d4a78dfa70ed21942225d65334009bf2420f146"
+    },
+    {
+      "path": "frontend/test/shiba-quota.test.js",
+      "sha1": "adbc7131535c5426ee0e6922cde8d098140590e6"
+    },
+    {
+      "path": "frontend/test/shiba-recharge-route.test.js",
+      "sha1": "47768203ec3e64a2f4a45aee8f18bc16da95eb32"
+    },
+    {
+      "path": "frontend/test/shiba-recharge-stripe.test.js",
+      "sha1": "2ddb17a1bade9e87d5797357230cdbbc22568a60"
+    },
+    {
+      "path": "frontend/test/shiba-recharge.test.js",
+      "sha1": "0bbc2eedb0f425fa37bd68945fbc85c76f2adfa3"
+    },
+    {
+      "path": "frontend/test/shiba-route-flags.test.js",
+      "sha1": "1c19dde1eca0202f8d1adecd0e296427837c0554"
+    },
+    {
+      "path": "frontend/test/technical-document-store.test.js",
+      "sha1": "e6e59224a3afd290aff9a7bf5c37069b1ca59e49"
+    },
+    {
+      "path": "frontend/test/verify-platform-pdf.test.js",
+      "sha1": "3a6ac0fdc8cd9176bf2db4fd02f3613e2bde22bf"
+    },
+    {
+      "path": "frontend/vercel.json",
+      "sha1": "0bfedf247ae93fb0ee2f4370b9c08105d025ca4d"
+    },
+    {
+      "path": "frontend/vite.config.js",
+      "sha1": "c5327e16e5daa50359458081db509eba8d88830b"
+    }
+  ],
+  "verified": true
+}

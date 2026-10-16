@@ -1,0 +1,296 @@
+import { supabase } from "./supabaseClient";
+
+export async function ensureFounderTestCompany() {
+  const { error } = await supabase.rpc("ensure_founder_test_company");
+  // Ordinary accounts continue through their normal company setup.
+  if (error?.code === "42501") return false;
+  if (error) throw new Error("Impossible de préparer votre espace de test. Réessayez ou contactez l’assistance.");
+  return true;
+}
+
+function getCompanyErrorMessage(error) {
+  const message = error?.message || "";
+
+  if (message.includes("14 chiffres")) {
+    return "Le SIRET doit contenir exactement 14 chiffres.";
+  }
+
+  if (message.includes("numéro de téléphone valide")) {
+    return "Un numéro de téléphone est nécessaire pour créer votre entreprise. Contactez l’assistance si votre compte a été créé avant cette obligation.";
+  }
+
+  if (message.includes("Découverte déjà utilisée")) {
+    return "Cet essai a déjà été utilisé. Renseignez un SIRET pour créer l’entreprise sans nouvel essai, puis choisissez une formule payante.";
+  }
+
+  if (message.includes("SIRET est déjà rattaché")) {
+    return "Ce SIRET est déjà lié à une entreprise CarnetPass. Reprenez ce compte ou contactez l’assistance.";
+  }
+
+  if (message.includes("Confirmez votre adresse e-mail")) {
+    return "Confirmez votre adresse e-mail avant de commencer l’essai Découverte.";
+  }
+
+  if (message.includes("appartenez déjà")) {
+    return "Votre compte est déjà rattaché à une entreprise.";
+  }
+
+  if (error?.code === "23505") {
+    return "Certaines informations existent déjà. Vérifiez votre entreprise avant de réessayer.";
+  }
+
+  return "Impossible d’enregistrer l’entreprise. Veuillez réessayer.";
+}
+
+export async function createCompany({
+  name,
+  siret,
+  phone,
+  jobTitle,
+}) {
+  const { data, error } = await supabase.rpc(
+    "create_company_onboarding",
+    {
+      p_name: name.trim(),
+      p_siret: siret.trim() || null,
+      p_phone: phone.trim() || null,
+      p_job_title: jobTitle.trim() || null,
+    }
+  );
+
+  if (error) {
+    throw new Error(getCompanyErrorMessage(error));
+  }
+
+  return data;
+}
+
+export async function getMyCompany(userId) {
+  if (!userId) {
+    return null;
+  }
+
+  // Récupère les appartenances du compte connecté.
+  const {
+    data: memberships,
+    error: membershipError,
+  } = await supabase
+    .from("company_members")
+    .select("company_id, role, created_at")
+    .eq("user_id", userId)
+    .limit(2);
+
+  if (membershipError) {
+    throw new Error(
+      "Impossible de vérifier votre entreprise."
+    );
+  }
+
+  if (!memberships || memberships.length === 0) {
+    return null;
+  }
+
+  // Comme l’API, on refuse de choisir une entreprise au hasard.
+  if (memberships.length !== 1) {
+    throw new Error(
+      "Plusieurs entreprises sont associées à votre compte. Contactez l’assistance."
+    );
+  }
+
+  const membership = memberships[0];
+
+  // Charge les informations de l’entreprise.
+  const {
+    data: company,
+    error: companyError,
+  } = await supabase
+    .from("companies")
+    .select(`
+  id,
+  name,
+  siret,
+  phone,
+  email,
+  address_line1,
+  address_line2,
+  postal_code,
+  city,
+  country,
+  is_demo,
+  created_at
+`)
+    .eq("id", membership.company_id)
+    .single();
+
+  if (companyError) {
+    throw new Error(
+      "Impossible de charger les informations de l’entreprise."
+    );
+  }
+
+  // Charge son abonnement.
+  const {
+    data: subscription,
+    error: subscriptionError,
+  } = await supabase
+    .from("subscriptions")
+    .select(
+      "plan, status, trial_ends_at, current_period_end"
+    )
+    .eq("company_id", membership.company_id)
+    .maybeSingle();
+
+  if (subscriptionError) {
+    throw new Error(
+      "Impossible de charger l’abonnement."
+    );
+  }
+
+  // Charge la validation en lecture seule.
+  // Le navigateur ne peut pas approuver l’entreprise.
+  const {
+    data: verification,
+    error: verificationError,
+  } = await supabase
+    .from("company_verifications")
+    .select(
+      "status, verified_siret, verified_at, updated_at"
+    )
+    .eq("company_id", membership.company_id)
+    .maybeSingle();
+
+  if (verificationError) {
+    throw new Error(
+      "Impossible de charger le statut de validation de l’entreprise. Réessayez."
+    );
+  }
+
+  return {
+    ...company,
+    role: membership.role,
+    subscription,
+
+    // Sans ligne de validation, l’entreprise reste non validée.
+    verification: verification ?? {
+      status: "pending",
+      verified_siret: null,
+      verified_at: null,
+      updated_at: null,
+    },
+  };
+}
+
+export async function updateCompanySiret(companyId, siret) {
+  const normalizedSiret = siret.replace(/\s/g, "");
+  if (!/^\d{14}$/.test(normalizedSiret)) {
+    throw new Error("Le SIRET doit contenir exactement 14 chiffres.");
+  }
+
+  const { error } = await supabase.rpc("update_company_siret", {
+    p_company_id: companyId,
+    p_siret: normalizedSiret,
+  });
+
+  if (error) {
+    if (error.code === "42501") {
+      throw new Error("Votre session ou votre rôle ne permet pas cette modification. Reconnectez-vous ou contactez le propriétaire.");
+    }
+    if (error.code === "22023") {
+      throw new Error("Le SIRET doit contenir exactement 14 chiffres.");
+    }
+    throw new Error("Impossible d’enregistrer le SIRET. Actualisez le statut avant de réessayer.");
+  }
+}
+export async function updateCompanyContactDetails(
+  companyId,
+  {
+    phone,
+    email,
+    addressLine1,
+    addressLine2,
+    postalCode,
+    city,
+    country,
+  }
+) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (
+    normalizedEmail
+    && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
+  ) {
+    throw new Error("L’adresse e-mail est invalide.");
+  }
+
+  const { error } = await supabase.rpc(
+    "update_company_contact_details",
+    {
+      p_company_id: companyId,
+      p_phone: phone.trim() || null,
+      p_email: normalizedEmail || null,
+      p_address_line1: addressLine1.trim() || null,
+      p_address_line2: addressLine2.trim() || null,
+      p_postal_code: postalCode.trim() || null,
+      p_city: city.trim() || null,
+      p_country: country.trim() || "France",
+    }
+  );
+
+  if (error) {
+    if (error.code === "42501") {
+      throw new Error(
+        "Votre rôle ne permet pas de modifier les coordonnées de l’entreprise."
+      );
+    }
+
+    if (error.code === "22023") {
+      throw new Error(
+        error.message || "Certaines coordonnées sont invalides."
+      );
+    }
+
+    throw new Error(
+      "Impossible d’enregistrer les coordonnées de l’entreprise."
+    );
+  }
+}
+export async function verifyMyCompany() {
+  const {
+    data: sessionData,
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  const accessToken = sessionData?.session?.access_token;
+
+  if (sessionError || !accessToken) {
+    throw new Error(
+      "Votre connexion a expiré. Reconnectez-vous."
+    );
+  }
+
+  let response;
+
+  try {
+    response = await fetch("/api/verify-company", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  } catch {
+    throw new Error(
+      "Le service de vérification est inaccessible. Réessayez."
+    );
+  }
+
+  const result = await response.json().catch(() => null);
+
+  if (!response.ok || !result?.ok) {
+    throw new Error(
+      result?.error
+      || "Impossible de vérifier l’entreprise."
+    );
+  }
+
+  return result;
+}

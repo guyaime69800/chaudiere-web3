@@ -1,0 +1,346 @@
+[
+  {
+    "chunkId": "sd-0020238207-08-f00",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.00",
+    "text": "F.00 Signification : Coupure de la sonde de température de départ."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f01",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.01",
+    "text": "F.01 Signification : Coupure du capteur de température de retour."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f02",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.02",
+    "text": "F.02 Signification : Interruption capteur de sortie."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f03",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.03",
+    "text": "F.03 Signification : Coupure de la sonde de température de stockage."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f10",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.10",
+    "text": "F.10 Signification : Court-circuit de la sonde de température de départ."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f11",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.11",
+    "text": "F.11 Signification : Court-circuit du capteur de température de retour."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f12",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.12",
+    "text": "F.12 Signification : Court-circuit capteur de sortie."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f13",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.13",
+    "text": "F.13 Signification : Court-circuit de la sonde de température de stockage."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f20",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.20",
+    "text": "F.20 Signification : Arrêt de sécurité limiteur de température."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f22",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.22",
+    "text": "F.22 Signification : Arrêt de sécurité manque d'eau."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f23",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.23",
+    "text": "F.23 Signification : Arrêt de sécurité écart de température trop élevé."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f24",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.24",
+    "text": "F.24 Signification : Arrêt de sécurité montée de température trop rapide."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f26",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.26",
+    "text": "F.26 Signification : Défaut vanne combustible HS."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f27",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.27",
+    "text": "F.27 Signification : Arrêt de sécurité simulation de flamme."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f28",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 34,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.28",
+    "text": "F.28 Allumage infructueux au démarrage. Signification : Le brûleur ne parvient pas à s’allumer lors du démarrage.. Causes possibles : Alimentation en gaz absente, insuffisante ou interrompue, Défaut du mécanisme gaz, Entrée d’air ou circuit des condensats obstrué, Défaut du système d’allumage ou de détection de flamme, Défaut électrique, électronique ou de mise à la terre, Réglage de combustion incorrect. Contrôles professionnels : Robinet d’arrêt et pression dynamique du gaz, Mécanisme gaz, Tube d’entrée d’air, Circuit des condensats, Faisceau électrique et connecteurs, Transformateur et câble d’allumage, Électrode d’allumage et électrode de surveillance, Circuit électronique et mise à la terre, Réglage du CO2."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f29",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.29",
+    "text": "F.29 Signification : Anomalie fonctionnement - allumage infructueux."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f32",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 34,
+    "section": "Codes de défaut - vue d'ensemble",
+    "topic": "F.32",
+    "text": "F.32 Défaut ventilateur. Signification : Ventilateur défectueux ou non raccordé.. Causes possibles : Ventilateur défectueux, Ventilateur non raccordé, Obstruction du ventilateur, Défaut du faisceau électrique, Défaut du capteur Hall, Défaut du circuit imprimé, Obstruction du circuit des gaz de combustion. Contrôles professionnels : Connecteur, Faisceau électrique, Ventilateur : obstruction, fonctionnement et adéquation du régime, Capteur Hall, Circuit imprimé, Circuit des gaz de combustion : obstruction."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f42",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.42",
+    "text": "F.42 Signification : Défaut résistance de codage."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f49",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 34,
+    "section": "Codes de défaut - vue d'ensemble",
+    "topic": "F.49",
+    "text": "F.49 Défaut eBUS. Signification : Sous-tension au niveau de l'eBUS.. Causes possibles : Surcharge de l'eBUS, Deux tensions d'alimentation de polarités différentes, Court-circuit sur l'eBUS. Contrôles professionnels : Contrôler l'eBUS : surcharge, Contrôler la présence de deux tensions d'alimentation de polarités différentes, Contrôler l'eBUS : court-circuit."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f52",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.52",
+    "text": "F.52 Signification : Capteur de débit massique non raccordé."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f53",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.53",
+    "text": "F.53 Signification : Débit massique du mécanisme gaz non conforme aux valeurs attendues."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f54",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.54",
+    "text": "F.54 Signification : Défaut démarrage appareil."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f56",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.56",
+    "text": "F.56 Signification : Arrêt de sécurité dépassement seuil CO."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f57",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.57",
+    "text": "F.57 Signification : Défaut mesures."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f61",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.61",
+    "text": "F.61 Signification : Défaut vanne de commande combustible."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f62",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.62",
+    "text": "F.62 Signification : Défaut retard coupure vanne de commande combustible."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f63",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.63",
+    "text": "F.63 Signification : Défaut EEPROM."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f64",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.64",
+    "text": "F.64 Signification : Erreur électronique / capteur."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f65",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.65",
+    "text": "F.65 Signification : Défaut température électronique."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f67",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.67",
+    "text": "F.67 Signification : Défaut électronique / flamme."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f68",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.68",
+    "text": "F.68 Signification : Défaut signal de flamme instable."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f70",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.70",
+    "text": "F.70 Signification : Défaut codage appareil erroné."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f71",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.71",
+    "text": "F.71 Signification : Erreur du capteur de température de départ."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f72",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.72",
+    "text": "F.72 Signification : Défaut sonde de température départ / capteur température retour."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f73",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.73",
+    "text": "F.73 Signification : Défaut sonde pression d'eau - signal trop faible."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f74",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.74",
+    "text": "F.74 Signification : Défaut sonde pression d'eau - signal trop fort."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f77",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.77",
+    "text": "F.77 Signification : Défaut clapet fumées / pompe condensats."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f79",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.79",
+    "text": "F.79 Signification : Défaut du capteur de température du ballon."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f81",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.81",
+    "text": "F.81 Signification : Défaut pompe de charge ballon."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f83",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.83",
+    "text": "F.83 Signification : Défaut variation de température CTN."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f84",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.84",
+    "text": "F.84 Signification : Défaut différence de température CTN non plausible."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f85",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.85",
+    "text": "F.85 Signification : Défaut sondes CTN mal montées."
+  },
+  {
+    "chunkId": "sd-0020238207-08-f86",
+    "documentId": "sd-themaplus-condens-installation-maintenance-0020238207-08",
+    "page": 33,
+    "section": "Codes de défaut - vue d’ensemble",
+    "topic": "F.86",
+    "text": "F.86 Signification : Contact du chauffage au sol coupé."
+  }
+]

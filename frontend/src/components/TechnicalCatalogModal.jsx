@@ -1,0 +1,457 @@
+import { loadPlatformPdf } from "../services/platformPdfDelivery.js";
+import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import shibaTechnicien from "../assets/simba-assistance-technique.webp";
+import shibaRecherche from "../assets/simba-accompagnement-administratif.webp";
+import { getEquipmentDocumentLibrary } from "../services/equipmentKnowledge";
+import { catalogModelFamily, catalogModelFamilies, catalogModelsWithPublishedDocuments, sharedNoticeGroups } from "../services/platformDocumentLibrary";
+import DocumentPreviewModal from "./DocumentPreviewModal";
+import ShibaUsage from "./ShibaUsage";
+import { openShibaRecharge, refreshShibaUsage } from "../services/shibaUsageEvents";
+import "./TechnicalCatalogModal.css";
+
+const CATEGORIES = [
+  { id: "boiler", label: "Chaudières" },
+  { id: "heat_pump_indoor", label: "PAC · Unités intérieures", catalogType: "heat_pump" },
+  { id: "heat_pump_outdoor", label: "PAC · Unités extérieures", catalogType: "heat_pump" },
+  { id: "air_conditioning_indoor", label: "Clim · Unités intérieures", catalogType: "air_conditioning" },
+  { id: "air_conditioning_outdoor", label: "Clim · Unités extérieures", catalogType: "air_conditioning" },
+  { id: "burner", label: "Brûleurs" },
+  { id: "water_heater", label: "Chauffe-bains" },
+  { id: "regulation", label: "Régulations" },
+  { id: "heat_pump_water_heater", label: "Chauffe-eau thermodynamiques" },
+  { id: "vmc", label: "VMC" },
+];
+// Marques à parcourir. Les modèles et documents restent indépendants de cette liste.
+const BOILER_BRANDS = ["ACV", "Ariston", "Atlantic", "Atlantic Solutions Chaufferie", "Auer", "Bosch", "Brotje", "Buderus", "Bulex", "Chaffoteaux", "Chappée", "Daikin", "De Dietrich", "Deville", "Domusa Teknik", "ELCO", "ELM Leblanc", "Ferroli", "Frisquet", "Fröling", "Geminox", "Ideal Standard", "NIBE", "Oertli", "OKOFEN", "PERGE", "Remeha", "Riello", "ROTEX", "Saunier Duval", "Styx", "UNICAL", "Vaillant", "VERGNE", "Viessmann", "Weishaupt", "Wolf"];
+const PAC_BRANDS = ["ACV", "AERMEC", "Airwell", "ALDES", "Altech", "AO Smith", "Ariston", "Atlantic", "Auer", "Bosch", "Buderus", "Bulex", "Carrier", "Chaffoteaux", "Chappée", "CIAT", "Daikin", "De Dietrich", "Domusa Teknik", "Frisquet", "Geminox", "HEIWA", "Hitachi", "LG", "MIDEA", "Mitsubishi Electric", "Mitsubishi Heavy Industries", "NIBE", "Oertli", "Pacific", "Panasonic", "PERGE", "Remeha", "ROTEX", "Samsung", "Saunier Duval", "Stiebel Eltron", "Technibel", "Thermor", "Toshiba", "Vaillant", "Viessmann", "Weishaupt", "Wolf"];
+const CLIM_BRANDS = ["AERMEC", "Airwell", "Altech", "Ariston", "Atlantic", "Bosch", "Bulex", "Carrier", "Chappée", "CIAT", "Daikin", "De Dietrich", "General", "Gree", "HEIWA", "Hitachi", "LENNOX", "LG", "MIDEA", "Mitsubishi Electric", "Mitsubishi Heavy Industries", "NIBE", "Panasonic", "Remeha", "Samsung", "Saunier Duval", "Technibel", "Thermor", "Toshiba", "VALSON Electric", "Viessmann"];
+const CATEGORY_BRANDS = {
+  boiler: BOILER_BRANDS,
+  heat_pump_indoor: PAC_BRANDS,
+  heat_pump_outdoor: [...PAC_BRANDS, "Trane"],
+  air_conditioning_indoor: CLIM_BRANDS,
+  air_conditioning_outdoor: CLIM_BRANDS,
+  burner: ["ACV", "Atlantic", "Bentone", "Bosch", "Brotje", "Buderus", "Chappée", "Cuenod", "De Dietrich", "Deville", "Domusa Teknik", "ELCO", "Geminox", "Ideal Standard", "NIBE", "Oertli", "Riello", "Viessmann", "Weishaupt", "Wolf"],
+  water_heater: ["ACV", "Altech", "AO Smith", "Ariston", "Atlantic", "Auer", "Bosch", "Bulex", "Chaffoteaux", "ELM Leblanc", "Frisquet", "Geminox", "MIDEA", "NIBE", "Panasonic", "Remeha", "Samsung", "Saunier Duval", "Styx", "Thermor", "Vaillant", "Viessmann", "Wolf"],
+  regulation: ["ACV", "Airwell", "Altech", "Atlantic", "Auer", "Buderus", "Bulex", "Chaffoteaux", "Chappée", "Daikin", "De Dietrich", "DELTA DORE", "ELM Leblanc", "Frisquet", "Geminox", "General", "Hitachi", "Mitsubishi Electric", "Netatmo", "NIBE", "Oertli", "Panasonic", "Remeha", "Samsung", "Saunier Duval", "Stiebel Eltron", "Thermor", "Toshiba", "Vaillant", "Viessmann", "Weishaupt", "Wolf"],
+  heat_pump_water_heater: ["ACV", "Airwell", "ALDES", "Altech", "AO Smith", "Ariston", "Atlantic", "Auer", "Bosch", "Bulex", "Chaffoteaux", "Chappée", "Daikin", "De Dietrich", "ELM Leblanc", "Hitachi", "LG", "MIDEA", "Mitsubishi Electric", "NIBE", "Oertli", "Saunier Duval", "Thermor"],
+  vmc: ["ALDES", "Atlantic", "Brink", "Duco", "Helios", "Itho Daalderop", "Nather", "S&P", "Sauter", "Unelvent", "Vortice", "Zehnder"],
+};
+const normalize = (value) => String(value || "").normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase("fr");
+
+const brandKey = (value) => normalize(value).replace(/[^a-z0-9]/g, "");
+
+
+export default function TechnicalCatalogModal({ open, onClose, onAddEquipment, canAddEquipment = false, catalog = [], session, initialMode = "catalog", initialQuestion = "", initialSource = "documents" }) {
+  if (!open) return null;
+  return <TechnicalCatalogContent onClose={onClose} onAddEquipment={onAddEquipment} canAddEquipment={canAddEquipment} catalog={catalog} session={session} initialMode={initialMode} initialQuestion={initialQuestion} initialSource={initialSource} />;
+}
+
+function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, catalog, session, initialMode, initialQuestion, initialSource }) {
+  const [step, setStep] = useState(initialMode === "assistant" ? "assistant-picker" : "category");
+  const [type, setType] = useState("");
+  const [brand, setBrand] = useState("");
+  const [family, setFamily] = useState("");
+  const [query, setQuery] = useState("");
+  const [model, setModel] = useState(null);
+  const [documents, setDocuments] = useState([]);
+  const indexedDocumentCount = documents.filter((item) => item.storage !== "platform-private" || item.ragStatus === "ready").length;
+  const [publishedDocuments, setPublishedDocuments] = useState([]);
+  const [publishedDocumentsBusy, setPublishedDocumentsBusy] = useState(Boolean(session?.access_token));
+  const [publishedDocumentsError, setPublishedDocumentsError] = useState("");
+  const [publishedDocumentsReload, setPublishedDocumentsReload] = useState(0);
+  const [modelReturnStep, setModelReturnStep] = useState("models");
+  const [support, setSupport] = useState(null);
+  const [documentsBusy, setDocumentsBusy] = useState(false);
+  const [documentsError, setDocumentsError] = useState("");
+  const [previewDocument, setPreviewDocument] = useState(null);
+  const [previewBusyId, setPreviewBusyId] = useState(null);
+  const [question, setQuestion] = useState(initialQuestion);
+  const [searchSource, setSearchSource] = useState(initialSource === "web" ? "web" : "documents");
+  const [assistantOrigin, setAssistantOrigin] = useState(false);
+  const [answer, setAnswer] = useState("");
+  const [answerSource, setAnswerSource] = useState("");
+  const [answerSources, setAnswerSources] = useState([]);
+  const [answerCitations, setAnswerCitations] = useState([]);
+  const [webFallbackAvailable, setWebFallbackAvailable] = useState(false);
+  const [manualModel, setManualModel] = useState("");
+  const [manualReference, setManualReference] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const documentRequest = useRef(0);
+  const aiRequest = useRef(0);
+  const selectedModel = useRef(null);
+
+  useEffect(() => () => { documentRequest.current += 1; aiRequest.current += 1; }, []);
+  useEffect(() => {
+    const refresh = () => setPublishedDocumentsReload((value) => value + 1);
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, []);
+  useEffect(() => {
+    if (!session?.access_token) return;
+    const controller = new AbortController();
+    fetch("/api/platform-catalog-documents", {
+      headers: { Authorization: `Bearer ${session.access_token}` }, signal: controller.signal,
+    }).then(async (response) => {
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Chargement des documents publiés impossible.");
+      return result;
+    }).then((result) => {
+      if (!controller.signal.aborted) {
+        const latest = result?.documents || [];
+        setPublishedDocuments(latest); setPublishedDocumentsError("");
+        const byId = new Map(latest.map((item) => [item.id, item]));
+        const updateDocuments = (items) => items.filter((item) => item.storage !== "platform-private" || byId.has(item.documentId))
+          .map((item) => byId.has(item.documentId) ? { ...item, title: byId.get(item.documentId).title, ragStatus: byId.get(item.documentId).rag_status } : item);
+        setDocuments((items) => updateDocuments(items));
+        const current = selectedModel.current;
+        if (current) {
+          const updated = { ...current, publishedDocuments: updateDocuments(current.publishedDocuments || []) };
+          if (!updated.equipmentId && !updated.publishedDocuments.length) {
+            clearModel({ preserveQuestion: true }); setStep("category");
+            setError("Cette fiche n’est plus diffusée. Choisissez un autre modèle.");
+          } else { selectedModel.current = updated; setModel(updated); }
+        }
+        setAnswer(""); setPreviewDocument(null);
+      }
+    }).catch((error) => {
+      if (!controller.signal.aborted) setPublishedDocumentsError(error.message);
+    }).finally(() => {
+      if (!controller.signal.aborted) setPublishedDocumentsBusy(false);
+    });
+    return () => controller.abort();
+  }, [session?.access_token, publishedDocumentsReload]);
+  useEffect(() => () => {
+    if (previewDocument?.documentUrl?.startsWith("blob:")) URL.revokeObjectURL(previewDocument.documentUrl);
+  }, [previewDocument]);
+
+  const entries = catalogModelsWithPublishedDocuments(catalog, publishedDocuments);
+  const publishedModels = entries.filter((item) => item.publishedDocuments?.length);
+  const matchingPublishedModels = publishedModels.filter((item) =>
+    normalize([item.brand, item.model, item.manufacturerReference, ...(item.searchAliases || [])].join(" ")).includes(normalize(query)));
+  const category = CATEGORIES.find((item) => item.id === type);
+  // Une entrée PAC/clim ne rejoint une unité que si sa position est renseignée.
+  const categoryEntries = entries.filter((item) => item.type === type ||
+    (category?.catalogType === item.type && item.unitPosition === type.split("_").at(-1)));
+  const names = [...(CATEGORY_BRANDS[type] || [])];
+  for (const item of categoryEntries) {
+    if (item.brand && !names.some((name) => brandKey(name) === brandKey(item.brand))) names.push(item.brand);
+  }
+  const brands = names.map((name) => ({ name, count: categoryEntries.filter((item) => brandKey(item.brand) === brandKey(name)).length }));
+  const matchingBrands = brands.filter(({ name }) =>
+    normalize(name).includes(normalize(query)) ||
+    categoryEntries.some((item) => brandKey(item.brand) === brandKey(name) &&
+      normalize([item.brand, item.model, item.variant, item.manufacturerReference, ...(item.searchAliases || [])].join(" ")).includes(normalize(query))));
+  const brandModels = categoryEntries.filter((item) => brandKey(item.brand) === brandKey(brand));
+  const families = catalogModelFamilies(brandModels);
+  const commonNotices = model ? sharedNoticeGroups(brandModels).filter(notice => notice.models.some(item => normalize(item.manufacturerReference) === normalize(model.manufacturerReference))) : [];
+  const models = brandModels.filter((item) => (!family || normalize(catalogModelFamily(item)) === normalize(family))
+    && (!normalize(query) || normalize([item.brand, item.model, item.variant, item.manufacturerReference, ...(item.searchAliases || [])].join(" ")).includes(normalize(query))));
+
+  function clearModel({ preserveQuestion = false } = {}) {
+    documentRequest.current += 1; aiRequest.current += 1;
+    selectedModel.current = null;
+    setModel(null); setDocuments([]); setSupport(null); setDocumentsBusy(false); setDocumentsError("");
+    setPreviewDocument(null); setPreviewBusyId(null); if (!preserveQuestion) setQuestion(""); setAnswer(""); setAnswerSource(""); setAnswerSources([]); setAnswerCitations([]); setWebFallbackAvailable(false); setBusy(false); setError("");
+  }
+  function toCategory() { clearModel({ preserveQuestion: true }); setType(""); setBrand(""); setQuery(""); setStep("category"); }
+  function toBrands() { clearModel({ preserveQuestion: true }); setBrand(""); setFamily(""); setQuery(""); setManualModel(""); setManualReference(""); setStep("brand"); }
+  function toModels() { clearModel(); setStep(modelReturnStep); }
+  function toAssistantPicker() { clearModel({ preserveQuestion: true }); setQuery(""); setStep("assistant-picker"); }
+
+  async function selectModel(item, fromAssistant = false, returnStep = "models") {
+    clearModel({ preserveQuestion: true });
+    const request = ++documentRequest.current;
+    setModelReturnStep(returnStep);
+    selectedModel.current = item;
+    setAssistantOrigin(fromAssistant); setModel(item); setStep(fromAssistant ? "assistant" : "model");
+    if (item.publishedDocuments) {
+      setDocuments(item.publishedDocuments);
+    }
+    if (item.hotlinePhone) setSupport({ hotline: { label: "Hotline", phone: item.hotlinePhone } });
+    if (!item.equipmentId) return;
+    setDocumentsBusy(true);
+    try {
+      const library = await getEquipmentDocumentLibrary(item.equipmentId);
+      if (request === documentRequest.current) {
+        const indexedDocuments = Array.isArray(library?.documents) ? library.documents : [];
+        setDocuments([...indexedDocuments, ...(item.publishedDocuments || [])]);
+        setSupport(item.hotlinePhone ? { ...(library?.support || {}), hotline: { label: "Hotline", phone: item.hotlinePhone } } : library?.support ?? null);
+      }
+    } catch (loadError) {
+      if (request === documentRequest.current) {
+        console.error("Chargement des documents impossible :", loadError);
+        setDocumentsError("La documentation est momentanément indisponible.");
+      }
+    } finally { if (request === documentRequest.current) setDocumentsBusy(false); }
+  }
+
+  async function openDocumentPreview(document) {
+    if (previewBusyId) return;
+    setDocumentsError("");
+    if (document.storage !== "private" && document.storage !== "platform-private") {
+      setPreviewDocument(document);
+      return;
+    }
+
+    setPreviewBusyId(document.documentId);
+    try {
+      if (!session?.access_token) throw new Error("Connecte-toi pour consulter ce document.");
+      const endpoint = document.storage === "platform-private"
+        ? `/api/platform-catalog-documents?id=${encodeURIComponent(document.documentId)}`
+        : `/api/technical-document?pathname=${encodeURIComponent(new URL(document.documentUrl).pathname.slice(1))}`;
+      const blob = document.storage === "platform-private"
+        ? await loadPlatformPdf(endpoint, session.access_token)
+        : await (async () => {
+      const response = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        signal: AbortSignal.timeout(45_000),
+      });
+      if (!response.ok) {
+        const problem = await response.json().catch(() => null);
+        throw new Error(problem?.error || `Ouverture impossible (HTTP ${response.status}).`);
+      }
+      if (!response.headers.get("content-type")?.includes("application/pdf")) {
+        throw new Error("Le serveur n’a pas renvoyé un PDF.");
+      }
+      return await response.blob();
+        })();
+      if (!blob.size) throw new Error("Le PDF est vide.");
+      setPreviewDocument({ ...document, documentUrl: URL.createObjectURL(blob) });
+    } catch (previewError) {
+      setDocumentsError(previewError.name === "TimeoutError" ? "L’ouverture du PDF a dépassé 45 secondes. Réessaie." : previewError.message || "Le document est momentanément indisponible.");
+    } finally {
+      setPreviewBusyId(null);
+    }
+  }
+
+  async function askShiba(event, forcedSource = "", forcedQuestion = "") {
+    event.preventDefault();
+    const requestQuestion = (forcedQuestion || question).trim();
+    if (!requestQuestion || !model || documentsBusy || busy) return;
+    const selectedSource = forcedSource || searchSource;
+    if (selectedSource === "documents" && !indexedDocumentCount) {
+      setError("Ce modèle n’a pas encore de document indexé pour Shiba. Choisissez la recherche Web.");
+      return;
+    }
+    const useDocumentation = selectedSource === "documents";
+    const request = ++aiRequest.current;
+    setBusy(true); setError(""); setAnswer(""); setAnswerSources([]); setAnswerCitations([]); setAnswerSource(""); setWebFallbackAvailable(false);
+    try {
+      const response = await fetch(useDocumentation ? "/api/ai" : "/api/ai-web", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+        body: JSON.stringify(useDocumentation
+          ? { equipmentId: model.equipmentId, platformDocumentIds: (model.publishedDocuments || [])
+            .filter((document) => document.ragStatus === "ready").map((document) => document.documentId), question: requestQuestion }
+          : { brand: model.brand, model: model.model, reference: model.manufacturerReference, category: category?.label || model.type, question: requestQuestion }),
+      });
+      const result = await response.json();
+      refreshShibaUsage();
+      if (result?.code === "SHIBA_QUOTA_REACHED") openShibaRecharge(result.usage, true);
+      if (!response.ok || !result?.ok) throw new Error(result?.message || result?.error || "Réponse indisponible.");
+      if (request === aiRequest.current) {
+        setAnswer(result.answer || "Aucune réponse reçue.");
+        setAnswerSource(useDocumentation ? "documents" : "web");
+        setAnswerSources(Array.isArray(result.sources) ? result.sources : []);
+        setAnswerCitations(Array.isArray(result.citations) ? result.citations : []);
+        setWebFallbackAvailable(useDocumentation && result.verification === "insufficient_evidence");
+      }
+    } catch (requestError) {
+      if (request === aiRequest.current) setError(requestError.message || "Réponse indisponible.");
+    } finally { if (request === aiRequest.current) setBusy(false); }
+  }
+
+  function renderMarkdownInline(value, keyPrefix) {
+    const tokenPattern = /(\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|\*\*(.+?)\*\*|`([^`]+)`)/g;
+    const nodes = [];
+    let cursor = 0;
+    let match;
+    while ((match = tokenPattern.exec(value))) {
+      if (match.index > cursor) nodes.push(value.slice(cursor, match.index));
+      if (match[2] && match[3]) {
+        nodes.push(<a key={`${keyPrefix}-${match.index}`} href={match[3]} target="_blank" rel="noopener noreferrer">{match[2]}</a>);
+      } else if (match[4]) {
+        nodes.push(<strong key={`${keyPrefix}-${match.index}`}>{match[4]}</strong>);
+      } else if (match[5]) {
+        nodes.push(<code key={`${keyPrefix}-${match.index}`}>{match[5]}</code>);
+      }
+      cursor = tokenPattern.lastIndex;
+    }
+    if (cursor < value.length) nodes.push(value.slice(cursor));
+    return nodes;
+  }
+
+  function renderWebAnswer() {
+    let markdown = answer;
+    const citations = answerCitations.filter((item) => item.start >= 0 && item.end <= answer.length && item.start < item.end)
+      .sort((left, right) => right.start - left.start);
+    for (const item of citations) {
+      const citedText = answer.slice(item.start, item.end).replace(/\[|\]/g, "");
+      const safeUrl = String(item.url || "").replace(/[()\s]/g, (character) => encodeURIComponent(character));
+      if (/^https?:\/\//i.test(safeUrl)) {
+        markdown = `${markdown.slice(0, item.start)}[${citedText}](${safeUrl})${markdown.slice(item.end)}`;
+      }
+    }
+
+    return markdown.split(/\n{2,}/).filter((block) => block.trim()).map((block, blockIndex) => {
+      const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
+      if (lines.length === 1) {
+        const heading = lines[0].match(/^#{1,3}\s+(.+)$/);
+        if (heading) return <h3 key={`heading-${blockIndex}`}>{renderMarkdownInline(heading[1], `heading-${blockIndex}`)}</h3>;
+      }
+      const listMatch = lines[0]?.match(/^\s*(?:[-*•]|\d+[.)])\s+/);
+      if (listMatch && lines.every((line) => /^\s*(?:[-*•]|\d+[.)])\s+/.test(line))) {
+        const ordered = /^\s*\d/.test(lines[0]);
+        const List = ordered ? "ol" : "ul";
+        return <List key={`list-${blockIndex}`}>{lines.map((line, lineIndex) => <li key={lineIndex}>{renderMarkdownInline(line.replace(/^\s*(?:[-*•]|\d+[.)])\s+/, ""), `list-${blockIndex}-${lineIndex}`)}</li>)}</List>;
+      }
+      return <p key={`paragraph-${blockIndex}`}>{renderMarkdownInline(lines.join(" "), `paragraph-${blockIndex}`)}</p>;
+    });
+  }
+
+  return (
+    <div className="technical-catalog-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section className="technical-catalog-modal" role="dialog" aria-modal="true" aria-labelledby="technical-catalog-title" onMouseDown={(event) => event.stopPropagation()}>
+        <header className="technical-catalog-header">
+          <div className="technical-catalog-header-brand"><img src={shibaTechnicien} alt="" /><div><span className="technical-catalog-kicker">OUTIL TECHNIQUE</span><h2 id="technical-catalog-title">{step === "assistant-picker" ? "Posez une question à Shiba" : "Catalogue technique"}</h2></div></div>
+          <button type="button" className="technical-catalog-close" onClick={onClose} aria-label="Fermer">×</button>
+        </header>
+        <div className="technical-catalog-content">
+          {step === "category" && <><h3>Choisissez un équipement</h3><div className="technical-catalog-category-grid">
+            {CATEGORIES.map((item) => <button key={item.id} type="button" className="technical-catalog-category" onClick={() => { setType(item.id); setStep("brand"); }}><strong>{item.label}</strong><span>Voir les marques ›</span></button>)}
+          </div>
+            <div className="technical-catalog-published-entry">
+              <button type="button" className="technical-catalog-card" disabled={!publishedModels.length} onClick={() => { setQuery(""); setStep("published"); }}>
+                <strong>Documents ajoutés depuis l’administration</strong>
+                <span>{publishedModels.length} modèle{publishedModels.length > 1 ? "s" : ""} · {publishedDocuments.length} document{publishedDocuments.length > 1 ? "s" : ""} →</span>
+              </button>
+              {publishedDocumentsBusy && <p role="status">Chargement des documents publiés…</p>}
+              {publishedDocumentsError && <p role="alert" className="technical-catalog-error">{publishedDocumentsError} <button type="button" className="technical-catalog-back" onClick={() => { setPublishedDocumentsError(""); setPublishedDocumentsBusy(true); setPublishedDocumentsReload((value) => value + 1); }}>Réessayer</button></p>}
+            </div>
+          </>}
+          {step === "published" && <>
+            <button type="button" className="technical-catalog-back" onClick={toCategory}>← Retour aux catégories</button>
+            <h3>Documents ajoutés depuis l’administration</h3>
+            <label className="technical-catalog-search">Rechercher un fabricant ou un modèle
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex. ALFEA DUO, Airwell, 023103" autoFocus />
+            </label>
+            {matchingPublishedModels.length ? <div className="technical-catalog-list">
+              {matchingPublishedModels.map((item) => <button key={`${item.brand}-${item.manufacturerReference}-${item.type}`} type="button" className="technical-catalog-row" onClick={() => { setType(item.type); setBrand(item.brand); setQuery(""); selectModel(item, false, "published"); }}>
+                  <strong>{item.brand} · {item.model}<small>{item.publishedDocuments.length} document{item.publishedDocuments.length > 1 ? "s" : ""} · {CATEGORIES.find((category) => category.id === item.type)?.label || item.type}</small></strong>
+                  <span aria-hidden="true">›</span>
+                </button>)}
+            </div> : <p className="technical-catalog-empty">Aucun modèle ne correspond à cette recherche.</p>}
+          </>}
+          {step === "assistant-picker" && <section className="technical-catalog-pick-assistant" aria-label="Choisir le modèle pour Shiba">
+            <button type="button" className="technical-catalog-back" onClick={toCategory}>← Parcourir le catalogue</button>
+            <div className="technical-catalog-assistant-heading"><img src={shibaTechnicien} alt="" /><p>Choisissez un modèle. Shiba consulte ses documents ou recherche des sources sur le Web.</p></div>
+            <label className="technical-catalog-search" htmlFor="technical-catalog-picker-question">Votre question<textarea id="technical-catalog-picker-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ex. Que signifie le code défaut F28 ?" rows={3} /></label>
+            <label className="technical-catalog-search" htmlFor="technical-catalog-picker-model">Rechercher un modèle<input id="technical-catalog-picker-model" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Marque, modèle ou référence" /></label>
+            <div className="technical-catalog-list">{entries.filter((item) => (item.equipmentId || item.publishedDocuments) && (!normalize(query) || normalize([item.brand, item.model, item.variant, item.manufacturerReference, ...(item.searchAliases || [])].join(" ")).includes(normalize(query)))).map((item) => <button key={item.equipmentId || `${item.brand}-${item.model}-${item.type}`} type="button" className="technical-catalog-row" onClick={() => selectModel(item, true)}><strong>{item.brand} · {item.model}{item.variant ? ` · ${item.variant}` : ""}<small>{item.manufacturerReference}</small></strong><span aria-hidden="true">›</span></button>)}</div>
+            {!entries.length && <p className="technical-catalog-empty">Les documents constructeur seront ajoutés progressivement.</p>}
+            <button type="button" className="technical-catalog-back" onClick={() => { clearModel({ preserveQuestion: true }); setStep("category"); }}>Votre modèle est absent ? Choisir sa catégorie →</button>
+          </section>}
+          {step === "brand" && <><div className="technical-catalog-band"><button type="button" onClick={toCategory} aria-label="Retour aux catégories">‹</button><h3>{category?.label}</h3></div>
+            <label className="technical-catalog-search" htmlFor="technical-catalog-category-search">Rechercher une marque ou un modèle
+              <input id="technical-catalog-category-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Marque, modèle ou référence…" autoFocus />
+            </label>
+            {matchingBrands.length === 0 ? <p className="technical-catalog-empty">{query ? "Aucune marque ni aucun modèle trouvé." : "Les marques de cette catégorie seront ajoutées progressivement."}</p> : <div className="technical-catalog-list">
+              {matchingBrands.sort((a, b) => a.name.localeCompare(b.name, "fr")).map(({ name, count }) => <button key={name} type="button" className="technical-catalog-row" onClick={() => { setBrand(name); setStep("models"); }}><strong>{name}</strong><span>{count ? `${count} modèle${count > 1 ? "s" : ""}` : "À compléter"} <span aria-hidden="true">›</span></span></button>)}
+            </div>}
+          </>}
+          {step === "models" && <><div className="technical-catalog-band"><button type="button" onClick={toBrands} aria-label="Retour aux marques">‹</button><h3>{brand}</h3></div>
+            <div className="technical-catalog-model-layout">
+              <div className="technical-catalog-model-main">
+            <label className="technical-catalog-search">Rechercher un modèle ou une référence<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nom du modèle, référence…" autoFocus /></label>
+            {families.length > 0 && <nav className="technical-catalog-families" aria-label="Modèles du constructeur">
+              <button type="button" aria-pressed={!family} onClick={() => { setFamily(""); setQuery(""); }}>Tous les modèles</button>
+              {families.map((item) => <button key={item.key} type="button" aria-pressed={normalize(family) === normalize(item.name)} onClick={() => { setFamily(item.name); setQuery(""); }}>{item.name} <small>({item.count})</small></button>)}
+            </nav>}
+            {models.length === 0 ? <p className="technical-catalog-empty">{query ? "Aucun modèle ne correspond à cette recherche." : "Les modèles seront ajoutés progressivement. La marque est déjà référencée."}</p> : <div className="technical-catalog-list">
+              {models.map((item) => <button key={item.equipmentId || item.manufacturerReference || `${item.brand}-${item.model}`} type="button" className="technical-catalog-row" onClick={() => selectModel(item)}><strong>{item.modelFamily ? item.manufacturerReference : item.model}{!item.modelFamily && item.variant ? ` · ${item.variant}` : ""}<small>{item.modelFamily || item.manufacturerReference || ""}</small></strong><span aria-hidden="true">›</span></button>)}
+            </div>}
+            <form className="technical-catalog-manual" onSubmit={(event) => { event.preventDefault(); if (!manualModel.trim()) return; selectModel({ brand, model: manualModel.trim(), manufacturerReference: manualReference.trim(), type }); }}>
+              <strong>Modèle absent du catalogue ?</strong>
+              <label>Nom du modèle<input value={manualModel} onChange={(event) => setManualModel(event.target.value)} maxLength={160} required placeholder="Ex. VMC modèle exact" /></label>
+              <label>Référence (facultative)<input value={manualReference} onChange={(event) => setManualReference(event.target.value)} maxLength={100} placeholder="Référence de la plaque signalétique" /></label>
+              <button type="submit">Ouvrir la fiche et demander à Shiba →</button>
+            </form>
+              </div>
+            </div>
+          </>}
+          {model && ["model", "documents", "assistant"].includes(step) && <>
+            <div className="technical-catalog-model-heading"><div><span className="technical-catalog-kicker">{model.brand}</span><h3>{model.model}{model.variant ? ` · ${model.variant}` : ""}</h3><p>Réf. produit : {model.manufacturerReference || "non renseignée"}</p>{!!model.searchAliases?.length && <p>Autres références couvertes : {model.searchAliases.join(", ")}</p>}{support?.hotline?.phone && <p>{support.hotline.label || "Assistance technique"} : <a href={`tel:${support.hotline.phone.replace(/\s+/g, "")}`}>{support.hotline.phone}</a></p>}</div>{step === "model" && <button type="button" className="technical-catalog-back" onClick={assistantOrigin ? toAssistantPicker : toModels}>← {assistantOrigin ? "Choisir un autre modèle" : modelReturnStep === "published" ? "Documents publiés" : "Tous les modèles"}</button>}</div>
+            {step === "model" && <>
+              <section className="technical-catalog-shiba-help" aria-label="Interroger Shiba">
+                <img className="technical-catalog-shiba-research" src={shibaRecherche} alt="Shiba avec un crayon et un cahier" />
+                <div className="technical-catalog-shiba-help-content">
+                  <h4>Une information vous manque ? Interrogez Shiba</h4>
+                  <p>Notice, référence, pièce détachée ou question technique : Shiba vous aide pour ce modèle.</p>
+                  <div className="technical-catalog-shiba-help-actions">
+                    <button type="button" onClick={() => { setSearchSource("web"); setStep("assistant"); }}>Rechercher sur le Web<span>Notices et références avec sources</span></button>
+                    <button type="button" onClick={() => { setSearchSource(indexedDocumentCount ? "documents" : "web"); setStep("assistant"); }}>Poser une question technique<span>{indexedDocumentCount ? "Avec les documents du modèle" : "Recherche avec sources sur le Web"}</span></button>
+                  </div>
+                </div>
+                <img className="technical-catalog-shiba-technician" src={shibaTechnicien} alt="Shiba avec une clé à molette" />
+              </section>
+              {documentsBusy && <p role="status">Vérification de la documentation…</p>}
+              {documentsError && <p role="alert" className="technical-catalog-error">{documentsError}</p>}
+              {!documentsBusy && !documentsError && !documents.length && <p className="technical-catalog-empty">Aucun document constructeur enregistré pour ce modèle. Shiba peut rechercher des sources sur le Web.</p>}
+              {!documentsBusy && <div className="technical-catalog-model-layout">
+                {!!documents.length && <aside className="technical-catalog-notice-panel" aria-label="Notices du modèle sélectionné">
+                  <h4>Notices du modèle</h4>
+                  <p>{model.manufacturerReference || model.model}</p>
+                  {documents.map(document => {
+                    const common = commonNotices.find(notice => notice.document.sha256 === document.sha256 && notice.document.sizeBytes === document.sizeBytes);
+                    return <article key={document.documentId}>
+                      <strong>{document.title}</strong>
+                      <button type="button" disabled={Boolean(previewBusyId)} onClick={() => openDocumentPreview(document)}>{previewBusyId === document.documentId ? "Ouverture…" : "Voir la notice"}</button>
+                      {common && <details><summary>Commune à {common.models.length} modèles</summary><ul>{common.models.map(item => <li key={item.manufacturerReference}>{item.manufacturerReference || item.model}</li>)}</ul></details>}
+                    </article>;
+                  })}
+                </aside>}
+                <div className="technical-catalog-model-main"><div className="technical-catalog-grid">
+                {onAddEquipment && <button type="button" className="technical-catalog-card" disabled={!canAddEquipment} onClick={() => onAddEquipment(model)}><strong>Ajouter un équipement de ce modèle</strong><span>{canAddEquipment ? "Préremplir le formulaire, puis vérifier et confirmer →" : "Ajout indisponible avec votre accès actuel"}</span></button>}
+                </div></div>
+              </div>}
+            </>}
+            {step === "documents" && <section aria-label={`Documentation ${model.brand} ${model.model}`}>
+              <button type="button" className="technical-catalog-back" onClick={() => setStep("model")}>← Retour au modèle</button><h4>Documents constructeur</h4>
+              {documentsError && <p role="alert" className="technical-catalog-error">{documentsError}</p>}
+              <div className="technical-catalog-document-list">{documents.map((item) => <article key={item.documentId}>
+                <div><strong>{item.title}</strong><small>{item.sourceName || model.brand} · {item.documentCode || item.manufacturerReference || model.manufacturerReference}{item.pageCount ? ` · ${item.pageCount} pages` : ""}</small></div>
+                <button type="button" disabled={Boolean(previewBusyId)} onClick={() => openDocumentPreview(item)}>{previewBusyId === item.documentId ? "Ouverture…" : "Consulter"}</button>
+              </article>)}</div>
+            </section>}
+            {step === "assistant" && <section className="technical-catalog-assistant" aria-label="Shiba">
+              <button type="button" className="technical-catalog-back" onClick={assistantOrigin ? toAssistantPicker : () => setStep("model")}>← {assistantOrigin ? "Choisir un autre modèle" : "Retour au modèle"}</button>
+              <div className="technical-catalog-assistant-heading"><img src={shibaTechnicien} alt="" /><div><h4>Shiba</h4><p>Posez une question précise. Vérifiez les références et les sources du modèle.</p></div></div>
+              <ShibaUsage session={session} />
+              {documentsBusy && <p role="status">Vérification de la documentation…</p>}
+              {documentsError && <p role="alert" className="technical-catalog-error">{documentsError}</p>}
+              {!documentsBusy && !indexedDocumentCount && <p className="technical-catalog-empty">Aucun document de ce modèle n'est encore prêt pour Shiba. La recherche Web reste disponible avec ses sources.</p>}
+              <form onSubmit={askShiba}>
+                <label htmlFor="technical-catalog-source">Source de la réponse</label>
+                <select id="technical-catalog-source" value={searchSource} onChange={(event) => { setSearchSource(event.target.value); setAnswer(""); setError(""); }}>
+                  <option value="documents">Documents du modèle indexés pour Shiba</option>
+                  <option value="web">Recherche Web avec sources</option>
+                </select>
+                {searchSource === "documents" && !documentsBusy && !indexedDocumentCount && <p>Ce modèle n’a pas encore de document indexé pour Shiba. Choisissez le Web pour poser la question.</p>}
+                <label htmlFor="technical-catalog-question">Votre question</label><textarea id="technical-catalog-question" value={question} onChange={(event) => { setQuestion(event.target.value); setAnswer(""); setError(""); setAnswerSources([]); setAnswerCitations([]); }} placeholder="Ex. Quelle est la référence de cette pièce ?" rows={4} autoFocus /><button type="submit" disabled={!question.trim() || documentsBusy || busy}>{busy ? "Recherche…" : "Interroger Shiba"}</button>
+              </form>
+              {error && <p role="alert" className="technical-catalog-error">{error}</p>}
+              {answer && <div className="technical-catalog-answer" aria-live="polite"><div className="technical-catalog-answer-heading"><img src={shibaTechnicien} alt="" /><strong>Réponse de Shiba {answerSource === "web" ? "· Recherche Web" : "· Documentation constructeur"}</strong></div>{answerSource === "web" ? <div className="technical-catalog-answer-body">{renderWebAnswer()}</div> : <div className="technical-catalog-answer-body"><ReactMarkdown>{answer}</ReactMarkdown></div>}{answerSource === "documents" && !!indexedDocumentCount && <div className="technical-catalog-sources"><strong>Vérifier dans les documents indexés</strong><ul>{documents.filter((item) => item.storage !== "platform-private" || item.ragStatus === "ready").map((item) => <li key={item.documentId}><button type="button" disabled={Boolean(previewBusyId)} onClick={() => openDocumentPreview(item)}>{previewBusyId === item.documentId ? "Ouverture…" : item.title}</button></li>)}</ul><small>Vérifiez la référence et la variante exacte avant toute intervention.</small></div>}{answerSource === "web" && !!answerSources.length && <div className="technical-catalog-sources"><strong>Sources consultées</strong><ul>{answerSources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer">{source.title || source.url}</a></li>)}</ul><small>Vérifiez les informations techniques dans la notice du modèle exact.</small></div>}</div>}
+              {webFallbackAvailable && <button type="button" className="technical-catalog-back" disabled={busy} onClick={(event) => askShiba(event, "web")}>Rechercher aussi sur le Web avec des sources →</button>}
+            </section>}
+          </>}
+        </div>
+        <footer className="technical-catalog-footer">Cette recherche ne crée aucun équipement.</footer>
+      </section>
+      <DocumentPreviewModal open={Boolean(previewDocument)} onOpenChange={(isOpen) => { if (!isOpen) setPreviewDocument(null); }} eyebrow="DOCUMENT CONSTRUCTEUR" title={previewDocument?.title || "Document technique"} subtitle={`${previewDocument?.sourceName || model?.brand || "Constructeur"} · ${model?.model || ""}`} documentUrl={previewDocument?.documentUrl || ""} fileName={`${previewDocument?.documentCode || previewDocument?.documentId || "document"}.pdf`} historicalPrices={Boolean(previewDocument?.notes?.includes("Prix affichés historiques"))} />
+    </div>
+  );
+}

@@ -1,0 +1,254 @@
+[
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-1-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 1,
+    "section": "Document technique - page 1",
+    "topic": "page-1",
+    "text": "N NO OT TI IC CE E D D’ ’I IN NS ST TA AL LL LA AT TI IO ON N \nHYDROMOTRIX VENTOUSE 23 - 32 kW\nContrôle de flamme par ionisation \nECO RADIO SYSTEM® \nATTENTION! NOUVEAU CONDITIONNEMENT\nT E R M I N A L V E N T O U S E N O N I N C L U S"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-2-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 2,
+    "section": "Document technique - page 2",
+    "topic": "page-2",
+    "text": "INSTALLATION\nPages\n1 - Eléments dimensionnels . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4\n2 - Implantation de la microventouse à l’aide des gabarits A et B\na) Sortie arrière . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4\nb) Sortie droite ou gauche . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4\n3 - Scellement du tube extérieur Ø100 (air)\na) Mettre à dimension la microventouse . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5\nb) Positionner le tube extérieur Ø100 (air). . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6\nc) Respecter le centrage du tube extérieur Ø100 (air) . . . . . . . . . . . . . . . . . . . . . . . . . . . 6\nd) Sceller le tube extérieur Ø100 (air) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6\n4 - Accrochage de la chaudière\na) Démonter le carénage . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7\nb) Démonter le support ventilateur. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7\nc) Accrocher la chaudière . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-2-chunk-2",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 2,
+    "section": "Document technique - page 2",
+    "topic": "page-2",
+    "text": ". . . . . . . . . . . . . . . . . . . . . . . . . . . 7\nc) Accrocher la chaudière . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7\nd) Démonter la plaque de transport . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8\n5 - Raccordement des fumées\na) Vue d’ensemble des raccordements des conduits concentriques . . . . . . . . . . . . . . . . 8\n6 - Raccordement des accessoires hydrauliques et gaz . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9\n7 - Raccordement du circuit électrique . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9\nMISE EN SERVICE\n1 - Avant de mettre en eau. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10\n2 - Remplissage . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10\n3 - Vérifier les étanchéités gaz et eau . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10\n4 - Annuler le mode “installation” et passer au mode “marche normal” . . . . . . . . . . . . . . . . 10\n5 - Configuration avec un ballon externe . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10\n6 - Initialisation de la communication radio . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-2-chunk-3",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 2,
+    "section": "Document technique - page 2",
+    "topic": "page-2",
+    "text": ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10\n6 - Initialisation de la communication radio . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11\n7 - Mise en place du satellite . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11\n8 - Fixation du satellite . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12\n9 - Eau chaude sanitaire . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12\nSCHEMA ELECTRIQUE\n1 - Schéma de câblage général. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13\nCARACTERISTIQUES TECHNIQUES 13\nCHANGEMENT DE GAZ 14\nPROTECTION CONTRE LE GEL 14\nQUELQUES CONSEILS 14\nRACCORDEMENT D’UNE RALLONGE HORIZONTALE 14\nNOMENCLATURE 15\nAUTRES CONFIGURATIONS 15\nANOMALIE : AIDE AU DIAGNOSTIC 16"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-3-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 3,
+    "section": "Document technique - page 3",
+    "topic": "page-3",
+    "text": "Attention ! Vérifier avant l’installation de l’appareil les dispositions relatives aux conditions d’installation et\npuissances maximales autorisées.\n- Règlement de sécurité contre l’incendie et la panique dans les établissements recevant du public.\na) Prescriptions générales \nPour tous les appareils : \n- Articles GZ - Installations aux gaz combustibles et hydrocarbures.\nEnsuite suivant l’usage : \n- Articles GH - Chauffage, ventilation, réfrigération, conditionnement d’air, production de vapeur et d’eau\nchaude sanitaire. \n- Articles GC - Installations des appareils de cuisson destinés à la restauration . \nb) Prescriptions particulières pour chaque type d’établissements recevant du public (hôpitaux, magasins...) \nBoue \nIl est indispensable d'effectuer un rinçage et un nettoyage de l'installation avant la mise en service de la\nchaudière surtout si l'installation est ancienne. \nChauffage par le sol \nToute installation de plancher chauffant doit être protégée par un additif contre la corrosion, la formation de\ndépôts et la contamination bactérienne. \nTartre \nSi la chaudière est installée dans une région où l'eau est \"dure\" ou \"très dure\", protéger le circuit sanitaire des\nchaudières mixtes des effets néfastes du calcaire : Polyphosphates ou Résines + sel.\nRappel :\n1°F = 10 grammes de calcaire par m3 d'eau\n24°F = 240 grammes de calcaire par m3 d'eau\n- Eau douce Moins de 12° F"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-3-chunk-2",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 3,
+    "section": "Document technique - page 3",
+    "topic": "page-3",
+    "text": "s néfastes du calcaire : Polyphosphates ou Résines + sel.\nRappel :\n1°F = 10 grammes de calcaire par m3 d'eau\n24°F = 240 grammes de calcaire par m3 d'eau\n- Eau douce Moins de 12° F\n- Eau dure de 13° à 24° F\n- Eau très dure Plus de 25° F \nH \n\u0000\u0002\n\u0000\u0003\n\u0004\u0005\u0006\u0004 \b\n\u0004\u0005\u0006\u0004 \b \nSortie des produits de combustion :\nObstacles \nNe pas placer la sortie de la microventouse à moins de 0,50 m de tout obstacle\nimportant (mur perpendiculaire, sous pente, sol, balcon...). \nOuvrant / ventilation \nRespecter impérativement les 2 distances : - d1 = mini 0,40 m \n- d2 = mini 0,60 m \nLes distances d1 , d2 s’entendent de l’axe de l’orifice d’évacuation des gaz brûlés\nau point le plus proche du nu extérieur de toute baie ouvrante ou de tout orifice\nd’entrée d’air de ventilation. \nVoie publique ou privée \nSi la sortie de la microventouse débouche sur une voie publique ou privée, à une\nhauteur H inférieure à 1,80 m un déflecteur inamovible donne aux gaz évacués\nune direction sensiblement parallèle au mur. \nL a c h a u d i è r e d o i t ê t r e i n s t a l l é e s u i v a n t l e s r è g l e s e n v i g u e u r : \n- Arrêté du 2 août 1977 et arrêtés modificatifs.\n- Norme P45 - 204 (DTU 61.1) - NFC 15.100 Installations électriques basse tension\n- Règlement sanitaire départemental - NFC 73.600 Installations électriques mise à la terre"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-3-chunk-3",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 3,
+    "section": "Document technique - page 3",
+    "topic": "page-3",
+    "text": "atifs.\n- Norme P45 - 204 (DTU 61.1) - NFC 15.100 Installations électriques basse tension\n- Règlement sanitaire départemental - NFC 73.600 Installations électriques mise à la terre\nPar application de l’article 25 de l’arrêté du 2 août 1977 modifié et de l’article 1 de l’arrêté modificatif du 5\nfévrier 1999 l’installateur est tenu d’établir des certificats de conformité approuvés par les ministres chargés de\nla construction et de la sécurité du gaz :\n• de modèles distincts (modèles 1, 2 ou 3) après réalisation d’une installation gaz neuve.\n• de « modèle 4 » après remplacement d’une chaudière par une nouvelle dans l’axe et l’emprise de l’appareil antérieur. \nA LIRE EN PREMIER"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-4-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 4,
+    "section": "Document technique - page 4",
+    "topic": "page-4",
+    "text": "2 - Implantation de la microventouse (Accessoire Ref : F3AA40891) à l’aide des gabarits A et B\na) Sortie arrière \n•Choisir l’emplacement de la chaudière.\n•Positionner le gabarit A sur le mur choisi à l’aide des pastilles\nautocollantes.\n•Respecter sa mise à niveau ainsi que les cotes mini définies\nsur le gabarit A. \ninfo : Tracer le haut de la chaudière pour faciliter son accrochage\n•Au travers du gabarit A pointer et percer les trous de la barre\nd’accrochage (oblong 18x9).\n•La sceller avec des fixations de Ø8 mm. Leur nombre et leur nature\ndépendent :\n- du matériau du support\n- du poids en charge de la chaudière\n•Pointer l’axe du trou de passage de la microventouse et percer à un\nØ110 mm.\n•Conserver le gabarit B , pour utilisation ultérieure. \nb) Sortie droite ou gauche (voir schémas 1 et 2 page 5)\n•Choisir l’emplacement de la chaudière.\n•Positionner le gabarit A sur le mur destiné à recevoir la chaudière à\nl’aide des pastilles autocollantes. \nINSTALLATION\n1 - Eléments dimensionnels \nGABARIT A \nGABARIT B\nAccessoires de pose \n\u0000\n\u0003\n\u0004 \b\n\u0002 \u0005\n\u0006\n\u0007 \nModèles A B C D E F G H I J K Ø Poids en charge\nkg\nHYDROMOTRIX 23 kW 38 38 305 225 982 757 480 230 305 175 445 100 95\nHYDROMOTRIX 32 kW 73 73 290 225 982 757 550 230 350 200 465 100 111 \nVUE DE FACE VUE DE DESSUS \n9 mm\n9 mm \n4 \nAttention ! L’inclinaison de la microventouse doit impérativement respecter une pente descendante vers"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-4-chunk-2",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 4,
+    "section": "Document technique - page 4",
+    "topic": "page-4",
+    "text": "82 757 550 230 350 200 465 100 111 \nVUE DE FACE VUE DE DESSUS \n9 mm\n9 mm \n4 \nAttention ! L’inclinaison de la microventouse doit impérativement respecter une pente descendante vers\nl’extérieur de 2 %. \nAttention ! Le terminal + coude F3AA40891, doit être\ncommandé séparément.\nAutres configurations : voir pages 15."
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-5-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 5,
+    "section": "Document technique - page 5",
+    "topic": "page-5",
+    "text": "•Prolonger le trait de niveau, repéré, du gabarit A sur le mur où\ndoit sortir la microventouse.\n•Placer le gabarit B sur le trait de niveau et faire buter son petit\ncôté sur le mur où est collé le gabarit A .\n•Tracer le point de rencontre des axes F et G (voir schéma 2 ) à\nl’aide du gabarit B .\n•Conserver le gabarit B , pour utilisation ultérieure.\n•Percer à un Ø110 mm.\n•Au travers du gabarit A pointer et percer les trous de la barre\nd’accrochage (oblong 18x9).\n•La sceller avec des fixations de Ø8 mm. Leur nombre et leur\nnature dépendent :\n- du matériau du support\n- du poids en charge de la chaudière (voir chapitre 1 page 4) \n3 - Scellement du tube extérieur Ø100 (air)\na) Mettre à dimension la microventouse (Accessoire Ref : F3AA40891)\n• Mesurer précisément la profondeur du trou de passage de la microventouse : cote M\nAttention ! Le terminal F3AA40891 permet de traverser en sortie arrière un mur\nde 0,48 m d’épaisseur.\nSi cette longueur est insuffisante, utiliser les rallonges de 0,50 m ou 1 m (vendues séparément, voir\npage 15). \n•Démonter le tube Alu :\n- Tirer vers soi en tournant.\n- Lorsque les languettes s’engagent, tirer sur le tube en lui donnant de faibles mouvements de rotation alternés\ndroite et gauche.\n•Couper le tube extérieur Ø100 (air) à la cote A , la chute\ndu côté non expansé.\nCote A pour :\n- 23 kW -> • Sortie arrière = M + 175 mm"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-5-chunk-2",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 5,
+    "section": "Document technique - page 5",
+    "topic": "page-5",
+    "text": "nts de rotation alternés\ndroite et gauche.\n•Couper le tube extérieur Ø100 (air) à la cote A , la chute\ndu côté non expansé.\nCote A pour :\n- 23 kW -> • Sortie arrière = M + 175 mm \n• Sortie droite = M + X * + 120 mm \n• Sortie gauche = M + X * + 250 mm \n- 32 kW -> • Sortie arrière = M + 180 mm \n• Sortie droite = M + X * + 145 mm \n• Sortie gauche = M + X * + 295 mm\n* X : espace compris entre le mur et le carénage de la\nchaudière, pour une sortie droite ou gauche (voir\nschéma 1 ).\n•Retirer le centreur Inox du tube Alu Ø 60 mm.\n•Couper dans le tube Alu, une chute absolument\négale à la chute du tube extérieur Ø100 (air). \n\u0000\u0002\u0003\u0004\u0005 \nM\nA \n235 (23 kW)\n280 (32 kW) \nX\nM \n105 (23 kW)\n130 (32 kW) \n25 25 \nChaudière \n5 \nX\nX A\nB\nB\nA \nSchéma 1\nF\nG \nAxe de\nla Microventouse\nTrait de niveau \nGABARIT B\nSchéma 2 \nTube d’aluminium\nØ 60 mm\n15"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-6-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 6,
+    "section": "Document technique - page 6",
+    "topic": "page-6",
+    "text": "b) Positionner le tube extérieur Ø100 (air) dans son trou de passage : \n•Respecter la cote B déterminée par :\n- 23 kW -> • Sortie arrière = 145 mm \n• Sortie droite = X + 105 mm \n• Sortie gauche = X + 235 mm \n- 32 kW -> • Sortie arrière = 150 mm \n• Sortie droite = X + 130 mm \n• Sortie gauche = X + 280 mm\nc) Respecter le centrage du tube extérieur Ø100 (air) \nSortie arrière\n•Aligner le côté droit du gabarit B avec le côté droit de la\nbarre d’accrochage.\n•Centrer le tube extérieur Ø100 (air) dans le trou de passage du\nmur à l’aide du gabarit B posé sur la barre d’accrochage.\nSortie droite ou gauche\n• Mettre le gabarit B sur le trait de niveau en le fixant avec des\npointes, en butée contre le mur perpendiculaire.\n• Centrer le tube extérieur Ø100 (air) dans le trou de passage du\ntube. \nd) Sceller le tube extérieur Ø100 (air) \n•Respecter une pente de 0 à 2 % descendante vers l’extérieur .\n•Sceller le tube extérieur Ø100 (air) en s’assurant\nqu’il ne subisse aucune déformation. \nAprès scellement :\n1 - Remettre le centreur sur le tube Alu. \n2 - Exercer une pression sur les trois languettes\nInox. \n3 - Glisser le nez du terminal dans le tube\nextérieur Ø100 (air). \n4 - Fixer la rosace cache-éclats à l’aide d’un mastic\napproprié. \nB \nØ100 mm\nGABARIT B \n6 \n15 mm \n\u0000\n\u0000 \nA\nB\nB\nA \nSchéma 3\n1\n2\n2\n3 4\n1\n2\n3\n4"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-7-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 7,
+    "section": "Document technique - page 7",
+    "topic": "page-7",
+    "text": "4 - Accrochage de la chaudière\na) Démonter le carénage pour visualiser la mise en place de la\nchaudière sur la barre d’accrochage \n• Coucher la chaudière.\n•Desserrer, sans retirer, les 2 vis supérieures A de la barre\nde rigidité B .\n•Tirer et pousser légèrement la façade C et la sortir des 2\ntétons.\n•Dévisser les 4 vis A de la barre de rigidité B .\n•Tirer vers le haut la barre B .\n•Dévisser les 4 vis D des côtés K . \nb) Démonter le support ventilateur, pour faciliter la mise en\nplace de la chaudière sur sa barre d’accrochage \n•Retirer le flexible d’air F , du ventilateur en desserrant\nson collier.\n•Débrancher les 2 connecteurs J . \nAttention ! Ne pas enlever accidentellement le diaphragme à la sortie du ventilateur! \n•Retirer les vis V1 , V2 , V3 . \n•Enlever le support ventilateur. \nc) Accrocher la chaudière \n•Engager la traverse supérieure du châssis dans les deux\nlèvres de la barre d'accrochage.\n•La lever à 30mm au dessus du repère sur le mur et\nredescendre en la plaquant. \n7 \nD\nB\nA\nK\nK\nC\nD \nV1\nV2\nV3\nF\nJ\n1"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-8-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 8,
+    "section": "Document technique - page 8",
+    "topic": "page-8",
+    "text": "HYDROMOTRIX Ventouse 23 kW\n2 1\nSi le conduit concentrique est d’une\nlongueur supérieure à 2 mètres : \n• Enlever le diaphragme d’air 2 (3400).\n• Laisser impérativement le diaphragme\nd’air 1 (3700). \nHYDROMOTRIX Ventouse 32 kW\n1\nSi le conduit concentrique est d’une\nlongueur supérieure à 1 mètre : \n•Supprimer le diaphragme d’air 1 (3700). \n8 \nd) Démonter la plaque de transport \nFixée sur la chambre de combustion, la plaque doit être obligatoirement retirée :\n• Dévisser les 2 vis C . \n5 - Raccordement des fumées \n•Ebavurer minutieusement les tubes Alu et extérieur Ø100 (air) de la\nmicroventouse.\n•Enduire les tubes d’une graisse pour faciliter le montage.\n•Emboîter le coude (fourni, avec la microventouse F3AA40891) sur le tube du support ventilateur selon l’axe dans\nlequel on souhaite raccorder les conduits. \na) Vue d’ensemble des raccordements des conduits concentriques \nC C \nMicroventouse\noption\nSupport Ventilateur\nCapteur de fumée\nFlexible d’air\nOrientation des joints\nVentilateur\nEnduire les extrémités des tubes de graisse (sachet fourni)\nCoude fourni avec la Microventouse\nOrientation des joints\nEnduire les extrémités des tubes de graisse (sachet fourni) \nAttention ! Lors du remontage du support ventilateur vérifier que le joint torique\nsoit toujours en position dans sa gorge."
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-9-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 9,
+    "section": "Document technique - page 9",
+    "topic": "page-9",
+    "text": "9 \n6 - Raccordement des accessoires hydrauliques et gaz \nTous les accessoires (voir schéma ci-dessous) se trouvent dans le carton de la chaudière.\nIl est impératif de monter le dispositif de remplissage (le disconnecteur + le tube) avant de raccorder la chaudière\nà l’installation.\nPour les modèles « Chauffage seul », monter le bouchon 8/13 livré avec la chaudière dans le sachet d’accessoires, sur\nle raccord de la vanne à la place du disconnecteur. \nAttention ! le diamètre de canalisation gaz doit être calculé spécifiquement en fonction des caractéristiques\net des pertes de charge de l’installation.\nAttention ! Lorsque la chaudière est posée à un niveau inférieur à celui des radiateurs il y a lieu de prévoir un\nclapet antithermosiphon au départ de la chaudière. Il empêchera la circulation naturelle du fluide\npar différence de densité.\n7 - Raccordement du circuit électrique \nLa chaudière doit être raccordée à une prise murale. En regardant la\nprise murale de face : la phase doit se situer à droite, le neutre à\ngauche.\nLors du raccordement, il est indispensable de respecter le repérage\nphase/neutre et d’avoir une mise à la terre efficace. \nAccessoires fournis \n• Vanne Départ\n• Vanne Retour\n• Robinet Gaz\n• RTA\n• Régulateur de débit\n• Disconnecteur +\nvanne de remplissage\n• Tube de remplissage\n• sauf pour modèles\nChauffage seul. 40 B C X\n70\nA E\nModèles A B C X E Départ Gaz Sanitaire"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-9-chunk-2",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 9,
+    "section": "Document technique - page 9",
+    "topic": "page-9",
+    "text": "• RTA\n• Régulateur de débit\n• Disconnecteur +\nvanne de remplissage\n• Tube de remplissage\n• sauf pour modèles\nChauffage seul. 40 B C X\n70\nA E\nModèles A B C X E Départ Gaz Sanitaire\nRetour\nHYDROMOTRIX ventouse 23 kW 46 61 50 209 74 M20 x 27-3/4’’ M20 x 27-3/4’’ M15 x 21-1/2’’ \nHYDROMOTRIX ventouse 32 kW 50 70 70 235 85 M26x 34-1’’ M20 x 27-3/4’’ M15 x 21-1/2’’ \nCHAUDIERE\nGAZ RETOUR DEPART ECS EFS\nMonter impérativement le régulateur de débit dans le logement prévu dans le RTA\nPropane : Ne pas mettre de robinet d’arrêt gaz, raccorder la\nchaudière directement au détendeur de sécurité\n37 mbar à l’aide du raccord fourni. \nRégulateur\nde débit\nNeutre Phase"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-10-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 10,
+    "section": "Document technique - page 10",
+    "topic": "page-10",
+    "text": "10 \nMISE EN SERVICE \nLa chaudière est livrée dans une situation “ installation ”. Elle ne pourra pas fonctionner\ntant que le circuit de chauffage ne sera pas plein et sous pression. \n1 - Avant de mettre en eau \n•vérifier à l’aide d’un tournevis et après avoir enlevé le bouchon, la libre rotation du\ncirculateur. \n2 - Remplissage \nPour lire la valeur de la pression durant le remplissage, la prise de la chaudière doit\nêtre branchée et l’interrupteur basculé “sous-tension”.\n•Le voyant rouge est allumé.\n•Desserrer le bouchon P du purgeur automatique de 2 tours. Un purgeur\nmanuel M situé sur le corps de la soupape permet d’accélérer le dégazage.\n•Ouvrir les deux vannes F et E situées sous la chaudière de part et d’autre du\ndisconnecteur. La pression monte et l’indicateur évolue jusqu’à ce que seul\nle voyant vert soit allumé.\n•Fermer les vannes.\n•Purger l’installation.\n•Procéder à un appoint d’eau et une nouvelle purge si nécessaire.\n•Rétablir la pression : voyant vert allumé. \n3 - Vérifier les étanchéités gaz et eau\n4 - Annuler le mode “installation” et passer en mode “marche normale” \n•Sur le tableau de bord enlever la trappe T . A l’aide du doigt destiné à cet\nusage, basculer le switch 6 vers la gauche. \n5 - Configuration avec un ballon externe \n•Basculer le switch 1 vers la droite (voir Schéma ci-contre). \n1 2 3 4 5 6 \nLe brûleur s’allume \nF E"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-10-chunk-2",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 10,
+    "section": "Document technique - page 10",
+    "topic": "page-10",
+    "text": "asculer le switch 6 vers la gauche. \n5 - Configuration avec un ballon externe \n•Basculer le switch 1 vers la droite (voir Schéma ci-contre). \n1 2 3 4 5 6 \nLe brûleur s’allume \nF E\n0 bar 0,3 bar 1 bar 1,5 bar 2 bar 2,5 bar 3 bar INDICATEUR DE PRESSION \n1 2 3 \nT\nM\nP"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-11-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 11,
+    "section": "Document technique - page 11",
+    "topic": "page-11",
+    "text": "11 \nAVERTISSEMENT: \nLors d'une première tentative d'allumage, le voyant rouge de mise en sécurité peut s'allumer à\ncause d'une purge gaz insuffisante.\nRelancer le cycle d'allumage plusieurs fois si nécessaire, en appuyant 2 secondes sur le bouton .\nSi le brûleur s’éteint quelques secondes après son allumage, voir si le raccordement Phase/Neutre\nest bien respecté (page 6).\nEn sélectionnant la chaudière est en mode de conduite manuelle.\n•On peut choisir la température de départ en appuyant sur ou et procéder à la\nvérification du bon fonctionnement de l’installation de chauffage.\n•Adapter éventuellement la vitesse du circulateur par le bouton intégré à son boîtier\n(Privilégier les vitesses les plus basses). \n6 - Initialisation de la communication radio \n•Déployer l’antenne du récepteur radio fixé en haut à gauche sur le châssis de la\nchaudière (voir nomenclature page 16). L’antenne doit se trouver impérativement à\nune distance supérieure de 1 cm de tout objet métallique.\n•Se placer dans la pièce où est posée la chaudière.\n•Enlever la trappe du satellite radio et dégager la languette de protection des piles.\n•La molette étant sur “ AUTO ”, appuyer 5 secondes sur la touche le message “ CnF ”\napparaît : le satellite est en mode “ configuration ”, il envoie son identité au\nrécepteur.\n•Appuyer durant 5 secondes sur du tableau de bord de la chaudière, le voyant"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-11-chunk-2",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 11,
+    "section": "Document technique - page 11",
+    "topic": "page-11",
+    "text": "ge “ CnF ”\napparaît : le satellite est en mode “ configuration ”, il envoie son identité au\nrécepteur.\n•Appuyer durant 5 secondes sur du tableau de bord de la chaudière, le voyant\nde la commande manuelle clignote indiquant qu’il reçoit la transmission radio.\n•Relâcher et appuyer 2 secondes sur la touche du tableau de bord pour valider la\ntransmission.\n• Pour passer sur mode “ AUTO ”, appuyer 2 secondes sur la touche du tableau de\nbord de la chaudière.\n•Appuyer brièvement sur du satellite : l’initialisation est terminée . \n7 - Mise en place du satellite \n• Vérifier la transmission radio :\nLe satellite étant sur “ AUTO ”, appuyer 5 secondes sur , le message “ TEST ” apparaît.\nSur le tableau de bord de la chaudière, tous les voyants sont éteints sauf le\nthermomètre qui défile selon une “chenille” : la transmission est efficace. \nA ce stade, si la chaudière est pilotée par une régulation RIF 5000, se reporter à la notice spécifique. \n1\n2"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-12-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 12,
+    "section": "Document technique - page 12",
+    "topic": "page-12",
+    "text": "12 \n•Placer le satellite dans une pièce représentative de la température\nmoyenne de l’habitation.\n•Vérifier que la transmission est toujours efficace.\n•Appuyer brièvement sur pour sortir du mode “ TEST ”. \n8 - Fixation du satellite \n•Fixer une vis dans le mur en laissant dépasser la tête.\n•Accrocher le satellite sur cette vis par la “boutonnière” A .\n•Tracer, percer et visser dans un des trous du compartiment piles B . \nAttention ! Les radiateurs installé dans la pièce où se trouve le satellite\nd’ambiance ne doivent pas être équipés de robinets thermostatiques\n9 - Eau Chaude Sanitaire \nLe R.T.A. est préréglé pour une température de sortie maximale comprise entre 45\net 50°C, point idéal de fonctionnement pour le meilleur rapport confort d’utilisation\net économie d’énergie. \nAvant de modifier son réglage, vérifier la présence du régulateur de débit sinon :\na) Mettre la chaudière en position “ max ” \nb) Laisser couler l’eau chaude jusqu’à l’allumage du brûleur \nc) Avec une clé plate de 13, modifier le réglage :\n- Sens horaire, diminue la température.\n- Sens inverse, augmente la température. \nAttention ! Ce réglage est très sensible, agir par petite rotation (1/10 de tour)\ntoutes les 20 secondes. \nDotée d’une nouvelle technologie de régulation de température, la cartouche du \nR.T.A peut être échangée dans le cadre de la maintenance. \na) Isoler ou démonter le R.T.A."
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-12-chunk-2",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 12,
+    "section": "Document technique - page 12",
+    "topic": "page-12",
+    "text": "condes. \nDotée d’une nouvelle technologie de régulation de température, la cartouche du \nR.T.A peut être échangée dans le cadre de la maintenance. \na) Isoler ou démonter le R.T.A.\nb) Dévisser la douille E . \nc) Sortir l’ancienne cartouche. \nd) Nettoyer sans rayer l’intérieur du corps. \ne) Remonter la cartouche neuve en engageant le doigt F dans la rainure. \nA\nB \n1 1,,5 50 0 m m \n+°C\n-°C\n1/10\nde tour\nClé plate de 13 \nF\nF\nE \nDos\nFace"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-13-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 13,
+    "section": "Document technique - page 13",
+    "topic": "page-13",
+    "text": "SCHEMA ELECTRIQUE\n1 - Schéma de câblage général \n13 \nSonde sanitaire\nManostat\nSécurité de surchauffe\nMoteur de Vanne\nde régulation\nTerre\nElectrodes\n230V\nCARACTERISTIQUES TECHNIQUES\nVentilateur\nCapteur de pression\nRécepteur HF\nTableau de bord\nvers\nRIF 5000\nSonde corps de chauffe\nSonde\ndépart\nCirculateur \nType HYDROMOTRIX 23 HYDROMOTRIX 32\nventouse ventouse\nModèle C13/C33/C43/C53 C13/C33/C43/C53\nPuissance kW 23 32\nCatégorie II 2E + 3P II 2E + 3P\nDébit calorifique kW 25,55 35,16\nDébit gaz Lacq G20 (20mbar) m3/h 2,701 3,718\nDébit gaz Groningue G25 (25mbar) m3/h 2,871 3,952\nDébit gaz Propane G31 (37mbar) kg/h 1,983 2,729\nTempérature des produits de combustion °C 193 195\nDébit sanitaire Δ t 30K l/min 12 15\nPression maxi ECS bar 10 10\nTempérature maxi chauffage °C 85 85\nAlimentation électrique V 230 230\nCapacité Vase l 10 12\nInstallation l 120 150\nPression maxi chauffage bar 3 3 \nInterrupteur marche / arrêt\nBloc gaz"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-14-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 14,
+    "section": "Document technique - page 14",
+    "topic": "page-14",
+    "text": "14 \nCHANGEMENT DE GAZ \nLes chaudières FRISQUET sont transformables de Gaz Naturel en Propane et de Propane en Gaz Naturel.\nUne notice spécifique décrivant cette opération est fournie avec le Kit de transformation.\nCette opération doit être réalisée par un professionnel. Vous trouverez toutes les indications nécessaires dans les\npochettes de transformations gaz disponibles chez votre revendeur habituel. \nPROTECTION CONTRE LE GEL \n- Vidanger totalement l’installation de chauffage ou la protéger par un antigel chauffage.\n- Vidanger totalement l’échangeur sanitaire en ouvrant un robinet d’eau chaude et d’eau froide en point bas en\ndévissant le raccord E (voir nomenclature page 15). \nQUELQUES CONSEILS \n• Bruits d’air : purger la chaudière et les radiateurs.\n• Bruits d’eau : régler la vitesse du circulateur.\n• Coup de bélier : il est fréquent que les robinets sanitaires à fermeture rapide engendrent des coups de bélier. Ceux-\nci peuvent éventuellement se répercuter dans la chaudière.\nLe coup de bélier est généralement lié à une alimentation d’eau d’un diamètre trop faible et une pression trop forte\nqui entraînent des vitesses élevées génératrices du coup de bélier.\nSolutions : - réduire la pression\n- poser un anti-bélier à membrane.\n• Expansion dans le circuit sanitaire : afin d’éviter toute élévation trop importante de la pression liée à l’expansion"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-14-chunk-2",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 14,
+    "section": "Document technique - page 14",
+    "topic": "page-14",
+    "text": ": - réduire la pression\n- poser un anti-bélier à membrane.\n• Expansion dans le circuit sanitaire : afin d’éviter toute élévation trop importante de la pression liée à l’expansion\ndans le circuit sanitaire, il est indispensable de prévoir un groupe de sécurité (ou une soupape) taré à 7 bar si\nl’alimentation eau froide de la chaudière intègre un clapet antiretour ou un réducteur de pression.\nL’écoulement du groupe ou de la soupape doit être raccordé à une mise à l’air libre. Un vase d’expansion « spécial\nsanitaire » de faible capacité (0,5 l) peut compléter ce dispositif limitant ainsi l’écoulement d’eau.\n• Mitigeurs thermostatiques : Pour éviter tout dysfonctionnement de la distribution d’eau chaude ainsi que\nd’éventuels entartrages prématurés, il est indispensable d’équiper les mitigeurs de clapets anti-retour sur l’eau froide\net l’eau chaude. \n•Marche en thermosiphon : Lorsque la chaudière est posée à un niveau inférieur à celui des radiateurs il y a lieu de\nprévoir un clapet antithermosiphon au départ de la chaudière. Il empêchera la circulation naturelle du fluide par\ndifférence de densité. \nVUE DE PROFIL\nVUE DE DESSUS\n• Si les rallonges doivent être coupées, ébavurer minutieusement les bords des tubes.\n• Enduire les tubes de graisse silicone avant de les emboiter dans les joints à lèvres."
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-14-chunk-3",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 14,
+    "section": "Document technique - page 14",
+    "topic": "page-14",
+    "text": "ESSUS\n• Si les rallonges doivent être coupées, ébavurer minutieusement les bords des tubes.\n• Enduire les tubes de graisse silicone avant de les emboiter dans les joints à lèvres.\n•Attention, pour une sortie plus longue horizontale ou verticale, utiliser l’adaptateur Réf. F3AA40365\net des accessoires Ø 80/125mm. Se rapporter à la notice fournie avec l’adaptateur.\nL’emploi de coude(s) et de rallonge(s) Ø 60/100mm est strictement réservé à un plan\nhorizontal : 1 coude à 90° = 2 coudes à 45° \n0 à 2 %\nLongueur horizontale maxi 23 kW 32 kW\n- sans coude 4 m 3 m\n- avec 1 coude à 90° 3 m 2 m\n- avec 2 coudes à 90° 2 m 1 m\nTerminal Ø 60-100 mm\nF3AA40891 \nRACCORDEMENT D’UNE RALLONGE HORIZONTALE \nCoude à 90° (fourni avec\nla microventouse)\nCoude à 90° (fourni avec\nla microventouse) \nRallonge Ø 60-100 mm\nLongueur : 0,50 m\nF3AA40282\nRallonge Ø 60-100 mm\nLongueur : 1 m\nF3AA40281"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-15-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 15,
+    "section": "Document technique - page 15",
+    "topic": "page-15",
+    "text": "15 \n1\n7\n16\n9\n14 \n3 4 2\n10\n15\n11\n12\n1 3\n8 \n5 \nE \n6\n1 8 \n17 \n1 - Récepteur radio \n2 - Robinet gaz \n3 - Vanne d’isolement retour chauffage \n4 - Vanne d’isolement départ chauffage \n5 - RTA \n6 - Vidange chauffage \n7 - Vase d’expansion \n8 - Corps de chauffe \n9 - Purgeur automatique + manuel \n10 - Circulateur \n11 - Capteur de pression \n12 - Moteur de vanne régulation \n13 - Module / Bloc gaz \n14 - Manostat \n15 - Ventilateur \n16 - Satellite de communication \n17* - Raccord Départ deuxième circuit\n(en option sur HYDROMOTRIX mixte 23 kW) \n18* - Raccord Retour deuxième circuit\n(en option sur HYDROMOTRIX mixte 23 kW) \n*\nplacé à l’arrière du corps de chauffe\nNOMENCLATURE \nC13 - HORIZONTALE ( Ø 80/125) \nC43 - 3CE C53 - BITUBE\nC33 - VERTICALE ( Ø 80/125) \nAdaptateur : F3AA40365\nAdaptateur : F3AA40896 Adaptateur : F3AA40345\nAdaptateur : F3AA40365 \nAUTRES CONFIGURATIONS"
+  },
+  {
+    "chunkId": "frisquet-hydromotrix-vent-32-2000-installation-page-16-chunk-1",
+    "documentId": "frisquet-hydromotrix-vent-32-2000-installation",
+    "documentType": "installation_maintenance",
+    "page": 16,
+    "section": "Document technique - page 16",
+    "topic": "page-16",
+    "text": "ANOMALIE : AIDE AU DIAGNOSTIC\nFRISQUET S.A. 20, rue Branly ZI Beauval 77109 MEAUX Cedex TEL: 01 60 09 91 00 - FAX : 01 60 25 38 50 \nFRISQUET S.A. se réserve le droit de modifier à tout moment, sans préavis, les caractéristiques données dans ses catalogues, dépliants et tarifs Réf. 310315_15 \nGARANTIE \nVoir carte de garantie livrée avec l’appareil."
+  }
+]

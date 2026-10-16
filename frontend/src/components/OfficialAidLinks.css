@@ -1,0 +1,12 @@
+.official-aids { margin: 24px 0; }
+.official-aids__links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.official-aids__links a { display: flex; flex-direction: column; gap: 8px; padding: 18px; border: 1px solid #e8c7b9; border-radius: 16px; background: #fffaf7; color: #84300e; text-decoration: none; overflow-wrap: anywhere; }
+.official-aids__links a:hover { background: #fff0e8; }
+.official-aids__links a:focus-visible { outline: 3px solid #bd390b; outline-offset: 3px; }
+.official-aids__links span, .official-aids__links small { color: #54433a; }
+.official-aids-dialog { box-sizing: border-box; width: min(900px, calc(100% - 24px)); max-height: 88dvh; padding: 24px; border: 0; border-radius: 24px; background: #fffdfb; color: #251e19; overflow-y: auto; }
+.official-aids-dialog::backdrop { background: #251b17a6; backdrop-filter: blur(4px); }
+.official-aids-dialog__header { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.official-aids-dialog__header h2 { margin: 0; }
+.official-aids-dialog__close { flex-shrink: 0; padding: 10px 16px; border: 1px solid #e8c7b9; border-radius: 12px; background: #fff4ec; color: #84300e; font: inherit; cursor: pointer; }
+@media(max-width: 600px) { .official-aids__links { grid-template-columns: 1fr; } .official-aids-dialog { padding: 20px 16px; } }

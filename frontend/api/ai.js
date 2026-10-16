@@ -1,0 +1,1023 @@
+import OpenAI from "openai";
+import { createClient } from "@supabase/supabase-js";
+
+import { getEquipmentConfig } from "../server/lib/equipment-registry.js";
+
+import { searchRagContext } from "../server/lib/rag.js";
+
+import { aiRateLimit } from "../server/lib/rate-limit.js";
+import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
+import { getShibaPlan, refundShibaQuestion, reserveShibaQuestion, setShibaUsageHeaders, shibaQuotaEnabled, shibaQuotaRequiresAccount } from "../server/lib/shiba-quota.js";
+import { reportAnomaly } from "../server/lib/anomaly-alert.js";
+import { checkDocumentGrounding, UNVERIFIED_ANSWER } from "../server/lib/shiba-grounding.js";
+import { shibaCreditsExhaustedMessage } from "../src/lib/shiba-credit-copy.js";
+import { platformDocumentEnvironment, platformDocumentCatalogAllowed } from "../server/lib/platform-document-environment.js";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// ---------------------------------------------------------
+// NORMALISATION DES CODES DEFAUT
+// ---------------------------------------------------------
+//
+// Transforme notamment :
+//
+// F28
+// f28
+// F.28
+// F028
+// F.028
+// "défaut F28"
+//
+// en une forme canonique :
+//
+// F.28
+//
+// Cela permet à CarnetPass de comparer différentes écritures
+// d'un même code constructeur.
+// ---------------------------------------------------------
+
+function normalizeErrorCode(input) {
+  const text = String(input ?? "")
+    .trim()
+    .toUpperCase();
+
+  const match = text.match(
+    /F\s*\.?\s*(\d{1,3})/
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  const numericCode = Number(match[1]);
+
+  if (!Number.isFinite(numericCode)) {
+    return null;
+  }
+
+  return `F.${numericCode}`;
+}
+
+// ---------------------------------------------------------
+// VARIANTES D'UN CODE DEFAUT
+// ---------------------------------------------------------
+//
+// Exemple pour F.28 :
+//
+// F.28
+// F.028
+// F28
+// F028
+//
+// Certaines documentations utilisent 2 chiffres,
+// d'autres 3 chiffres.
+// ---------------------------------------------------------
+
+function buildErrorCodeVariants(
+  normalizedCode
+) {
+  if (!normalizedCode) {
+    return [];
+  }
+
+  const digits = normalizedCode.replace(
+    /^F\./,
+    ""
+  );
+
+  const numericCode = Number(digits);
+
+  if (!Number.isFinite(numericCode)) {
+    return [normalizedCode];
+  }
+
+  const shortCode = String(numericCode);
+
+  const paddedCode =
+    shortCode.padStart(3, "0");
+
+  return [
+    ...new Set([
+      `F.${shortCode}`,
+      `F.${paddedCode}`,
+      `F${shortCode}`,
+      `F${paddedCode}`,
+    ]),
+  ];
+}
+
+async function reserveQuestionQuota(request, response) {
+  // L'assistant public du site n'envoie pas de jeton. Ses questions restent
+  // soumises à la limite IP plus bas ; elles ne consomment pas l'essai pro.
+  if (!shibaQuotaRequiresAccount(request)) return { proceed: true, reservation: null };
+  const professional = await requireVerifiedCompany(request, response);
+  if (!professional) return { proceed: false };
+  try {
+    const plan = professional.accessKind === "discovery" ? "free" : await getShibaPlan(request, professional);
+    if (!plan || !shibaQuotaEnabled(plan)) return { proceed: true, reservation: null };
+    const reservation = await reserveShibaQuestion(professional, plan);
+    setShibaUsageHeaders(response, reservation);
+    if (!reservation.allowed) {
+      response.status(429).json({
+        code: "SHIBA_QUOTA_REACHED",
+        error: shibaCreditsExhaustedMessage(reservation.period),
+        usage: { used: reservation.used, limit: reservation.limit, remaining: 0, resetAt: reservation.resetAt, period: reservation.period },
+      });
+      return { proceed: false };
+    }
+    return { proceed: true, reservation };
+  } catch (error) {
+    console.error("Quota Shiba indisponible :", error);
+    response.status(503).json({ error: "Le compteur Shiba est momentanément indisponible." });
+    return { proceed: false };
+  }
+}
+
+// ---------------------------------------------------------
+// API IA CARNETPASS
+// ---------------------------------------------------------
+
+export default async function handler(
+  request,
+  response
+) {
+  let quotaReservation;
+  try {
+    // -----------------------------------------------------
+    // 1. VERIFICATION DE LA METHODE HTTP
+    // -----------------------------------------------------
+
+    if (request.method !== "POST") {
+      return response.status(405).json({
+        error: "Méthode non autorisée",
+      });
+    }
+
+    // -----------------------------------------------------
+    // 2. RECUPERATION DES DONNEES
+    // -----------------------------------------------------
+
+    const body = request.body ?? {};
+
+    const equipmentId = String(
+      body?.equipmentId ?? ""
+    ).trim();
+
+    const question = String(
+      body?.question ?? ""
+    ).trim();
+
+    const platformDocumentIds = Array.isArray(body?.platformDocumentIds) ? [...new Set(body.platformDocumentIds)] : [];
+    if ((!equipmentId && !platformDocumentIds.length) || !question || platformDocumentIds.length > 20
+      || platformDocumentIds.some((id) => typeof id !== "string" || !/^[0-9a-f-]{36}$/i.test(id))) {
+      return response.status(400).json({
+        error:
+          "Équipement ou question manquant",
+      });
+    }
+
+    // -----------------------------------------------------
+    // 3. RECHERCHE DE L'EQUIPEMENT
+    // -----------------------------------------------------
+
+    // Recherche automatiquement l'équipement
+    // correspondant à l'identifiant reçu
+    // par CarnetPass.
+
+    let equipmentConfig =
+      getEquipmentConfig(equipmentId);
+
+    if (platformDocumentIds.length) {
+      const documentEnvironment = platformDocumentEnvironment(process.env);
+      if (documentEnvironment.status) return response.status(documentEnvironment.status).json({ error: "Documentation indisponible." });
+      const professional = await requireVerifiedCompany(request, response);
+      if (!professional) return;
+      if (!platformDocumentCatalogAllowed(documentEnvironment.name, professional.accessKind)) {
+        return response.status(403).json({ error: "Documentation indisponible pour ce compte." });
+      }
+      const db = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SECRET_KEY,
+        { auth: { persistSession: false, autoRefreshToken: false } });
+      const { data: indexed, error: indexError } = await db.from("platform_document_intake")
+        .select("id, manufacturer, model_name, model_reference, title, hotline_phone, rag_data")
+        .in("id", platformDocumentIds).eq("status", "approved").eq("rag_status", "ready")
+        .not("distribution_confirmed_at", "is", null);
+      if (indexError) throw indexError;
+      if (!indexed?.length || indexed.length !== platformDocumentIds.length
+        || indexed.some((item) => !Array.isArray(item.rag_data?.items) || !item.rag_data.items.length)) {
+        return response.status(409).json({ error: "Un document n'est pas encore indexé pour Shiba." });
+      }
+      const sameModel = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+      const first = indexed[0];
+      if (indexed.some((item) => sameModel(item.manufacturer) !== sameModel(first.manufacturer)
+        || sameModel(item.model_reference) !== sameModel(first.model_reference))
+        || (equipmentConfig && (sameModel(first.model_reference) !== sameModel(equipmentConfig.equipmentData.identity?.manufacturerReference)
+          || sameModel(first.manufacturer) !== sameModel(equipmentConfig.equipmentData.identity?.brand)))) {
+        return response.status(400).json({ error: "Documents de modèles différents." });
+      }
+      const dynamicDocuments = indexed.map((item) => ({ documentId: item.id, title: item.title, storage: "private" }));
+      const base = { identity: {
+        brand: first.manufacturer, model: first.model_name || first.model_reference, manufacturerReference: first.model_reference,
+      } };
+      equipmentConfig = {
+        equipmentData: {
+          ...base,
+          documents: dynamicDocuments,
+          support: base.support?.hotline?.phone ? base.support : indexed.find((item) => item.hotline_phone)?.hotline_phone
+            ? { hotline: { label: "Hotline constructeur", phone: indexed.find((item) => item.hotline_phone).hotline_phone } } : base.support,
+        },
+        ragEmbeddingData: indexed.map((item) => item.rag_data),
+      };
+    }
+
+    if (!equipmentConfig) {
+      return response.status(404).json({
+        error:
+          "Équipement documentaire introuvable",
+      });
+    }
+
+    // Les passages RAG des PDF privés ne doivent être accessibles qu'aux
+    // professionnels autorisés, au même titre que les PDF eux-mêmes.
+    if (equipmentConfig.equipmentData.documents?.some(
+      (document) => document.storage === "private"
+    )) {
+      const professional = await requireVerifiedCompany(request, response);
+      if (!professional) return;
+    }
+
+    // Récupère les données techniques
+    // et les embeddings correspondant
+    // uniquement à cet équipement.
+
+    const questionQuota = await reserveQuestionQuota(request, response);
+    if (!questionQuota.proceed) return;
+    quotaReservation = questionQuota.reservation;
+
+    const {
+      equipmentData,
+      ragEmbeddingData,
+    } = equipmentConfig;
+
+    const hotlineQuestion = /(?:hotline|service client|num[eé]ro.*(?:t[eé]l[eé]phone|appeler)|contacter.*(?:fabricant|constructeur|chaffoteaux))/i.test(question);
+    const hotline = equipmentData.support?.hotline;
+    if (hotlineQuestion && hotline?.phone) {
+      return response.status(200).json({
+        ok: true,
+        answer: `${hotline.label ?? "Service client constructeur"} : ${hotline.phone}.${hotline.source ? ` Source : ${hotline.source}.` : ""}`,
+      });
+    }
+
+    // -----------------------------------------------------
+    // 4. ANALYSE DE LA QUESTION
+    // -----------------------------------------------------
+
+    const normalizedQuestion =
+      String(question ?? "").toLowerCase();
+
+    // La nomenclature commune MCR 2 24 / 30-35 MI distingue l'échangeur
+    // primaire (repère 32) du circuit sanitaire propre aux variantes MI.
+    // Ne jamais attribuer la référence du primaire à un échangeur à plaques.
+    const partQuestion = normalizedQuestion.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (
+      String(equipmentData.identity?.manufacturerReference) === "7841749" &&
+      /(?:echangeur.*plaqu|plaqu.*echangeur)/.test(partQuestion)
+    ) {
+      return response.status(200).json({
+        ok: true,
+        answer: "La référence d'un échangeur à plaques n'est pas confirmée pour le MCR 2 24 (réf. 7841749) dans les documents disponibles. La vue éclatée commune MCR 2 24 / 30-35 MI, page 2, désigne le repère 32 (7769953) comme « échangeur de chaleur » et le repère 77 (7672690) comme « joint échangeur sanitaire (MI) ». Aucun de ces deux numéros n'identifie avec certitude un échangeur à plaques de ce modèle. Vérifiez la variante sur la plaque signalétique et la documentation de la pièce avant toute commande.",
+      });
+    }
+
+    const wantsErrorCodeList =
+      normalizedQuestion.includes(
+        "liste des codes"
+      ) ||
+      normalizedQuestion.includes(
+        "codes défaut"
+      ) ||
+      normalizedQuestion.includes(
+        "codes de défaut"
+      ) ||
+      normalizedQuestion.includes(
+        "codes erreur"
+      ) ||
+      normalizedQuestion.includes(
+        "codes d'erreur"
+      ) ||
+      normalizedQuestion.includes(
+        "quels sont les codes"
+      );
+
+    // Cherche un éventuel code défaut
+    // dans la question.
+
+    const normalizedCode =
+      normalizeErrorCode(question);
+
+    const errorCodeVariants =
+      buildErrorCodeVariants(
+        normalizedCode
+      );
+
+    // -----------------------------------------------------
+    // 5. RECHERCHE DIRECTE DANS LES DONNEES STRUCTUREES
+    // -----------------------------------------------------
+    //
+    // Si CarnetPass possède déjà une fiche structurée
+    // pour ce code, on continue de l'utiliser.
+    //
+    // Cela préserve le fonctionnement existant
+    // de Saunier Duval.
+    //
+    // La normalisation permet également de considérer
+    // F.28 et F.028 comme le même code.
+    // -----------------------------------------------------
+
+    const errorCode = normalizedCode
+      ? equipmentData.errorCodes?.find(
+          (error) =>
+            normalizeErrorCode(
+              error.code
+            ) === normalizedCode
+        ) ?? null
+      : null;
+
+    // -----------------------------------------------------
+    // 6. VERIFICATION DE LA LISTE DES CODES
+    // -----------------------------------------------------
+
+    // Pour le moment, la demande d'une liste complète
+    // utilise encore l'index structuré existant.
+
+    const hasStructuredCodeList = wantsErrorCodeList && Boolean(equipmentData.errorCodeIndex);
+
+    // -----------------------------------------------------
+    // 7. DECISION DU MODE DE RECHERCHE
+    // -----------------------------------------------------
+    //
+    // On utilise le RAG lorsque :
+    //
+    // - la question est une question libre ;
+    //
+    // OU
+    //
+    // - un code défaut est demandé mais qu'il n'existe
+    //   pas encore dans les données structurées.
+    //
+    // Exemple :
+    //
+    // Vaillant F28
+    //      ↓
+    // aucune fiche errorCodes[]
+    //      ↓
+    // recherche automatique dans la notice constructeur
+    // -----------------------------------------------------
+
+    const shouldUseRag =
+      !hasStructuredCodeList &&
+      !errorCode;
+
+    // -----------------------------------------------------
+    // 8. PROTECTION IA - RATE LIMITING
+    // -----------------------------------------------------
+    //
+    // Objectif :
+    // maximum 10 requêtes IA par minute
+    // et par adresse IP.
+    //
+    // Cette vérification est faite AVANT :
+    //
+    // - la génération d'embedding RAG
+    // - l'appel au modèle OpenAI
+    //
+    // Donc une requête bloquée
+    // ne déclenche pas de coût IA.
+    // -----------------------------------------------------
+
+    const forwardedFor =
+      request.headers["x-forwarded-for"];
+
+    const clientIp =
+      Array.isArray(forwardedFor)
+        ? forwardedFor[0]
+        : String(
+            forwardedFor ??
+              request.headers[
+                "x-real-ip"
+              ] ??
+              request.socket
+                ?.remoteAddress ??
+              "unknown"
+          )
+            .split(",")[0]
+            .trim();
+
+    try {
+      const {
+        success,
+        limit,
+        remaining,
+        reset,
+        pending,
+      } = await aiRateLimit.limit(
+        `ip:${clientIp}`
+      );
+
+      // Attend l'enregistrement
+      // des statistiques Upstash.
+
+      if (pending) {
+        await pending;
+      }
+
+      // Informations utiles
+      // pour le navigateur
+      // et pour nos futurs tests.
+
+      response.setHeader(
+        "X-RateLimit-Limit",
+        String(limit)
+      );
+
+      response.setHeader(
+        "X-RateLimit-Remaining",
+        String(remaining)
+      );
+
+      response.setHeader(
+        "X-RateLimit-Reset",
+        String(reset)
+      );
+
+      // Si la limite est dépassée,
+      // aucun appel OpenAI n'est effectué.
+
+      if (!success) {
+        if (quotaReservation?.allowed) {
+          try { await refundShibaQuestion(quotaReservation); }
+          catch (error) { console.error("Remboursement quota Shiba indisponible :", error); }
+          quotaReservation = null;
+        }
+        const retryAfter = Math.max(
+          1,
+          Math.ceil(
+            (reset - Date.now()) /
+              1000
+          )
+        );
+
+        response.setHeader(
+          "Retry-After",
+          String(retryAfter)
+        );
+
+        return response
+          .status(429)
+          .json({
+            error:
+              "Limite temporaire de questions IA atteinte",
+
+            message:
+              `Merci de réessayer dans environ ${retryAfter} seconde(s).`,
+          });
+      }
+    } catch (rateLimitError) {
+      if (quotaReservation?.allowed) {
+        try { await refundShibaQuestion(quotaReservation); }
+        catch (error) { console.error("Remboursement quota Shiba indisponible :", error); }
+        quotaReservation = null;
+      }
+      console.error(
+        "Erreur protection rate limiting CarnetPass :",
+        rateLimitError
+      );
+
+      // Sécurité :
+      //
+      // si Redis ne répond plus,
+      // on bloque temporairement
+      // l'Assistant plutôt que
+      // de permettre des appels OpenAI
+      // sans aucune limitation.
+
+      return response
+        .status(503)
+        .json({
+          error:
+            "Assistant IA temporairement indisponible",
+
+          message:
+            "La protection de l'Assistant CarnetPass est momentanément indisponible.",
+        });
+    }
+
+    // -----------------------------------------------------
+    // 9. PREPARATION DE LA QUESTION RAG
+    // -----------------------------------------------------
+    //
+    // Lorsqu'un code défaut est détecté,
+    // on ajoute automatiquement ses différentes variantes
+    // dans la requête sémantique.
+    //
+    // Exemple :
+    //
+    // Question utilisateur :
+    //
+    // f28
+    //
+    // Recherche documentaire :
+    //
+    // F.28
+    // F.028
+    // F28
+    // F028
+    //
+    // Cela permet d'utiliser les documentations
+    // de constructeurs qui n'emploient pas
+    // tous le même format.
+    // -----------------------------------------------------
+
+    const ragQuestion =
+      normalizedCode
+        ? `${question}
+
+Code défaut recherché :
+${normalizedCode}
+
+Variantes possibles dans la documentation constructeur :
+${errorCodeVariants.join("\n")}
+
+Recherche uniquement les passages qui concernent réellement ce code ou l'une de ses variantes.`
+        : question;
+
+    // -----------------------------------------------------
+    // 10. RECHERCHE RAG
+    // -----------------------------------------------------
+
+    const ragResult =
+      shouldUseRag
+        ? await searchRagContext(
+            openai,
+            ragEmbeddingData,
+            ragQuestion,
+
+            // Pour un code défaut,
+            // on récupère davantage de passages
+            // afin d'avoir :
+            //
+            // - signification
+            // - cause
+            // - vérification
+            // - page constructeur
+
+            normalizedCode ? 5 : 3
+          )
+        : null;
+
+    if (shouldUseRag) {
+      const evidenceIssue = checkDocumentGrounding({ passages: ragResult?.topResults, answer: "Passages retrouvés", codeVariants: normalizedCode ? errorCodeVariants : [] });
+      if (evidenceIssue) {
+        await reportAnomaly("shiba_grounding", evidenceIssue);
+        if (quotaReservation?.allowed) {
+          try { await refundShibaQuestion(quotaReservation); }
+          catch (refundError) { console.error("Remboursement quota Shiba indisponible :", refundError); }
+          quotaReservation = null;
+        }
+        return response.status(200).json({ ok: true, answer: UNVERIFIED_ANSWER, verification: "insufficient_evidence" });
+      }
+    }
+
+    // -----------------------------------------------------
+    // 11. CONSTRUCTION DU CONTEXTE
+    // -----------------------------------------------------
+
+    const context =
+      hasStructuredCodeList
+        ? {
+            requestType:
+              "error_code_list",
+
+            codes:
+              equipmentData
+                .errorCodeIndex
+                .codes ?? [],
+
+            meanings:
+              equipmentData
+                .errorCodeIndex
+                .meanings ?? {},
+
+            note:
+              equipmentData
+                .errorCodeIndex
+                .note ?? null,
+
+            source:
+              equipmentData
+                .errorCodeIndex
+                .source ?? null,
+          }
+        : errorCode
+          ? {
+              requestType:
+                "error_code_detail",
+
+              code:
+                errorCode.code,
+
+              title:
+                errorCode.title,
+
+              meaning:
+                errorCode
+                  .manufacturerData
+                  ?.meaning ?? null,
+
+              possibleCauses:
+                errorCode
+                  .manufacturerData
+                  ?.possibleCauses ??
+                [],
+
+              professionalChecks:
+                errorCode
+                  .manufacturerData
+                  ?.professionalChecks ??
+                [],
+
+              userGuidance:
+                errorCode
+                  .userGuidance ??
+                null,
+
+              source:
+                errorCode.source ??
+                null,
+            }
+          : normalizedCode
+            ? {
+                requestType:
+                  "error_code_rag",
+
+                requestedErrorCode:
+                  normalizedCode,
+
+                requestedErrorCodeVariants:
+                  errorCodeVariants,
+
+                passages:
+                  ragResult
+                    .topResults,
+
+                contextText:
+                  ragResult
+                    .contextText,
+
+                queryIntent:
+                  ragResult
+                    .queryIntent ??
+                  "error_code",
+
+                embeddingTokens:
+                  ragResult
+                    .tokensUsed,
+              }
+            : {
+                requestType:
+                  "semantic_rag",
+
+                passages:
+                  ragResult
+                    .topResults,
+
+                contextText:
+                  ragResult
+                    .contextText,
+
+                queryIntent:
+                  ragResult
+                    .queryIntent ??
+                  "general",
+
+                embeddingTokens:
+                  ragResult
+                    .tokensUsed,
+              };
+
+    // -----------------------------------------------------
+    // 12. INSTRUCTIONS DE L'ASSISTANT
+    // -----------------------------------------------------
+
+    let aiInstructions;
+
+    // -----------------------------------------------------
+    // LISTE DES CODES
+    // -----------------------------------------------------
+
+    if (hasStructuredCodeList) {
+      aiInstructions = `
+Tu es l'assistant technique de CarnetPass.
+
+Tu réponds uniquement à partir du contexte documentaire fourni.
+
+Tu n'inventes jamais une information absente du contexte.
+
+La demande concerne la liste des codes défaut documentés pour cet équipement.
+
+Présente :
+
+1. Un titre clair : "Codes défaut documentés"
+
+2. La liste complète des codes présents dans le contexte, avec pour chaque code sa signification présente dans "meanings"
+
+3. La remarque constructeur présente dans le contexte
+
+4. La source documentaire
+
+N'invente pas la signification des codes si elle n'est pas fournie.
+
+Ne prétends pas que tous les codes sont forcément applicables à cet équipement.
+
+Réponds en français simple et structuré.
+`;
+    }
+
+    // -----------------------------------------------------
+    // CODE DEFAUT DEJA STRUCTURE
+    // -----------------------------------------------------
+
+    else if (errorCode) {
+      aiInstructions = `
+Tu es l'assistant technique de CarnetPass.
+
+Tu réponds uniquement à partir du contexte documentaire fourni.
+
+Tu n'inventes jamais une information absente du contexte.
+
+Si une opération nécessite un professionnel, tu le précises clairement.
+
+Tu respectes les consignes de sécurité présentes dans le contexte.
+
+Réponds en français simple et structuré.
+
+Distingue :
+
+1. Signification du défaut
+
+2. Causes possibles
+
+3. Vérifications à effectuer
+
+4. Consignes de sécurité
+
+5. Source documentaire
+`;
+    }
+
+    // -----------------------------------------------------
+    // CODE DEFAUT RECHERCHE AUTOMATIQUEMENT DANS LE RAG
+    // -----------------------------------------------------
+
+    else if (normalizedCode) {
+      aiInstructions = `
+Tu es l'assistant technique documentaire de CarnetPass.
+
+Le technicien demande des informations sur un code défaut précis.
+
+Ce code n'existe pas encore dans les données structurées de CarnetPass.
+
+Tu dois donc utiliser uniquement les passages de la documentation constructeur récupérés par le RAG.
+
+Le code demandé peut être écrit sous plusieurs formes équivalentes.
+
+Exemple :
+
+F.28
+F.028
+F28
+F028
+
+IMPORTANT :
+
+Ne conclus jamais qu'un passage concerne le code demandé uniquement parce qu'il est sémantiquement proche.
+
+Pour attribuer une signification au code demandé, le passage documentaire doit mentionner explicitement le code ou l'une de ses variantes.
+
+Ne confonds jamais deux codes différents.
+
+Si les passages récupérés ne contiennent pas explicitement le code recherché, réponds clairement :
+
+"Le code demandé n'a pas été retrouvé avec suffisamment de certitude dans les passages documentaires disponibles."
+
+Si le code est explicitement documenté, présente uniquement les informations réellement disponibles.
+
+Structure la réponse ainsi :
+
+1. Code défaut
+
+2. Signification constructeur
+
+3. Causes possibles documentées
+
+4. Vérifications ou mesures documentées
+
+5. Consignes de sécurité si elles sont présentes
+
+6. Page et source documentaire
+
+Si une information n'est pas présente dans la documentation récupérée, indique qu'elle n'est pas précisée.
+
+N'invente jamais une cause, une procédure ou une pièce.
+
+Réponds en français simple, technique et structuré.
+`;
+    }
+
+    // -----------------------------------------------------
+    // RECHERCHE DE REFERENCE DE PIECE
+    // -----------------------------------------------------
+
+    else if (ragResult?.queryIntent === "part_reference") {
+      aiInstructions = `
+Tu es l'assistant documentaire de CarnetPass pour les références de pièces.
+
+Réponds uniquement à partir des passages récupérés. Pour chaque pièce trouvée, donne sa désignation, sa référence exacte et sa provenance sous la forme « Vue éclatée – [nom ou identifiant du document], page [numéro] » lorsque le passage porte le type exploded_view. Utilise le champ Page du passage correspondant à cette pièce, jamais celui d'un autre passage. Si plusieurs pièces sont demandées, cite la page de chacune, même si elles figurent sur la même page.
+
+Privilégie la vue éclatée pour une recherche de référence. Si la référence n'est présente que dans une notice, nomme explicitement cette notice et sa page ; ne la présente pas comme issue de la vue éclatée. Si la vue éclatée ne permet pas de confirmer la référence ou sa page, indique-le sans inventer de citation. Distingue les pièces proches et les anciennes références des remplacements documentés.
+
+Pour une demande de « circulateur », vérifie aussi les lignes « pompe » de la vue éclatée. Ne confonds pas une pompe complète avec son moteur, sa volute ou son câblage. Si une ligne de pompe applicable au modèle donne une référence, réponds avec cette référence et la page de cette ligne.
+
+La vue éclatée peut couvrir plusieurs variantes. Vérifie que la pièce demandée est explicitement désignée et applicable au modèle exact et à sa référence constructeur. Ne confonds jamais « échangeur de chaleur » (primaire) avec « échangeur à plaques » (sanitaire), ni le joint d'un échangeur avec l'échangeur lui-même. Une mention « MI » ne prouve pas la présence de la pièce sur un modèle chauffage seul. Si le document ne permet pas de confirmer une référence pour la pièce exacte et la variante exacte, dis clairement que la référence n'est pas confirmée ; ne propose pas une référence approchante.
+
+Réponds en français simple et concis.
+`;
+    }
+
+    // QUESTION LIBRE / SYMPTOME / LOCALISATION
+    // -----------------------------------------------------
+
+    else {
+      aiInstructions = `
+Tu es l'assistant technique documentaire de CarnetPass.
+
+La question du technicien peut décrire :
+
+- un symptôme ;
+- un composant ;
+- une procédure ;
+- un réglage ;
+- un emplacement ;
+- une information technique ;
+- ou un problème sans code défaut affiché.
+
+Tu réponds uniquement à partir des passages documentaires récupérés par le RAG.
+
+Tu n'inventes jamais une information absente de ces passages.
+
+IMPORTANT :
+
+Une proximité sémantique n'est pas un diagnostic certain.
+
+Ne prétends jamais qu'un code défaut est confirmé s'il n'est pas réellement affiché sur l'appareil.
+
+Si la question concerne l'emplacement d'un composant :
+
+- privilégie les informations issues des sections "Structure du produit", "bloc hydraulique", "schéma", "repère" ou équivalentes ;
+
+- indique le numéro de repère lorsqu'il est réellement fourni ;
+
+- ne déduis jamais une position physique exacte si le document ne la confirme pas.
+
+Si un ou plusieurs passages semblent correspondre à un symptôme :
+
+- présente-les comme des pistes documentaires ;
+
+- indique le ou les codes concernés lorsqu'ils sont réellement présents ;
+
+- explique pourquoi ils peuvent être pertinents ;
+
+- indique les vérifications documentées disponibles ;
+
+- mentionne la page du document lorsque celle-ci est fournie.
+
+Si plusieurs pistes sont possibles, dis-le clairement.
+
+Réponds en français simple, technique et structuré.
+`;
+    }
+
+    // -----------------------------------------------------
+    // 13. APPEL DE L'ASSISTANT IA
+    // -----------------------------------------------------
+
+    aiInstructions += `
+Commence par une réponse directe, puis donne au maximum trois vérifications utiles documentées.
+Reste concis (environ 150 mots), sauf si la sécurité exige davantage de précisions.
+Ne supprime jamais une réserve importante, une consigne de sécurité ou la source et sa page lorsqu'elles sont connues.
+`;
+
+    if (equipmentData.documents?.some((document) =>
+      document.notes?.includes("Prix affichés historiques")
+    )) {
+      aiInstructions += `
+Les prix figurant dans la vue éclatée sont historiques. Ne les présente jamais comme tarifs actuels et rappelle de vérifier les prix auprès du fournisseur avant tout devis ou commande.
+`;
+    }
+
+    const aiResponse =
+      await openai.responses.create({
+        model: "gpt-5.6-luna",
+
+        instructions:
+          aiInstructions,
+
+        input: `
+Équipement :
+
+Marque : ${equipmentData.identity?.brand}
+
+Modèle : ${equipmentData.identity?.model}
+
+Référence constructeur : ${equipmentData.identity?.manufacturerReference}
+
+Question du technicien :
+
+${question}
+
+Contexte documentaire CarnetPass :
+
+${JSON.stringify(
+  context,
+  null,
+  2
+)}
+`,
+      });
+
+    // -----------------------------------------------------
+    // 14. REPONSE ENVOYEE A CARNETPASS
+    // -----------------------------------------------------
+
+    const answer =
+      aiResponse.output_text;
+
+    if (shouldUseRag) {
+      const groundingIssue = checkDocumentGrounding({ passages: ragResult.topResults, answer, codeVariants: normalizedCode ? errorCodeVariants : [] });
+      if (groundingIssue) {
+        await reportAnomaly("shiba_grounding", groundingIssue);
+        return response.status(200).json({ ok: true, answer: UNVERIFIED_ANSWER, verification: "insufficient_evidence" });
+      }
+    }
+
+    return response
+      .status(200)
+      .json({
+        ok: true,
+
+        answer,
+
+        message:
+          "Contexte documentaire CarnetPass retrouvé",
+
+        equipment: {
+          carnetPassId:
+            equipmentId,
+
+          brand:
+            equipmentData
+              .identity?.brand,
+
+          model:
+            equipmentData
+              .identity?.model,
+
+          manufacturerReference:
+            equipmentData
+              .identity
+              ?.manufacturerReference,
+        },
+
+        question,
+
+        context,
+      });
+  } catch (error) {
+    if (quotaReservation?.allowed) {
+      try { await refundShibaQuestion(quotaReservation); }
+      catch (refundError) { console.error("Remboursement quota Shiba indisponible :", refundError); }
+    }
+    console.error(
+      "Erreur API IA CarnetPass :",
+      error
+    );
+    await reportAnomaly("shiba_unavailable", "ai_request_failed");
+
+    return response
+      .status(500)
+      .json({
+        error: "Erreur serveur",
+      });
+  }
+}

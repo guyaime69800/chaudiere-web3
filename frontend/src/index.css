@@ -1,0 +1,24 @@
+/* ============================================================
+   index.css — reset minimal.
+   Tout l'habillage vit dans App.css (une seule source de verite).
+   On a SUPPRIME tout le gabarit par defaut de Vite (mode sombre
+   auto, largeur figee 1126px, titres geants) qui se battait avec
+   le relooking.
+   ============================================================ */
+
+:root {
+  color-scheme: light;   /* on force le theme clair, pas de bascule sombre auto */
+}
+
+*, *::before, *::after {
+  box-sizing: border-box; /* les paddings ne debordent plus : calculs de largeur previsibles */
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;   /* texte plus net */
+  -moz-osx-font-smoothing: grayscale;
+}
+.commercial-terms-acceptance { display: block; font-size: .875rem; line-height: 1.5; margin: 1rem 0; }
+.commercial-terms-acceptance input[type="checkbox"] { width: auto; height: auto; margin-right: .5rem; accent-color: #bd3300; }
+.commercial-terms-acceptance a { text-decoration: underline; }

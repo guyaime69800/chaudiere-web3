@@ -1,0 +1,18 @@
+.enterprise-quote { max-width: 860px; margin: 0 auto; padding: 36px 22px 90px; color: #271e18; }
+.enterprise-quote__back, .enterprise-quote a { color: #a43b16; }
+.enterprise-quote__intro { margin: 55px 0 32px; }
+.enterprise-quote__intro span { color: #a43b16; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
+.enterprise-quote__intro h1 { font-size: clamp(36px, 5vw, 58px); letter-spacing: -.04em; margin: 12px 0; }
+.enterprise-quote__intro p { max-width: 640px; color: #625951; line-height: 1.6; }
+.enterprise-quote__form, .enterprise-quote__success { background: #fffdfa; border: 1px solid #e3d8cf; border-radius: 20px; padding: clamp(20px, 4vw, 38px); }
+.enterprise-quote__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.enterprise-quote__form label { display: grid; gap: 7px; margin-bottom: 20px; font-weight: 700; }
+.enterprise-quote__form input, .enterprise-quote__form textarea, .enterprise-quote__form select { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #cfbfb4; border-radius: 9px; font: inherit; background: white; color: #271e18; }
+.enterprise-quote__form textarea { resize: vertical; }
+.enterprise-quote__form input:focus, .enterprise-quote__form textarea:focus, .enterprise-quote__form select:focus { outline: 2px solid #a43b16; outline-offset: 1px; }
+.enterprise-quote__form button { padding: 14px 22px; border: 0; border-radius: 9px; background: #281f1a; color: white; font: inherit; font-weight: 750; cursor: pointer; }
+.enterprise-quote__form button:disabled { opacity: .6; cursor: wait; }
+.enterprise-quote__privacy { color: #625951; font-size: 14px; }
+.enterprise-quote__error { color: #a91919; }
+.enterprise-quote__trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+@media (max-width: 620px) { .enterprise-quote__grid { grid-template-columns: 1fr; gap: 0; } }

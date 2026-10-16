@@ -1,0 +1,14 @@
+import { Buffer } from "node:buffer";
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { loadPlatformPdf } from './platformPdfDelivery.js';
+globalThis.window={location:{origin:'https://carnetpass.fr'}};
+const bytes=Buffer.from('%PDF-1.7 test'), sha=createHash('sha256').update(bytes).digest('hex');
+const pdf=()=>new Response(bytes,{headers:{'content-type':'application/pdf'}});
+const delivery=()=>Response.json({provider:'r2',sha256:sha,sizeBytes:bytes.length,url:`https://521d9298e733d9b187f6eb2acb2e17de.eu.r2.cloudflarestorage.com/carnetpass-documents-production/platform-documents/sha256/${sha}.pdf`});
+test('R2 delivery never forwards account token',async()=>{const calls=[];const blob=await loadPlatformPdf('/api/platform-admin-documents?id=one','token',async(url,options)=>{calls.push({url,options});return calls.length===1?delivery():pdf();});assert.equal(blob.size,bytes.length);assert.equal(calls.length,2);assert.equal(calls[1].options.headers,undefined);assert.equal(calls[1].options.credentials,'omit');});
+test('corrupt R2 returns once to authenticated Blob',async()=>{const calls=[];await loadPlatformPdf('/api/platform-catalog-documents?id=one','token',async(url,options)=>{calls.push({url,options});return calls.length===1?delivery():calls.length===2?new Response(Buffer.alloc(bytes.length),{headers:{'content-type':'application/pdf'}}):pdf();});assert.equal(calls.length,3);assert.match(calls[2].url,/delivery=blob/);assert.equal(calls[2].options.headers.Authorization,'Bearer token');});
+test('refused account does not retry',async()=>{let count=0;await assert.rejects(loadPlatformPdf('/api/platform-catalog-documents?id=one','token',async()=>{count++;return Response.json({error:'Refused'},{status:403});}),/Refused/);assert.equal(count,1);});
+test('previous server PDF remains readable',async()=>{let count=0;const blob=await loadPlatformPdf('/api/platform-admin-documents?id=one','token',async()=>{count++;return pdf();});assert.equal(blob.size,bytes.length);assert.equal(count,1);});
+test('one consultation receipt survives the authenticated fallback',async()=>{const calls=[];await loadPlatformPdf('/api/platform-catalog-documents?id=one','token',async(url)=>{calls.push(url);return calls.length===1?delivery():calls.length===2?new Response(Buffer.alloc(bytes.length),{headers:{'content-type':'application/pdf'}}):pdf();});assert.equal(new URL(calls[0],window.location.origin).searchParams.get('consultation'),new URL(calls[2],window.location.origin).searchParams.get('consultation'));});

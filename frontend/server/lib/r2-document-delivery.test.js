@@ -1,0 +1,10 @@
+﻿import test from 'node:test';
+import assert from 'node:assert/strict';
+import {tryR2Delivery,r2ReadEnabled} from './r2-document-delivery.js';
+const entry={sha256:'a'.repeat(64),size_bytes:15};
+const mapping={...entry,object_key:`platform-documents/sha256/${entry.sha256}.pdf`,verified_at:'2026-10-11'};
+const env={VERCEL_ENV:'production',CARNETPASS_R2_READ_ENABLED:'true'};
+const db=data=>({from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data})})})})});
+test('read flag defaults off and excludes preview',async()=>{assert.equal(r2ReadEnabled({}),false);assert.equal(r2ReadEnabled({...env,VERCEL_ENV:'preview'}),false);assert.equal(await tryR2Delivery(null,entry,{}),null);});
+test('unverified or mismatched mapping never signs',async()=>{for(const data of [null,{...mapping,verified_at:null},{...mapping,size_bytes:12},{...mapping,object_key:'other'}])assert.equal(await tryR2Delivery(db(data),entry,env),null);});
+test('matching HEAD signs and unavailable R2 falls back',async()=>{let destroyed=0;const storage={r2Configuration:()=>({bucket:'bucket'}),r2Client:()=>({send:async()=>({ContentLength:15,ContentType:'application/pdf',Metadata:{sha256:entry.sha256}}),destroy:()=>destroyed++}),signedR2Document:async()=>({provider:'r2',url:'signed'})};assert.deepEqual(await tryR2Delivery(db(mapping),entry,env,{storage}),{provider:'r2',url:'signed',sha256:entry.sha256,sizeBytes:15});assert.equal(destroyed,1);storage.r2Client=()=>({send:async()=>{throw Error('unavailable');},destroy:()=>destroyed++});assert.equal(await tryR2Delivery(db(mapping),entry,env,{storage}),null);assert.equal(destroyed,2);});

@@ -1,0 +1,8 @@
+.install-carnetpass { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.install-carnetpass__button { min-height: 48px; padding: 12px 20px; border: 1px solid currentColor; border-radius: 10px; background: transparent; color: inherit; font: inherit; font-weight: 750; cursor: pointer; }
+.install-carnetpass__button:hover { background: rgba(194, 65, 12, .1); }
+.install-carnetpass__help { max-width: 350px; margin: 0; font-size: 13px; line-height: 1.45; }
+.install-carnetpass--home { color: #fff9f3; }
+.install-carnetpass--home .install-carnetpass__button:hover { background: #39322d; }
+.install-carnetpass--qr { align-items: center; margin: 22px auto 0; color: var(--copper); }
+.install-carnetpass--qr .install-carnetpass__help { text-align: center; }

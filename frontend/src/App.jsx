@@ -1,0 +1,1909 @@
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom"; // lire l'ID dans l'URL + changer de page
+// NOUVEAU (perf) : le scanner n'est telecharge QU'AU MOMENT du clic sur le bouton.
+// Resultat : la page d'accueil s'ouvre bien plus vite, surtout en 4G faible.
+const ScannerQR = lazy(() => import("./ScannerQR"));
+import { QRCodeCanvas } from "qrcode.react"; // NOUVEAU (QR) : fabrique l'image du QR code
+import { ethers } from "ethers";
+import { RPC_URL, CONTRACT_ADDRESS } from "./blockchain/config";
+import EquipmentRegistryABI from "./blockchain/EquipmentRegistry.json";
+import { useWallet } from "./blockchain/useWallet";
+import { loadEquipmentKnowledge } from "./services/equipmentKnowledge";
+import { getPublicUserManual } from "./lib/public-user-manuals.js";
+import { publicQrUrl } from "./lib/public-qr-url.js";
+import CarnetPassCreatedModal from "./components/CarnetPassCreatedModal";
+import shibaTechnicien from "./assets/simba-assistance-technique.webp";
+import HomeLanding from "./components/HomeLanding";
+import InstallCarnetPass from "./components/InstallCarnetPass";
+import EmergencyContacts from "./components/EmergencyContacts";
+import ReactMarkdown from "react-markdown";
+import "./App.css";
+import { supabase } from "./services/supabaseClient";
+const GENERIC_EQUIPMENT_ID_PREFIX = "generic-";
+const publicReminderOfferEnabled = import.meta.env.VITE_PUBLIC_REMINDERS_ENABLED === "true";
+
+function hasTechnicalDocumentation(equipmentId) {
+  return typeof equipmentId === "string"
+    && equipmentId.length > 0
+    && !equipmentId.startsWith(GENERIC_EQUIPMENT_ID_PREFIX);
+}
+
+function getInterventionTypeLabel(type) {
+  const labels = {
+    maintenance: "Entretien",
+    repair: "Dépannage",
+    installation: "Installation",
+    commissioning: "Mise en service",
+    inspection: "Contrôle",
+    other: "Autre",
+  };
+
+  return labels[type] || "Intervention";
+}
+
+function getInterventionResultLabel(status) {
+  const labels = {
+    resolved: "Résolu",
+    partially_resolved: "Partiellement résolu",
+    not_resolved: "Non résolu",
+    not_applicable: "Sans objet",
+  };
+
+  return labels[status] || "Résultat non renseigné";
+}
+
+function formatPublicInterventionDate(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Date non renseignée";
+  }
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function App({ initialMode = "public" }) {
+  // Mode d'affichage : "public" (consultation, sans wallet) ou "pro" (technicien, avec wallet)
+  const [selectedMode, setMode] = useState(initialMode);
+  const [technicalResult, setTechnicalResult] = useState(null);
+  const [equipmentKnowledge, setEquipmentKnowledge] = useState(null);
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [publicFaultQuestion, setPublicFaultQuestion] = useState("");
+  const [publicFaultResponse, setPublicFaultResponse] = useState("");
+  const [publicFaultSource, setPublicFaultSource] = useState("");
+  const [publicReminderEmail, setPublicReminderEmail] = useState("");
+  const [publicReminderDueOn, setPublicReminderDueOn] = useState("");
+  const [publicReminderLeadDays, setPublicReminderLeadDays] = useState("30");
+  const [publicReminderMessage, setPublicReminderMessage] = useState("");
+  const [publicReminderBusy, setPublicReminderBusy] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+
+
+
+
+  // NOUVEAU (routeur) : si l'URL est /appareil/CHAUD-DEMO, on recupere l'ID ici.
+  // Sur la page d'accueil "/", idDepuisURL vaut undefined (c'est normal).
+  const { id: idDepuisURL } = useParams();
+  // A QR route is always public, even when this component was already in pro mode.
+  const mode = idDepuisURL ? "public" : selectedMode;
+  // NOUVEAU (scan) : navigation interne + ouverture/fermeture de la camera
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [scanOuvert, setScanOuvert] = useState(false);
+  const [boiler, setBoiler] = useState(null);
+  const [searchId, setSearchId] = useState(() => idDepuisURL ?? "");
+  const [message, setMessage] = useState("");
+
+  // Recherche universelle :
+  // mémorise les équipements génériques trouvés par modèle,
+  // gamme ou référence constructeur.
+  const [searchResults, setSearchResults] = useState([]);
+
+  // Équipement constructeur générique sélectionné.
+  // Important : ce n'est PAS encore un CarnetPass physique.
+  const [selectedEquipment, setSelectedEquipment] = useState(null);
+  const [personalSerialNumber, setPersonalSerialNumber] = useState("");
+  const [isCreatingCarnetPass, setIsCreatingCarnetPass] = useState(false);
+  const [carnetPassCreationMessage, setCarnetPassCreationMessage] = useState("");
+  const [createdCarnetPass, setCreatedCarnetPass] = useState(null);
+  const hasPrivateDocumentation = equipmentKnowledge?.data?.documents?.some(
+    (document) => document.storage === "private"
+  ) ?? false;
+  const publicUserManual = getPublicUserManual(boiler);
+  const publicCatalogueManual = equipmentKnowledge?.data?.documents?.find((document) =>
+    document.documentType === "user_manual" && document.storage === "public" && document.documentUrl
+  );
+  // NOUVEAU (perf) : useMemo = "fabrique-le UNE fois, puis reutilise".
+  // Sans ca, la connexion blockchain etait recreee a chaque lettre tapee dans un champ.
+  const provider = useMemo(() => new ethers.JsonRpcProvider(RPC_URL), []);
+  const contract = useMemo(
+    () => new ethers.Contract(CONTRACT_ADDRESS, EquipmentRegistryABI.abi, provider),
+    [provider]
+  );
+
+  const {
+    account, isCorrectNetwork,
+    addMaintenance, getMaintenances,
+  } = useWallet();
+
+  // Carnet d'entretien
+  const [maintenances, setMaintenances] = useState([]);
+  const [isLoadingCarnet, setIsLoadingCarnet] = useState(false);
+  const [carnetError, setCarnetError] = useState("");
+  const [publicInterventions, setPublicInterventions] = useState([]);
+  const [isLoadingPublicInterventions, setIsLoadingPublicInterventions] = useState(false);
+  const [publicInterventionsError, setPublicInterventionsError] = useState("");
+
+  // Formulaire d'ajout d'intervention
+  const [mType, setMType] = useState("");
+  const [mDesc, setMDesc] = useState("");
+  const [mTech, setMTech] = useState("");
+  const [mPart, setMPart] = useState("");
+  const [isAddingM, setIsAddingM] = useState(false);
+  const [mMsg, setMMsg] = useState("");
+
+  // Transforme un timestamp blockchain (secondes) en date lisible FR
+  function formatDate(timestampBigInt) {
+    const ms = Number(timestampBigInt) * 1000;
+    return new Date(ms).toLocaleString("fr-FR");
+  }
+  async function demanderIA() {
+    // -------------------------------------------------------
+    // IDENTIFIANT TECHNIQUE POUR L'IA
+    // -------------------------------------------------------
+    //
+    // Cas 1 :
+    // fiche équipement générique
+    // -> selectedEquipment.equipmentId
+    //
+    // Cas 2 :
+    // CarnetPass physique Redis
+    // -> boiler.technicalEquipmentId
+    //
+    // Cas 3 :
+    // ancien appareil du prototype
+    // -> boiler.equipmentId
+    // -------------------------------------------------------
+
+    const technicalEquipmentId =
+      selectedEquipment?.equipmentId ??
+      boiler?.technicalEquipmentId ??
+      boiler?.equipmentId;
+
+    if (
+      !technicalEquipmentId ||
+      !aiQuestion.trim()
+    ) {
+      return;
+    }
+
+    try {
+      setIsAiLoading(true);
+      setAiAnswer("");
+
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          equipmentId:
+            technicalEquipmentId,
+
+          question:
+            aiQuestion,
+        }),
+      });
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message ||
+          data.error ||
+          "Erreur lors de la réponse IA"
+        );
+      }
+
+      setAiAnswer(
+        data.answer ||
+        "Aucune réponse reçue."
+      );
+    } catch (error) {
+      console.error(
+        "Erreur Assistant IA CarnetPass :",
+        error
+      );
+
+      setAiAnswer(
+        error?.message ||
+        "Impossible d'obtenir une réponse de l'assistant pour le moment."
+      );
+    } finally {
+      setIsAiLoading(false);
+    }
+  }
+
+  // PDF : genere le carnet d'entretien complet de l'equipement affiche
+  async function telechargerCarnetPDF() {
+    if (!boiler) return;
+
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF();
+    let y = 20;
+
+    // Titre
+    doc.setFontSize(20);
+    doc.text("CarnetPass", 20, y);
+
+    y += 10;
+    doc.setFontSize(14);
+    doc.text("Carnet d'entretien de l'equipement", 20, y);
+
+    // Informations de l'appareil
+    y += 15;
+    doc.setFontSize(11);
+    doc.text(`ID : ${boiler.equipmentId}`, 20, y);
+
+    y += 7;
+    doc.text(`Marque : ${boiler.brand}`, 20, y);
+
+    y += 7;
+    doc.text(`Modele : ${boiler.model}`, 20, y);
+
+    y += 7;
+    doc.text(`Reference produit : ${boiler.productReference}`, 20, y);
+
+    y += 12;
+    doc.line(20, y, 190, y);
+
+    y += 10;
+    doc.setFontSize(14);
+    doc.text("Historique des interventions", 20, y);
+
+    if (maintenances.length === 0) {
+      y += 10;
+      doc.setFontSize(11);
+      doc.text("Aucune intervention enregistree.", 20, y);
+    } else {
+      maintenances.forEach((m, index) => {
+        if (y > 250) {
+          doc.addPage();
+          y = 20;
+        }
+
+        y += 12;
+        doc.setFontSize(12);
+        doc.text(`Intervention ${index + 1}`, 20, y);
+
+        y += 7;
+        doc.setFontSize(10);
+        doc.text(`Enregistrement Polygon : ${formatDate(m.date)}`, 20, y);
+
+        y += 6;
+        doc.text(`Type : ${m.interventionType}`, 20, y);
+
+        y += 6;
+        doc.text(`Entreprise / technicien : ${m.technician}`, 20, y);
+
+        y += 6;
+        const description = doc.splitTextToSize(
+          `Description : ${m.description}`,
+          165
+        );
+        doc.text(description, 20, y);
+
+        y += description.length * 5;
+
+        if (m.partChanged) {
+          y += 6;
+          const piece = doc.splitTextToSize(
+            `Piece remplacee : ${m.partChanged}`,
+            165
+          );
+          doc.text(piece, 20, y);
+          y += piece.length * 5;
+        }
+
+        y += 5;
+        doc.line(20, y, 190, y);
+      });
+    }
+
+    doc.save(`CarnetPass-${boiler.equipmentId}.pdf`);
+  }
+  // NOUVEAU (QR) : telecharge le QR affiche en fichier PNG (pret a imprimer)
+  function telechargerQR(boilerId) {
+    // On recupere l'image QR dessinee a l'ecran (une balise <canvas>)
+    const canvas = document.getElementById(`qr-${boilerId}`);
+    if (!canvas) return;
+    // On la transforme en fichier image
+    const url = canvas.toDataURL("image/png");
+    // On cree un lien invisible et on "clique" dessus pour declencher le telechargement
+    const lien = document.createElement("a");
+    lien.href = url;
+    lien.download = `QR-${boilerId}.png`; // nom du fichier : QR-CHAUD-DEMO.png
+    lien.click();
+  }
+
+  // PARTAGE : ouvre le menu natif du téléphone (WhatsApp, SMS, Mail...)
+  // Si le navigateur ne sait pas partager, on copie simplement le lien.
+  async function partagerCarnetPass(url, titre, texte) {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: titre,
+          text: texte,
+          url: url,
+        });
+        return;
+      }
+
+      await navigator.clipboard.writeText(url);
+      setMessage("✅ Lien copié. Tu peux maintenant le partager.");
+    } catch (err) {
+      // Si l'utilisateur ferme simplement le menu de partage,
+      // ce n'est pas considéré comme une erreur.
+      if (err?.name !== "AbortError") {
+        console.error("[partage] Échec :", err);
+        setMessage("❌ Impossible de partager ce lien.");
+      }
+    }
+  }
+  // Charge le carnet d'un appareil
+  async function chargerCarnet(boilerId) {
+    setIsLoadingCarnet(true);
+    setCarnetError("");
+    try {
+      const liste = await getMaintenances(CONTRACT_ADDRESS, EquipmentRegistryABI.abi, boilerId);
+      setMaintenances(liste);
+    } catch (err) {
+      console.error("[carnet] ECHEC :", err);
+      setMaintenances([]);
+      setCarnetError("Impossible de lire le carnet. La blockchain n'a pas repondu correctement.");
+    } finally {
+      setIsLoadingCarnet(false);
+    }
+  }
+
+  // Recherche : on charge la fiche de l'appareil.
+  // NOUVEAU : on accepte un ID explicite (venant du QR / de l'URL).
+  // Sinon on prend celui tape dans le champ de recherche.
+  // ---------------------------------------------------------
+  // RECHERCHE UNIVERSELLE CARNETPASS
+  // ---------------------------------------------------------
+  //
+  // Accepte :
+  //
+  // - CarnetPass ID
+  // - référence constructeur
+  // - modèle / gamme
+  // - numéro de série
+  //
+  // Les anciens appareils enregistrés directement sur Polygon
+  // restent compatibles grâce au fallback blockchain.
+  // ---------------------------------------------------------
+
+  async function chercherChaudiere(idExplicite) {
+    const valeurRecherche = String(
+      idExplicite ?? searchId ?? ""
+    ).trim();
+
+    if (!valeurRecherche) {
+      return;
+    }
+
+    try {
+      // ---------------------------------------------------
+      // 1. RECHERCHE UNIVERSELLE
+      // ---------------------------------------------------
+
+      const response = await fetch(
+        `/api/search?q=${encodeURIComponent(
+          valeurRecherche
+        )}`
+      );
+
+      const result = await response.json();
+      // On remet l'écran de recherche à zéro
+      // après avoir reçu la réponse du serveur.
+      setMessage("");
+      setBoiler(null);
+      setMaintenances([]);
+      setTechnicalResult(null);
+      setEquipmentKnowledge(null);
+      setSearchResults([]);
+      setSelectedEquipment(null);
+      setAiAnswer("");
+      setPublicFaultQuestion("");
+      setPublicFaultResponse("");
+      setPublicFaultSource("");
+
+      if (!response.ok || !result.ok) {
+        throw new Error(
+          result.error ||
+          "Erreur pendant la recherche."
+        );
+      }
+
+      const results = Array.isArray(
+        result.results
+      )
+        ? result.results
+        : [];
+
+      // ---------------------------------------------------
+      // 2. CARNETPASS PHYSIQUE
+      // ---------------------------------------------------
+
+      const carnetPassResult =
+        results.find(
+          (item) =>
+            item.resultType ===
+            "carnetpass"
+        );
+
+      if (carnetPassResult) {
+        const identity =
+          carnetPassResult.identity ?? {};
+
+        const identifiantQr =
+          /^cp_qr_[A-Za-z0-9_-]{43}$/.test(valeurRecherche)
+            ? valeurRecherche
+            : carnetPassResult.carnetPassId;
+
+        const boilerFromCarnetPass = {
+          exists: true,
+          equipmentId: carnetPassResult.carnetPassId,
+          technicalEquipmentId: carnetPassResult.equipmentId,
+          carnetPassId: carnetPassResult.carnetPassId,
+          qrCode: carnetPassResult.carnetPassId,
+          brand: identity.brand ?? "",
+          model: identity.model ?? "",
+          productReference: carnetPassResult.manufacturerReference ?? "",
+          manufacturerReference: carnetPassResult.manufacturerReference ?? "",
+          publicContact: carnetPassResult.publicContact ?? null,
+
+          // Le jeton provient du lien ouvert, jamais d'une recherche par numéro.
+          // origin = adresse de base de l'application actuellement ouverte.
+          publicQrUrl: publicQrUrl(window.location.origin, identifiantQr),
+
+          // Les API publiques ne fournissent pas les données privées du carnet.
+          publicTechnicalOnly: true,
+          source: "universal_search",
+        };
+
+        setBoiler(
+          boilerFromCarnetPass
+        );
+
+        // Le RAG travaille avec l'identifiant
+        // technique du modèle, pas avec CP-xxxx.
+        if (
+          hasTechnicalDocumentation(carnetPassResult.equipmentId)
+        ) {
+          const knowledge =
+            await loadEquipmentKnowledge(
+              carnetPassResult.equipmentId
+            );
+
+          setEquipmentKnowledge(
+            knowledge
+          );
+        }
+
+        return;
+      }
+
+      // ---------------------------------------------------
+      // 3. ÉQUIPEMENT(S) GÉNÉRIQUE(S)
+      // ---------------------------------------------------
+      //
+      // Une recherche par référence ou modèle
+      // NE CRÉE PAS de CarnetPass.
+      //
+      // Elle renvoie seulement les modèles
+      // correspondants.
+      // ---------------------------------------------------
+
+      const equipmentResults =
+        results.filter(
+          (item) =>
+            item.resultType ===
+            "equipment"
+        );
+
+      if (
+        equipmentResults.length > 0
+      ) {
+        setSearchResults(
+          equipmentResults
+        );
+
+        return;
+      }
+
+      // ---------------------------------------------------
+      // 4. FALLBACK POLYGON
+      // ---------------------------------------------------
+      //
+      // Compatibilité avec les anciens appareils
+      // du prototype enregistrés directement
+      // dans le smart contract.
+      // ---------------------------------------------------
+
+      // Un jeton QR est traité uniquement par les API CarnetPass.
+      // S'il est introuvable, on ne l'envoie jamais au service Polygon.
+      if (/^cp_qr_/i.test(valeurRecherche)) {
+        setMessage("Ce QR CarnetPass est introuvable ou désactivé.");
+        return;
+      }
+
+      try {
+        const polygonData =
+          await contract.equipments(
+            valeurRecherche
+          );
+
+        if (polygonData.exists) {
+          setBoiler(
+            polygonData
+          );
+          if (mode === "pro") {
+            await chargerCarnet(polygonData.equipmentId);
+          }
+
+          const knowledge =
+            await loadEquipmentKnowledge(
+              valeurRecherche
+            );
+
+          setEquipmentKnowledge(
+            knowledge
+          );
+
+          return;
+        }
+      } catch (polygonError) {
+        console.warn(
+          "Recherche Polygon non concluante :",
+          polygonError
+        );
+      }
+
+      // ---------------------------------------------------
+      // 5. AUCUN RÉSULTAT
+      // ---------------------------------------------------
+
+      setMessage(
+        "Aucun CarnetPass ou équipement trouvé."
+      );
+    } catch (error) {
+      console.error(
+        "Erreur recherche universelle CarnetPass :",
+        error
+      );
+
+      setMessage(
+        error?.message ||
+        "Impossible d'effectuer la recherche pour le moment."
+      );
+    }
+  }
+  // ---------------------------------------------------------
+  // OUVERTURE D'UNE FICHE ÉQUIPEMENT GÉNÉRIQUE
+  // ---------------------------------------------------------
+  //
+  // Cette fiche représente un modèle constructeur.
+  //
+  // Ce n'est PAS encore un appareil physique CarnetPass.
+  // ---------------------------------------------------------
+
+  async function ouvrirFicheEquipement(equipment) {
+    if (!equipment?.equipmentId) {
+      return;
+    }
+
+    try {
+      setMessage("");
+      setSelectedEquipment(equipment);
+      setSearchResults([]);
+      setEquipmentKnowledge(null);
+      setAiAnswer("");
+      setAiQuestion("");
+
+      const knowledge =
+        await loadEquipmentKnowledge(
+          equipment.equipmentId
+        );
+
+      setEquipmentKnowledge(
+        knowledge
+      );
+    } catch (error) {
+      console.error(
+        "Erreur ouverture fiche équipement :",
+        error
+      );
+
+      setMessage(
+        "Impossible de charger la fiche technique de cet équipement."
+      );
+    }
+  }
+
+  // Arrivée depuis l'espace professionnel : ouvre la fiche constructeur
+  // lorsqu'elle existe, sinon prépare une fiche générique sans bloquer
+  // la création du CarnetPass.
+  useEffect(() => {
+    const professionalEquipment = location.state?.professionalEquipment;
+
+    if (
+      !professionalEquipment?.productReference ||
+      !professionalEquipment?.serialNumber
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function ouvrirDepuisEspacePro() {
+      const productReference = String(
+        professionalEquipment.productReference
+      ).trim();
+
+      const genericEquipment = {
+        equipmentId: null,
+        manufacturerReference: productReference,
+        brand: String(
+          professionalEquipment.brand || "Équipement"
+        ).trim(),
+        model: String(
+          professionalEquipment.model || productReference
+        ).trim(),
+        productType: String(
+          professionalEquipment.productType || "Autre équipement"
+        ).trim(),
+        range: "",
+        variant: "",
+        documentationAvailable: false,
+      };
+
+      setMode("pro");
+      setMessage("");
+      setBoiler(null);
+      setSearchResults([]);
+      setSelectedEquipment(null);
+      setEquipmentKnowledge(null);
+      setPersonalSerialNumber(professionalEquipment.serialNumber);
+      setAiAnswer("");
+      setAiQuestion("");
+
+      let equipmentToOpen = genericEquipment;
+      let knowledge = null;
+
+      try {
+        const response = await fetch(
+          `/api/search?q=${encodeURIComponent(productReference)}`
+        );
+        const result = await response.json();
+
+        if (response.ok && result?.ok === true) {
+          const normalizedReference = productReference.replace(/\s+/g, "");
+
+          const equipment = (result.results || []).find(
+            (item) =>
+              item.resultType === "equipment" &&
+              String(item.manufacturerReference || "").replace(/\s+/g, "") ===
+              normalizedReference
+          );
+
+          if (equipment) {
+            try {
+              knowledge = await loadEquipmentKnowledge(
+                equipment.equipmentId
+              );
+            } catch {
+              console.warn(
+                "Documentation technique momentanément indisponible."
+              );
+            }
+
+            const documents = knowledge?.data?.documents;
+
+            equipmentToOpen = {
+              ...equipment,
+              documentationAvailable:
+                Array.isArray(documents) && documents.length > 0,
+            };
+          }
+        }
+      } catch {
+        console.warn(
+          "Recherche documentaire indisponible, ouverture de la fiche générique."
+        );
+      }
+
+      if (cancelled) return;
+
+      setSelectedEquipment(equipmentToOpen);
+      setEquipmentKnowledge(knowledge);
+
+      // Retire les données temporaires de l'historique du navigateur.
+      navigate(location.pathname, {
+        replace: true,
+        state: null,
+      });
+    }
+
+    ouvrirDepuisEspacePro();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, location.state, navigate]);
+  async function creerCarnetPassPersonnel() {
+    if (isCreatingCarnetPass) return;
+
+    const manufacturerReference = selectedEquipment?.manufacturerReference;
+    const serialNumber = personalSerialNumber.trim();
+
+    if (!manufacturerReference || !serialNumber) {
+      setCarnetPassCreationMessage(
+        "Sélectionne un modèle et renseigne le numéro de série de l'appareil."
+      );
+      return;
+    }
+
+    if (serialNumber.length > 128) {
+      setCarnetPassCreationMessage(
+        "Le numéro de série ne doit pas dépasser 128 caractères."
+      );
+      return;
+    }
+
+    try {
+      setIsCreatingCarnetPass(true);
+      setCarnetPassCreationMessage("");
+
+      // Récupère la session de connexion dans le navigateur.
+      const {
+        data: sessionData,
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        throw new Error(
+          "Impossible de récupérer ta connexion. Reconnecte-toi puis réessaie."
+        );
+      }
+
+      const accessToken = sessionData?.session?.access_token;
+
+      if (!accessToken) {
+        throw new Error(
+          "Connecte-toi à ton compte professionnel pour créer un carnet."
+        );
+      }
+
+      // Transmet le jeton de connexion au serveur.
+      // Le serveur vérifie lui-même l'utilisateur et son entreprise.
+      const response = await fetch("/api/carnetpass", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          manufacturerReference,
+          serialNumber,
+          brand: selectedEquipment?.brand,
+          model: selectedEquipment?.model,
+          productType: selectedEquipment?.productType,
+        }),
+      });
+
+      const data = await response.json();
+
+      // Un doublon affiche un message : il ne donne pas accès au carnet existant.
+      if (!response.ok || data?.ok !== true) {
+        throw new Error(
+          data?.error || "Impossible de créer le CarnetPass."
+        );
+      }
+
+      const carnetPassId = data.carnetPassId;
+      const qrToken = data.qrToken;
+
+      const validCarnetPassId = typeof carnetPassId === "string"
+        && carnetPassId.length === 14
+        && /^CP-\d{4}-\d{6}$/.test(carnetPassId);
+
+      const validQrToken = typeof qrToken === "string"
+        && qrToken.length === 49
+        && /^cp_qr_[A-Za-z0-9_-]{43}$/.test(qrToken);
+
+      if (!validCarnetPassId || !validQrToken) {
+        throw new Error(
+          "Le serveur annonce une création, mais la réponse QR est incomplète. Ne relance pas la création pour cet appareil."
+        );
+      }
+
+      setPersonalSerialNumber("");
+      setCreatedCarnetPass({
+        carnetPassId,
+        qrToken,
+        brand: selectedEquipment?.brand || "Équipement",
+        model: selectedEquipment?.model || "",
+        serialNumber,
+      });
+    } catch (error) {
+      console.error("Erreur création CarnetPass personnel.");
+      setCarnetPassCreationMessage(
+        error?.message || "Impossible de créer le CarnetPass."
+      );
+    } finally {
+      setIsCreatingCarnetPass(false);
+    }
+  }
+  // NOUVEAU (scan) : appelee quand la camera a lu un QR CarnetPass valide
+  function ouvrirRecherche(valeur) {
+    const recherche = String(valeur ?? "").trim();
+    if (!recherche) return;
+
+    setSearchId(recherche);
+
+    if (recherche === idDepuisURL) {
+      // Même adresse : on actualise directement la fiche.
+      chercherChaudiere(recherche);
+      return;
+    }
+
+    // Nouvelle adresse : l'effet sur idDepuisURL lancera la recherche.
+    navigate(`/appareil/${encodeURIComponent(recherche)}`);
+  }
+
+  function ouvrirDepuisScan(idScanne) {
+    setScanOuvert(false);
+    ouvrirRecherche(idScanne);
+  }
+
+  // Charge uniquement les interventions confirmées du CarnetPass public.
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    const carnetPassId = boiler?.carnetPassId;
+
+    async function chargerInterventionsPubliques() {
+      if (!carnetPassId) {
+        setPublicInterventions([]);
+        setPublicInterventionsError("");
+        setIsLoadingPublicInterventions(false);
+        return;
+      }
+
+      setIsLoadingPublicInterventions(true);
+      setPublicInterventionsError("");
+
+      try {
+        const response = await fetch(
+          `/api/interventions?carnetPassId=${encodeURIComponent(carnetPassId)}`,
+          {
+            cache: "no-store",
+            signal: controller.signal,
+          }
+        );
+
+        const result = await response.json().catch(() => null);
+
+        if (!response.ok || result?.ok !== true) {
+          throw new Error(
+            result?.error ||
+            "L’historique du CarnetPass n’a pas pu être chargé."
+          );
+        }
+
+        if (!cancelled) {
+          setPublicInterventions(
+            Array.isArray(result.interventions)
+              ? result.interventions
+              : []
+          );
+        }
+      } catch (error) {
+        if (!cancelled && error?.name !== "AbortError") {
+          setPublicInterventions([]);
+          setPublicInterventionsError(
+            error?.message ||
+            "L’historique du CarnetPass n’a pas pu être chargé."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingPublicInterventions(false);
+        }
+      }
+    }
+
+    chargerInterventionsPubliques();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [boiler?.carnetPassId]);
+
+  // NOUVEAU (QR/routeur) : arrivee via une URL directe (ou un QR scanne)
+  // -> on ouvre la fiche de l'appareil automatiquement.
+  useEffect(() => {
+    if (idDepuisURL) {
+      // Le changement d'URL ou le QR déclenche une recherche externe.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      chercherChaudiere(idDepuisURL); // ID passe explicitement = pas de course d'etat (le piege du "await")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idDepuisURL]);
+
+  // ECRITURE : ajouter une intervention a l'appareil affiche
+  async function ajouterIntervention() {
+    setMMsg("");
+    if (!account) { setMMsg("⚠️ Connecte d'abord ton wallet."); return; }
+    if (!isCorrectNetwork) { setMMsg("⚠ Mauvais reseau. Passe sur Polygon (chainId 137)."); return; }
+    if (!boiler) { setMMsg("⚠️ Cherche d'abord un appareil."); return; }
+    if (!mType || !mDesc || !mTech) { setMMsg("⚠️ Type, description et technicien sont requis."); return; }
+    // RGPD : bloque quelques formes évidentes de données personnelles
+    // avant qu'elles ne soient inscrites de façon permanente sur Polygon.
+    const texteIntervention = `${mType} ${mDesc} ${mTech}`;
+
+    const contientEmail =
+      /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(texteIntervention);
+
+    const contientAdresse =
+      /\b(rue|avenue|boulevard|chemin|impasse|allée|allee|place)\b/i.test(
+        texteIntervention
+      );
+
+    const contientTelephone =
+      /(?:\+33[ .-]?[1-9](?:[ .-]?\d{2}){4}|0[1-9](?:[ .-]\d{2}){4})/.test(
+        texteIntervention
+      );
+
+    if (contientEmail || contientAdresse || contientTelephone) {
+      setMMsg(
+        "❌ Donnée personnelle détectée. Retire toute adresse, téléphone ou e-mail avant l'inscription sur la blockchain."
+      );
+      return;
+    }
+
+    try {
+      setIsAddingM(true);
+      setMMsg("Transaction en cours... confirme dans MetaMask.");
+      await addMaintenance(CONTRACT_ADDRESS, EquipmentRegistryABI.abi, boiler.equipmentId, mType, mDesc, mTech, mPart);
+      setMMsg("✅ Intervention ajoutee !");
+      setMType(""); setMDesc(""); setMTech(""); setMPart("");
+      chargerCarnet(boiler.equipmentId); // on rafraichit le carnet
+    } catch (err) {
+      console.error(err);
+      if (err.code === "ACTION_REJECTED") setMMsg("❌ Signature refusee.");
+      else if (err.reason) setMMsg(`❌ Refuse par le contrat : ${err.reason}`);
+      else setMMsg("❌ Echec (voir console).");
+    } finally {
+      setIsAddingM(false);
+    }
+  }
+
+  return (
+    <div className="app">
+      {/* ---------- BARRE DU HAUT ---------- */}
+      <header className="topbar">
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="#fff">
+              <path d="M12 2c.5 3-1 4.3-2.2 5.8C8.4 9.5 7.5 10.8 7.5 13a4.5 4.5 0 0 0 9 0c0-1.4-.5-2.6-1.3-3.7 1.6.8 2.8 2.9 2.8 5.2a7 7 0 0 1-14 0c0-4.3 4-6.5 8-12.5z" />
+            </svg>
+          </span>
+          <span className="brand-name">CarnetPass</span>
+        </div>
+
+        {mode === "public" ? (
+          <button className="btn btn-ghost" onClick={() => navigate("/connexion")}>
+            🔒 Espace pro
+          </button>
+        ) : (
+          <button className="btn btn-ghost" onClick={() => setMode("public")}>
+            ← Retour à la consultation
+          </button>
+        )}
+      </header>
+
+      {location.pathname === "/" && mode === "public" && !boiler && !selectedEquipment && searchResults.length === 0 && (
+        <HomeLanding />
+      )}
+
+      {/* ---------- HERO + RECHERCHE (toujours visible) ---------- */}
+      <section className="hero" id="rechercher-appareil">
+        {location.pathname === "/" ? <h2>Retrouver un appareil</h2> : <h1>Fiche publique de votre appareil</h1>}
+        <p>Saisissez un identifiant CarnetPass ou scannez le QR code pour ouvrir la fiche de l’appareil.</p>
+        {location.pathname === "/" && (
+          <div className="plate-scan-entry">
+            <h3>Vous avez la plaque signalétique de l’appareil ?</h3>
+            <p>Dans votre espace professionnel, choisissez « Ajouter un équipement », puis « Photographier la plaque signalétique ». Une photo permet de lire la marque, le modèle et la référence, puis de proposer les correspondances du catalogue. Vérifiez les informations avant l’enregistrement.</p>
+            <button type="button" className="btn btn-primary" onClick={() => navigate("/connexion", { state: { from: { pathname: "/espace-pro", search: "?action=scan-plaque" } } })}>📷 Se connecter pour photographier la plaque</button>
+          </div>
+        )}
+        {location.pathname.startsWith("/appareil/") && (
+          <InstallCarnetPass className="install-carnetpass--qr" />
+        )}
+
+        <div className="search">
+          <input
+            className="field"
+            type="text"
+            placeholder="Entrez un ID équipement (ex : CHAUD-DEMO)"
+            value={searchId}
+            onChange={(e) => setSearchId(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                ouvrirRecherche(searchId);
+              }
+            }}
+          />
+          {/* NOUVEAU : la fleche () => evite d'envoyer l'evenement du clic comme ID */}
+          <button
+            className="btn btn-primary"
+            onClick={() => ouvrirRecherche(searchId)}
+          >
+            Rechercher
+          </button>
+        </div>
+
+        <div className="hero-foot">
+          <button className="linklike" onClick={() => setScanOuvert(true)}>
+            📷 ou scanner un QR code
+          </button>
+          <span className="trust">🛡️ Données sécurisées et historique vérifiable</span>
+        </div>
+        <button
+          className="btn btn-ghost"
+          onClick={() =>
+            partagerCarnetPass(
+              "https://www.carnetpass.fr",
+              "CarnetPass",
+              "Découvrez CarnetPass, le carnet d'entretien vérifiable de vos équipements."
+            )
+          }
+        >
+          📤 Partager CarnetPass
+        </button>
+      </section>
+
+      {/* ---------- ESPACE PRO (uniquement en mode pro) ---------- */}
+      {mode === "pro" && (
+        <section className="pro-context-banner" aria-label="Parcours professionnel">
+          <span className="pro-context-icon" aria-hidden="true">✓</span>
+          <div>
+            <strong>Équipement sélectionné depuis votre espace professionnel</strong>
+            <span>Vérifiez les informations, puis créez son CarnetPass en quelques secondes.</span>
+          </div>
+        </section>
+      )}
+      {/* ---------- RÉSULTATS RECHERCHE ÉQUIPEMENTS ---------- */}
+      {searchResults.length > 0 && (
+        <section className="result result--catalog">
+          <div className="appareil appareil--catalog">
+            <div className="appareil-head">
+              <div>
+                <span className="appareil-type">
+                  Équipement constructeur
+                </span>
+
+                <h2 className="appareil-name">
+                  {searchResults.length === 1
+                    ? "Équipement trouvé"
+                    : `${searchResults.length} équipements trouvés`}
+                </h2>
+
+                <p className="appareil-loc">
+                  Sélectionne le modèle correspondant à ton appareil.
+                </p>
+              </div>
+            </div>
+
+            {searchResults.map((equipment) => (
+              <div
+                className="form-card"
+                key={equipment.equipmentId}
+              >
+                <h3>
+                  {equipment.brand} · {equipment.model}
+                </h3>
+
+                {equipment.range && (
+                  <p>
+                    <strong>Gamme :</strong>{" "}
+                    {equipment.range}
+                  </p>
+                )}
+
+                {equipment.variant && (
+                  <p>
+                    <strong>Version :</strong>{" "}
+                    {equipment.variant}
+                  </p>
+                )}
+
+                <p>
+                  <strong>Référence constructeur :</strong>{" "}
+                  {equipment.manufacturerReference}
+                </p>
+
+                <p className="muted">
+                  Fiche équipement générique — aucun CarnetPass
+                  personnel n'est créé par cette recherche.
+                </p>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => ouvrirFicheEquipement(equipment)}
+                >
+                  Ouvrir la fiche
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      {/* ---------- FICHE ÉQUIPEMENT GÉNÉRIQUE ---------- */}
+      {selectedEquipment && (
+        <section className="result">
+          <div className="appareil">
+            <div className="appareil-head">
+              <div>
+                <span className="appareil-type">
+                  Fiche équipement constructeur
+                </span>
+
+                <h2 className="appareil-name">
+                  {selectedEquipment.brand} · {selectedEquipment.model}
+                </h2>
+
+                <p className="appareil-loc">
+                  {selectedEquipment.range || selectedEquipment.productType}
+                  {selectedEquipment.variant
+                    ? ` · ${selectedEquipment.variant}`
+                    : ""}
+                </p>
+              </div>
+
+              {selectedEquipment.documentationAvailable === false ? (
+                <span className="badge-documentation-pending">
+                  Documentation à compléter
+                </span>
+              ) : (
+                <span className="badge-verified">
+                  ✔ Documentation vérifiée
+                </span>
+              )}
+            </div>
+
+            <div className="appareil-grid">
+              <div>
+                <span className="k">Marque</span>
+                <span className="v">
+                  {selectedEquipment.brand}
+                </span>
+              </div>
+
+              <div>
+                <span className="k">Modèle</span>
+                <span className="v">
+                  {selectedEquipment.model}
+                </span>
+              </div>
+
+              <div>
+                <span className="k">Version</span>
+                <span className="v">
+                  {selectedEquipment.variant || "—"}
+                </span>
+              </div>
+
+              <div>
+                <span className="k">
+                  Référence constructeur
+                </span>
+                <span className="v">
+                  {selectedEquipment.manufacturerReference}
+                </span>
+              </div>
+            </div>
+
+            <p className="catalog-intro">
+              {selectedEquipment.documentationAvailable === false
+                ? "Cet équipement n’a pas encore de documentation technique dans CarnetPass. Cela n’empêche pas la création de son carnet numérique."
+                : "Cette fiche décrit un modèle constructeur. Aucun CarnetPass personnel ni QR individuel n'est encore créé."}
+            </p>
+
+            {selectedEquipment.documentationAvailable === false && (
+              <div className="documentation-optional-notice" role="status">
+                <strong>Vous pouvez continuer.</strong>
+                <span>
+                  La documentation pourra être ajoutée plus tard par photo ou par PDF.
+                </span>
+              </div>
+            )}
+            {/* ---------- CRÉATION CARNETPASS PERSONNEL ---------- */}
+            <div className="technical-docs claim-card">
+              <span className="claim-card-label">Étape suivante</span>
+              <h3>Créez le carnet numérique de cet appareil</h3>
+
+              <p>
+                Le numéro de série permet d’associer durablement la documentation et l’historique au bon équipement.
+              </p>
+              <div className="claim-card-action">
+                <label>
+                  <span>Numéro de série</span>
+                  <input
+                    className="field"
+                    type="text"
+                    value={personalSerialNumber}
+                    onChange={(e) => {
+                      setPersonalSerialNumber(e.target.value);
+                      setCarnetPassCreationMessage("");
+                    }}
+                    placeholder="Ex. DEMO-CP-001"
+                    disabled={isCreatingCarnetPass}
+                  />
+                </label>
+
+                <button
+                  className="btn btn-primary claim-card-button"
+                  onClick={creerCarnetPassPersonnel}
+                  disabled={
+                    isCreatingCarnetPass ||
+                    !personalSerialNumber.trim()
+                  }
+                >
+                  {isCreatingCarnetPass
+                    ? "Création en cours..."
+                    : "Créer le CarnetPass"}
+                </button>
+              </div>
+
+              {carnetPassCreationMessage && (
+                <p
+                  role="status"
+                  style={{
+                    color: "#991b1b",
+                    backgroundColor: "#fef2f2",
+                    border: "1px solid #fca5a5",
+                    borderLeft: "4px solid #b91c1c",
+                    borderRadius: "8px",
+                    padding: "12px 16px",
+                    marginTop: "16px",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {carnetPassCreationMessage}
+                </p>
+              )}
+            </div>
+            {/* ---------- DOCUMENTATION ---------- */}
+            {equipmentKnowledge?.data?.documents?.length > 0 && (
+              <div className="technical-docs">
+                <h3>📚 Documentation technique</h3>
+
+                {equipmentKnowledge.data.documents.map(
+                  (document) => (
+                    <div
+                      className="technical-doc-card"
+                      key={document.documentId}
+                    >
+                      <p>
+                        <strong>
+                          {document.documentType === "exploded_view"
+                            ? "🔧 Vue éclatée"
+                            : document.documentType === "user_manual"
+                              ? "📗 Notice utilisateur"
+                              : "📘 Notice installation / maintenance"}
+                        </strong>
+                      </p>
+
+                      <p>{document.title}</p>
+
+                      {document.documentCode && (
+                        <p>
+                          Référence document :{" "}
+                          <strong>
+                            {document.documentCode}
+                          </strong>
+                        </p>
+                      )}
+
+                      {document.pageCount && (
+                        <p>
+                          Nombre de pages :{" "}
+                          <strong>
+                            {document.pageCount}
+                          </strong>
+                        </p>
+                      )}
+
+                      {document.documentUrl && document.storage !== "private" && (
+                        <a
+                          className="btn btn-ghost"
+                          href={document.documentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Ouvrir le document
+                        </a>
+                      )}
+                      {document.storage === "private" && (
+                        <p className="muted">PDF privé : à consulter dans le dossier professionnel.</p>
+                      )}
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ---------- ASSISTANT IA ---------- */}
+          {equipmentKnowledge?.data?.documents?.length > 0 && !hasPrivateDocumentation && (
+            <div className="ai-assistant">
+              <p className="ai-title">
+                🤖 Assistant technique CarnetPass
+              </p>
+
+              <p className="muted">
+                Pose une question technique sur ce modèle.
+              </p>
+
+              <textarea
+                className="ai-question"
+                value={aiQuestion}
+                onChange={(e) => {
+                  setAiQuestion(e.target.value);
+                  setAiAnswer("");
+                }}
+                placeholder="Ex : Défaut F28 : que dois-je vérifier ?"
+                rows={3}
+              />
+
+              <button
+                className="btn"
+                onClick={demanderIA}
+                disabled={isAiLoading || !aiQuestion.trim()}
+              >
+                {isAiLoading
+                  ? "Analyse en cours..."
+                  : "🤖 Demander à l’IA"}
+              </button>
+
+              {aiAnswer && (
+                <div className="ai-answer">
+                  <ReactMarkdown>
+                    {aiAnswer}
+                  </ReactMarkdown>
+                </div>
+              )}
+            </div>
+          )}
+          {hasPrivateDocumentation && (
+            <div className="documentation-optional-notice" role="status">
+              <strong>Assistant technique disponible dans l’espace professionnel.</strong>
+              <span>Ouvrez l’onglet Documents du dossier équipement pour interroger les notices privées.</span>
+            </div>
+          )}
+
+
+        </section>
+      )
+      }
+      {/* ---------- MESSAGE "NON TROUVE" ---------- */}
+      {message && !technicalResult && <p className="notfound">{message}</p>}
+      {
+        technicalResult && (
+          <section className="technical-result">
+            <h2>
+              ⚠️ {technicalResult.code} — {technicalResult.title}
+            </h2>
+
+            <h3>Signification</h3>
+            <p>{technicalResult.manufacturerData.meaning}</p>
+
+            <h3>Causes possibles</h3>
+            <ul>
+              {technicalResult.manufacturerData.possibleCauses.map((cause) => (
+                <li key={cause}>{cause}</li>
+              ))}
+            </ul>
+
+            <h3>Contrôles professionnels</h3>
+            <ul>
+              {technicalResult.manufacturerData.professionalChecks.map((check) => (
+                <li key={check}>{check}</li>
+              ))}
+            </ul>
+
+            <h3>Consignes de sécurité</h3>
+            <ul>
+              {technicalResult.userGuidance.allowedActions.map((action) => (
+                <li key={action}>{action}</li>
+              ))}
+            </ul>
+
+            <p>
+              <strong>Source :</strong> document constructeur Saunier Duval —
+              page {technicalResult.source.page}
+            </p>
+          </section>
+        )
+      }
+
+      {/* ---------- FICHE APPAREIL + CARNET (si un appareil est trouve) ---------- */}
+      {
+        boiler && (
+          <section className="result">
+            <EmergencyContacts />
+            {boiler.publicContact && <div className="public-company-contact" aria-label="Coordonnées de l’entreprise liée à ce QR code">
+              <h3>{boiler.publicContact.companyName || "Entreprise associée"}</h3>
+              <p>Coordonnées publiées par l’entreprise pour cet appareil. En cas de danger immédiat, utilisez les numéros d’urgence ci-dessus.</p>
+              <div className="public-company-contact__links">
+                {boiler.publicContact.phone && <a href={`tel:${boiler.publicContact.phone}`}>Téléphoner : {boiler.publicContact.phone}</a>}
+                {boiler.publicContact.email && <a href={`mailto:${boiler.publicContact.email}`}>Écrire : {boiler.publicContact.email}</a>}
+                {boiler.publicContact.website && <a href={boiler.publicContact.website} target="_blank" rel="noopener noreferrer">Site internet de l’entreprise</a>}
+              </div>
+            </div>}
+            <div className="appareil">
+              <div className="appareil-head">
+                <div>
+                  <span className="appareil-type">{boiler.carnetPassId ? "Fiche publique CarnetPass" : "Équipement"}</span>
+                  <h2 className="appareil-name">{boiler.carnetPassId ? `${boiler.brand} ${boiler.model}` : boiler.equipmentId}</h2>
+                  <p className="appareil-loc">{boiler.carnetPassId ? `CarnetPass ${boiler.carnetPassId}` : `${boiler.brand} · ${boiler.model}`}</p>
+                </div>
+                <span className="badge-verified">✔ Vérifié</span>
+              </div>
+
+              {boiler.carnetPassId && <nav className="public-appliance-nav" aria-label="Rubriques de la fiche publique">
+                <a href="#notice-utilisation-publique">Notice d’utilisation</a>
+                <a href="#historique-interventions">Historique des interventions</a>
+                <a href="#shiba-notice-publique">Shiba Bot</a>
+              </nav>}
+
+              <div className="appareil-grid">
+                <div>
+                  <span className="k">QR Code</span>
+                  <span className="v">{boiler.qrCode}</span>
+                </div>
+
+                <div>
+                  <span className="k">Marque</span>
+                  <span className="v">{boiler.brand}</span>
+                </div>
+
+                <div>
+                  <span className="k">Modèle</span>
+                  <span className="v">{boiler.model}</span>
+                </div>
+
+                <div>
+                  <span className="k">Référence produit</span>
+                  <span className="v">{boiler.productReference}</span>
+                </div>
+
+                {mode === "pro" && boiler.publicTechnicalOnly !== true && (
+                  <div>
+                    <span className="k">Numéro de série</span>
+                    <span className="v">{boiler.serialNumber}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* NOUVEAU (QR) : le QR code physique a coller sur l'appareil.
+                Il pointe vers l'adresse EN LIGNE de la fiche -> scannable depuis n'importe quel telephone. */}
+              {(!boiler.carnetPassId || mode === "pro") && <div className="qr-zone">
+                <p className="qr-title">
+                  {boiler.publicQrUrl
+                    ? "QR individuel de l'appareil"
+                    : "Partager la fiche technique"}
+                </p>
+
+                {boiler.publicQrUrl ? (
+                  <>
+                    <div className="qr-box">
+                      <QRCodeCanvas
+                        id={`qr-${boiler.equipmentId}`}
+                        value={boiler.publicQrUrl}
+                        size={160}
+                        level="M"
+                        includeMargin={true}
+                      />
+                    </div>
+
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => telechargerQR(boiler.equipmentId)}
+                    >
+                      ⬇️ Télécharger le QR
+                    </button>
+
+                    <p className="qr-hint">
+                      Imprimez ce QR et collez-le sur l'appareil.
+                      Un scan ouvre sa fiche technique.
+                    </p>
+                  </>
+                ) : (
+                  <p className="qr-hint">
+                    Ouvrez le lien individuel de cet appareil pour télécharger son QR.
+                    Vous pouvez partager sa fiche technique ci-dessous.
+                  </p>
+                )}
+
+                <button
+                  className="btn btn-ghost"
+                  onClick={() =>
+                    partagerCarnetPass(
+                      boiler.publicQrUrl
+                      || `${window.location.origin}/appareil/${encodeURIComponent(boiler.equipmentId)}`,
+                      `CarnetPass - ${boiler.brand} ${boiler.model}`,
+                      `Consultez la fiche technique de l'équipement ${boiler.equipmentId}.`
+                    )
+                  }
+                >
+                  📤 Partager cette fiche
+                </button>
+
+              </div>}
+              {/* ---------- DOCUMENTATION TECHNIQUE ---------- */}
+              {!boiler.carnetPassId && equipmentKnowledge?.data?.documents?.length > 0 && (
+                <div className="technical-docs">
+                  <h3>📚 Documentation technique</h3>
+
+                  {equipmentKnowledge.data.documents.map((document) => (
+                    <div className="technical-doc-card" key={document.documentId}>
+                      <p>
+                        <strong>
+                          {document.documentType === "exploded_view"
+                            ? "🔧 Vue éclatée"
+                            : "📘 Notice constructeur"}
+                        </strong>
+                      </p>
+
+                      <p>{document.title}</p>
+
+                      {document.documentCode && (
+                        <p>
+                          Référence document : <strong>{document.documentCode}</strong>
+                        </p>
+                      )}
+
+                      <p>
+                        Nombre de pages : <strong>{document.pageCount}</strong>
+                      </p>
+                      {document.documentUrl && document.storage !== "private" && (
+                        <a
+                          className="btn btn-ghost"
+                          href={document.documentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {document.documentType === "exploded_view"
+                            ? "🔧 Ouvrir la vue éclatée"
+                            : "📘 Ouvrir la notice"}
+                        </a>
+                      )}
+                      {document.storage === "private" && (
+                        <p className="muted">PDF privé : à consulter dans le dossier professionnel.</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* ASSISTANT IA CARNETPASS */}
+            {!boiler.carnetPassId && equipmentKnowledge?.data?.documents?.length > 0 && !hasPrivateDocumentation ? (
+              <div className="ai-assistant">
+                <p className="ai-title">
+                  🤖 Assistant technique CarnetPass
+                </p>
+
+                <p className="muted">
+                  Pose une question technique sur cet équipement.
+                </p>
+
+                <textarea
+                  className="ai-question"
+                  value={aiQuestion}
+                  onChange={(e) => {
+                    setAiQuestion(e.target.value);
+                    setAiAnswer("");
+                  }}
+                  placeholder="Ex : Défaut F28 : que dois-je vérifier ?"
+                  rows={3}
+                />
+
+                <button
+                  className="btn"
+                  onClick={demanderIA}
+                  disabled={isAiLoading || !aiQuestion.trim()}
+                >
+                  {isAiLoading
+                    ? "Analyse en cours..."
+                    : "🤖 Demander à l’IA"}
+                </button>
+
+                {aiAnswer && (
+                  <div className="ai-answer">
+                    <ReactMarkdown>{aiAnswer}</ReactMarkdown>
+                  </div>
+                )}
+              </div>
+            ) : boiler.carnetPassId ? (
+              <>
+                <div className="technical-docs" id="notice-utilisation-publique">
+                  <h3>Notice d’utilisation</h3>
+                  {publicUserManual
+                    ? <><p>Notice officielle du fabricant correspondant à ce modèle. Le lien ouvre la partie française « Manuel de propriétaire » ; le PDF contient aussi une partie installation réservée aux professionnels.</p><a className="btn btn-ghost" href={`${publicUserManual.url}#page=40`} target="_blank" rel="noopener noreferrer">Ouvrir la notice Airwell ↗</a></>
+                    : publicCatalogueManual
+                      ? <a className="btn btn-ghost" href={publicCatalogueManual.documentUrl} target="_blank" rel="noopener noreferrer">Ouvrir la notice d’utilisation · {publicCatalogueManual.title}</a>
+                      : <p>Notice d’utilisation publique non vérifiée pour ce modèle. Demandez-la à l’entreprise intervenante ou au fabricant.</p>}
+                </div>
+              <div className="documentation-optional-notice" role="note">
+                  <strong>Historique vérifiable de cet appareil.</strong>
+                  <span>Les interventions confirmées ci-dessous disposent d’une empreinte enregistrée sur Polygon. Elle permet de vérifier qu’une preuve existe et que son empreinte n’a pas été modifiée après validation ; elle ne certifie pas à elle seule la qualité des travaux.</span>
+                </div>
+                {publicReminderOfferEnabled && <section className="public-reminder-offer" aria-labelledby="public-reminder-title">
+                  <h3 id="public-reminder-title">Recevoir un rappel d’entretien</h3>
+                  <p>Le QR identifie l’appareil, pas son propriétaire. Choisissez votre propre échéance : aucune périodicité constructeur ou obligation n’est déduite automatiquement.</p>
+                  <p>Après vérification de votre adresse par un lien valable une heure, un e-mail sera prévu avant cette échéance. Vous pourrez modifier ou annuler le rappel avec un lien privé. Aucun accès aux données privées de l’appareil n’est accordé.</p>
+                  <form onSubmit={async (event) => {
+                    event.preventDefault();
+                    setPublicReminderMessage("");
+                    setPublicReminderBusy(true);
+                    try {
+                      const response = await fetch("/api/public-maintenance-reminders", {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ operation: "request", carnetPassId: boiler.carnetPassId,
+                          email: publicReminderEmail, dueOn: publicReminderDueOn,
+                          leadDays: Number(publicReminderLeadDays) }),
+                      });
+                      const result = await response.json();
+                      setPublicReminderMessage(result.message || result.error || "Service momentanément indisponible.");
+                    } catch {
+                      setPublicReminderMessage("Service momentanément indisponible.");
+                    } finally { setPublicReminderBusy(false); }
+                  }}>
+                    <label>Votre e-mail <input type="email" required maxLength={254} value={publicReminderEmail} onChange={(event) => setPublicReminderEmail(event.target.value)} placeholder="vous@exemple.fr" /></label>
+                    <label>Prochaine échéance choisie par vous <input type="date" required value={publicReminderDueOn} onChange={(event) => setPublicReminderDueOn(event.target.value)} /></label>
+                    <label>Prévenir combien de jours avant ? <input type="number" required min="0" max="365" value={publicReminderLeadDays} onChange={(event) => setPublicReminderLeadDays(event.target.value)} /></label>
+                    <button className="btn" type="submit" disabled={publicReminderBusy}>{publicReminderBusy ? "Demande en cours…" : "Recevoir le lien de vérification"}</button>
+                  </form>
+                  {publicReminderMessage && <p role="status">{publicReminderMessage}</p>}
+                </section>}
+                <div className="public-fault-assistant" id="shiba-notice-publique">
+                  <div className="public-fault-assistant__heading">
+                    <img src={shibaTechnicien} alt="Simba, assistant technique Shiba Bot" width="64" height="96" />
+                    <div><strong>Shiba Bot · notice d’utilisation</strong><p>Posez une question sur l’usage de cet appareil. Shiba répond uniquement à partir des points vérifiés de la notice d’utilisation publique, avec la page source. Pour une intervention technique, contactez un professionnel.</p></div>
+                  </div>
+                  {publicUserManual ? <><p>Cinq questions par mois sont possibles pour chaque visiteur et chaque appareil. La notice et l’historique restent accessibles sans cette limite.</p>
+                  <form onSubmit={async (event) => {
+                    event.preventDefault();
+                    if (!publicFaultQuestion.trim()) {
+                      setPublicFaultResponse("Saisissez une question sur l’utilisation de l’appareil.");
+                      return;
+                    }
+                    try {
+                      const response = await fetch("/api/public-shiba", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ carnetPassId: boiler.carnetPassId, question: publicFaultQuestion }) });
+                      const result = await response.json();
+                      setPublicFaultResponse(result.ok ? `${result.answer}${result.page ? ` (Notice d’utilisation, p. ${result.page}.)` : ""} ${result.remaining} question(s) restante(s) ce mois-ci.` : result.error || "Shiba Bot est momentanément indisponible.");
+                      setPublicFaultSource(result.ok && result.pdfPage ? `${result.manualUrl}#page=${result.pdfPage}` : "");
+                    } catch {
+                      setPublicFaultResponse("Shiba Bot est momentanément indisponible. Les contacts d’urgence restent accessibles.");
+                      setPublicFaultSource("");
+                    }
+                  }}>
+                    <label htmlFor="public-fault-code">Votre question</label>
+                    <input id="public-fault-code" value={publicFaultQuestion} maxLength={220} onChange={(event) => {
+                      setPublicFaultQuestion(event.target.value);
+                      setPublicFaultResponse("");
+                      setPublicFaultSource("");
+                    }} placeholder="Ex. Comment nettoyer le filtre ?" />
+                    <button className="btn" type="submit">Demander à Shiba</button>
+                  </form>
+                  {publicFaultResponse && <p role="status">{publicFaultResponse}</p>}
+                  {publicFaultSource && <a href={publicFaultSource} target="_blank" rel="noopener noreferrer">Voir la page source dans la notice ↗</a>}</>
+                  : <p>Shiba n’est pas disponible tant qu’une notice d’utilisation publique de ce modèle n’a pas été vérifiée. L’historique et les contacts restent accessibles.</p>}
+                  <p><strong>Les réparations et interventions techniques sur cet appareil doivent être réalisées par un professionnel qualifié.</strong> En cas de danger immédiat, éloignez-vous et contactez les services d’urgence.</p>
+                </div>
+              </>
+            ) : hasPrivateDocumentation ? (
+              <div className="documentation-optional-notice" role="status">
+                <strong>Documentation technique associée à ce modèle.</strong>
+                <span>L’assistant IA et les PDF privés sont disponibles dans l’onglet Documents de l’espace professionnel.</span>
+              </div>
+            ) : (
+              <div className="documentation-optional-notice" role="status">
+                <strong>Documentation technique à compléter.</strong>
+                <span>
+                  Le CarnetPass reste utilisable. L’assistant IA sera disponible
+                  lorsqu’une documentation aura été associée à cet équipement.
+                </span>
+              </div>
+            )}
+            {/* Historique public sécurisé du CarnetPass */}
+            {boiler.carnetPassId && (
+              <div className="carnet" id="historique-interventions">
+                <p className="carnet-title">
+                  Historique des interventions vérifiées
+                </p>
+
+                <p className="muted">
+                  Seules les interventions dont la preuve Polygon est
+                  confirmée sont affichées publiquement.
+                </p>
+
+                {isLoadingPublicInterventions ? (
+                  <p className="muted">Chargement de l’historique…</p>
+                ) : publicInterventionsError ? (
+                  <p className="err">❌ {publicInterventionsError}</p>
+                ) : publicInterventions.length === 0 ? (
+                  <p className="muted">
+                    Aucune intervention confirmée pour cet appareil.
+                  </p>
+                ) : (
+                  <div className="timeline">
+                    {publicInterventions.map((intervention, index) => (
+                      <div className="tl-item" key={intervention.id}>
+                        <div className="tl-marker">
+                          <span className="tl-dot" />
+                          {index < publicInterventions.length - 1 && (
+                            <span className="tl-line" />
+                          )}
+                        </div>
+
+                        <div className="tl-body">
+                          <p className="tl-date">
+                            {formatPublicInterventionDate(
+                              intervention.interventionAt
+                            )}
+                          </p>
+                          <p className="tl-type">
+                            {getInterventionTypeLabel(
+                              intervention.interventionType
+                            )}{" "}
+                            ·{" "}
+                            {getInterventionResultLabel(
+                              intervention.resultStatus
+                            )}
+                          </p>
+                          <p className="tl-desc">Le compte rendu détaillé reste privé. Pour en savoir plus, contactez l’entreprise intervenante.</p>
+                          <p className="tl-part">
+                            ✓ Preuve Polygon confirmée
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Ancien historique Polygon réservé au prototype professionnel */}
+            {mode === "pro" && boiler.publicTechnicalOnly !== true && (
+              <div className="carnet">
+                <p className="carnet-title">Carnet d'entretien</p>
+                <button
+                  className="btn btn-ghost"
+                  onClick={telechargerCarnetPDF}
+                  disabled={isLoadingCarnet}
+                >
+                  📄 Télécharger le carnet PDF
+                </button>
+                {isLoadingCarnet ? (
+                  <p className="muted">Chargement du carnet...</p>
+                ) : carnetError ? (
+                  <p className="err">❌ {carnetError}</p>
+                ) : maintenances.length === 0 ? (
+                  <p className="muted">Aucune intervention enregistrée pour cet appareil.</p>
+                ) : (
+                  <div className="timeline">
+                    {maintenances.map((m, index) => (
+                      <div className="tl-item" key={index}>
+                        <div className="tl-marker">
+                          <span className="tl-dot" />
+                          {index < maintenances.length - 1 && <span className="tl-line" />}
+                        </div>
+                        <div className="tl-body">
+                          <p className="tl-date">{formatDate(m.date)}</p>
+                          <p className="tl-type">{m.interventionType}</p>
+                          <p className="tl-desc">{m.description} — {m.technician}</p>
+                          {m.partChanged && <p className="tl-part">Pièce changée : {m.partChanged}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* AJOUT D'INTERVENTION (mode pro + wallet connecte) */}
+                {mode === "pro" && account && (
+                  <div className="form-card">
+                    <h3>Ajouter une intervention</h3>
+
+                    <p className="muted">
+                      🔒 Données techniques uniquement. N'indiquez aucun nom de client,
+                      adresse, téléphone, e-mail ou autre donnée personnelle :
+                      cette intervention sera inscrite sur la blockchain Polygon.
+                    </p>
+
+                    <input
+                      className="field"
+                      placeholder="Type d'intervention (ex : Entretien annuel)"
+                      value={mType}
+                      onChange={(e) => setMType(e.target.value)}
+                    />
+
+                    <input
+                      className="field"
+                      placeholder="Description technique uniquement (ex : Nettoyage brûleur)"
+                      value={mDesc}
+                      onChange={(e) => setMDesc(e.target.value)}
+                    />
+
+                    <input
+                      className="field"
+                      placeholder="Entreprise / identifiant technicien (sans nom ni prénom)"
+                      value={mTech}
+                      onChange={(e) => setMTech(e.target.value)}
+                    />
+
+                    <input
+                      className="field"
+                      placeholder="Pièce changée / référence (optionnel)"
+                      value={mPart}
+                      onChange={(e) => setMPart(e.target.value)}
+                    />
+                    <button className="btn btn-primary" onClick={ajouterIntervention} disabled={isAddingM}>
+                      {isAddingM ? "Ajout en cours..." : "Ajouter au carnet"}
+                    </button>
+                    {mMsg && <p className="form-msg">{mMsg}</p>}
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        )
+      }
+
+      {/* ---------- SCANNER QR (plein ecran, uniquement quand ouvert) ---------- */}
+      {
+        scanOuvert && (
+          <Suspense fallback={<div className="scan-loading">Ouverture de la caméra…</div>}>
+            <ScannerQR
+              onClose={() => setScanOuvert(false)}
+              onCodeDetecte={ouvrirDepuisScan}
+            />
+          </Suspense>
+        )
+      }
+      <CarnetPassCreatedModal
+        carnetPass={createdCarnetPass}
+        onClose={() => {
+          setCreatedCarnetPass(null);
+          navigate("/espace-pro");
+        }}
+      />
+    </div >
+  );
+}
+
+export default App;

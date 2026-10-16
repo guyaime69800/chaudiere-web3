@@ -1,0 +1,6 @@
+.site-footer { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; max-width: 1220px; margin: 50px auto 0; padding: 30px 24px 45px; border-top: 1px solid #e6dcd2; color: #635850; font-size: 13px; }
+.site-footer > div { display: grid; gap: 5px; }
+.site-footer strong { color: #2d211a; font-size: 16px; }
+.site-footer nav { display: flex; align-content: start; gap: 12px 22px; flex-wrap: wrap; max-width: 720px; }
+.site-footer a { color: #7c361b; text-decoration: none; }
+.site-footer a:hover { text-decoration: underline; }

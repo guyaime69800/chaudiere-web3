@@ -1,0 +1,109 @@
+{
+  "functions": {
+    "api/verify-company.js": {
+      "maxDuration": 120
+    },
+    "api/carnetpass.js": {
+      "maxDuration": 300
+    },
+    "api/platform-admin-documents.js": {
+      "maxDuration": 300
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/maintenance-reminders",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/maintenance-reminders?data_cleanup=1",
+      "schedule": "15 * * * *"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/access-session",
+      "destination": "/api/verify-company?access_session_route=1"
+    },
+    {
+      "source": "/api/shiba-devis",
+      "destination": "/api/verify-company?shiba_devis_route=1"
+    },
+    {
+      "source": "/api/aid-admin",
+      "destination": "/api/verify-company?aid_admin_route=1"
+    },
+    {
+      "source": "/api/company-rge",
+      "destination": "/api/verify-company?company_rge_route=1"
+    },
+    {
+      "source": "/api/plate-scan",
+      "destination": "/api/verify-company?plate_scan_route=1"
+    },
+    {
+      "source": "/api/maintenance-control",
+      "destination": "/api/verify-company?maintenance_control_route=1"
+    },
+    {
+      "source": "/api/shiba-usage",
+      "destination": "/api/verify-company?shiba_usage_route=1"
+    },
+    {
+      "source": "/api/public-maintenance-reminders",
+      "destination": "/api/carnetpass?public_reminder_route=1"
+    },
+    {
+      "source": "/api/maintenance-reminders",
+      "destination": "/api/carnetpass?maintenance_route=1"
+    },
+    {
+      "source": "/api/model-reminders",
+      "destination": "/api/carnetpass?model_reminders_route=1"
+    },
+    {
+      "source": "/api/public-shiba",
+      "destination": "/api/carnetpass?public_shiba_route=1"
+    },
+    {
+      "source": "/api/account",
+      "destination": "/api/verify-company?account_route=1"
+    },
+    {
+      "source": "/api/billing",
+      "destination": "/api/verify-company?billing_route=1"
+    },
+    {
+      "source": "/api/shiba-recharge",
+      "destination": "/api/verify-company?shiba_recharge_route=1"
+    },
+    {
+      "source": "/api/stripe-webhook",
+      "destination": "/api/verify-company?billing_route=1&webhook=1"
+    },
+    {
+      "source": "/api/enterprise-quote",
+      "destination": "/api/verify-company?enterprise_quote_route=1"
+    },
+    {
+      "source": "/api/platform-admin",
+      "destination": "/api/verify-company?platform_admin_route=1"
+    },
+    {
+      "source": "/api/platform-catalog-documents",
+      "destination": "/api/platform-admin-documents?catalog_route=1"
+    },
+    {
+      "source": "/api/platform-document-submissions",
+      "destination": "/api/platform-admin-documents?submission_route=1"
+    },
+    {
+      "source": "/api/thermodynamic-documents",
+      "destination": "/api/interventions?thermodynamic_route=1"
+    },
+    {
+      "source": "/((?!api(?:/|$)|src(?:/|$)|node_modules(?:/|$)|assets(?:/|$)|@|.*\\.).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
