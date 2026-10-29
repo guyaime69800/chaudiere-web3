@@ -2,6 +2,21 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { catalogModelFamilies, catalogModelLabel, catalogModelReferenceLabel, compareCatalogModels, catalogModelsWithPublishedDocuments, publishedDocumentsForEquipment, sharedNoticeBrandSummary } from "./platformDocumentLibrary.js";
 
+test('PAC Atlantic families preserve indoor, outdoor and exact PDF associations', () => {
+  const refs = ['alfea-extensa-a-i-mh-5-024119', 'alfea-extensa-a-i-5-woya060lfca-526200',
+    'alfea-extensa-a-i-r32-mh-5-024302', 'alfea-excellia-a-i-mono-mh-11-024114',
+    'alfea-excellia-a-i-mono-11-woyg112lht-526300'];
+  const models = catalogModelsWithPublishedDocuments([], refs.map((ref,i) => ({ id: `pac-${i}`,
+    manufacturer: 'Atlantic', model_name: ref, model_reference: ref, title: 'vue-eclatee',
+    catalog_category: ref.includes('-mh-') ? 'heat_pump_indoor' : 'heat_pump_outdoor' })));
+  assert.deepEqual(catalogModelFamilies(models).map(g => [g.name,g.count]), [
+    ['Alféa Excellia A.I. Mono',2], ['Alféa Extensa A.I.',2], ['Alféa Extensa A.I. R32',1]]);
+  assert.equal(catalogModelLabel(models[0]), 'Alféa Extensa A.I. · MH 5');
+  assert.equal(catalogModelLabel(models[4]), 'Alféa Excellia A.I. Mono · 11 · WOYG112LHT');
+  assert.equal(catalogModelReferenceLabel(models[4]), '526300');
+  models.forEach((m,i) => assert.deepEqual(m.publishedDocuments.map(d => d.documentId), [`pac-${i}`]));
+});
+
 test('NeOvo EFU C and Plus are grouped separately and exact document associations stay intact', () => {
   const refs=['neovo-condens-efu-c-32-plus','neovo-condens-efu-c-32','neovo-condens-efu-c-19','neovo-condens-efu-c-24-plus','neovo-condens-efu-c-24'];
   const models=catalogModelsWithPublishedDocuments([],refs.map((ref,i)=>({id:`neovo-${i}`,manufacturer:'De Dietrich',model_name:ref,model_reference:ref,title:'notice-installation',catalog_category:'boiler'})));

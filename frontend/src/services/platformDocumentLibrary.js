@@ -84,6 +84,16 @@ function atlanticExtensaLabels(item) {
   if (normalizeReference(item.brand) !== 'atlantic') return null;
   const ref = String(item.manufacturerReference || '').toLowerCase();
   const label = String(item.modelFamily || item.model || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const nextSeries = ref.match(/^(?:mh-)?alfea-(extensa-a-i|excellia-a-i-mono)(?:-|$)/);
+  if (nextSeries) {
+    const r32 = /(?:^|-)r32(?:-|$)/.test(ref);
+    const family = `Alféa ${nextSeries[1] === 'extensa-a-i' ? 'Extensa A.I.' : 'Excellia A.I. Mono'}${r32 ? ' R32' : ''}`;
+    const indoor = ref.match(/-mh-(\d+)-(\d{6})$/) || ref.match(/^mh-alfea-extensa-a-i-(\d+)-r32-(\d{6})$/);
+    const outdoor = ref.match(/(?:-a-i|-mono)-(\d+)-(?:r32-)?(wo[a-z0-9]+)-(\d{6})$/);
+    return { family, model: indoor ? `${family} · MH ${indoor[1]}`
+      : outdoor ? `${family} · ${outdoor[1]} · ${outdoor[2].toUpperCase()}` : item.model || family,
+      reference: indoor?.[2] || outdoor?.[3] || item.manufacturerReference || '' };
+  }
   const legacy = [label, ref].map(value => value.match(/^alfea[\s-]+duo[\s·-]+mh[\s-]*d(\d+)(?:[\s·-]+(\d{6}))?$/i)).find(Boolean);
   if (legacy) return { family: 'Alféa Duo', model: `Alféa Duo · MH-D${legacy[1]}`,
     reference: legacy[2] || ref.match(/(?:^|[\s·-])(\d{6})$/)?.[1] || item.manufacturerReference || '' };
