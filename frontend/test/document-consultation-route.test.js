@@ -18,6 +18,7 @@ test("catalogue authenticates and checks publication before quota; exhausted or 
     }
     let data;
     if (url.includes("/auth/v1/user")) data = { id: "alice", email_confirmed_at: "2026-01-01" };
+    else if (url.includes("/platform_admins")) data = [];
     else if (url.includes("/company_members")) data = [{ company_id: "company", role: "owner" }];
     else if (url.includes("/companies?")) data = { id: "company", siret: "12345678901234", is_demo: false,
       created_at: "2026-01-01", company_verifications: { status: "approved", verified_siret: "12345678901234", verified_at: "2026-01-01" } };

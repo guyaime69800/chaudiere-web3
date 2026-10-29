@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { createLiveStripeReader } from '../server/lib/stripe-live-reconciliation.js';
+import { invoiceRefunds } from '../server/lib/invoice-refunds.js';
+const read = createLiveStripeReader();
+assert.equal((await read('account')).id, process.env.STRIPE_EXPECTED_ACCOUNT_ID);
+const invoices = await read('invoices?limit=100');
+const invoice = invoices.data.find(item => item.number === 'GHYBTDDE-0001');
+assert.ok(invoice, 'Founder invoice missing');
+assert.equal(invoice.livemode, true);
+const result = await invoiceRefunds(invoice, read, false);
+assert.deepEqual(result, { refundedAmount: 2800, refundStatus: 'full' });
+console.log('Readonly refund audit: founder invoice fully refunded (2800 cents); no financial write.');

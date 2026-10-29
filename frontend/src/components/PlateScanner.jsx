@@ -19,7 +19,7 @@ const typeLabels = {
   rooftop: "Rooftop",
   other: "Autre",
 };
-export default function PlateScanner({ onConfirm, disabled = false, initialOpen = false }) {
+export default function PlateScanner({ onConfirm, disabled = false, initialOpen = false, request = devisRequest, allowPhotoRetention = true }) {
   const [photo, setPhoto] = useState(null),
     [analysis, setAnalysis] = useState(null),
     [values, setValues] = useState({}),
@@ -52,7 +52,7 @@ export default function PlateScanner({ onConfirm, disabled = false, initialOpen 
     setError("");
     setBusy(true);
     try {
-      const result = await devisRequest("/api/plate-scan", {
+      const result = await request("/api/plate-scan", {
         body: { action: "analyze", image: photo.dataUrl },
       });
       setAnalysis(result);
@@ -220,7 +220,7 @@ export default function PlateScanner({ onConfirm, disabled = false, initialOpen 
                   </label>
                 ))}
               </div>
-              <label>
+              <label hidden={!allowPhotoRetention}>
                 <input
                   type="checkbox"
                   checked={retain}

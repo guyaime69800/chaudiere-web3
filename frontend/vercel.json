@@ -12,6 +12,10 @@
   },
   "crons": [
     {
+      "path": "/api/stripe-webhook?reconcile=1",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/maintenance-reminders",
       "schedule": "0 8 * * *"
     },

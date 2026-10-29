@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { accountMfaAccessError } from "./lib/mfa-access.js";
+import { invoiceRefunds } from "./lib/invoice-refunds.js";
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const reply = (res, status, body) => res.status(status).json(body);
@@ -42,7 +43,7 @@ export default async function invoicesHandler(req, res, { clientFactory = create
     if (!customer) return reply(res, 200, { invoices: [], hasMore: false, nextCursor: null, testMode });
     if (!/^cus_[a-zA-Z0-9]+$/.test(customer)) throw Error("Invalid stored billing customer");
     const key = testMode ? env.STRIPE_TEST_SECRET_KEY || env.STRIPE_SECRET_KEY : env.STRIPE_SECRET_KEY;
-    if (!key?.startsWith(testMode ? "sk_test_" : "sk_live_")) return reply(res, 503, { message: "La consultation des factures n’est pas encore configurée. Contactez contact@carnetpass.fr." });
+    if (!(testMode ? key?.startsWith('sk_test_') : /^(?:sk|rk)_live_[A-Za-z0-9]+$/.test(key || ''))) return reply(res, 503, { message: "La consultation des factures n’est pas encore configurée. Contactez contact@carnetpass.fr." });
     const params = new URLSearchParams({ customer, limit: "20", ...(after ? { starting_after: after } : {}) });
     const response = await request(`https://api.stripe.com/v1/invoices?${params}`, {
       headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(10000),
@@ -50,11 +51,25 @@ export default async function invoicesHandler(req, res, { clientFactory = create
     if (!response.ok) throw Error(`Stripe invoice list ${response.status}`);
     const result = await response.json();
     if (!Array.isArray(result.data) || result.data.some((item) => item.customer !== customer || item.livemode !== !testMode)) throw Error("Invoice scope mismatch");
-    const invoices = result.data.filter((item) => item.status !== "draft").map((item) => ({
+    const read = async (path) => {
+      const response = await request(`https://api.stripe.com/v1/${path}`, {
+        headers: { Authorization: `Bearer ${key}`, 'Stripe-Version': '2026-08-26.dahlia' }, signal: AbortSignal.timeout(10000),
+      });
+      if (!response.ok) throw Error('Refund read unavailable');
+      return response.json();
+    };
+    const invoices = [];
+    for (const item of result.data.filter((item) => item.status !== "draft")) {
+      let refunds;
+      try { refunds = await invoiceRefunds(item, read, testMode); }
+      catch { refunds = { refundedAmount: null, refundStatus: 'unavailable' }; }
+      invoices.push({
       id: item.id, number: item.number || item.id, created: item.created,
       status: item.status, total: item.total, currency: item.currency,
       pdfUrl: invoiceUrl(item.invoice_pdf), viewUrl: invoiceUrl(item.hosted_invoice_url),
-    }));
+      ...refunds,
+      });
+    }
     const nextCursor = result.has_more ? result.data.at(-1)?.id : null;
     return reply(res, 200, { invoices, hasMore: Boolean(nextCursor), nextCursor: nextCursor || null, testMode });
   } catch (error) {

@@ -1,8 +1,17 @@
 ## Éditeur et contact
 
-CarnetPass est le nom du service de documentation et de carnets d’entretien. Contact professionnel : [contact@carnetpass.fr](mailto:contact@carnetpass.fr).
+CarnetPass est le nom du service de documentation et de carnets d’entretien édité par **Guy AIME — entrepreneur individuel (EI)**, sous le régime de la micro-entreprise.
 
-Adresse professionnelle communiquée : **Avenue des Temps Modernes, 69800 Saint-Priest, France**.
+- **SIREN : 533 656 393**.
+- **SIRET de l’établissement : 533 656 393 00055**.
+- **Immatriculation au Registre national des entreprises (RNE) : 9 octobre 2026**.
+- **Adresse professionnelle : Avenue des Temps Modernes, 69800 Saint-Priest, France**.
+- **Contact professionnel : [contact@carnetpass.fr](mailto:contact@carnetpass.fr)**. Les échanges d’assistance sont privilégiés par courrier électronique.
+- **Responsable de la publication : Guy AIME**.
+
+Le régime fiscal déclaré est la franchise en base de TVA : **TVA non applicable, article 293 B du CGI**.
+
+L’accès à l’application reste temporairement fermé pendant sa maintenance. La vente réelle des abonnements et recharges n’est pas encore ouverte ; la publication des informations de l’entreprise ne vaut pas ouverture commerciale.
 
 ## Hébergement
 

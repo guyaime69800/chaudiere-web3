@@ -38,6 +38,8 @@ export default function AccountInvoices({ token }) {
     {!!data?.invoices.length && <ul className="account-invoices-list">{data.invoices.map((invoice) => <li key={invoice.id}>
       <strong>{invoice.number}</strong>
       <span>{new Date(invoice.created * 1000).toLocaleDateString("fr-FR")} · {statuses[invoice.status] || invoice.status} · {total(invoice)} TTC</span>
+      {['full', 'partial'].includes(invoice.refundStatus) && <strong>{invoice.refundStatus === 'full' ? 'Remboursée intégralement' : 'Remboursée partiellement'} : {total({ ...invoice, total: invoice.refundedAmount })}</strong>}
+      {invoice.refundStatus === 'unavailable' && <span>Le suivi du remboursement est momentanément indisponible. Consultez Stripe pour confirmation.</span>}
       <div className="account-invoices-links">
         {invoice.viewUrl && <a href={invoice.viewUrl} target="_blank" rel="noopener noreferrer" aria-label={`Consulter la facture ${invoice.number}`}>Consulter</a>}
         {invoice.pdfUrl && <a href={invoice.pdfUrl} target="_blank" rel="noopener noreferrer" aria-label={`Télécharger le PDF de la facture ${invoice.number}`}>Télécharger le PDF</a>}

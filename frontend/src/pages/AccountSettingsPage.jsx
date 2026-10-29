@@ -9,7 +9,7 @@ import { signOut } from "../services/authService";
 import { getDiscoveryAccess } from "../../shared/discovery-access.js";
 import PasswordField from "../components/PasswordField";
 import AccountInvoices from "../components/AccountInvoices";
-import { sendTestBillingConfirmation, startBilling } from "../services/billingService";
+import { sendTestBillingConfirmation, startBilling, liveBillingPortal } from "../services/billingService";
 import "./AccountSettingsPage.css";
 
 async function accountRequest(method, token, body) {
@@ -27,6 +27,7 @@ export default function AccountSettingsPage() {
   const { user, session } = useAuth();
   const navigate = useNavigate();
   const [company, setCompany] = useState(null);
+  const [portalCompany, setPortalCompany] = useState(null);
   const [testSubscription, setTestSubscription] = useState(null);
   const [platformAdmin, setPlatformAdmin] = useState(false);
   const [maintenanceAdmin, setMaintenanceAdmin] = useState(false);
@@ -39,6 +40,19 @@ export default function AccountSettingsPage() {
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [billingRefresh, setBillingRefresh] = useState(0);
+  const returningFromPayment = new URLSearchParams(window.location.search).get('paiement') === 'retour';
+
+  useEffect(() => {
+    if (!returningFromPayment || !user?.id) return;
+    let active = true;
+    const refresh = () => getMyCompany(user.id).then(result => {
+      if (active) { setCompany(result); setBillingRefresh(value => value + 1); }
+    }).catch(() => {});
+    const timer = window.setInterval(refresh, 5000);
+    const stop = window.setTimeout(() => window.clearInterval(timer), 60000);
+    return () => { active = false; window.clearInterval(timer); window.clearTimeout(stop); };
+  }, [returningFromPayment, user?.id]);
 
   useEffect(() => {
     let active = true;
@@ -86,6 +100,16 @@ export default function AccountSettingsPage() {
     finally { setBusy(""); }
   }
 
+  useEffect(() => {
+    if (!company?.id || !['owner', 'admin'].includes(company.role) || !session?.access_token
+      || import.meta.env.VITE_STRIPE_TEST_BILLING_ENABLED === 'true') return;
+    const controller = new AbortController();
+    liveBillingPortal(session.access_token, { statusOnly: true, signal: controller.signal })
+      .then((available) => { if (!controller.signal.aborted) setPortalCompany(available ? company.id : null); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [company?.id, company?.role, session?.access_token]);
+
   const subscription = company?.subscription;
   const testBilling = import.meta.env.VITE_STRIPE_TEST_BILLING_ENABLED === "true";
   const discovery = company && subscription?.plan === "free"
@@ -97,6 +121,7 @@ export default function AccountSettingsPage() {
   return (
     <main className="account-settings">
       <header><Link to="/espace-pro">← Retour à mon espace</Link><h1>Paramètres du compte</h1><p>{user.email}</p></header>
+      {returningFromPayment && <p role="status">Retour de Stripe : votre formule et vos factures sont actualisées pendant une minute. Les droits sont confirmés après réception du paiement.</p>}
       {platformAdmin && <p><Link to="/administration-interne">Administration interne CarnetPass</Link></p>}
       {maintenanceAdmin && <p><Link to="/administration-maintenance">Mode maintenance du site</Link></p>}
       {loading ? <p>Chargement…</p> : <div className="account-settings-grid">
@@ -142,10 +167,19 @@ export default function AccountSettingsPage() {
         </section>
         <section className="account-settings-card" id="formule">
           <h2>Formule et essai</h2>
+          {portalCompany && portalCompany === company?.id && ['owner', 'admin'].includes(company.role) &&
+            <button type="button" className="account-settings-secondary" disabled={Boolean(busy)} onClick={() => run('live-portal', async () => {
+              window.location.assign(await liveBillingPortal(session.access_token));
+              return 'Ouverture du portail Stripe.';
+            })}>Gérer mon abonnement</button>}
           {!company ? <><p>Aucune entreprise associée.</p><Link className="account-settings-plan-link" to="/espace-pro?configuration=entreprise">Renseigner mon entreprise →</Link></> : <>
             <p>Entreprise : <strong>{company.name}</strong></p>
             <p>Formule : <strong>{subscription?.plan === "free" ? "Découverte gratuite" : subscription?.plan === "team" ? "Équipe" : subscription?.plan === "pro" ? "Pro" : subscription?.plan || "Non disponible"}</strong></p>
             <p>État : <strong>{subscription?.status === "canceled" ? "arrêté" : discovery?.active ? "essai actif" : subscription?.status || "terminé"}</strong></p>
+            {subscription?.stripe_live_managed && subscription.status === 'active' && subscription.stripe_cancel_at &&
+              <p>Résiliation programmée le <strong>{new Date(subscription.stripe_cancel_at).toLocaleDateString('fr-FR')}</strong>. Votre accès reste disponible jusqu’à la fin de la période payée. Votre abonnement ne sera pas renouvelé à cette échéance.</p>}
+            {subscription?.stripe_live_managed && subscription.current_period_end && subscription.status === 'active' &&
+              <p>Accès payé jusqu’au {new Date(subscription.current_period_end).toLocaleDateString('fr-FR')}.</p>}
             {discovery?.endsAt && subscription?.status !== "canceled" && <p>Fin prévue : {new Date(discovery.endsAt).toLocaleDateString("fr-FR")}</p>}
             {subscription?.plan === "free" && <p>Aucune carte bancaire ni aucun prélèvement n’est associé à l’essai Découverte.</p>}
             <Link className="account-settings-plan-link" to="/tarifs?from=account">Voir les formules et demander un changement →</Link>
@@ -169,14 +203,14 @@ export default function AccountSettingsPage() {
                   return result;
                 });
               }}>Arrêter l’essai</button>}
-            {subscription?.plan !== "free" && !testBilling && <p>Pour une formule payante, contactez <a href="mailto:contact@carnetpass.fr">contact@carnetpass.fr</a> afin d’obtenir la procédure de résiliation.</p>}
+            {subscription?.plan !== "free" && !testBilling && !portalCompany && <p>Pour une formule payante, contactez <a href="mailto:contact@carnetpass.fr">contact@carnetpass.fr</a> afin d’obtenir la procédure de résiliation.</p>}
           </>}
         </section>
         <section className="account-settings-card" id="factures">
           <h2>Mes factures</h2>
           {!company ? <p>Renseignez votre entreprise pour retrouver ses factures.</p>
             : !["owner", "admin"].includes(company.role) ? <p>Les factures sont accessibles au responsable de votre entreprise.</p>
-            : <><p>Consultez et téléchargez les factures de votre entreprise.</p><AccountInvoices key={company.id} token={session.access_token} /></>}
+            : <><p>Consultez et téléchargez les factures de votre entreprise.</p><AccountInvoices key={`${company.id}:${billingRefresh}`} token={session.access_token} /></>}
         </section>
         <AdditionalAccounts company={company} token={session.access_token} />
         <CompanyDataControls company={company} token={session.access_token} />

@@ -324,10 +324,10 @@ export default async function handler(req, res) {
       await pipeline(Readable.from(byteChunks(verified.bytes)), res);
       return;
     }
-    const { data, error } = await listAdminDocuments(service(), "id, blob_pathname, manufacturer, model_name, model_reference, title, original_filename, size_bytes, status, catalog_category, distribution_confirmed_at, hotline_phone, model_aliases, rag_status, rag_error, rag_started_at, rag_indexed_at, created_at")
+    const { data, error } = await listAdminDocuments(service(), "id, blob_pathname, manufacturer, model_name, model_reference, title, original_filename, size_bytes, sha256, status, catalog_category, distribution_confirmed_at, hotline_phone, model_aliases, rag_status, rag_error, rag_started_at, rag_indexed_at, created_at")
 
     if (!error) return res.status(200).json({ ok: true, documents: data.filter((entry) => entry.rag_error !== "deleted_by_admin"), publicationReady: true, hotlineReady: true });
-    const fallback = await listAdminDocuments(service(), "id, blob_pathname, manufacturer, model_name, model_reference, title, original_filename, size_bytes, status, catalog_category, hotline_phone, model_aliases, created_at")
+    const fallback = await listAdminDocuments(service(), "id, blob_pathname, manufacturer, model_name, model_reference, title, original_filename, size_bytes, sha256, status, catalog_category, hotline_phone, model_aliases, created_at")
 
     return fallback.error ? fail(res, 503, "Documents indisponibles.")
       : res.status(200).json({ ok: true, documents: fallback.data, publicationReady: true, hotlineReady: true });

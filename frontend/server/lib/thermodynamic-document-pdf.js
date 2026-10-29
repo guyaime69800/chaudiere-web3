@@ -3,7 +3,7 @@ import { fieldsForKind } from "./thermodynamic-document-schema.js";
 
 const OFFICIAL_FORM = "https://entreprendre.service-public.gouv.fr/vosdroits/R43122";
 
-export function buildThermodynamicPdf(record) {
+export function buildThermodynamicPdf(record, { testMode = false } = {}) {
   const pdf = new jsPDF({ unit: "mm", format: "a4", compress: true });
   const margin = 16;
   const width = 178;
@@ -44,10 +44,11 @@ export function buildThermodynamicPdf(record) {
   }
 
   pdf.setFont("helvetica", "bold"); pdf.setFontSize(17);
-  pdf.text(kind === "fluids_15497_04" ? "Fiche d'intervention - fluides frigorigènes" : "Fiche d'entretien climatisation / PAC", margin, y);
+  pdf.text(testMode ? "Fiche de test d'equipement CarnetPass" : kind === "fluids_15497_04" ? "Fiche d'intervention - fluides frigorigènes" : "Fiche d'entretien climatisation / PAC", margin, y);
   y += 8;
   pdf.setFont("helvetica", "normal"); pdf.setFontSize(9);
-  pdf.text(kind === "fluids_15497_04"
+  pdf.text(testMode ? "Parcours de demonstration prive - aucune intervention reelle."
+    : kind === "fluids_15497_04"
     ? "Saisie numérique structurée selon les rubriques du CERFA 15497*04 - à vérifier avant transmission."
     : "Compte rendu de maintenance CarnetPass - ne remplace pas la fiche fluides si le circuit est manipulé.", margin, y);
   y += 9;
@@ -66,6 +67,13 @@ export function buildThermodynamicPdf(record) {
     pdf.setTextColor(0, 80, 160); pdf.textWithLink(OFFICIAL_FORM, margin, y, { url: OFFICIAL_FORM });
     pdf.setTextColor(0, 0, 0); y += 6;
     pdf.text("Cette fiche numérique n'est pas le PDF XFA officiel et ne remplace pas le BSFF Trackdéchets.", margin, y);
+  }
+  if (testMode) {
+    for (let page = 1; page <= pdf.getNumberOfPages(); page++) {
+      pdf.setPage(page); pdf.setFontSize(11); pdf.setTextColor(180, 0, 0);
+      pdf.text('TEST - DOCUMENT SANS VALEUR CONTRACTUELLE', 16, 12);
+      pdf.setFontSize(8); pdf.text('Donnees de test uniquement - aucune intervention reelle ni signature.', 16, 290);
+    }
   }
   return Buffer.from(pdf.output("arraybuffer"));
 }

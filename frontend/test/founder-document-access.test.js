@@ -23,6 +23,9 @@ test('only the authenticated founder demo receives full document access', async 
   const response={status(code){this.code=code;return this;},json(data){this.data=data;return this;}};
   const token = 'header.' + Buffer.from(JSON.stringify({sub:'founder-user',aal:'aal2'})).toString('base64url') + '.signature';
   try {
+    assert.equal(await requireVerifiedCompany({headers:{authorization:'Bearer '+token}},response),null);
+    assert.equal(response.code,403);
+    Object.assign(process.env,{VERCEL_ENV:'preview',VERCEL_GIT_COMMIT_REF:'feature/documentation-multi-docs',VITE_SUPABASE_URL:'https://bqqzzbwqmiyxcotvqtoc.supabase.co'});
     assert.equal((await requireVerifiedCompany({headers:{authorization:'Bearer '+token}},response)).accessKind,'founder_test');
     operator='operator';
     assert.equal((await requireVerifiedCompany({headers:{authorization:'Bearer test-token'}},response)).accessKind,'demo');

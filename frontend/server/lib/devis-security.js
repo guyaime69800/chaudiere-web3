@@ -4,6 +4,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { createHash } from "node:crypto";
 import { platformAdminEnvironment } from "./platform-admin-environment.js";
 import { accountMfaAccessError, mfaAccessError } from "./mfa-access.js";
+import { isolatedTestEnvironment } from '../../shared/test-environment.js';
 export const fail = (status, message) =>
   Object.assign(new Error(message), { status });
 const options = {
@@ -146,7 +147,7 @@ export async function devisCompany(
     ? company.company_verifications[0]
     : company.company_verifications;
   let testAccess = false;
-  if (verified && founderTest && verification?.status !== "suspended" && verification?.status !== "rejected") {
+  if (isolatedTestEnvironment(process.env) && verified && founderTest && verification?.status !== "suspended" && verification?.status !== "rejected") {
     const environment = platformAdminEnvironment(process.env);
     if (!environment.status) {
       const { data: operator, error: adminError } = await context.db.from("platform_admins").select("role").eq("user_id", context.user.id).maybeSingle();

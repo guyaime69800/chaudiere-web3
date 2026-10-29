@@ -14,6 +14,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider } from "./context/AuthProvider";
 import MfaSecurityPage from "./pages/MfaSecurityPage";
 import AuthPage from "./pages/AuthPage.jsx";
+import BillingReturnPage from './pages/BillingReturnPage.jsx';
 import PricingPage from "./pages/PricingPage.jsx";
 import EnterpriseQuotePage from "./pages/EnterpriseQuotePage.jsx";
 import SiteFooter from "./components/SiteFooter.jsx";
@@ -59,6 +60,7 @@ createRoot(document.getElementById("root")).render(
           />
           {/* Accueil public */}
           <Route path="/" element={<App />} />
+          <Route path="/rechercher-appareil" element={<App />} />
           <Route path="/shiba-devis" element={<ShibaDevisPage />} />
           <Route path="/espace-particulier" element={<IndividualHomePage />} />
           <Route path="/tarifs" element={<PricingPage />} />
@@ -71,6 +73,7 @@ createRoot(document.getElementById("root")).render(
           <Route path="/conditions-commerciales" element={<SalesTermsPage />} />
 
           <Route path="/connexion-interne" element={<AuthPage mode="connexion" />} />
+          <Route path="/retour-facturation" element={<BillingReturnPage />} />
           {/* Authentification professionnelle */}
           <Route
             path="/connexion"

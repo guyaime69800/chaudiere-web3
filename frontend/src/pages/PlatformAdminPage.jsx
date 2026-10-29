@@ -3,6 +3,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { uploadPresigned } from "@vercel/blob/client";
 import { uploadDirectR2 } from "../services/r2DirectUpload.js";
+import TechnicalBatchImport from "../components/TechnicalBatchImport.jsx";
+import AdminTestWorkspace from '../components/AdminTestWorkspace.jsx';
+import AdminServiceAlerts from '../components/AdminServiceAlerts.jsx';
+import AdminDocumentBrowser from '../components/AdminDocumentBrowser.jsx';
 import { useAuth } from "../hooks/useAuth";
 import { runR2MigrationBatch } from "../services/r2MigrationBatch.js";
 import "./PlatformAdminPage.css";
@@ -32,6 +36,7 @@ async function request(token, body, search = "", companyId = "") {
 export default function PlatformAdminPage() {
   const { session } = useAuth();
   const [data, setData] = useState(null);
+  const [testWorkspace, setTestWorkspace] = useState(() => new URLSearchParams(window.location.search).get('test') === '1' ? {} : null);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState("");
   const [contractEnd, setContractEnd] = useState("");
@@ -51,7 +56,6 @@ export default function PlatformAdminPage() {
   const [documentTitle, setDocumentTitle] = useState("");
   const [newHotlinePhone, setNewHotlinePhone] = useState("");
   const [documents, setDocuments] = useState([]);
-  const [archivePage, setArchivePage] = useState(1);
   const [publicationReady, setPublicationReady] = useState(false);
   const [hotlineReady, setHotlineReady] = useState(false);
   const [hotlineInputs, setHotlineInputs] = useState({});
@@ -378,19 +382,12 @@ export default function PlatformAdminPage() {
     && entry.status === "approved" && entry.distribution_confirmed_at == null);
   const archivedDocuments = documents.filter((entry) => entry.status !== "pending_review"
     && !awaitingDistribution.includes(entry));
-  const archivedModels = Object.values(archivedDocuments.reduce((groups, entry) => {
-    const key = `${entry.manufacturer || ""}\u0000${entry.model_reference || ""}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
-    if (!groups[key]) groups[key] = { manufacturer: entry.manufacturer, model: entry.model_name, reference: entry.model_reference, entries: [] };
-    groups[key].entries.push(entry);
-    return groups;
-  }, {}));
-  const archivePageCount = Math.max(1, Math.ceil(archivedModels.length / 15));
-  const currentArchivePage = Math.min(archivePage, archivePageCount);
-  function renderDocument(entry) {
+  function renderDocument(entry, duplicate = false) {
     const awaitingPublication = data.environment === "production" && entry.status === "approved"
       && entry.distribution_confirmed_at == null;
     const category = reviewCategories[entry.id] || entry.catalog_category || "";
     const content = <>
+      {duplicate && <p className="admin-document-warning">Doublon possible : même fichier pour cette référence et cette catégorie. Vérifiez les fiches avant toute suppression.</p>}
       <p className="platform-admin-document-name"><strong>{entry.manufacturer} · {entry.model_name ? `${entry.model_name} · ` : ""}{entry.model_reference}</strong> · {entry.title} <span>({awaitingPublication ? "En attente de diffusion" : entry.status === "approved" ? "Publié" : entry.status === "rejected" ? "Rejeté" : "À valider"})</span></p>
       <p className="platform-admin-document-filename">{entry.original_filename}</p>
       <button type="button" disabled={busy || entry.rag_status === "indexing"} onClick={() => setEditingDocument({ ...entry })}>Modifier la fiche</button>
@@ -452,16 +449,34 @@ export default function PlatformAdminPage() {
   if (!data) return <main><p role="status">{error || "Vérification des accès…"}</p></main>;
   return <main className="platform-admin">
     <Link to="/espace-pro">← Retour à CarnetPass</Link>
+    <section aria-label="Accès à mon espace professionnel">
+      <h2>Mon espace Pro</h2>
+      <p>Ouvrez votre espace professionnel avec votre compte connecté pour vérifier le parcours client.</p>
+      <p><Link to="/espace-pro">Ouvrir mon espace Pro</Link></p>
+      <p><Link to="/parametres-compte">Vérifier ma formule et mes factures</Link></p>
+    </section>
     {data.role === "founder" && <p><Link to="/administration-maintenance">Mettre le site en maintenance</Link></p>}
-    {data.role === "founder" && <p><Link to="/espace-pro?action=scan-plaque" style={{ display: "inline-block", padding: "16px 22px", borderRadius: 12, background: "#bf3509", color: "#fff", fontWeight: 700, textDecoration: "none" }}>📷 Ouvrir mon espace de test — scan de plaque</Link></p>}
-    {data.role === "founder" && <p>Ce raccourci utilise votre compte connecté. L’autorisation de test sans SIRET validé est réservée au fondateur. Les équipements ajoutés restent des données réelles de votre entreprise.</p>}
     <p><Link to="/administration-aides">Gérer les aides financières et vérifier les qualifications RGE</Link></p>
     <h1>Administration CarnetPass</h1>
+    {data.role === 'founder' && <AdminServiceAlerts token={session.access_token} />}
     {data?.environment === "preview" && <p className="platform-admin-environment-preview">Environnement de test (Preview) : les modifications effectuées ici ne changent pas les données de production.</p>}
-    {data?.environment === "production" && <p className="platform-admin-environment-production">Production — données réelles : chaque modification concerne les clients. Vérifiez le contrat, le règlement et l'entreprise avant de confirmer une action.</p>}
+    {data?.environment === "production" && <p className="platform-admin-environment-production">Paris 2 — les rubriques Entreprises et catalogue concernent les données réelles. Vérifiez le contrat, le règlement et l'entreprise avant de confirmer une action. Le compte de test possède son propre espace privé.</p>}
     {error && <p role="alert" className="platform-admin-error">{error}</p>}
     {message && <p role="status" className="platform-admin-success">{message}</p>}
     {data && <>
+      {data.role === 'founder' && data.testAccount && <section>
+        <h2>Mon compte de test</h2>
+        <p>{data.testAccount.email} · espace de test Paris 2</p>
+        <p>Votre compte admin ouvre un espace de test privé. Ses données sont conservées séparément des entreprises clientes.</p>
+        <button type="button" disabled={busy || !data.testAccount.configured} onClick={async () => {
+          setBusy(true); setError('');
+          try { const result = await request(session.access_token, { action: 'open-test-account' }); setTestWorkspace(result.workspace); }
+          catch (cause) { setError(cause.message); }
+          finally { setBusy(false); }
+        }}>Ouvrir mon compte de test</button>
+        {!data.testAccount.configured && <p>Accessible depuis l’administration de production Paris 2.</p>}
+        {testWorkspace && <AdminTestWorkspace key={session.user.id} token={session.access_token} />}
+      </section>}
       <section><h2>Entreprises</h2>
         <form onSubmit={(event) => { event.preventDefault(); load().catch((cause) => setError(cause.message)); }}>
           <label>Rechercher par nom <input value={search} onChange={(event) => setSearch(event.target.value)} maxLength={80} /></label>
@@ -514,6 +529,7 @@ export default function PlatformAdminPage() {
       <section><h2>Historique récent</h2><ul>{data.events.map((event, index) => <li key={`${event.created_at}-${index}`}>
         {new Date(event.created_at).toLocaleString("fr-FR")} · {event.action} · {data.companies.find((entry) => entry.id === event.company_id)?.name || event.company_id} · {event.payment_reference || "sans référence"}
       </li>)}</ul></section>
+      {data.environment === "production" && data.role === "founder" && <TechnicalBatchImport token={session.access_token} onComplete={loadDocuments} />}
       {(["preview", "production"].includes(data.environment)) && <section><h2>Importer un document technique</h2>
         <p>Le PDF reste privé et en attente de validation. Sa publication lance l'indexation pour Shiba ; un document scanné peut nécessiter un OCR.</p>
         {!publicationReady && <p>La publication attend l’activation du catalogue dans cette base.</p>}
@@ -551,24 +567,15 @@ export default function PlatformAdminPage() {
           </>}
         </section>}
         <div className="platform-admin-document-queue"><h3>Documents à valider ({pendingCount})</h3>
-          {pendingCount ? <ul>{pendingDocuments.map(renderDocument)}</ul> : <p>Aucun nouveau PDF à valider.</p>}
+          {pendingCount ? <AdminDocumentBrowser documents={pendingDocuments} renderDocument={renderDocument} categories={catalogCategories} label="Documents à valider" /> : <p>Aucun nouveau PDF à valider.</p>}
         </div>
         {!!awaitingDistribution.length && <details className="platform-admin-document-archive">
           <summary>Fiches importées à diffuser ({awaitingDistribution.length})</summary>
           <p>Ces PDF sont enregistrés et indexés, mais restent privés. Vérifiez la catégorie et le droit de diffusion de chaque fiche avant de la rendre visible aux professionnels.</p>
-          <ul>{awaitingDistribution.map(renderDocument)}</ul>
+          <AdminDocumentBrowser documents={awaitingDistribution} renderDocument={renderDocument} categories={catalogCategories} label="Fiches à diffuser" />
         </details>}
-        {!!archivedDocuments.length && <details className="platform-admin-document-archive"><summary>Archives des modèles ({archivedModels.length}) · {archivedDocuments.length} document(s)</summary>
-          <nav aria-label="Pages des modèles archivés" className="platform-admin-pagination">
-            <button type="button" disabled={currentArchivePage <= 1} onClick={() => setArchivePage(currentArchivePage - 1)}>← Précédente</button>
-            <span role="status">Page {currentArchivePage} sur {archivePageCount} · {archivedModels.length} modèles</span>
-            <button type="button" disabled={currentArchivePage >= archivePageCount} onClick={() => setArchivePage(currentArchivePage + 1)}>Suivante →</button>
-          </nav>
-          <ul>{archivedModels.slice((currentArchivePage - 1) * 15, currentArchivePage * 15).map((group) => <li key={`${group.manufacturer}:${group.reference}`} className="platform-admin-document-item">
-            <details><summary>{group.manufacturer} · {group.model ? `${group.model} · ` : ""}{group.reference} ({group.entries.length} document{group.entries.length > 1 ? "s" : ""})</summary>
-              <ul>{group.entries.map(renderDocument)}</ul>
-            </details>
-          </li>)}</ul>
+        {!!archivedDocuments.length && <details className="platform-admin-document-archive"><summary>Documents validés et rejetés · {archivedDocuments.length} document(s)</summary>
+          <AdminDocumentBrowser documents={archivedDocuments} renderDocument={renderDocument} categories={catalogCategories} label="Documents validés et rejetés" />
         </details>}
       </section>}
       {data.role === "founder" && <section><h2>Collaborateurs internes</h2>

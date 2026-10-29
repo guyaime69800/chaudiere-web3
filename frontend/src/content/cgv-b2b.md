@@ -1,6 +1,8 @@
 ## 1. État de l’offre et fournisseur
 
-La vente réelle n’est pas ouverte. Les paiements Stripe éventuellement proposés sont des tests sans débit réel et ne valent pas souscription commerciale. Les présentes modalités décrivent l’offre prévue. L’identité juridique, la domiciliation professionnelle et l’immatriculation du fournisseur doivent être complétées avant ouverture. Contact : contact@carnetpass.fr.
+Le fournisseur de CarnetPass est **Guy AIME — entrepreneur individuel (EI)**, sous le régime de la micro-entreprise, immatriculé au **RNE le 9 octobre 2026**, **SIREN 533 656 393**, **SIRET 533 656 393 00055**, établi à l’adresse **Avenue des Temps Modernes, 69800 Saint-Priest, France**. Contact professionnel : [contact@carnetpass.fr](mailto:contact@carnetpass.fr).
+
+L’ouverture commerciale est en préparation. Aucun paiement n’est actuellement proposé sur CarnetPass. Les présentes conditions décrivent l’offre prévue ; toute souscription nécessitera un récapitulatif de commande et une acceptation expresse lors de l’ouverture du service.
 
 ## 2. Clients et commande
 
@@ -28,13 +30,13 @@ Chaque compte supplémentaire comprend **150 questions Shiba par mois** (documen
 
 Seul le responsable habilité peut commander des places et rattacher ou retirer les collaborateurs. Le récapitulatif de commande doit préciser le nombre de places, le total mensuel, l’éventuel prorata et la prochaine échéance ; son acceptation expresse et la confirmation du paiement précèdent l’activation. Une place payée mais non attribuée reste facturée. Retirer un collaborateur libère sa place, sans résilier cette place ni effacer les dossiers de l’entreprise. Une réduction des places prend effet à la prochaine échéance après désignation des comptes conservés ; elle ne permet pas de dépasser le nombre de places maintenues. Résilier l’abonnement principal met fin aux accès payants supplémentaires à l’expiration de la période payée.
 
-Les achats réels restent fermés jusqu’à l’ouverture commerciale. Les parcours de test ne constituent pas une commande réelle.
+La commande des comptes supplémentaires sera disponible à l’ouverture commerciale.
 
 ## 5. Recharger CarnetPass
 
 Les recharges prévues sont **100 crédits pour 10 €** et **200 crédits pour 20 €**, TVA non applicable, article 293 B du CGI. Un crédit sert à une question Shiba, documentaire ou Web. Les crédits s’ajoutent au solde, ne se réinitialisent pas avec le quota mensuel et sont utilisés après les questions incluses. Une réponse indisponible donnant lieu au remboursement technique du crédit ne le consomme pas définitivement.
 
-Une recharge ne remplace pas Pro, ne prolonge pas Découverte, n’augmente pas le quota quotidien de notices et n’achète pas de stockage. Les achats réels et prélèvements automatiques de recharges sont fermés. Les crédits de test ne sont pas un solde acheté avec de l’argent réel. Les crédits achetés restent disponibles sans expiration tant que le compte existe. Ils sont conservés lors d’une interruption de l’abonnement et redeviennent utilisables à sa reprise. Ils ne permettent pas d’utiliser Shiba sans abonnement actif.
+Une recharge ne remplace pas Pro, ne prolonge pas Découverte, n’augmente pas le quota quotidien de notices et n’achète pas de stockage. Les achats réels et prélèvements automatiques de recharges sont fermés. Les crédits achetés restent disponibles sans expiration tant que le compte existe. Ils sont conservés lors d’une interruption de l’abonnement et redeviennent utilisables à sa reprise. Ils ne permettent pas d’utiliser Shiba sans abonnement actif.
 
 ## 6. Paiement, durée et résiliation à l’ouverture
 

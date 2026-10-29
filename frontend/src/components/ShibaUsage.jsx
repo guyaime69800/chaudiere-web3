@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { formatShibaResetDate, shibaCreditsExhaustedMessage } from "../lib/shiba-credit-copy.js";
 import { openShibaRecharge } from "../services/shibaUsageEvents.js";
 import "./ShibaUsage.css";
+import useLivePurchases from '../hooks/useLivePurchases.js';
 
 export default function ShibaUsage({ session }) {
   const [usage, setUsage] = useState(null);
   const [error, setError] = useState(false);
+  const livePurchases = useLivePurchases();
   const userId = session?.user?.id;
 
   useEffect(() => {
@@ -33,7 +35,8 @@ export default function ShibaUsage({ session }) {
     }
     load();
     window.addEventListener("shiba-usage-changed", load);
-    const returningFromRecharge = new URLSearchParams(window.location.search).get("recharge") === "retour";
+    const returningFromRecharge = new URLSearchParams(window.location.search).get("recharge") === "retour"
+      || new URLSearchParams(window.location.search).get('paiement') === 'retour';
     const timer = window.setInterval(load, 60_000);
     const fastTimer = returningFromRecharge ? window.setInterval(load, 5_000) : null;
     const fastStop = returningFromRecharge ? window.setTimeout(() => window.clearInterval(fastTimer), 60_000) : null;
@@ -70,17 +73,17 @@ export default function ShibaUsage({ session }) {
           <p className="shiba-usage__exhausted">{shibaCreditsExhaustedMessage(usage.period)}</p>
           {usage.period === "month" && reset && <small>Réinitialisation prévue le {reset} (heure de Paris).</small>}
           {usage.period === "trial" && reset && <small>Fin de l’essai le {reset} (heure de Paris), sans réinitialisation automatique.</small>}
-          {testBilling && usage.period !== "trial" && <button className="shiba-usage__recharge" type="button" onClick={() => openShibaRecharge(usage, true)}>Recharger CarnetPass</button>}
+          {(testBilling || livePurchases.available) && usage.period !== "trial" && <button className="shiba-usage__recharge" type="button" onClick={() => openShibaRecharge(usage, true)}>Recharger CarnetPass</button>}
           <small>{testBilling
             ? "La recharge Stripe est disponible uniquement en mode test Preview."
-            : "La recharge est en préparation et n’est pas encore achetable."}</small>
+            : livePurchases.available ? 'Recharge ponctuelle, sans renouvellement automatique.' : "La recharge est en préparation et n’est pas encore achetable."}</small>
         </>
       ) : (
         <>
           <small>{usage.period === "trial"
             ? `Accès aux documents jusqu’au ${reset || "terme de l’essai"}, ou jusqu’à la 20e question Shiba Bot.`
             : `Prochaine réinitialisation le ${reset || "date non disponible"}. Vos carnets, documents et historiques restent accessibles.`}</small>
-          {testBilling && usage.period !== "trial" && <button className="shiba-usage__recharge" type="button" onClick={() => openShibaRecharge(usage, true)}>Recharger CarnetPass</button>}
+          {(testBilling || livePurchases.available) && usage.period !== "trial" && <button className="shiba-usage__recharge" type="button" onClick={() => openShibaRecharge(usage, true)}>Recharger CarnetPass</button>}
         </>
       )}
       {exhausted && <small>{usage.period === "trial"

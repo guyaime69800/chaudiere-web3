@@ -26,6 +26,11 @@ export function directUploadMetadata(body, userId) {
     || !Number.isInteger(metadata.size) || metadata.size < 5 || metadata.size > maxSize
     || (metadata.hotlinePhone && (!/^[+0-9(). -]{6,32}$/.test(metadata.hotlinePhone)
       || (metadata.hotlinePhone.match(/\d/g) || []).length < 6))) throw failure(400, "PDF ou métadonnées invalides.");
+  const aliases = body.modelAliases || [];
+  if (!Array.isArray(aliases) || aliases.length > 10 || aliases.some(value => typeof value !== 'string' || value.trim().length < 2 || value.trim().length > 160)) {
+    throw failure(400, "Références associées invalides.");
+  }
+  if (aliases.length) metadata.modelAliases = [...new Set(aliases.map(value => value.trim()))];
   return metadata;
 }
 
@@ -97,6 +102,7 @@ export async function completeDirectR2Upload(db, id, userId, deps = {}) {
     const saved = await db.from("platform_document_intake").upsert({ id, uploaded_by: userId,
       manufacturer: ticket.manufacturer, model_name: ticket.modelName, model_reference: ticket.modelReference,
       title: ticket.title, original_filename: ticket.filename, hotline_phone: ticket.hotlinePhone || null,
+      ...(ticket.modelAliases?.length ? { model_aliases: ticket.modelAliases } : {}),
       blob_pathname: entry.blob_pathname, size_bytes: ticket.size, sha256: ticket.sha256 },
     { onConflict: "blob_pathname", ignoreDuplicates: true });
     if (saved.error) throw failure(503, "Enregistrement du document indisponible. Réessayez la finalisation.");

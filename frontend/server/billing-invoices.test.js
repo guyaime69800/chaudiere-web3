@@ -25,6 +25,13 @@ test("invoice access enforces account, company, MFA, environment and customer is
     },
     async request(url) {
       stripeCalls++;
+      if (new URL(url).pathname.endsWith('/invoice_payments')) {
+        assert.equal(new URL(url).searchParams.get('invoice'), 'in_owned');
+        return Response.json({ has_more: false, data: [{ invoice: 'in_owned', livemode: true, status: 'paid', amount_paid: 2800,
+          payment: { type: 'payment_intent', payment_intent: { id: 'pi_owned', customer: 'cus_owned', livemode: true,
+            latest_charge: { id: 'ch_owned', customer: 'cus_owned', payment_intent: 'pi_owned', livemode: true,
+              currency: 'eur', amount: 2800, amount_refunded: 2800 } } } }] });
+      }
       assert.equal(new URL(url).searchParams.get("customer"), "cus_owned");
       return Response.json({ data: stripeData, has_more: true });
     },
@@ -42,6 +49,8 @@ test("invoice access enforces account, company, MFA, environment and customer is
     role = "owner"; authError = { message: "Invalid user" }; assert.equal((await run()).code, 401); authError = null;
     const valid = await run({ query: { customer: "cus_attacker", companyId: "foreign-company" } });
     assert.equal(valid.code, 200); assert.equal(valid.body.invoices[0].number, "CP-1");
+    assert.equal(valid.body.invoices[0].refundStatus, 'full');
+    assert.equal(valid.body.invoices[0].refundedAmount, 2800);
     assert.equal(valid.body.nextCursor, "in_owned"); assert.equal(valid.body.testMode, false);
     assert.equal((await run({ query: { after: "invalid" } })).code, 400);
     customer = null; assert.deepEqual((await run()).body.invoices, []); customer = "cus_owned";

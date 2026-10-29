@@ -22,6 +22,8 @@ test("founder scan permission preserves company scope and suspension checks", as
   const bearer = `fixture.${Buffer.from(JSON.stringify({ sub: userId, aal: "aal2" })).toString("base64url")}.fixture`;
   const req = { headers: { authorization: `Bearer ${bearer}` } };
   try {
+    await assert.rejects(devisCompany(req, { verified: true, founderTest: true }), { status: 403 });
+    Object.assign(process.env, { VERCEL_ENV: 'preview', VERCEL_GIT_COMMIT_REF: 'feature/documentation-multi-docs', VITE_SUPABASE_URL: 'https://bqqzzbwqmiyxcotvqtoc.supabase.co' });
     assert.equal((await devisCompany(req, { verified: true, founderTest: true })).testAccess, true);
     await assert.rejects(devisCompany(req, { verified: true }), { status: 403 });
     role = "admin";
@@ -45,6 +47,8 @@ test("durable maintenance pass checks current founder role and fails closed", as
   const req = () => new Request("https://www.carnetpass.fr/espace-pro", { headers: { cookie: `carnetpass_maintenance_access=${"a".repeat(64)}` } });
   try {
     assert.equal((await middleware(req())).headers.get("x-middleware-next"), "1");
+    const adminRequest = new Request('https://www.carnetpass.fr/administration-interne', { headers: { cookie: `carnetpass_maintenance_access=${'a'.repeat(64)}` } });
+    assert.equal((await middleware(adminRequest)).status, 401);
     role = "admin"; assert.equal((await middleware(req())).status, 503);
     role = "founder"; available = false; assert.equal((await middleware(req())).status, 503);
   } finally { globalThis.fetch = previousFetch; for (const k of Object.keys(process.env)) if (!(k in saved)) delete process.env[k]; Object.assign(process.env, saved); }

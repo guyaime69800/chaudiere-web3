@@ -68,7 +68,10 @@ test("five identities: direct page/API access, cookies and existing client sessi
       assert.match(result.headers.get("cache-control"), /no-store/);
       if (!state.role) assert.doesNotMatch(await result.text(), /Entreprises|scan|RGE|Mettre le site/);
     }
-    for (const route of ["/", "/connexion", "/inscription", "/espace-pro", "/api/billing", "/api/verify-company?platform_admin_route=1"]) {
+    const presentation = await middleware(new Request("https://carnetpass.fr/", { headers }));
+    assert.equal(presentation.status, 200);
+    assert.doesNotMatch(await presentation.text(), /administration-interne|connexion-interne/);
+    for (const route of ["/connexion", "/inscription", "/espace-pro", "/api/billing", "/api/verify-company?platform_admin_route=1"]) {
       const result = await middleware(new Request(`https://carnetpass.fr${route}`, { headers }));
       assert.equal(result.status, state.role ? 200 : 503, `${identity} ${route}`);
     }
@@ -140,10 +143,22 @@ test("exact exceptions keep login, password recovery, cron and signed webhooks, 
   }
   const blob = { method: "POST", headers: { "x-vercel-signature": "forged", "content-length": "32" }, body: JSON.stringify({ type: "blob.upload-completed" }) };
   assert.equal((await middleware(new Request("https://carnetpass.fr/api/platform-admin-documents", blob))).status, 200);
-  assert.equal((await middleware(new Request("https://carnetpass.fr/api/platform-admin-documents", { ...blob, body: JSON.stringify({ type: "blob.generate-presigned-url" }) }))).status, 503);
+  assert.equal((await middleware(new Request("https://carnetpass.fr/api/platform-admin-documents", { ...blob, body: JSON.stringify({ type: "blob.generate-presigned-url" }) }))).status, 401);
   const forged = response();
   await adminDocuments({ method: "POST", headers: { "x-vercel-signature": "forged" }, body: { type: "blob.upload-completed", payload: {} } }, forged);
   assert.ok([400, 503].includes(forged.statusCode), JSON.stringify(forged.body)); // Middleware exception never substitutes for signature verification.
 }));
 
 test("internal role still requires MFA and exposes only the security challenge", () => fixture(async state => { state.role = "founder"; const token = jwt("founder", "aal1"); const identity = await verifiedIdentity(token); assert.equal(identity.role, null); assert.equal(identity.mfaRequired, true); const res = response(); await accessSession({method:"GET",headers:{authorization:`Bearer ${token}`}}, res); assert.equal(res.body.mfaRequired,true); assert.equal(res.body.role,null); assert.equal((await middleware(new Request("https://carnetpass.fr/administration-interne",{headers:{authorization:`Bearer ${token}`}}))).status,403); }));
+
+test('Stripe return restores through a public shell without opening admin or weakening the cookie', () => fixture(async () => {
+  const oldReturn = await middleware(new Request('https://www.carnetpass.fr/administration-interne?test=1'));
+  assert.equal(oldReturn.status,303); assert.equal(oldReturn.headers.get('location'),'/retour-facturation?test=1');
+  assert.equal(await oldReturn.text(),'');
+  assert.equal((await middleware(new Request('https://www.carnetpass.fr/retour-facturation?test=1'))).headers.get('x-middleware-next'),'1');
+  assert.equal((await middleware(new Request('https://www.carnetpass.fr/administration-interne'))).status,401);
+  assert.equal((await middleware(new Request('https://www.carnetpass.fr/api/platform-admin?test=1'))).status,401);
+  const denied = response();
+  await accessSession({method:'POST',headers:{host:'www.carnetpass.fr',origin:'https://attacker.invalid',authorization:`Bearer ${jwt()}`}},denied);
+  assert.equal(denied.statusCode,403);
+}));

@@ -1,6 +1,6 @@
 ## Responsable et état de la politique
 
-L’éditeur de CarnetPass est responsable des traitements de gestion des comptes, de relation professionnelle et de sécurité. Son identité juridique et sa domiciliation professionnelle doivent être précisées avant ouverture commerciale. Aucun renseignement personnel du dossier de création n’est publié ici. Contact pour vos données : [contact@carnetpass.fr](mailto:contact@carnetpass.fr).
+**Guy AIME — entrepreneur individuel (EI)**, éditeur de CarnetPass, **SIREN 533 656 393**, **SIRET 533 656 393 00055**, établi à l’adresse **Avenue des Temps Modernes, 69800 Saint-Priest, France**, est responsable des traitements de gestion des comptes, de relation professionnelle et de sécurité. Contact pour vos données : [contact@carnetpass.fr](mailto:contact@carnetpass.fr). Les [mentions légales](/mentions-legales) détaillent l’identification professionnelle de l’éditeur.
 
 L’entreprise cliente détermine l’utilisation des données de ses clients et collaborateurs dans les carnets. CarnetPass les traite pour fournir le service. Les instructions et garanties de sous-traitance doivent être formalisées dans un accord de traitement avant souscription commerciale.
 
@@ -22,7 +22,7 @@ Les liens d’aides ouvrent des services publics externes sans collecter de nouv
 
 ## Accès et prestataires
 
-Les utilisateurs habilités de l’entreprise et administrateurs autorisés accèdent aux données nécessaires à leur mission. Les services utilisés comprennent Supabase (comptes et base), Vercel (site, fonctions et anciens fichiers), Cloudflare R2 (PDF), Upstash (compteurs et sécurité), OpenAI (IA), Stripe (paiement de test) et Resend lorsque l’envoi d’e-mails est configuré.
+Les utilisateurs habilités de l’entreprise et administrateurs autorisés accèdent aux données nécessaires à leur mission. Les services utilisés comprennent Supabase (comptes et base), Vercel (site, fonctions et anciens fichiers), Cloudflare R2 (PDF), Upstash (compteurs et sécurité), OpenAI (IA), Stripe (prestataire prévu pour les paiements lors de l’ouverture commerciale) et Resend lorsque l’envoi d’e-mails est configuré.
 
 Le stockage R2 du catalogue relève de la juridiction européenne. Cela ne signifie pas que tous les traitements ont lieu en France ou dans l’Union européenne. La liste contractuelle, les régions, transferts hors EEE et garanties applicables doivent être documentés avant ouverture commerciale.
 

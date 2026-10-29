@@ -9,6 +9,18 @@ import { tryR2Delivery } from "./r2-document-delivery.js";
 import { loadPlatformPdf } from "./verify-platform-pdf.js";
 import { randomUUID } from "node:crypto";
 import { reserveDocumentConsultation } from "./document-consultation-quota.js";
+import { verifiedIdentity } from './internal-access.js';
+
+export async function catalogAccess(req, res, identity = verifiedIdentity, companyAccess = requireVerifiedCompany) {
+  const token = /^Bearer ([^\s]+)$/i.exec(req.headers?.authorization || '')?.[1];
+  if (token && token.length <= 16384) {
+    const account = await identity(token);
+    if (account.user?.id && account.role === 'founder' && !account.mfaRequired) {
+      return { userId: account.user.id, accessKind: 'admin_catalog' };
+    }
+  }
+  return companyAccess(req, res);
+}
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 export default async function handler(req, res) {
@@ -16,13 +28,16 @@ export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Méthode non autorisée." });
   const environment = platformDocumentEnvironment(process.env);
   if (environment.status) return res.status(environment.status).json({ error: "Catalogue indisponible." });
-  const professional = await requireVerifiedCompany(req, res);
+  let professional;
+  try { professional = await catalogAccess(req, res); }
+  catch { return res.status(503).json({ error: 'Vérification de l’accès au catalogue momentanément indisponible.' }); }
   if (!professional) return;
-  if (!platformDocumentCatalogAllowed(environment.name, professional.accessKind)) {
+  const adminCatalog = professional.accessKind === 'admin_catalog';
+  if (!adminCatalog && !platformDocumentCatalogAllowed(environment.name, professional.accessKind)) {
     return res.status(403).json({ error: "Catalogue indisponible pour ce compte." });
   }
   try {
-    if (!await discoveryDocumentsQuotaAvailable(professional)) {
+    if (!adminCatalog && !await discoveryDocumentsQuotaAvailable(professional)) {
       return res.status(403).json({ code: "DISCOVERY_QUOTA_REACHED", error: "Les 20 questions de votre essai Découverte ont été utilisées. L’accès aux documents est terminé." });
     }
   } catch {
@@ -44,7 +59,8 @@ export default async function handler(req, res) {
       if (typeof receipt !== "string" || !/^[0-9a-f-]{36}$/i.test(receipt)) {
         return res.status(400).json({ error: "Consultation invalide." });
       }
-      const quota = await reserveDocumentConsultation(professional, id, receipt);
+      const quota = adminCatalog ? { allowed: true, enforced: false }
+        : await reserveDocumentConsultation(professional, id, receipt);
       if (quota.enforced) {
         res.setHeader("X-Document-Limit", String(quota.limit));
         res.setHeader("X-Document-Remaining", String(quota.remaining));

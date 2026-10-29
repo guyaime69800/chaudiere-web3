@@ -46,3 +46,5 @@
 .home-final .home-button { flex: 0 0 auto; }
 @media (max-width: 800px) { .home-hero { grid-template-columns: 1fr; } .home-hero__visual { max-width: 520px; transform: none; } .home-benefits__grid { grid-template-columns: 1fr; } .home-benefit { min-height: 0; } .home-shiba { grid-template-columns: 1fr; } .home-shiba__portrait { min-height: 250px; } }
 @media (max-width: 520px) { .home-hero { padding: 28px 22px; border-radius: 20px; } .home-hero__copy h1 { font-size: 39px; } .home-actions { display: grid; } .home-button { width: 100%; } .home-hero__visual { padding: 14px; } .home-visual-device { padding: 12px; } .home-benefits { padding: 58px 0; } .home-shiba { padding: 22px; } .home-final { display: grid; margin-top: 48px; } }
+.home-maintenance { padding: 18px; border: 1px solid #c9a38b; border-radius: 12px; background: #fff1e4; line-height: 1.6; }
+.home-hero__copy > .home-hero__details { margin-top: 20px; font-size: 15px; }

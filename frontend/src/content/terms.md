@@ -1,4 +1,8 @@
-## Objet et accès
+## Éditeur et objet
+
+CarnetPass est édité par **Guy AIME — entrepreneur individuel (EI)**, **SIREN 533 656 393**, **SIRET 533 656 393 00055**, immatriculé au **RNE le 9 octobre 2026**, établi à l’adresse **Avenue des Temps Modernes, 69800 Saint-Priest, France**. Contact professionnel : [contact@carnetpass.fr](mailto:contact@carnetpass.fr). Les [mentions légales](/mentions-legales) complètent ces informations.
+
+## Accès
 
 CarnetPass fournit aux professionnels un outil de documentation et de suivi des équipements. Les fonctions annoncées en préparation ne sont pas disponibles par cette annonce. Chaque utilisateur dispose d’un compte personnel, fournit des informations exactes et protège ses identifiants. L’entreprise gère les habilitations de ses collaborateurs ; certaines fonctions exigent sa vérification.
 

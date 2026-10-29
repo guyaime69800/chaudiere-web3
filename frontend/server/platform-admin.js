@@ -1,6 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { platformAdminEnvironment } from "./lib/platform-admin-environment.js";
 import { mfaAccessError } from "./lib/mfa-access.js";
+import { openIsolatedTestAccount, testAccountConfiguration } from './lib/test-account.js';
+import { adminTestWorkspace } from './admin-test-workspace.js';
+import { adminServiceHealth } from './lib/admin-service-health.js';
+import { adminBillingHealth } from './lib/admin-billing-health.js';
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } };
 const send = (res, status, message, extra = {}) => res.status(status).json({ ok: status < 400, message, ...extra });
@@ -41,6 +45,16 @@ export default async function platformAdminHandler(req, res) {
   if (!["founder", "operator"].includes(operator?.role)) return send(res, 403, "Accès réservé à l'équipe CarnetPass.");
   const mfaError = mfaAccessError(user, token, { required: true });
   if (mfaError) return send(res, mfaError.status, mfaError.message, { code: mfaError.code });
+  if (req.query?.scope === 'service-health') {
+    if (operator.role !== 'founder') return send(res, 403, 'Accès réservé au fondateur.');
+    if (req.method !== 'GET') return send(res, 405, 'Méthode non autorisée.');
+    const [health, billing] = await Promise.all([adminServiceHealth(), adminBillingHealth(admin)]);
+    return send(res, 200, 'OK', { health: { ...health, billing } });
+  }
+  if (req.query?.scope === 'test') {
+    if (operator.role !== 'founder') return send(res, 403, 'Accès réservé au fondateur.');
+    return adminTestWorkspace(req, res, { user, database: admin });
+  }
 
   if (req.method === "GET") {
     const search = String(req.query?.search || "").trim();
@@ -77,11 +91,19 @@ export default async function platformAdminHandler(req, res) {
         }));
       }
     }
-    return send(res, 200, "OK", { environment: environment.name, role: operator.role, companies, events, collaborators, members, memberCount, memberLoadError, selectedCompanyId: selectedCompany });
+    return send(res, 200, "OK", { environment: environment.name, role: operator.role, companies, events, collaborators, members, memberCount, memberLoadError, selectedCompanyId: selectedCompany,
+      ...(operator.role === 'founder' ? { testAccount: { email: user.email, configured: testAccountConfiguration(process.env) } } : {}) });
   }
 
   let body;
   try { body = await bodyOf(req); } catch { return send(res, 400, "Requête invalide."); }
+  if (body?.action === 'open-test-account') {
+    if (operator.role !== 'founder') return send(res, 403, 'Accès réservé au fondateur.');
+    try {
+      const workspace = await openIsolatedTestAccount({ env: process.env, user, database: admin });
+      return send(res, 200, 'Espace de test Paris 2 prêt.', { workspace });
+    } catch { return send(res, 503, 'Le compte de test séparé est en cours de préparation.'); }
+  }
   if (["activate", "suspend", "set-seats"].includes(body?.action)) {
     const companyId = body.companyId;
     if (typeof companyId !== "string" || !/^[0-9a-f-]{36}$/i.test(companyId)) return send(res, 400, "Entreprise invalide.");

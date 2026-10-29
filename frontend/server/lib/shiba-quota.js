@@ -1,5 +1,7 @@
 import { Redis } from "@upstash/redis";
 import { createClient } from "@supabase/supabase-js";
+import { liveCreditStoreEnabled, liveCreditBalance, reserveLiveCredit, refundLiveCredit } from './stripe-live-credits.js';
+const liveCredits = { enabled: liveCreditStoreEnabled, balance: liveCreditBalance, reserve: reserveLiveCredit, refund: refundLiveCredit };
 
 let redis;
 function defaultRedis() {
@@ -82,6 +84,7 @@ function quotaContext(professional, plan, now) {
 }
 
 export async function readShibaUsage(professional, plan, options = {}) {
+  const credits = options.creditStore || liveCredits;
   const context = quotaContext(professional, plan, options.now || new Date());
   if (context.limit === null) return { enabled: false };
   const store = options.redis || defaultRedis();
@@ -89,7 +92,7 @@ export async function readShibaUsage(professional, plan, options = {}) {
     store.get(context.key),
     context.legacyKey ? store.get(context.legacyKey) : 0,
     context.legacyMonthlyKey ? store.get(context.legacyMonthlyKey) : 0,
-    plan === "free" ? 0 : store.get(bonusKey(professional)),
+    plan === "free" ? 0 : credits.enabled() ? credits.balance(professional) : store.get(bonusKey(professional)),
   ]);
   const used = Math.max(Number(current || 0), Number(legacy || 0), Number(legacyMonthly || 0));
   const bonusRemaining = plan === "free" ? 0 : Math.max(0, Number(purchased || 0));
@@ -125,17 +128,31 @@ return {0, used, bonus, 0}
 export async function reserveShibaQuestion(professional, plan, options = {}) {
   const context = quotaContext(professional, plan, options.now || new Date());
   if (context.limit === null) return { allowed: true, enforced: false };
-  const [allowed, used, purchased, bonusSource] = await (options.redis || defaultRedis()).eval(
+  const credits = options.creditStore || liveCredits;
+  const live = plan !== 'free' && credits.enabled();
+  const liveBalance = live ? await credits.balance(professional) : 0;
+  let [allowed, used, purchased, bonusSource] = await (options.redis || defaultRedis()).eval(
     RESERVE_SCRIPT,
     [context.key, context.legacyKey || "", context.legacyMonthlyKey || "", bonusKey(professional)],
-    [context.limit, context.expiresAt, plan === "free" ? 0 : 1],
+    [context.limit, context.expiresAt, plan === "free" || live ? 0 : 1],
   );
+  let liveReservationId;
+  if (live) {
+    if (Number(allowed) === 1) purchased = liveBalance;
+    else {
+      const credit = await credits.reserve(professional);
+      allowed = credit.allowed ? 1 : 0;
+      purchased = credit.balance;
+      if (credit.allowed) liveReservationId = credit.reservationId;
+    }
+  }
   return {
     allowed: Number(allowed) === 1,
     enforced: true,
     key: context.key,
     bonusKey: bonusKey(professional),
     bonusSource: Number(bonusSource) === 1,
+    ...(liveReservationId ? { liveReservationId } : {}),
     used: Number(used),
     limit: context.limit,
     bonusRemaining: plan === "free" ? 0 : Number(purchased),
@@ -153,6 +170,7 @@ export async function discoveryDocumentsQuotaAvailable(professional, options = {
 
 export async function refundShibaQuestion(reservation, options = {}) {
   if (!reservation?.allowed || !reservation?.enforced) return;
+  if (reservation.liveReservationId) return (options.creditStore || liveCredits).refund(reservation.liveReservationId);
   const store = options.redis || defaultRedis();
   await store.eval(
     "if ARGV[1] == 'bonus' then return redis.call('INCR', KEYS[2]) end; local used = tonumber(redis.call('GET', KEYS[1]) or '0'); if used > 0 then return redis.call('DECR', KEYS[1]) end; return 0",

@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/validate-equipment-catalog.mjs",
+    "prebuild": "node scripts/audit-stripe-production-build.mjs && node scripts/validate-equipment-catalog.mjs && node scripts/render-public-pages.mjs",
     "build": "vite build",
+    "postbuild": "node scripts/audit-client-secret-exposure.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "audit:environments": "node scripts/audit-environments.mjs",
     "audit:production-readiness": "node scripts/audit-environments.mjs --require-production",
-    "test": "node --test"
+    "test": "node scripts/run-tests.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1149.0",
@@ -19,11 +20,11 @@
     "@supabase/supabase-js": "^2.114.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.3",
-    "@vercel/blob": "^2.8.0",
+    "@vercel/blob": "2.8.2",
     "@vercel/functions": "^3.1.0",
     "@yudiel/react-qr-scanner": "^2.6.0",
     "ethers": "^6.17.0",
-    "fflate": "0.8.2",
+    "fflate": "0.8.3",
     "jspdf": "^4.2.1",
     "openai": "^7.5.0",
     "pdfjs-dist": "^6.3.289",
@@ -32,6 +33,9 @@
     "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.18.1"
+  },
+  "overrides": {
+    "@vercel/cli-config": { "zod": "4.6.7" }
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

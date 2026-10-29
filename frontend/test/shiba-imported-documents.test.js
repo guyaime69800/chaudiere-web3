@@ -13,7 +13,7 @@ test("Shiba accepts published indexed documents in Production and preserves acco
     const url=String(input);
     if(url.includes('/auth/v1/user'))return Response.json({id:userId,email_confirmed_at:'2026-01-01',factors:[{status:'verified'}]});
     if(url.includes('/company_members'))return Response.json([{company_id:id,role:'owner'}]);
-    if(url.includes('/companies'))return Response.json({id,is_demo:true,created_at:'2026-10-01',company_verifications:{status:'pending'}});
+    if(url.includes('/companies'))return Response.json({id,siret:'12345678901234',is_demo:false,created_at:'2026-10-01',company_verifications:{status:'approved',verified_siret:'12345678901234',verified_at:'2026-10-01'}});
     if(url.includes('/platform_admins'))return Response.json({role:'founder'});
     if(url.includes('/subscriptions'))return Response.json({plan:'enterprise',status:'active',current_period_end:'2099-01-01'});
     if(url.includes('/platform_document_intake')){reads++;return Response.json(indexed);}

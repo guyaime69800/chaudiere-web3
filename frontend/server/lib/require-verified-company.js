@@ -4,6 +4,7 @@ import { getDiscoveryAccess } from "../../shared/discovery-access.js";
 import { devisDatabase } from "./devis-security.js";
 import { platformAdminEnvironment } from "./platform-admin-environment.js";
 import { mfaAccessError } from "./mfa-access.js";
+import { isolatedTestEnvironment } from '../../shared/test-environment.js';
 
 // Vérifie qu'une requête provient d'un utilisateur professionnel autorisé.
 // Cette fonction n'utilise aucune clé administrateur Supabase.
@@ -173,7 +174,7 @@ export async function requireVerifiedCompany(req, res) {
     const verification = Array.isArray(company?.company_verifications)
       ? company.company_verifications[0] : company?.company_verifications;
     let founderTest = false;
-    if (company?.is_demo === true && !platformAdminEnvironment(process.env).status
+    if (isolatedTestEnvironment(process.env) && company?.is_demo === true && !platformAdminEnvironment(process.env).status
       && !["suspended", "rejected"].includes(verification?.status)) {
       const { data: operator, error } = await devisDatabase().from("platform_admins")
         .select("role").eq("user_id", user.id).maybeSingle();
@@ -186,6 +187,7 @@ export async function requireVerifiedCompany(req, res) {
     }
 
     const demoAllowed =
+      isolatedTestEnvironment(process.env) &&
       company?.is_demo === true &&
       !["suspended", "rejected"].includes(verification?.status);
 
@@ -198,7 +200,9 @@ export async function requireVerifiedCompany(req, res) {
 
     const { data: subscription, error: subscriptionError } = await supabase
       .from("subscriptions")
-      .select("plan, status, trial_ends_at, current_period_end")
+      .select(process.env.VERCEL_ENV === 'production'
+        ? "plan, status, trial_ends_at, current_period_end, stripe_live_managed"
+        : "plan, status, trial_ends_at, current_period_end")
       .eq("company_id", membership.company_id)
       .maybeSingle();
     if (subscriptionError) throw new Error("Subscription check failed");
@@ -213,7 +217,8 @@ export async function requireVerifiedCompany(req, res) {
     const enterpriseWithinTerm = subscription?.plan !== "enterprise"
       || (subscription.current_period_end && Date.parse(subscription.current_period_end) > Date.now());
     const paidActive = subscription?.plan !== "free"
-      && ["active", "trialing"].includes(subscription?.status) && enterpriseWithinTerm;
+      && ["active", "trialing"].includes(subscription?.status) && enterpriseWithinTerm
+      && (!subscription?.stripe_live_managed || Date.parse(subscription.current_period_end || '') > Date.now());
     const accessAllowed = demoAllowed || (subscription?.plan === "free"
       ? discovery.active
       : paidActive && verifiedAllowed);

@@ -1,0 +1,529 @@
+{
+  "version": 1,
+  "publication": "pending-only",
+  "entries": [
+    {
+      "file": "pdf/8c7b42ead224f05105ffcbf777887b2ac4652a0d016f9ec92a455283f5a42a5c.pdf",
+      "sha256": "8c7b42ead224f05105ffcbf777887b2ac4652a0d016f9ec92a455283f5a42a5c",
+      "size": 367223,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 1.12 HTE",
+      "modelReference": "initia-1-12-hte-721857301",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/fb8719322144bb9b60d7ab99c0c25e77acc4d2500c963e4871df88298929ae84.pdf",
+      "sha256": "fb8719322144bb9b60d7ab99c0c25e77acc4d2500c963e4871df88298929ae84",
+      "size": 690002,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 1.12 HTE",
+      "modelReference": "initia-1-12-hte-721857304",
+      "modelAliases": [
+        "initia-1-12-hte-721857303"
+      ],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/26d51754ece0ae518b99ead9d14a7490b21e60e5325a353a9ac8038b5cb69260.pdf",
+      "sha256": "26d51754ece0ae518b99ead9d14a7490b21e60e5325a353a9ac8038b5cb69260",
+      "size": 689597,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 1.24 HTE",
+      "modelReference": "initia-1-24-hte-721857404",
+      "modelAliases": [
+        "initia-1-24-hte-721857403"
+      ],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/b8fb909798ae2bb19bdc2a6258b29d725e0e73e0608438ae88d809c7587b31ee.pdf",
+      "sha256": "b8fb909798ae2bb19bdc2a6258b29d725e0e73e0608438ae88d809c7587b31ee",
+      "size": 604070,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 1.24 HTE",
+      "modelReference": "initia-1-24-hte-721857402",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/2455b8ea9ceebbcdc7dc4229d81fd964cf13406c89762842fd118224195821fc.pdf",
+      "sha256": "2455b8ea9ceebbcdc7dc4229d81fd964cf13406c89762842fd118224195821fc",
+      "size": 367319,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 1.24 HTE",
+      "modelReference": "initia-1-24-hte-721857401",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/1f747f1f7befa119d80e6d1b9bb3ef02ce0e2d9b4a02c555a38d5091913d2c6d.pdf",
+      "sha256": "1f747f1f7befa119d80e6d1b9bb3ef02ce0e2d9b4a02c555a38d5091913d2c6d",
+      "size": 689613,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 1.28 HTE",
+      "modelReference": "initia-1-28-hte-721857504",
+      "modelAliases": [
+        "initia-1-28-hte-721857503"
+      ],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/a9f1444cb8a4e0b5ac9b5e1ddb42f3a4cd56526220799e5c8d37af706ed6c08f.pdf",
+      "sha256": "a9f1444cb8a4e0b5ac9b5e1ddb42f3a4cd56526220799e5c8d37af706ed6c08f",
+      "size": 604267,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 1.28 HTE",
+      "modelReference": "initia-1-28-hte-721857502",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/340d58df70541430062ef0b56db5230744289a8170ca9c2040ea98c938e6eff4.pdf",
+      "sha256": "340d58df70541430062ef0b56db5230744289a8170ca9c2040ea98c938e6eff4",
+      "size": 367517,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 1.28 HTE",
+      "modelReference": "initia-1-28-hte-721857501",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/f07e4166960c23b92a7a1e6357e4afb9e0016958076fb42da1fcc70f89bc59d1.pdf",
+      "sha256": "f07e4166960c23b92a7a1e6357e4afb9e0016958076fb42da1fcc70f89bc59d1",
+      "size": 792962,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 2.24 HTE",
+      "modelReference": "initia-2-24-hte-721857604",
+      "modelAliases": [
+        "initia-2-24-hte-721857603"
+      ],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/c8db48ee13f7201601f58bf6afe28471a797a45a303384ceef0c308cd223ffe0.pdf",
+      "sha256": "c8db48ee13f7201601f58bf6afe28471a797a45a303384ceef0c308cd223ffe0",
+      "size": 668857,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 2.24 HTE",
+      "modelReference": "initia-2-24-hte-721857602",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/bdafc4f05aac5b0a0295c0cc9012ee7f80a1d1fd341f29b393662b2bc7e1eae0.pdf",
+      "sha256": "bdafc4f05aac5b0a0295c0cc9012ee7f80a1d1fd341f29b393662b2bc7e1eae0",
+      "size": 380508,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 2.24 HTE",
+      "modelReference": "initia-2-24-hte-721857601",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/c599285b5c5c15eb06fdcb5cfc2f1f5706ac70337c9c1094754a4a2f975fa78c.pdf",
+      "sha256": "c599285b5c5c15eb06fdcb5cfc2f1f5706ac70337c9c1094754a4a2f975fa78c",
+      "size": 793896,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 2.25 HTE",
+      "modelReference": "initia-2-25-hte-721857605",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/8093199e666ad9b46b6a4169ef8691d06247f108e81f3af4e1f0fe6cbd6fca2c.pdf",
+      "sha256": "8093199e666ad9b46b6a4169ef8691d06247f108e81f3af4e1f0fe6cbd6fca2c",
+      "size": 792975,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 2.28 HTE",
+      "modelReference": "initia-2-28-hte-721857704",
+      "modelAliases": [
+        "initia-2-28-hte-721857703"
+      ],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/0f90753646f699f2fb04af303297b3cf0a27957ee999a8d1b1966d6c1da313ba.pdf",
+      "sha256": "0f90753646f699f2fb04af303297b3cf0a27957ee999a8d1b1966d6c1da313ba",
+      "size": 669295,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 2.28 HTE",
+      "modelReference": "initia-2-28-hte-721857702",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/f9be465d881ab5af4cf1abbf06aa64d5a9bad3a2622fffc78d6d50fe6402fe45.pdf",
+      "sha256": "f9be465d881ab5af4cf1abbf06aa64d5a9bad3a2622fffc78d6d50fe6402fe45",
+      "size": 1167390,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 2.28 HTE",
+      "modelReference": "initia-2-28-hte-721857701",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/8d7aba16a6fcff88262595a43bb5d49f15cdabb63d1c15176cb992f877f533d4.pdf",
+      "sha256": "8d7aba16a6fcff88262595a43bb5d49f15cdabb63d1c15176cb992f877f533d4",
+      "size": 504699,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 2.29 HTE",
+      "modelReference": "initia-2-29-hte-721857705",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/cc9482d9486d2e4283d06bfc22b7d6d0764226aea50c2805c3eef96feb488700.pdf",
+      "sha256": "cc9482d9486d2e4283d06bfc22b7d6d0764226aea50c2805c3eef96feb488700",
+      "size": 793070,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 2.33 HTE",
+      "modelReference": "initia-2-33-hte-721857804",
+      "modelAliases": [
+        "initia-2-33-hte-721857803"
+      ],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/8670b6303b3080822722382ddbc0208a4f7e7f9e671156022eaba42322ec1025.pdf",
+      "sha256": "8670b6303b3080822722382ddbc0208a4f7e7f9e671156022eaba42322ec1025",
+      "size": 3570656,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 1.12 HTE",
+      "modelReference": "initia-1-12-hte-721857302",
+      "modelAliases": [
+        "initia-1-12-hte-721857304",
+        "initia-1-12-hte-721857303",
+        "initia-1-24-hte-721857404",
+        "initia-1-24-hte-721857403",
+        "initia-1-24-hte-721857402",
+        "initia-1-28-hte-721857504",
+        "initia-1-28-hte-721857503",
+        "initia-1-28-hte-721857502",
+        "initia-2-24-hte-721857604",
+        "initia-2-24-hte-721857603"
+      ],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/8670b6303b3080822722382ddbc0208a4f7e7f9e671156022eaba42322ec1025.pdf",
+      "sha256": "8670b6303b3080822722382ddbc0208a4f7e7f9e671156022eaba42322ec1025",
+      "size": 3570656,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 2.24 HTE",
+      "modelReference": "initia-2-24-hte-721857602",
+      "modelAliases": [
+        "initia-2-24-hte-721857601",
+        "initia-2-28-hte-721857704",
+        "initia-2-28-hte-721857703",
+        "initia-2-28-hte-721857702",
+        "initia-2-28-hte-721857701",
+        "initia-2-33-hte-721857804",
+        "initia-2-33-hte-721857803",
+        "initia-2-33-hte-721857802",
+        "initia-2-40-hte-722363202",
+        "initia-plus-2-40-hte-722363203"
+      ],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/b5aa8492a7260076e70f7dd4eb17c904adc902848a46683697ae1505761c7625.pdf",
+      "sha256": "b5aa8492a7260076e70f7dd4eb17c904adc902848a46683697ae1505761c7625",
+      "size": 4247290,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 1.12 HTE",
+      "modelReference": "initia-1-12-hte-721857301",
+      "modelAliases": [
+        "initia-1-24-hte-721857401",
+        "initia-1-28-hte-721857501",
+        "initia-2-25-hte-721857605",
+        "initia-2-29-hte-721857705",
+        "initia-2-33-hte-721857801",
+        "initia-2-40-hte-722363201"
+      ],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/1cf7f58e6a3777af35bcf8e31f567140bc42b945e6a67ba95efcba2ac622f240.pdf",
+      "sha256": "1cf7f58e6a3777af35bcf8e31f567140bc42b945e6a67ba95efcba2ac622f240",
+      "size": 3421304,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + COMPACT 2.24 HTE",
+      "modelReference": "initia-compact-2-24-hte-721858204",
+      "modelAliases": [
+        "initia-compact-2-24-hte-721858203",
+        "initia-compact-2-24-hte-721858202",
+        "initia-compact-2-24-hte-721858201",
+        "initia-compact-2-28-hte-721858304",
+        "initia-compact-2-28-hte-721858303",
+        "initia-compact-2-28-hte-721858302",
+        "initia-compact-2-28-hte-721858301",
+        "initia-compact-2-33-hte-721858404",
+        "initia-compact-2-33-hte-721858403",
+        "initia-compact-2-33-hte-721858402"
+      ],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/4099e88f5c2450b1e1e61f06d7838b3a49ffbb72e603df63ab48f63e91fe2b73.pdf",
+      "sha256": "4099e88f5c2450b1e1e61f06d7838b3a49ffbb72e603df63ab48f63e91fe2b73",
+      "size": 3382818,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + COMPACT 2.25 HTE",
+      "modelReference": "initia-compact-2-25-hte-721858205",
+      "modelAliases": [
+        "initia-compact-2-29-hte-721858305",
+        "initia-compact-2-33-hte-721858401"
+      ],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/863d47aa90b99d3bd0fb456335a89f1bbfb48afaf67ddede22f6e4f131666cb3.pdf",
+      "sha256": "863d47aa90b99d3bd0fb456335a89f1bbfb48afaf67ddede22f6e4f131666cb3",
+      "size": 3239259,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + COMPACT L 2.29 HTE",
+      "modelReference": "initia-compact-l-2-29-hte-7735145",
+      "modelAliases": [
+        "initia-compact-l-2-29-hte-7732232",
+        "initia-compact-l-2-33-hte-7735146",
+        "initia-compact-l-2-33-hte-7732233"
+      ],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/d5fac38a0fe3425f320d614ed331a735e9fca35a99b701e0882263c0f3362721.pdf",
+      "sha256": "d5fac38a0fe3425f320d614ed331a735e9fca35a99b701e0882263c0f3362721",
+      "size": 2918443,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + DUO 3.24 HTE",
+      "modelReference": "initia-duo-3-24-hte-721859203",
+      "modelAliases": [
+        "initia-duo-3-24-hte-721859202",
+        "initia-duo-3-24-hte-721859201",
+        "initia-duo-3-33-hte-721859303",
+        "initia-duo-3-33-hte-721859302"
+      ],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/64144a77a5f320335eb2ee50b806e01031b1c81eff6a96da34da8cea44741638.pdf",
+      "sha256": "64144a77a5f320335eb2ee50b806e01031b1c81eff6a96da34da8cea44741638",
+      "size": 3983301,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + DUO 3.25 HTE",
+      "modelReference": "initia-duo-3-25-hte-721859204",
+      "modelAliases": [
+        "initia-duo-3-33-hte-721859301"
+      ],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/ccb26250f68ab0e3699dd35f216fd2e9fb235915f42a23fd05cb90db29607ccc.pdf",
+      "sha256": "ccb26250f68ab0e3699dd35f216fd2e9fb235915f42a23fd05cb90db29607ccc",
+      "size": 3062335,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + MAX 2.24 HTE",
+      "modelReference": "initia-max-2-24-hte-721857904",
+      "modelAliases": [
+        "initia-max-2-24-hte-721857903",
+        "initia-max-2-24-hte-721857902",
+        "initia-max-2-24-hte-721857901",
+        "initia-max-2-28-hte-721858004",
+        "initia-max-2-28-hte-721858003",
+        "initia-max-2-28-hte-721858002",
+        "initia-max-2-28-hte-721858001"
+      ],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/a1e9510e9a8d7bdc90c221bacf072c3b626bd393d61e622ba0879afc02e8a217.pdf",
+      "sha256": "a1e9510e9a8d7bdc90c221bacf072c3b626bd393d61e622ba0879afc02e8a217",
+      "size": 3038164,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + MAX 2.25 HTE",
+      "modelReference": "initia-max-2-25-hte-721857905",
+      "modelAliases": [
+        "initia-max-2-29-hte-721858005"
+      ],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/f209644b2ad95b2c48d46bdf972c30e56be82250581bfbca8e5b868cd82acc2f.pdf",
+      "sha256": "f209644b2ad95b2c48d46bdf972c30e56be82250581bfbca8e5b868cd82acc2f",
+      "size": 2496483,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA PLUS 1.12 HTE",
+      "modelReference": "initia-plus-1-12-hte-710836103",
+      "modelAliases": [
+        "initia-plus-1-12-hte-710836102",
+        "initia-plus-1-12-hte-710836101",
+        "initia-plus-1-12-hte-710835704",
+        "initia-plus-1-12-hte-710835703",
+        "initia-plus-1-12-hte-710835702",
+        "initia-plus-1-12-hte-710835701",
+        "initia-plus-1-24-hte-710836203",
+        "initia-plus-1-24-hte-710836202",
+        "initia-plus-1-24-hte-710836201",
+        "initia-plus-1-24-hte-710835804"
+      ],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/f209644b2ad95b2c48d46bdf972c30e56be82250581bfbca8e5b868cd82acc2f.pdf",
+      "sha256": "f209644b2ad95b2c48d46bdf972c30e56be82250581bfbca8e5b868cd82acc2f",
+      "size": 2496483,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA PLUS 1.24 HTE",
+      "modelReference": "initia-plus-1-24-hte-710835803",
+      "modelAliases": [
+        "initia-plus-1-24-hte-710835802",
+        "initia-plus-1-24-hte-710835801",
+        "initia-plus-1-28-hte-710836301",
+        "initia-plus-1-28-hte-710836302",
+        "initia-plus-1-28-hte-710836303",
+        "initia-plus-1-28-hte-710835904",
+        "initia-plus-1-28-hte-710835903",
+        "initia-plus-1-28-hte-710835902",
+        "initia-plus-1-28-hte-710835901",
+        "initia-plus-2-24-hte-710836402"
+      ],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/f209644b2ad95b2c48d46bdf972c30e56be82250581bfbca8e5b868cd82acc2f.pdf",
+      "sha256": "f209644b2ad95b2c48d46bdf972c30e56be82250581bfbca8e5b868cd82acc2f",
+      "size": 2496483,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA PLUS 2.24 HTE",
+      "modelReference": "initia-plus-2-24-hte-710836401",
+      "modelAliases": [
+        "initia-plus-2-24-hte-710804904",
+        "initia-plus-2-24-hte-710804903",
+        "initia-plus-2-24-hte-710804902",
+        "initia-plus-2-24-hte-710804901",
+        "initia-plus-2-28-hte-721316301",
+        "initia-plus-2-33-hte-710836501",
+        "initia-plus-2-33-hte-710836502",
+        "initia-plus-2-33-hte-710836004",
+        "initia-plus-2-33-hte-710836003",
+        "initia-plus-2-33-hte-710836002"
+      ],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/f209644b2ad95b2c48d46bdf972c30e56be82250581bfbca8e5b868cd82acc2f.pdf",
+      "sha256": "f209644b2ad95b2c48d46bdf972c30e56be82250581bfbca8e5b868cd82acc2f",
+      "size": 2496483,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA PLUS 2.33 HTE",
+      "modelReference": "initia-plus-2-33-hte-710836001",
+      "modelAliases": [],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/12a6c7ac5fb627ccc734943c67cecb581b13b8091a26f161a4b16ae4510b906c.pdf",
+      "sha256": "12a6c7ac5fb627ccc734943c67cecb581b13b8091a26f161a4b16ae4510b906c",
+      "size": 2406897,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA PLUS COMPACT 2.24 HTE",
+      "modelReference": "initia-plus-compact-2-24-hte-710830002",
+      "modelAliases": [
+        "initia-plus-compact-2-24-hte-710830001"
+      ],
+      "title": "notice-installation"
+    },
+    {
+      "file": "pdf/8f18ec605789b7b83fe7f819595ee3a2b0e5ac3936aea66913e66ea95059cb82.pdf",
+      "sha256": "8f18ec605789b7b83fe7f819595ee3a2b0e5ac3936aea66913e66ea95059cb82",
+      "size": 603973,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 1.12 HTE",
+      "modelReference": "initia-1-12-hte-721857302",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/4be5995d2b3b726a127a9a459ce3f1ab4fd1b12e8019f07a3de18ad8f85be4a2.pdf",
+      "sha256": "4be5995d2b3b726a127a9a459ce3f1ab4fd1b12e8019f07a3de18ad8f85be4a2",
+      "size": 668698,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 2.33 HTE",
+      "modelReference": "initia-2-33-hte-721857802",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/fcbbe73a0806aa89b738940b9ba0d1db331c566368d132fbd00f77f3fa612a32.pdf",
+      "sha256": "fcbbe73a0806aa89b738940b9ba0d1db331c566368d132fbd00f77f3fa612a32",
+      "size": 380350,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 2.33 HTE",
+      "modelReference": "initia-2-33-hte-721857801",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/360ce94ea01e130297ad2099592570be7774ed440f141646d8a48a4b10e22b76.pdf",
+      "sha256": "360ce94ea01e130297ad2099592570be7774ed440f141646d8a48a4b10e22b76",
+      "size": 508278,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 2.40 HTE",
+      "modelReference": "initia-2-40-hte-722363202",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/a03d6dfbcb9ef2eb3c207cb325de224d1395d0fe10bf0e0994e373b94926c547.pdf",
+      "sha256": "a03d6dfbcb9ef2eb3c207cb325de224d1395d0fe10bf0e0994e373b94926c547",
+      "size": 219754,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + 2.40 HTE",
+      "modelReference": "initia-2-40-hte-722363201",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/f9de0278ab992fc4255b4c5722aa9fa7fa2519991bfe50b31cb092daf4517442.pdf",
+      "sha256": "f9de0278ab992fc4255b4c5722aa9fa7fa2519991bfe50b31cb092daf4517442",
+      "size": 817113,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + COMPACT 2.24 HTE",
+      "modelReference": "initia-compact-2-24-hte-721858204",
+      "modelAliases": [
+        "initia-compact-2-24-hte-721858203"
+      ],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/aef08536d27793f99198d0424b9e5136c636920e52e931767d6317a90957cb00.pdf",
+      "sha256": "aef08536d27793f99198d0424b9e5136c636920e52e931767d6317a90957cb00",
+      "size": 749383,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + COMPACT 2.24 HTE",
+      "modelReference": "initia-compact-2-24-hte-721858202",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/53925e6d8022c5a2c282d54a887ffd3086b0f56cd28263adce079d0e49c72e34.pdf",
+      "sha256": "53925e6d8022c5a2c282d54a887ffd3086b0f56cd28263adce079d0e49c72e34",
+      "size": 849653,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + COMPACT 2.24 HTE",
+      "modelReference": "initia-compact-2-24-hte-721858201",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    },
+    {
+      "file": "pdf/e7d9e0e012c5f99e2bcd0b42f55f2e5c23c27edc67ddaa3b3d47b29f6a3e9761.pdf",
+      "sha256": "e7d9e0e012c5f99e2bcd0b42f55f2e5c23c27edc67ddaa3b3d47b29f6a3e9761",
+      "size": 467913,
+      "manufacturer": "Chappée",
+      "modelName": "INITIA + COMPACT 2.25 HTE",
+      "modelReference": "initia-compact-2-25-hte-721858205",
+      "modelAliases": [],
+      "title": "vue-eclatee"
+    }
+  ]
+}

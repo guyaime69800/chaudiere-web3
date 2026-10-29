@@ -290,7 +290,6 @@ function CompanyAccountCard({
   user,
   session,
   companyVerified,
-  discoveryActive,
   verificationTitle,
   verificationMessage,
   verificationBusy,
@@ -360,7 +359,7 @@ function CompanyAccountCard({
 
     try {
       await updateCompanySiret(company.id, normalizedSiret);
-      onSiretSaved();
+      await onSiretSaved();
     } catch (saveError) {
       setSiretError(saveError.message);
     } finally {
@@ -445,7 +444,7 @@ function CompanyAccountCard({
           <p className="pro-company-verification-text">{verificationMessage}</p>
 
           <div className="pro-company-card-actions">
-            {!companyVerified && !discoveryActive && company.is_demo !== true && (
+            {!companyVerified && canEdit && (
               <button
                 type="button"
                 className="pro-primary-button"
@@ -1363,12 +1362,11 @@ export default function ProSpacePage() {
       const result = await verifyMyCompany();
 
       setSiretMessage(result.message || "Vérification terminée.");
-
-      setRefreshKey((currentKey) => currentKey + 1);
     } catch (error) {
       setSiretMessage(error.message);
     } finally {
       setVerificationBusy(false);
+      setRefreshKey((currentKey) => currentKey + 1);
     }
   }
   async function handleSignOut() {
@@ -1661,9 +1659,9 @@ export default function ProSpacePage() {
     return <main className="pro-space pro-space--center"><section className="pro-empty-state">
       <h1>Votre espace professionnel</h1>
       <p>Vous êtes connecté avec {user?.email}. Aucune entreprise n’est associée à ce compte.</p>
-      <p>Si vous avez déjà créé une entreprise, connectez-vous avec le compte utilisé pour sa création. Pour un nouveau compte, renseignez votre entreprise depuis les paramètres avant d’ajouter un équipement.</p>
-      <Link className="pro-primary-button" to="/parametres-compte">Ouvrir les paramètres du compte</Link>
-      <p><Link className="pro-action-card-button" to="/administration-interne">Accéder à l’administration CarnetPass</Link></p>
+      <p>Pour démarrer votre essai gratuit de 5 jours, renseignez votre activité. Vous pourrez ajouter jusqu’à 5 équipements, sans carte bancaire. Le SIRET est facultatif pendant l’essai.</p>
+      <Link className="pro-primary-button" to="/espace-pro?configuration=entreprise">Démarrer mon essai gratuit de 5 jours</Link>
+      <p>Vous avez déjà créé une entreprise avec une autre adresse ? Connectez-vous avec ce compte. Si vous rejoignez une équipe, utilisez le lien d’invitation transmis par son responsable.</p>
       <button className="pro-action-card-button" type="button" onClick={handleSignOut} disabled={signingOut}>Changer de compte</button>
     </section></main>;
   }
@@ -1783,7 +1781,7 @@ export default function ProSpacePage() {
                     placeholder="14 chiffres"
                     inputMode="numeric"
                   />
-                  <small>Optionnel pendant les tests</small>
+                  <small>Facultatif pendant l’essai Découverte de 5 jours</small>
                 </label>
 
                 <label>
@@ -1864,24 +1862,36 @@ export default function ProSpacePage() {
     ? discovery.active && equipments.length < DISCOVERY_EQUIPMENT_LIMIT
     : companyVerified && ["active", "trialing"].includes(company.subscription?.status));
 
+  const subscriptionStatusLabel = ({
+    active: "Abonnement actif",
+    trialing: "Essai en cours",
+    canceled: "Abonnement résilié",
+    past_due: "Paiement en retard",
+    unpaid: "Paiement non réglé",
+    paused: "Abonnement suspendu",
+  })[company.subscription?.status] || "Abonnement inactif";
+
   let verificationTitle = "Entreprise en attente de validation";
   let verificationMessage =
     "Votre entreprise doit être validée avant de pouvoir créer des carnets.";
 
-  if (company.is_demo === true) {
+  if (companyVerified) {
+    verificationTitle = "SIRET vérifié";
+    verificationMessage = company.is_demo === true
+      ? "SIRET vérifié. Cet espace reste en démonstration : la vérification seule ne le transforme pas en compte de facturation réel."
+      : "Le SIRET a été contrôlé dans l’Annuaire des entreprises. Ce contrôle ne vérifie pas l’identité du titulaire du compte ni son autorisation à représenter l’entreprise.";
+  } else if (company.is_demo === true && !['suspended', 'rejected'].includes(verification?.status)) {
     verificationTitle = "Mode démonstration";
     verificationMessage =
-      "Cet espace de démonstration peut créer des équipements sans représenter une entreprise officiellement validée.";
+      company.siret
+        ? "SIRET enregistré, mais pas encore validé. Cliquez sur Vérifier mon entreprise pour consulter le résultat officiel. Cet espace reste en démonstration."
+        : "Cet espace est en démonstration. Vous pouvez renseigner un SIRET puis lancer sa vérification.";
   } else if (plan === "free" && discovery.active) {
     verificationTitle = "Découverte active";
     verificationMessage = `Vous pouvez créer jusqu’à ${DISCOVERY_EQUIPMENT_LIMIT} équipements sans SIRET pendant votre essai. ${discovery.daysRemaining} jour(s) restant(s).`;
   } else if (plan === "free") {
     verificationTitle = "Essai Découverte terminé";
     verificationMessage = "Votre essai de 5 jours est terminé. Vos équipements restent visibles. Les offres payantes seront bientôt disponibles.";
-  } else if (companyVerified) {
-    verificationTitle = "Entreprise validée";
-    verificationMessage =
-      "La validation de votre entreprise permet la création de carnets.";
   } else if (verification?.status === "suspended") {
     verificationTitle = "Validation suspendue";
     verificationMessage =
@@ -1965,18 +1975,13 @@ export default function ProSpacePage() {
         user={user}
         session={session}
         companyVerified={companyVerified}
-        discoveryActive={discovery.active}
         verificationTitle={verificationTitle}
         verificationMessage={verificationMessage}
         verificationBusy={verificationBusy}
         onVerify={handleCompanyVerification}
         onEditing={() => setSiretMessage("")}
-        onSiretSaved={() => {
-          setSiretMessage(
-            "SIRET enregistré. Consultez le statut de validation affiché.",
-          );
-          setLoading(true);
-          setRefreshKey((currentKey) => currentKey + 1);
+        onSiretSaved={async () => {
+          await handleCompanyVerification();
         }}
         onContactSaved={() => {
           setSiretMessage(
@@ -2020,7 +2025,7 @@ export default function ProSpacePage() {
           <strong>{getPlanLabel(plan)}</strong>
           <small>{plan === "free"
             ? discovery.active ? `${discovery.daysRemaining} jour(s) d’essai restant(s)` : "Essai terminé"
-            : "Compte actif"}</small>
+            : subscriptionStatusLabel}</small>
           {testPlan && <small>Abonnement Stripe de test : {getPlanLabel(testPlan)} actif</small>}
           <Link className="pro-plan-manage-link" to="/parametres-compte#formule">Changer de formule →</Link>
         </article>
@@ -2076,7 +2081,7 @@ export default function ProSpacePage() {
                 : "Ajouter un équipement"
               : plan === "free"
                 ? discovery.active ? "Limite de 5 atteinte" : "Essai terminé"
-                : "Validation requise"}
+                : !companyVerified ? "Validation requise" : subscriptionStatusLabel}
           </button>
 
           {!companyCanCreateEquipment && (
@@ -2085,7 +2090,9 @@ export default function ProSpacePage() {
                 ? discovery.active
                   ? "La formule Découverte est limitée à 5 équipements."
                   : "L’essai Découverte de 5 jours est terminé."
-                : "L’ajout sera disponible après la validation du SIRET de l’entreprise."}
+                : !companyVerified
+                  ? "L’ajout sera disponible après la validation du SIRET de l’entreprise."
+                  : "Votre SIRET est vérifié. L’ajout d’équipements nécessite également un abonnement CarnetPass actif. Consultez son état dans les paramètres du compte."}
             </p>
           )}
 

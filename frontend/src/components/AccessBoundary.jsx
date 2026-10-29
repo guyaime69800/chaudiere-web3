@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { isPublicPresentation } from "../../shared/public-site-metadata.js";
 
 // SPA navigation must pass a fresh server decision before mounting pages or loading their data.
 export default function AccessBoundary({ children }) {
@@ -10,9 +11,14 @@ export default function AccessBoundary({ children }) {
   const token = session?.access_token;
   const key = `${location.pathname}:${location.search}:${token || ""}`;
   const [decision, setDecision] = useState(null);
-  const privateLogin = ["/connexion-interne", "/securite-compte", "/reinitialiser-mot-de-passe"].includes(location.pathname);
+  const privateLogin = ["/connexion-interne", "/securite-compte", "/reinitialiser-mot-de-passe", '/retour-facturation'].includes(location.pathname);
+  const presentation = !import.meta.env.DEV && isPublicPresentation(location.pathname);
   useEffect(() => {
-    if (loading || privateLogin) return;
+    // A full document navigation uses the same pre-rendered presentation as a direct URL.
+    if (presentation) window.location.replace(location.pathname + location.search + location.hash);
+  }, [presentation, location.pathname, location.search, location.hash]);
+  useEffect(() => {
+    if (loading || privateLogin || presentation) return;
     let active = true;
     let running = false;
     async function check() {
@@ -38,8 +44,9 @@ export default function AccessBoundary({ children }) {
     const timer = setInterval(check, 30000);
     window.addEventListener("focus", check);
     return () => { active = false; clearInterval(timer); window.removeEventListener("focus", check); };
-  }, [key, token, loading, privateLogin, pathname]);
+  }, [key, token, loading, privateLogin, pathname, presentation]);
 
+  if (presentation) return <main><p role="status">Chargement de la présentation CarnetPass…</p></main>;
   if (privateLogin) return children;
   if (loading || decision?.key !== key) return <main><p role="status">Vérification de l’accès…</p></main>;
   if (decision.mfaRequired) return <Navigate to="/securite-compte" replace state={{ from: location }} />;

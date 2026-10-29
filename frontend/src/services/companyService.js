@@ -1,6 +1,8 @@
 import { supabase } from "./supabaseClient";
 
 export async function ensureFounderTestCompany() {
+  if (import.meta.env.VITE_SUPABASE_URL !== 'https://bqqzzbwqmiyxcotvqtoc.supabase.co'
+    || window.location.hostname !== 'test.carnetpass.fr') return false;
   const { error } = await supabase.rpc("ensure_founder_test_company");
   // Ordinary accounts continue through their normal company setup.
   if (error?.code === "42501") return false;
@@ -20,7 +22,7 @@ function getCompanyErrorMessage(error) {
   }
 
   if (message.includes("Découverte déjà utilisée")) {
-    return "Cet essai a déjà été utilisé. Renseignez un SIRET pour créer l’entreprise sans nouvel essai, puis choisissez une formule payante.";
+    return "Un essai Découverte a déjà été utilisé avec cette adresse e-mail ou ce numéro de téléphone. Changer d’adresse e-mail ne permet pas de recommencer l’essai avec le même numéro. Reconnectez-vous au compte initial ou contactez l’assistance si vous pensez qu’il s’agit d’une erreur.";
   }
 
   if (message.includes("SIRET est déjà rattaché")) {
@@ -135,7 +137,8 @@ export async function getMyCompany(userId) {
   } = await supabase
     .from("subscriptions")
     .select(
-      "plan, status, trial_ends_at, current_period_end"
+      "plan, status, trial_ends_at, current_period_end" +
+      (import.meta.env.VITE_SUPABASE_URL === 'https://tsyukqcyfxcrjrhopvpv.supabase.co' ? ', stripe_live_managed, stripe_cancel_at' : '')
     )
     .eq("company_id", membership.company_id)
     .maybeSingle();

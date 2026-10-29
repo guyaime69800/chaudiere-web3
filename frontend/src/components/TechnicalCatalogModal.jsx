@@ -4,8 +4,9 @@ import ReactMarkdown from "react-markdown";
 import shibaTechnicien from "../assets/simba-assistance-technique.webp";
 import shibaRecherche from "../assets/simba-accompagnement-administratif.webp";
 import { getEquipmentDocumentLibrary } from "../services/equipmentKnowledge";
-import { catalogModelFamily, catalogModelFamilies, catalogModelsWithPublishedDocuments, sharedNoticeGroups } from "../services/platformDocumentLibrary";
+import { catalogModelFamily, catalogModelFamilies, catalogModelLabel, catalogModelReferenceLabel, compareCatalogModels, catalogModelsWithPublishedDocuments, sharedNoticeGroups, sharedNoticeBrandSummary } from "../services/platformDocumentLibrary";
 import DocumentPreviewModal from "./DocumentPreviewModal";
+import BrandSupport from "./BrandSupport";
 import ShibaUsage from "./ShibaUsage";
 import { openShibaRecharge, refreshShibaUsage } from "../services/shibaUsageEvents";
 import "./TechnicalCatalogModal.css";
@@ -109,11 +110,13 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
         setDocuments((items) => updateDocuments(items));
         const current = selectedModel.current;
         if (current) {
-          const updated = { ...current, publishedDocuments: updateDocuments(current.publishedDocuments || []) };
+          const fresh = catalogModelsWithPublishedDocuments([], latest).find(item => brandKey(item.brand) === brandKey(current.brand)
+            && item.manufacturerReference === current.manufacturerReference && item.type === current.type);
+          const updated = fresh ? { ...current, ...fresh } : { ...current, publishedDocuments: current.equipmentId ? updateDocuments(current.publishedDocuments || []) : [] };
           if (!updated.equipmentId && !updated.publishedDocuments.length) {
             clearModel({ preserveQuestion: true }); setStep("category");
             setError("Cette fiche n’est plus diffusée. Choisissez un autre modèle.");
-          } else { selectedModel.current = updated; setModel(updated); }
+          } else { selectedModel.current = updated; setModel(updated); setDocuments(updated.publishedDocuments); }
         }
         setAnswer(""); setPreviewDocument(null);
       }
@@ -140,7 +143,13 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
   for (const item of categoryEntries) {
     if (item.brand && !names.some((name) => brandKey(name) === brandKey(item.brand))) names.push(item.brand);
   }
-  const brands = names.map((name) => ({ name, count: categoryEntries.filter((item) => brandKey(item.brand) === brandKey(name)).length }));
+  const sharedByBrand = sharedNoticeBrandSummary(categoryEntries);
+  const brands = names.map((name) => {
+    const availableModels = categoryEntries.filter((item) => brandKey(item.brand) === brandKey(name) && item.publishedDocuments?.length);
+    return { name, count: availableModels.length,
+      documentCount: new Set(availableModels.flatMap(item => item.publishedDocuments.map(document => document.documentId))).size,
+      sharedNotices: sharedByBrand.find(item => brandKey(item.brand) === brandKey(name))?.count || 0 };
+  });
   const matchingBrands = brands.filter(({ name }) =>
     normalize(name).includes(normalize(query)) ||
     categoryEntries.some((item) => brandKey(item.brand) === brandKey(name) &&
@@ -149,7 +158,7 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
   const families = catalogModelFamilies(brandModels);
   const commonNotices = model ? sharedNoticeGroups(brandModels).filter(notice => notice.models.some(item => normalize(item.manufacturerReference) === normalize(model.manufacturerReference))) : [];
   const models = brandModels.filter((item) => (!family || normalize(catalogModelFamily(item)) === normalize(family))
-    && (!normalize(query) || normalize([item.brand, item.model, item.variant, item.manufacturerReference, ...(item.searchAliases || [])].join(" ")).includes(normalize(query))));
+    && (!normalize(query) || normalize([item.brand, item.model, item.variant, item.manufacturerReference, ...(item.searchAliases || [])].join(" ")).includes(normalize(query)))).sort(compareCatalogModels);
 
   function clearModel({ preserveQuestion = false } = {}) {
     documentRequest.current += 1; aiRequest.current += 1;
@@ -245,7 +254,7 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
         method: "POST",
         headers: { "Content-Type": "application/json", ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
         body: JSON.stringify(useDocumentation
-          ? { equipmentId: model.equipmentId, platformDocumentIds: (model.publishedDocuments || [])
+          ? { equipmentId: model.equipmentId, platformModelReference: model.manufacturerReference, platformDocumentIds: (model.publishedDocuments || [])
             .filter((document) => document.ragStatus === "ready").map((document) => document.documentId), question: requestQuestion }
           : { brand: model.brand, model: model.model, reference: model.manufacturerReference, category: category?.label || model.type, question: requestQuestion }),
       });
@@ -359,11 +368,16 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
             <label className="technical-catalog-search" htmlFor="technical-catalog-category-search">Rechercher une marque ou un modèle
               <input id="technical-catalog-category-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Marque, modèle ou référence…" autoFocus />
             </label>
-            {matchingBrands.length === 0 ? <p className="technical-catalog-empty">{query ? "Aucune marque ni aucun modèle trouvé." : "Les marques de cette catégorie seront ajoutées progressivement."}</p> : <div className="technical-catalog-list">
-              {matchingBrands.sort((a, b) => a.name.localeCompare(b.name, "fr")).map(({ name, count }) => <button key={name} type="button" className="technical-catalog-row" onClick={() => { setBrand(name); setStep("models"); }}><strong>{name}</strong><span>{count ? `${count} modèle${count > 1 ? "s" : ""}` : "À compléter"} <span aria-hidden="true">›</span></span></button>)}
+            <p>Les marques avec documents sont présentées en premier. Les autres restent accessibles pour enrichir le catalogue avec vos modèles.</p>
+            {publishedDocumentsBusy && <p role="status">Chargement des documents disponibles…</p>}
+            {publishedDocumentsError && <p role="alert" className="technical-catalog-error">{publishedDocumentsError}</p>}
+            {matchingBrands.length === 0 ? <p className="technical-catalog-empty">{publishedDocumentsBusy ? "Recherche des marques disponibles…" : publishedDocumentsError ? "La liste des marques ne peut pas être chargée pour le moment." : query ? "Aucune marque ni aucun modèle documenté ne correspond à cette recherche." : "Aucun document disponible dans cette catégorie pour le moment."}</p> : <div className="technical-catalog-list">
+              {matchingBrands.sort((a, b) => Number(b.count > 0) - Number(a.count > 0) || a.name.localeCompare(b.name, "fr")).map(({ name, count, documentCount, sharedNotices }) => <button key={name} type="button" className="technical-catalog-row" onClick={() => { setBrand(name); setStep("models"); }}><strong>{name}<small>{documentCount > 0 ? `${documentCount} document${documentCount > 1 ? "s" : ""} disponible${documentCount > 1 ? "s" : ""}` : "Aucun document partagé pour le moment"}</small>{sharedNotices > 0 && <small>{sharedNotices} notice{sharedNotices > 1 ? "s" : ""} commune{sharedNotices > 1 ? "s" : ""} à plusieurs modèles</small>}</strong><span>{count > 0 ? `${count} modèle${count > 1 ? "s" : ""}` : "À enrichir"} <span aria-hidden="true">›</span></span></button>)}
             </div>}
           </>}
           {step === "models" && <><div className="technical-catalog-band"><button type="button" onClick={toBrands} aria-label="Retour aux marques">‹</button><h3>{brand}</h3></div>
+            <BrandSupport brand={brand} category={type} />
+            {sharedByBrand.some(item => brandKey(item.brand) === brandKey(brand)) && <p className="technical-catalog-shared-info">Certaines notices sont communes à plusieurs modèles. Choisissez votre modèle ou votre référence pour retrouver les documents qui lui sont associés.</p>}
             <div className="technical-catalog-model-layout">
               <div className="technical-catalog-model-main">
             <label className="technical-catalog-search">Rechercher un modèle ou une référence<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nom du modèle, référence…" autoFocus /></label>
@@ -371,8 +385,8 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
               <button type="button" aria-pressed={!family} onClick={() => { setFamily(""); setQuery(""); }}>Tous les modèles</button>
               {families.map((item) => <button key={item.key} type="button" aria-pressed={normalize(family) === normalize(item.name)} onClick={() => { setFamily(item.name); setQuery(""); }}>{item.name} <small>({item.count})</small></button>)}
             </nav>}
-            {models.length === 0 ? <p className="technical-catalog-empty">{query ? "Aucun modèle ne correspond à cette recherche." : "Les modèles seront ajoutés progressivement. La marque est déjà référencée."}</p> : <div className="technical-catalog-list">
-              {models.map((item) => <button key={item.equipmentId || item.manufacturerReference || `${item.brand}-${item.model}`} type="button" className="technical-catalog-row" onClick={() => selectModel(item)}><strong>{item.modelFamily ? item.manufacturerReference : item.model}{!item.modelFamily && item.variant ? ` · ${item.variant}` : ""}<small>{item.modelFamily || item.manufacturerReference || ""}</small></strong><span aria-hidden="true">›</span></button>)}
+            {models.length === 0 ? <p className="technical-catalog-empty">{query ? "Aucun modèle ne correspond à cette recherche." : "Cette marque est ouverte aux contributions. Renseignez votre modèle ci-dessous pour préparer sa fiche équipement."}</p> : <div className="technical-catalog-list">
+              {models.map((item) => <button key={item.equipmentId || item.manufacturerReference || `${item.brand}-${item.model}`} type="button" className="technical-catalog-row" onClick={() => selectModel(item)}><strong>{catalogModelLabel(item)}{item.variant ? ` · ${item.variant}` : ""}<small>Réf. {catalogModelReferenceLabel(item)}</small></strong><span aria-hidden="true">›</span></button>)}
             </div>}
             <form className="technical-catalog-manual" onSubmit={(event) => { event.preventDefault(); if (!manualModel.trim()) return; selectModel({ brand, model: manualModel.trim(), manufacturerReference: manualReference.trim(), type }); }}>
               <strong>Modèle absent du catalogue ?</strong>
@@ -384,7 +398,7 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
             </div>
           </>}
           {model && ["model", "documents", "assistant"].includes(step) && <>
-            <div className="technical-catalog-model-heading"><div><span className="technical-catalog-kicker">{model.brand}</span><h3>{model.model}{model.variant ? ` · ${model.variant}` : ""}</h3><p>Réf. produit : {model.manufacturerReference || "non renseignée"}</p>{!!model.searchAliases?.length && <p>Autres références couvertes : {model.searchAliases.join(", ")}</p>}{support?.hotline?.phone && <p>{support.hotline.label || "Assistance technique"} : <a href={`tel:${support.hotline.phone.replace(/\s+/g, "")}`}>{support.hotline.phone}</a></p>}</div>{step === "model" && <button type="button" className="technical-catalog-back" onClick={assistantOrigin ? toAssistantPicker : toModels}>← {assistantOrigin ? "Choisir un autre modèle" : modelReturnStep === "published" ? "Documents publiés" : "Tous les modèles"}</button>}</div>
+            <div className="technical-catalog-model-heading"><div><span className="technical-catalog-kicker">{model.brand}</span><h3>{model.model}{model.variant ? ` · ${model.variant}` : ""}</h3><p>Réf. produit : {model.manufacturerReference || "non renseignée"}</p>{!!model.searchAliases?.length && <p>Autres références couvertes : {model.searchAliases.join(", ")}</p>}{support?.hotline?.phone && <p>Hotline : <a href={`tel:${support.hotline.phone.replace(/\s+/g, "")}`}>{support.hotline.phone}</a></p>}</div>{step === "model" && <button type="button" className="technical-catalog-back" onClick={assistantOrigin ? toAssistantPicker : toModels}>← {assistantOrigin ? "Choisir un autre modèle" : modelReturnStep === "published" ? "Documents publiés" : "Tous les modèles"}</button>}</div>
             {step === "model" && <>
               <section className="technical-catalog-shiba-help" aria-label="Interroger Shiba">
                 <img className="technical-catalog-shiba-research" src={shibaRecherche} alt="Shiba avec un crayon et un cahier" />
@@ -403,13 +417,13 @@ function TechnicalCatalogContent({ onClose, onAddEquipment, canAddEquipment, cat
               {!documentsBusy && !documentsError && !documents.length && <p className="technical-catalog-empty">Aucun document constructeur enregistré pour ce modèle. Shiba peut rechercher des sources sur le Web.</p>}
               {!documentsBusy && <div className="technical-catalog-model-layout">
                 {!!documents.length && <aside className="technical-catalog-notice-panel" aria-label="Notices du modèle sélectionné">
-                  <h4>Notices du modèle</h4>
+                  <h4>Documents du modèle</h4>
                   <p>{model.manufacturerReference || model.model}</p>
                   {documents.map(document => {
                     const common = commonNotices.find(notice => notice.document.sha256 === document.sha256 && notice.document.sizeBytes === document.sizeBytes);
                     return <article key={document.documentId}>
-                      <strong>{document.title}</strong>
-                      <button type="button" disabled={Boolean(previewBusyId)} onClick={() => openDocumentPreview(document)}>{previewBusyId === document.documentId ? "Ouverture…" : "Voir la notice"}</button>
+                      <strong>{/utilisation/i.test(document.title) ? 'Notice d’utilisation' : /installation/i.test(document.title) ? 'Notice d’installation' : /(?:vue.*clat)/i.test(document.title) ? 'Vue éclatée' : document.title}</strong>
+                      <button type="button" disabled={Boolean(previewBusyId)} onClick={() => openDocumentPreview(document)}>{previewBusyId === document.documentId ? "Ouverture…" : /(?:vue.*clat)/i.test(document.title) ? "Voir la vue éclatée" : "Voir la notice"}</button>
                       {common && <details><summary>Commune à {common.models.length} modèles</summary><ul>{common.models.map(item => <li key={item.manufacturerReference}>{item.manufacturerReference || item.model}</li>)}</ul></details>}
                     </article>;
                   })}

@@ -5,6 +5,8 @@ import { formatShibaResetDate, shibaCreditsExhaustedMessage } from "../lib/shiba
 import { SHIBA_RECHARGE_PACKS } from "../lib/shiba-recharge-packs.js";
 import shibaTechnicien from "../assets/simba-assistance-technique.webp";
 import { startShibaRecharge } from "../services/shibaRechargeService.js";
+import { purchaseRequestId } from '../services/billingService.js';
+import useLivePurchases from '../hooks/useLivePurchases.js';
 import "./ShibaRechargeModal.css";
 
 function dismissalKey(userId, usage) {
@@ -30,6 +32,8 @@ export default function ShibaRechargeModal() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const testBilling = import.meta.env.VITE_STRIPE_TEST_BILLING_ENABLED === "true";
+  const livePurchases = useLivePurchases();
+  const purchasesAvailable = testBilling || livePurchases.available;
 
   useEffect(() => {
     function onRechargeRequested(event) {
@@ -60,11 +64,13 @@ export default function ShibaRechargeModal() {
   }
 
   async function checkout() {
-    if (!session?.access_token || !testBilling || !termsAccepted || busy || usage?.period === "trial") return;
+    if (!session?.access_token || !purchasesAvailable || !termsAccepted || busy || usage?.period === "trial") return;
     setBusy(true);
     setError("");
     try {
-      const url = await startShibaRecharge(session.access_token, selected, { accepted: termsAccepted, version: COMMERCIAL_TERMS_VERSION });
+      const attempt = purchaseRequestId(user.id, `recharge-${selected}`);
+      const url = await startShibaRecharge(session.access_token, selected, { accepted: termsAccepted, version: COMMERCIAL_TERMS_VERSION }, attempt.requestId);
+      attempt.complete();
       if (user?.id && usage) rememberDismissal(dismissalKey(user.id, usage));
       window.location.assign(url);
     } catch (requestError) {
@@ -99,8 +105,8 @@ export default function ShibaRechargeModal() {
           </button>)}
         </div>}
         {usage.period !== "trial" && <label className="commercial-terms-acceptance"><input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} /> J’accepte les <a href="/conditions-commerciales" target="_blank" rel="noopener noreferrer">CGV B2B</a> et les conditions de recharge.</label>}
-        {usage.period !== "trial" && <button type="button" className="shiba-recharge-dialog__pay" disabled={!termsAccepted || !testBilling || busy} onClick={checkout}>
-          {busy ? "Ouverture du paiement test…" : `Recharger pour ${pack.euros} €`}
+        {usage.period !== "trial" && <button type="button" className="shiba-recharge-dialog__pay" disabled={!termsAccepted || !purchasesAvailable || busy} onClick={checkout}>
+          {busy ? 'Ouverture du paiement…' : `Recharger pour ${pack.euros} €`}
         </button>}
         {error && <p className="shiba-recharge-dialog__error" role="alert">{error}</p>}
         <p className="shiba-recharge-dialog__notice">Un crédit sert à une question documentaire ou une recherche Web avec Shiba. La recharge ne remplace pas Pro et n’augmente pas le quota quotidien de notices. TVA non applicable, article 293 B du CGI.</p>
@@ -108,7 +114,7 @@ export default function ShibaRechargeModal() {
           ? "Les documents constructeur ne sont plus accessibles après les 20 questions de l’essai. Vos carnets et historiques restent accessibles."
           : `${testBilling
             ? "Paiement Stripe en mode test uniquement : aucun débit réel. Les crédits sont ajoutés après confirmation serveur du paiement, jamais au simple retour sur CarnetPass."
-            : "Paiement en préparation : aucun achat ni ajout de crédits n’est encore possible."} Vos carnets, documents et historiques restent accessibles.`}</p>
+            : livePurchases.available ? 'Paiement sécurisé par Stripe. Les crédits sont ajoutés après confirmation du paiement.' : "Paiement en préparation : aucun achat ni ajout de crédits n’est encore possible."} Vos carnets, documents et historiques restent accessibles.`}</p>
       </div>}
     </dialog>
   );

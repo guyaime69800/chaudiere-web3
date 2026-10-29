@@ -2,3 +2,33 @@
 node_modules/
 frontend/dist/
 *.log
+
+# Credentials, local sessions and provider configuration
+.env
+.env.*
+**/.env
+**/.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+.aws/
+.codex/
+.agents/
+.easysav-profile/
+**/.easysav-profile/
+preview-protection.json
+
+# Local build, audit, export and CLI state
+dist/
+output/
+tmp/
+.local-backups/
+.verification-artifacts/
+.verification-deps/
+**/.verification-artifacts/
+**/.verification-deps/
+**/supabase/.temp/
+frontend/docs/*advisors*.json
+frontend/docs/stripe-production-prices-*.json

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { COMMERCIAL_TERMS_VERSION } from '../shared/commercial-terms.js';
 
 process.env.UPSTASH_REDIS_REST_KV_REST_API_URL ||= "https://example.invalid";
 process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN ||= "test-only";
@@ -104,7 +105,7 @@ test("Checkout test ne collecte aucune TVA", async () => {
     assert.equal(calls.length, 2);
     const posted = new URLSearchParams(calls[1].init.body);
     assert.equal(posted.get("mode"), "payment");
-    assert.equal(posted.get("metadata[cgv_version]"), "2026-10-12.3");
+    assert.equal(posted.get("metadata[cgv_version]"), COMMERCIAL_TERMS_VERSION);
     assert.equal(posted.get("metadata[cgv_user_id]"), userId);
     assert.equal(posted.get("consent_collection[terms_of_service]"), "required");
     assert.equal(posted.get("line_items[0][price]"), pack.priceId);

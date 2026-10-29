@@ -21,6 +21,6 @@ test("the archived terms match their immutable Stripe fingerprint", async () => 
   const { readFileSync } = await import("node:fs");
   const { createHash } = await import("node:crypto");
   const { COMMERCIAL_TERMS_SHA256 } = await import("./commercial-terms.js");
-  const archive = readFileSync(new URL("../docs/legal-versions/cgv-2026-10-12.3.md", import.meta.url), "utf8").replace(/\r\n/g, "\n");
+  const archive = readFileSync(new URL(`../docs/legal-versions/cgv-${COMMERCIAL_TERMS_VERSION}.md`, import.meta.url), "utf8").replace(/\r\n/g, "\n");
   assert.equal(createHash("sha256").update(archive).digest("hex"), COMMERCIAL_TERMS_SHA256);
 });

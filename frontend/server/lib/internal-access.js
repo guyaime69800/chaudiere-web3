@@ -49,6 +49,8 @@ export async function verifiedIdentity(token, env = process.env) {
 }
 
 export async function readMaintenance(env = process.env) {
+  // Isolated preview-only switch used to verify a closed application without touching production Redis.
+  if (env.VERCEL_ENV === "preview" && env.CARNETPASS_PREVIEW_MAINTENANCE === "true") return { enabled: true };
   if (env.VERCEL_ENV !== "production") return { enabled: false };
   const url = env.UPSTASH_REDIS_REST_KV_REST_API_URL;
   const token = env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN;
@@ -67,7 +69,7 @@ export async function readMaintenance(env = process.env) {
 export function internalPathRole(pathname) {
   pathname = pathname.toLowerCase();
   if (pathname === "/administration-maintenance" || pathname === "/api/maintenance-control") return "founder";
-  if (pathname.startsWith("/administration-") || pathname === "/api/platform-admin") return "operator";
+  if (pathname.startsWith("/administration-") || pathname === "/api/platform-admin" || pathname === '/api/platform-admin-documents' || pathname === '/api/aid-admin') return "operator";
   return null;
 }
 

@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { recordOpenAIHealth } from '../server/lib/admin-service-health.js';
 import { aiRateLimit } from "../server/lib/rate-limit.js";
 import { requireVerifiedCompany } from "../server/lib/require-verified-company.js";
 import { getShibaPlan, refundShibaQuestion, reserveShibaQuestion, setShibaUsageHeaders, shibaQuotaEnabled } from "../server/lib/shiba-quota.js";
@@ -90,6 +91,7 @@ export default async function handler(request, response) {
       input: `Équipement : ${category || "non précisé"} ; marque : ${brand} ; modèle : ${model} ; référence : ${reference || "non renseignée"}. Question : ${question}`,
     });
 
+    await recordOpenAIHealth(null);
     const message = result.output?.find((entry) => entry.type === "message");
     const content = message?.content?.find((entry) => entry.type === "output_text");
     const answer = content?.text || result.output_text || "";
@@ -118,6 +120,7 @@ export default async function handler(request, response) {
       catch (refundError) { console.error("Remboursement quota Shiba indisponible :", refundError); }
     }
     console.error("Recherche Web Shiba indisponible :", error);
+    await recordOpenAIHealth(error);
     await reportAnomaly("shiba_unavailable", "web_search_failed");
     return response.status(503).json({ error: "La recherche Web de Shiba est momentanément indisponible." });
   }

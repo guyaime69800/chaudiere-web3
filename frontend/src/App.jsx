@@ -136,6 +136,7 @@ function App({ initialMode = "public" }) {
   const [isLoadingCarnet, setIsLoadingCarnet] = useState(false);
   const [carnetError, setCarnetError] = useState("");
   const [publicInterventions, setPublicInterventions] = useState([]);
+  const [publicHistoryRefresh, setPublicHistoryRefresh] = useState(0);
   const [isLoadingPublicInterventions, setIsLoadingPublicInterventions] = useState(false);
   const [publicInterventionsError, setPublicInterventionsError] = useState("");
 
@@ -937,7 +938,7 @@ function App({ initialMode = "public" }) {
       cancelled = true;
       controller.abort();
     };
-  }, [boiler?.carnetPassId]);
+  }, [boiler?.carnetPassId, publicHistoryRefresh]);
 
   // NOUVEAU (QR/routeur) : arrivee via une URL directe (ou un QR scanne)
   // -> on ouvre la fiche de l'appareil automatiquement.
@@ -1653,7 +1654,7 @@ function App({ initialMode = "public" }) {
                 <div className="technical-docs" id="notice-utilisation-publique">
                   <h3>Notice d’utilisation</h3>
                   {publicUserManual
-                    ? <><p>Notice officielle du fabricant correspondant à ce modèle. Le lien ouvre la partie française « Manuel de propriétaire » ; le PDF contient aussi une partie installation réservée aux professionnels.</p><a className="btn btn-ghost" href={`${publicUserManual.url}#page=40`} target="_blank" rel="noopener noreferrer">Ouvrir la notice Airwell ↗</a></>
+                    ? <><p>{publicUserManual.description}</p><a className="btn btn-ghost" href={`${publicUserManual.url}#page=${publicUserManual.firstPage}`} target="_blank" rel="noopener noreferrer">Ouvrir la notice {publicUserManual.publisher} ↗</a></>
                     : publicCatalogueManual
                       ? <a className="btn btn-ghost" href={publicCatalogueManual.documentUrl} target="_blank" rel="noopener noreferrer">Ouvrir la notice d’utilisation · {publicCatalogueManual.title}</a>
                       : <p>Notice d’utilisation publique non vérifiée pour ce modèle. Demandez-la à l’entreprise intervenante ou au fabricant.</p>}
@@ -1744,11 +1745,15 @@ function App({ initialMode = "public" }) {
             {boiler.carnetPassId && (
               <div className="carnet" id="historique-interventions">
                 <p className="carnet-title">
-                  Historique des interventions vérifiées
+                  Historique des interventions — lecture seule
                 </p>
+                <button type="button" className="btn" disabled={isLoadingPublicInterventions}
+                  onClick={() => setPublicHistoryRefresh(value => value + 1)}>
+                  {isLoadingPublicInterventions ? "Actualisation…" : "Actualiser l’historique"}
+                </button>
 
                 <p className="muted">
-                  Seules les interventions dont la preuve Polygon est
+                  Vous pouvez consulter cet historique sans le modifier. Seules les interventions dont la preuve Polygon est
                   confirmée sont affichées publiquement.
                 </p>
 

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { Readable } from "node:stream";
-import { beginDirectR2Upload, completeDirectR2Upload } from "./r2-direct-upload.js";
+import { beginDirectR2Upload, completeDirectR2Upload, directUploadMetadata } from "./r2-direct-upload.js";
 import { loadR2Pdf, r2NativePathname } from "./r2-native-documents.js";
 import { loadPlatformPdf } from "./verify-platform-pdf.js";
 import { uploadDirectR2 } from "../../src/services/r2DirectUpload.js";
@@ -99,6 +99,18 @@ test("identical PDFs keep separate model records and reuse one permanent R2 obje
   assert.equal(f.records.size, 2); assert.equal(f.copies.size, 1);
   assert.deepEqual(f.attempts.map(item => item.outcome), ["verified", "reused"]);
   assert.equal(f.calls.filter(name => name === "CopyObjectCommand").length, 1);
+});
+
+test("batch aliases are bounded and saved on pending intake without publication", async () => {
+  assert.throws(() => directUploadMetadata({ ...metadata, modelAliases: Array(11).fill('ref') }, user), /invalides/);
+  assert.throws(() => directUploadMetadata({ ...metadata, modelAliases: [''] }, user), /invalides/);
+  const f = fixture();
+  const start = await beginDirectR2Upload({ ...metadata, modelAliases: ['other-reference'] }, user, f.deps);
+  f.objects.set(`platform-documents/incoming/${start.uploadId}.pdf`, { bytes, etag: '"verified-etag"' });
+  await completeDirectR2Upload(f.db, start.uploadId, user, f.deps);
+  const entry = [...f.records.values()][0];
+  assert.deepEqual(entry.model_aliases, ['other-reference']);
+  assert.ok(!('status' in entry));
 });
 
 test("another user cannot finalize a ticket; corrupt PDF cannot be published or registered", async () => {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { signIn, signUp } from "../services/authService";
+import { proInvitationDestination } from '../../shared/pro-invitation.js';
 import PasswordField from "../components/PasswordField";
 import "./AuthPage.css";
 
@@ -72,8 +73,10 @@ export default function AuthPage({ mode = "connexion" }) {
   const requested = (privateLogin ? "/administration-interne" : location.state?.from?.pathname) || (adminPaths.includes(queryDestination) ? queryDestination : null);
   const adminRequested = adminPaths.includes(requested);
   const scanRequested = requested === "/espace-pro" && location.state?.from?.search === "?action=scan-plaque";
+  const testReturn = privateLogin && new URLSearchParams(location.search).get('retour') === 'test';
+  const invitationDestination = proInvitationDestination(location.state?.from);
   const destination = adminRequested
-    ? requested : scanRequested ? "/espace-pro?action=scan-plaque" : "/espace-pro";
+    ? requested + (testReturn ? '?test=1' : '') : invitationDestination || (scanRequested ? "/espace-pro?action=scan-plaque" : "/espace-pro");
   const isSignUp = mode === "inscription";
 
   const [form, setForm] = useState(initialForm);
@@ -113,12 +116,13 @@ export default function AuthPage({ mode = "connexion" }) {
           discoverySource: form.discoverySource,
           discoverySourceOther: form.discoverySourceOther,
           password: form.password,
+          invitationDestination,
         });
 
         if (data.session) {
           await renewFounderAccess(data.session.access_token);
           const admin = !adminRequested && !scanRequested && await isPlatformAdmin(data.session.access_token);
-          navigate(adminRequested || scanRequested ? destination : admin ? "/administration-interne" : destination);
+          navigate(adminRequested || scanRequested || invitationDestination ? destination : admin ? "/administration-interne" : destination);
           return;
         }
 
@@ -134,7 +138,7 @@ export default function AuthPage({ mode = "connexion" }) {
         });
         await renewFounderAccess(data.session?.access_token);
         const admin = !adminRequested && !scanRequested && await isPlatformAdmin(data.session?.access_token);
-        navigate(adminRequested || scanRequested ? destination : admin ? "/administration-interne" : destination);
+        navigate(adminRequested || scanRequested || invitationDestination ? destination : admin ? "/administration-interne" : destination);
       }
     } catch (error) {
       setErrorMessage(getFriendlyError(error));

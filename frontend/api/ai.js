@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import { recordOpenAIHealth } from '../server/lib/admin-service-health.js';
+import { sharedDocumentScope } from '../shared/platform-document-scope.js';
 import { createClient } from "@supabase/supabase-js";
 
 import { getEquipmentConfig } from "../server/lib/equipment-registry.js";
@@ -200,7 +202,7 @@ export default async function handler(
       const db = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SECRET_KEY,
         { auth: { persistSession: false, autoRefreshToken: false } });
       const { data: indexed, error: indexError } = await db.from("platform_document_intake")
-        .select("id, manufacturer, model_name, model_reference, title, hotline_phone, rag_data")
+        .select("id, manufacturer, model_name, model_reference, model_aliases, catalog_category, title, hotline_phone, rag_data")
         .in("id", platformDocumentIds).eq("status", "approved").eq("rag_status", "ready")
         .not("distribution_confirmed_at", "is", null);
       if (indexError) throw indexError;
@@ -208,17 +210,13 @@ export default async function handler(
         || indexed.some((item) => !Array.isArray(item.rag_data?.items) || !item.rag_data.items.length)) {
         return response.status(409).json({ error: "Un document n'est pas encore indexé pour Shiba." });
       }
-      const sameModel = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
-      const first = indexed[0];
-      if (indexed.some((item) => sameModel(item.manufacturer) !== sameModel(first.manufacturer)
-        || sameModel(item.model_reference) !== sameModel(first.model_reference))
-        || (equipmentConfig && (sameModel(first.model_reference) !== sameModel(equipmentConfig.equipmentData.identity?.manufacturerReference)
-          || sameModel(first.manufacturer) !== sameModel(equipmentConfig.equipmentData.identity?.brand)))) {
+      const scope = sharedDocumentScope(indexed, body.platformModelReference, equipmentConfig?.equipmentData.identity);
+      if (!scope) {
         return response.status(400).json({ error: "Documents de modèles différents." });
       }
       const dynamicDocuments = indexed.map((item) => ({ documentId: item.id, title: item.title, storage: "private" }));
       const base = { identity: {
-        brand: first.manufacturer, model: first.model_name || first.model_reference, manufacturerReference: first.model_reference,
+        brand: scope.manufacturer, model: scope.model, manufacturerReference: scope.reference,
       } };
       equipmentConfig = {
         equipmentData: {
@@ -958,6 +956,7 @@ ${JSON.stringify(
 
     // -----------------------------------------------------
     // 14. REPONSE ENVOYEE A CARNETPASS
+    await recordOpenAIHealth(null);
     // -----------------------------------------------------
 
     const answer =
@@ -1012,6 +1011,7 @@ ${JSON.stringify(
       "Erreur API IA CarnetPass :",
       error
     );
+    await recordOpenAIHealth(error);
     await reportAnomaly("shiba_unavailable", "ai_request_failed");
 
     return response

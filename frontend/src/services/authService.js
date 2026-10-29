@@ -1,6 +1,7 @@
 import { supabase } from "./supabaseClient";
+import { proInvitationDestination } from '../../shared/pro-invitation.js';
 
-export async function signUp({ fullName, email, phone, password, discoverySource, discoverySourceOther }) {
+export async function signUp({ fullName, email, phone, password, discoverySource, discoverySourceOther, invitationDestination }) {
   const normalizedPhone = phone.replace(/[\s().-]/g, "");
   if (!/^\+?[0-9]{10,15}$/.test(normalizedPhone)) {
     throw new Error("Invalid phone number");
@@ -13,7 +14,7 @@ export async function signUp({ fullName, email, phone, password, discoverySource
     email: email.trim().toLowerCase(),
     password,
     options: {
-      emailRedirectTo: new URL("/espace-pro", window.location.origin).href,
+      emailRedirectTo: new URL(proInvitationDestination({ pathname: '/parametres-compte', search: String(invitationDestination || '').split('?')[1]?.split('#')[0] }) || "/espace-pro", window.location.origin).href,
       data: {
         full_name: fullName.trim(),
         professional_phone: normalizedPhone,

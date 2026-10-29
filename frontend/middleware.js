@@ -1,6 +1,8 @@
 ﻿import { next } from "@vercel/functions";
 import { maintenanceAllowedPath, maintenanceHtml } from "./server/lib/maintenance-state.js";
-import { internalPathRole, permits, privateHeaders, readMaintenance, verifiedRequestIdentity } from "./server/lib/internal-access.js";
+import { accessToken, internalPathRole, permits, privateHeaders, readMaintenance, verifiedIdentity, verifiedRequestIdentity } from "./server/lib/internal-access.js";
+import { publicHtml, publicResource } from "./server/lib/public-site.js";
+import { isPublicPresentation } from "./shared/public-site-metadata.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -23,13 +25,22 @@ async function uploadCompletion(request) {
   finally { reader.releaseLock(); }
 }
 
-export default async function middleware(request) {
+async function routeRequest(request) {
   const url = new URL(request.url);
   // Public rewrite aliases must not let caller-supplied dispatcher flags select another handler.
   const routingFlags = [...url.searchParams.keys()].some(key => key.endsWith("_route") || key === "webhook");
   let pathname;
   try { pathname = decodeURIComponent(url.pathname).replace(/\/+$/, "") || "/"; }
   catch { return new Response("Requête invalide.", { status: 400, headers: privateHeaders }); }
+  const production = process.env.VERCEL_ENV === "production" && ["www.carnetpass.fr", "carnetpass.fr"].includes(url.hostname);
+  const resource = publicResource(pathname, production);
+  if ((resource || isPublicPresentation(pathname)) && !routingFlags && ["GET", "HEAD"].includes(request.method)) {
+    if (url.pathname !== pathname) return new Response(null, { status: 308, headers: { ...privateHeaders, Location: `${url.origin}${pathname}${url.search}` } });
+    if (resource) return new Response(request.method === "HEAD" ? null : resource.body, { headers: { ...privateHeaders, "Content-Type": resource.type } });
+    let maintenance = true;
+    try { maintenance = (await readMaintenance()).enabled; } catch { /* Presentation remains available; application gates still fail closed. */ }
+    return new Response(request.method === "HEAD" ? null : publicHtml(pathname, { maintenance, production }), { headers: { ...privateHeaders, "Content-Type": "text/html; charset=utf-8" } });
+  }
   // Blob upload completion is signed and verified by handleUploadPresigned in the handler.
   // A forged signature can only reach that callback branch, never a document mutation.
   if (pathname === "/api/platform-admin-documents" && request.method === "POST"
@@ -43,8 +54,14 @@ export default async function middleware(request) {
   try {
     const state = await readMaintenance();
     if (required || state.enabled) {
-      const identity = await verifiedRequestIdentity(request.headers);
+      const identity = required ? await verifiedIdentity(accessToken(request.headers)) : await verifiedRequestIdentity(request.headers);
       if (required && !permits(identity.role, required)) {
+        // Existing Stripe sessions may still return to this exact admin URL.
+        // Redirect to a public session-restoration shell, never expose admin HTML.
+        if (request.method === 'GET' && !routingFlags && pathname === '/administration-interne'
+          && url.searchParams.size === 1 && url.searchParams.get('test') === '1') {
+          return new Response(null, { status: 303, headers: { ...privateHeaders, Location: '/retour-facturation?test=1' } });
+        }
         return new Response("Accès refusé.", { status: identity.user ? 403 : 401, headers: privateHeaders });
       }
       if (state.enabled && !identity.role) {
@@ -57,4 +74,19 @@ export default async function middleware(request) {
   } catch {
     return new Response("Service momentanément indisponible.", { status: 503, headers: privateHeaders });
   }
+}
+
+export default async function middleware(request) {
+  const response = await routeRequest(request);
+  response.headers.set('Content-Security-Policy', "frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com https://billing.stripe.com");
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'no-referrer');
+  response.headers.set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
+  // Non-public pages, callbacks, QR tokens and all Preview responses stay out of search.
+  const path = new URL(request.url).pathname.replace(/\/+$/, "") || "/";
+  if (process.env.VERCEL_ENV !== "production" || !["www.carnetpass.fr", "carnetpass.fr"].includes(new URL(request.url).hostname) || !isPublicPresentation(path) || response.status >= 400) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
+  return response;
 }

@@ -18,7 +18,7 @@ Aucune carte bancaire n’est nécessaire et l’essai ne devient pas automatiqu
 
 ## À quoi sert Recharger CarnetPass ?
 
-La recharge ajoute des crédits pour les questions Shiba sur les documents et les recherches Web. Elle ne prolonge pas l’essai, ne remplace pas Pro et n’augmente pas le plafond quotidien de notices. Les achats réels ne sont pas encore ouverts. Les paiements Stripe de test ne débitent aucune somme réelle.
+La recharge ajoute des crédits pour les questions Shiba sur les documents et les recherches Web. Elle ne prolonge pas l’essai, ne remplace pas Pro et n’augmente pas le plafond quotidien de notices. Les achats réels ne sont pas encore ouverts. Les commandes seront disponibles à l’ouverture commerciale.
 
 ## Une information manque ?
 

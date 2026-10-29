@@ -4,6 +4,7 @@ export const MAINTENANCE_KEY = "carnetpass:production:maintenance:v1";
 
 export function maintenanceAllowedPath(pathname) {
   return pathname === "/connexion-interne"
+    || pathname === '/retour-facturation'
     || pathname === "/securite-compte"
     || pathname === "/reinitialiser-mot-de-passe"
     || pathname === "/api/access-session"
@@ -11,7 +12,7 @@ export function maintenanceAllowedPath(pathname) {
     || pathname === "/api/stripe-webhook"
     || /^\/workbox-[a-f0-9]+\.js$/.test(pathname)
     || /^\/assets\/[a-zA-Z0-9][a-zA-Z0-9._-]*\.(?:m?js|css|png|jpe?g|svg|webp|woff2?|wasm)$/.test(pathname)
-    || ["/favicon.ico", "/favicon.svg", "/manifest.webmanifest", "/sw.js", "/registerSW.js"].includes(pathname);
+    || ["/favicon.ico", "/favicon.svg", "/icon-192.png", "/icon-512.png", "/shiba-assistant.webp", "/manifest.webmanifest", "/sw.js", "/registerSW.js"].includes(pathname);
 }
 
 export function maintenanceHtml(message) {

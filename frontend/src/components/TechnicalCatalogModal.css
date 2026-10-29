@@ -125,3 +125,15 @@
 
 
 .technical-catalog-shiba-help{display:grid;grid-template-columns:90px minmax(0,1fr) 90px;gap:18px;align-items:center;padding:22px;margin:0 0 24px;border:1px solid #efc2b0;border-radius:16px;background:#fff3ed}.technical-catalog-shiba-help>img{width:90px;height:145px;object-fit:contain}.technical-catalog-shiba-help h4{margin:0 0 10px;font-size:20px;line-height:1.3}.technical-catalog-shiba-help p{margin:0 0 16px;font-size:14px;line-height:1.6}.technical-catalog-shiba-help-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.technical-catalog-shiba-help-actions button{min-height:64px;padding:12px;border:0;border-radius:10px;background:#bc3608;color:#fff;font:inherit;font-weight:700;cursor:pointer}.technical-catalog-shiba-help-actions button span{display:block;margin-top:6px;font-size:12px;font-weight:400;line-height:1.4}.technical-catalog-shiba-help-actions button:focus-visible{outline:3px solid #873009;outline-offset:3px}@media(max-width:640px){.technical-catalog-shiba-help{grid-template-columns:48px minmax(0,1fr) 48px;padding:16px;gap:8px}.technical-catalog-shiba-help>img{width:48px;height:90px;align-self:start}.technical-catalog-shiba-help h4{font-size:17px}.technical-catalog-shiba-help-actions{grid-template-columns:1fr}.technical-catalog-shiba-help p{font-size:13px}}
+.technical-catalog-shared-info {
+  margin: 16px 26px;
+  padding: 14px 16px;
+  border: 1px solid #efc7b7;
+  border-radius: 12px;
+  background: #fff5ef;
+  line-height: 1.5;
+}
+.technical-catalog-brand-support { padding: 14px 18px; background: #fff4ec; border-bottom: 1px solid #e8cdbd; display: grid; gap: 6px; }
+.technical-catalog-brand-support p { margin: 0; }
+.technical-catalog-brand-support a { color: #a83209; text-decoration: underline; }
+.technical-catalog-brand-support strong a { white-space: nowrap; }

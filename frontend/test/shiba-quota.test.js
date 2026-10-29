@@ -45,6 +45,33 @@ const companyId = "company-one";
 const alice = { companyId, userId: "alice", discoveryStartsAt: "2026-09-27T12:00:00.000Z", discoveryEndsAt: "2026-10-02T12:00:00.000Z" };
 const bob = { companyId, userId: "bob", discoveryStartsAt: "2026-09-27T12:00:00.000Z", discoveryEndsAt: "2026-10-02T12:00:00.000Z" };
 
+test('live purchased credits use durable reservations only after the monthly allowance', async () => {
+  const redis = fakeRedis();
+  const now = new Date('2026-10-21T12:00:00Z');
+  let balance = 2;
+  const refunded = new Set();
+  const creditStore = { enabled: () => true, balance: async () => balance,
+    reserve: async () => ({ allowed: balance > 0, balance: --balance, reservationId: 'reservation' }),
+    refund: async (id) => { if (!refunded.has(id)) { balance++; refunded.add(id); } } };
+  for (let n = 0; n < 200; n++) await reserveShibaQuestion(alice, 'pro', { redis, now, creditStore });
+  assert.equal(balance, 2);
+  const question = await reserveShibaQuestion(alice, 'pro', { redis, now, creditStore });
+  assert.equal(question.allowed, true);
+  assert.equal(question.liveReservationId, 'reservation');
+  assert.equal(balance, 1);
+  await refundShibaQuestion(question, { redis, creditStore });
+  await refundShibaQuestion(question, { redis, creditStore });
+  assert.equal(balance, 2);
+  assert.equal((await readShibaUsage(alice, 'pro', { redis, now, creditStore })).bonusRemaining, 2);
+});
+
+test('unavailable live credit storage does not consume a monthly question', async () => {
+  const redis = fakeRedis();
+  const creditStore = { enabled: () => true, balance: async () => { throw new Error('unavailable'); } };
+  await assert.rejects(reserveShibaQuestion(alice, 'pro', { redis, creditStore }), /unavailable/);
+  assert.equal(redis.values.size, 0);
+});
+
 test("Découverte bloque la 21e question même si l’essai traverse un changement de mois", async () => {
   const redis = fakeRedis();
   const september = new Date("2026-09-27T12:00:00Z");
