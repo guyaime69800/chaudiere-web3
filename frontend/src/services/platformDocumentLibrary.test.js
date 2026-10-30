@@ -2,6 +2,27 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { catalogModelFamilies, catalogModelLabel, catalogModelReferenceLabel, compareCatalogModels, catalogModelsWithPublishedDocuments, publishedDocumentsForEquipment, sharedNoticeBrandSummary } from "./platformDocumentLibrary.js";
 
+test('Excellia generations, Duo and phase variants keep distinct exact model documents', () => {
+  const refs = ['alfea-excellia-a-i-tri-mh-11-024115',
+    'alfea-excellia-duo-a-i-mono-11-woyg112lht-526321',
+    'alfea-excellia-duo-a-i-tri-mh-11-024117',
+    'alfea-excellia-duo-v1-2013-mono-mh-11-023167',
+    'alfea-excellia-duo-v1-2013-tri-11-woyk112lct-522202',
+    'alfea-excellia-duo-v1-mono-mh-11-023159',
+    'alfea-excellia-a-i-tri-14-woyk140lct-526303',
+    'alfea-excellia-a-i-tri-14-woyk140lcta-526303'];
+  const models = catalogModelsWithPublishedDocuments([], refs.map((ref,i) => ({id:`ex-${i}`,
+    manufacturer:'Atlantic',model_name:ref,model_reference:ref,title:'vue-eclatee',
+    catalog_category:ref.includes('-mh-')?'heat_pump_indoor':'heat_pump_outdoor'})));
+  assert.equal(catalogModelFamilies(models).length,6);
+  assert.equal(catalogModelLabel(models[3]),'Alféa Excellia Duo V1 2013 Mono · MH 11');
+  assert.equal(catalogModelLabel(models[4]),'Alféa Excellia Duo V1 2013 Tri · 11 · WOYK112LCT');
+  assert.equal(catalogModelReferenceLabel(models[4]),'522202');
+  assert.notEqual(catalogModelLabel(models[6]),catalogModelLabel(models[7]));
+  assert.equal(catalogModelReferenceLabel(models[6]),catalogModelReferenceLabel(models[7]));
+  models.forEach((m,i)=>assert.deepEqual(m.publishedDocuments.map(d=>d.documentId),[`ex-${i}`]));
+});
+
 test('PAC Atlantic families preserve indoor, outdoor and exact PDF associations', () => {
   const refs = ['alfea-extensa-a-i-mh-5-024119', 'alfea-extensa-a-i-5-woya060lfca-526200',
     'alfea-extensa-a-i-r32-mh-5-024302', 'alfea-excellia-a-i-mono-mh-11-024114',
